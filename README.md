@@ -94,6 +94,18 @@ $env:OLLAMA_BASE_URL="http://127.0.0.1:11434"
 .\.venv\Scripts\python.exe -m streamlit run apps\operator\streamlit_app.py
 ```
 
+Run Turkish model quality evals:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\run_turkish_eval.py
+```
+
+Eval results are written to:
+
+```text
+data/outputs/turkish-eval-results.jsonl
+```
+
 ## Safety Positioning
 
 App-Q outputs directional hypotheses, not statistically representative market research. High-risk decisions should be validated with real users, sales data, or field research.

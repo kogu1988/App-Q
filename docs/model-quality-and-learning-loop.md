@@ -54,6 +54,14 @@ Each model run should be manually scored from 1 to 5 on:
 - hallucination risk
 - report-readiness
 
+Run the eval set with:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\run_turkish_eval.py
+```
+
+The script writes JSONL results to `data/outputs/turkish-eval-results.jsonl`. Manual scores should be filled after reviewing the answers.
+
 ## Learning Loop After Launch
 
 Production usage can improve App-Q, but raw customer data must not be directly used for training by default.

@@ -10,6 +10,7 @@ dist/
 build/
 data/outputs/*
 !data/outputs/.gitkeep
+!data/outputs/README.md
 models/*
 !models/README.md
 *.log
