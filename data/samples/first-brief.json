@@ -1,0 +1,26 @@
+{
+  "title": "Akıllı ürün açıklaması ve pazar konumlandırma aracı",
+  "market": "Türkiye",
+  "category": "B2B SaaS / e-ticaret araçları",
+  "idea": "KOBİ ve e-ticaret satıcılarının ürün fikirlerini, fiyatlamasını ve mesajlarını sentetik persona görüşmeleriyle test eden bir servis.",
+  "target_users": [
+    "Trendyol ve Hepsiburada satıcıları",
+    "Küçük e-ticaret markaları",
+    "Ajanslar",
+    "Ürün yöneticileri"
+  ],
+  "competitors": [
+    "Klasik pazar araştırma ajansları",
+    "ChatGPT ile manuel araştırma",
+    "Anket araçları"
+  ],
+  "expected_price": "Rapor başı 3.000 TL - 5.000 TL arası pilot hizmet",
+  "sales_channel": "LinkedIn üzerinden ajanslar ve e-ticaret kurucularına ürünleştirilmiş hizmet satışı",
+  "success_metric": "Müşterinin raporu karar toplantısında kullanması ve ikinci test satın alması",
+  "questions": [
+    "Bu servis hangi pain pointleri çözer?",
+    "Hangi fiyat aralığı kabul edilebilir olur?",
+    "Kullanıcılar çıktılara ne kadar güvenir?",
+    "Satın alma önündeki itirazlar nelerdir?"
+  ]
+}

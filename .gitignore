@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+node_modules/
+.next/
+dist/
+build/
+data/outputs/*
+!data/outputs/.gitkeep
+models/*
+!models/README.md
+*.log
