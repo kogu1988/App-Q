@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from packages.research_engine.providers import ModelProviderError, OllamaResearchModel
 
@@ -11,8 +16,8 @@ def main() -> None:
     model = OllamaResearchModel(model_id=model_id, base_url=base_url, timeout_seconds=30)
     try:
         answer = model.generate(
-            system="Kısa cevap veren lokal model bağlantı testisin.",
-            prompt="Tek cümleyle Türkçe cevap ver: App-Q lokal model bağlantısı çalışıyor mu?",
+            system="Sadece bağlantı testi yap. Türkçe cevap ver. En fazla 8 kelime kullan.",
+            prompt="App-Q lokal model bağlantısı çalışıyor mu? Sadece 'Bağlantı çalışıyor.' yaz.",
         )
     except ModelProviderError as exc:
         print(f"ERROR: {exc}")

@@ -13,4 +13,6 @@ data/outputs/*
 !data/outputs/README.md
 models/*
 !models/README.md
+!models/ollama/
+!models/ollama/*.Modelfile
 *.log

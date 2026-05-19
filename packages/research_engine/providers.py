@@ -8,6 +8,17 @@ import urllib.request
 from .models import ResearchModel
 
 
+APP_Q_GENERATION_POLICY = """
+App-Q üretim politikası:
+- Türkçe cevap ver.
+- Meta açıklama yapma; "persona şöyle düşünür" deme.
+- Persona sorularında birinci tekil şahısla, gerçek kullanıcı gibi konuş.
+- Somut Türkiye pazarı bağlamı kullan: fiyat, taksit, kargo, komisyon, bütçe, güven, KVKK.
+- Araştırmacıyı memnun etmeye çalışma; zayıf noktaları açıkça söyle.
+- Gereksiz maddeleme yapma; kısa ve doğrudan cevap ver.
+"""
+
+
 class ModelProviderError(RuntimeError):
     """Raised when a configured local model provider cannot respond."""
 
@@ -62,6 +73,7 @@ class OllamaResearchModel:
         self.timeout_seconds = timeout_seconds
 
     def generate(self, system: str, prompt: str) -> str:
+        system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
         payload = {
             "model": self.model_id,
             "stream": False,

@@ -50,7 +50,7 @@ Set:
 
 ```powershell
 $env:APP_MODEL_PROVIDER="ollama"
-$env:APP_MODEL_ID="sentetik-tr-motor"
+$env:APP_MODEL_ID="app-q-qwen7b"
 $env:OLLAMA_BASE_URL="http://127.0.0.1:11434"
 ```
 
@@ -61,6 +61,20 @@ Check connectivity:
 ```
 
 If Ollama is not running or the model alias does not exist, App-Q should fail with a readable provider error instead of crashing the UI.
+
+Create the tuned local Qwen alias:
+
+```powershell
+ollama pull qwen2.5:7b
+ollama create app-q-qwen7b -f models\ollama\app-q-qwen7b.Modelfile
+```
+
+Create the tuned local Trendyol alias:
+
+```powershell
+ollama pull hf.co/bartowski/Trendyol-LLM-8b-chat-v2.0-GGUF:Q4_K_M
+ollama create app-q-trendyol -f models\ollama\app-q-trendyol.Modelfile
+```
 
 ## Turkish Quality Gate
 
