@@ -33,7 +33,7 @@ from packages.research_engine.workflow import build_research_plan, generate_pers
 
 SAMPLE_PATH = ROOT / "data" / "samples" / "first-brief.json"
 OUTPUT_DIR = ROOT / "data" / "outputs"
-STUDIES_DIR = ROOT / "data" / "studies"
+STUDIES_DIR = Path(os.getenv("APP_Q_STUDIES_DIR", ROOT / "data" / "studies"))
 WIZARD_NAME = "Defne"
 WIZARD_ROLE = "App-Q araştırma mimarı"
 WIZARD_SYSTEM_STYLE = (
@@ -295,15 +295,20 @@ def save_study_payload(study_id: str | None = None) -> str:
         (path / "report.json").write_text(json.dumps(report_json, ensure_ascii=False, indent=2), encoding="utf-8")
         (path / "report.md").write_text(report_markdown, encoding="utf-8")
         html_path.write_text(render_report_html(report_json, report_markdown), encoding="utf-8")
-        try:
-            export_html_to_pdf(html_path, pdf_path)
-            metadata["has_pdf"] = True
-            metadata["pdf_status"] = "generated"
-            metadata["pdf_error"] = ""
-        except Exception as exc:
+        if os.getenv("APP_Q_DISABLE_PDF_EXPORT") == "1":
             metadata["has_pdf"] = False
-            metadata["pdf_status"] = "skipped"
-            metadata["pdf_error"] = str(exc)
+            metadata["pdf_status"] = "disabled"
+            metadata["pdf_error"] = ""
+        else:
+            try:
+                export_html_to_pdf(html_path, pdf_path)
+                metadata["has_pdf"] = True
+                metadata["pdf_status"] = "generated"
+                metadata["pdf_error"] = ""
+            except Exception as exc:
+                metadata["has_pdf"] = False
+                metadata["pdf_status"] = "skipped"
+                metadata["pdf_error"] = str(exc)
     metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
     return study_id
 
@@ -1161,9 +1166,9 @@ def render_interview_card(interview: dict, script_count: int, card_key: str) -> 
         st.caption(f"{done}/{target}")
         st.progress(progress)
         if status == "Completed":
-            st.success("Completed", icon="✓")
+            st.success("Completed")
         else:
-            st.warning("Review needed", icon="!")
+            st.warning("Review needed")
 
         if quality["warning_count"]:
             st.caption(f"{quality['warning_count']} kalite uyarısı")
@@ -1696,8 +1701,7 @@ if run_button:
             persist_outputs(report_markdown, report_json)
             st.session_state["report_json"] = report_json
             st.session_state["report_markdown"] = report_markdown
-            if st.session_state.get("current_study_id"):
-                save_study_payload(st.session_state["current_study_id"])
+            st.session_state["current_study_id"] = save_study_payload(st.session_state.get("current_study_id"))
         except ModelProviderError as exc:
             st.error(str(exc))
 
@@ -1823,8 +1827,9 @@ with interview_tab:
                         st.session_state["report_json"] = updated_report_json
                         st.session_state["report_markdown"] = updated_report_markdown
                         persist_outputs(st.session_state["report_markdown"], st.session_state["report_json"])
-                        if st.session_state.get("current_study_id"):
-                            save_study_payload(st.session_state["current_study_id"])
+                        st.session_state["current_study_id"] = save_study_payload(
+                            st.session_state.get("current_study_id")
+                        )
                         st.success("Takip cevabı transcript'e eklendi ve rapor yeniden sentezlendi.")
                         st.rerun()
                     except ModelProviderError as exc:
