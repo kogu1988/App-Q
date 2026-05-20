@@ -218,7 +218,7 @@ def study_path(study_id: str) -> Path:
     return STUDIES_DIR / study_id
 
 
-def list_studies() -> list[dict]:
+def list_studies(include_archived: bool = False) -> list[dict]:
     if not STUDIES_DIR.exists():
         return []
     studies: list[dict] = []
@@ -227,7 +227,7 @@ def list_studies() -> list[dict]:
             metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
-        if metadata.get("archived"):
+        if metadata.get("archived") and not include_archived:
             continue
         metadata["id"] = metadata.get("id") or metadata_path.parent.name
         studies.append(metadata)
@@ -312,6 +312,86 @@ def apply_study_payload(study_id: str, payload: dict) -> None:
     st.session_state["wizard_messages"] = [
         {"role": "assistant", "content": build_wizard_reply(current_brief_data())}
     ]
+
+
+def study_dashboard_rows(studies: list[dict]) -> list[dict]:
+    rows: list[dict] = []
+    for study in studies:
+        payload = load_study_payload(study["id"])
+        report_json = payload.get("report_json") or {}
+        brief = payload.get("brief") or {}
+        rows.append(
+            {
+                "title": study.get("title", study["id"]),
+                "market": study.get("market") or brief.get("market", ""),
+                "category": study.get("category") or brief.get("category", ""),
+                "updated_at": study.get("updated_at", ""),
+                "status": "Archived" if study.get("archived") else ("Report ready" if study.get("has_report") else "Brief only"),
+                "personas": len(report_json.get("personas", [])),
+                "findings": len(report_json.get("findings", [])),
+                "id": study["id"],
+            }
+        )
+    return rows
+
+
+def render_studies_dashboard() -> None:
+    include_archived = st.toggle("Arsivlenmis calismalari goster", value=False)
+    studies = list_studies(include_archived=include_archived)
+    rows = study_dashboard_rows(studies)
+
+    metric_cols = st.columns(4)
+    metric_cols[0].metric("Kayitli Calisma", len(studies))
+    metric_cols[1].metric("Raporlu", sum(1 for item in studies if item.get("has_report")))
+    metric_cols[2].metric("Brief Asamasi", sum(1 for item in studies if not item.get("has_report")))
+    metric_cols[3].metric("Arsiv", sum(1 for item in studies if item.get("archived")))
+
+    if not studies:
+        st.info("Kayitli calisma yok. Sol panelden brief'i doldurup Kaydet ile ilk calismayi olusturabilirsin.")
+        return
+
+    st.dataframe(rows, use_container_width=True, hide_index=True, column_order=[
+        "title",
+        "status",
+        "market",
+        "category",
+        "personas",
+        "findings",
+        "updated_at",
+        "id",
+    ])
+
+    st.markdown("#### Hızlı Aksiyonlar")
+    for index, study in enumerate(studies[:8]):
+        payload = load_study_payload(study["id"])
+        brief = payload.get("brief") or {}
+        report_json = payload.get("report_json") or {}
+        with st.container(border=True):
+            cols = st.columns([0.5, 0.16, 0.16, 0.18])
+            with cols[0]:
+                st.markdown(f"##### {study.get('title', study['id'])}")
+                st.caption(
+                    f"{study.get('market') or brief.get('market', '')} / "
+                    f"{study.get('category') or brief.get('category', '')} / "
+                    f"{study.get('updated_at', '')}"
+                )
+                if brief.get("idea"):
+                    st.write(str(brief["idea"])[:240] + ("..." if len(str(brief["idea"])) > 240 else ""))
+            cols[1].metric("Persona", len(report_json.get("personas", [])))
+            cols[2].metric("Bulgu", len(report_json.get("findings", [])))
+            with cols[3]:
+                if st.button("Ac", key=f"dashboard_open_{study['id']}_{index}", use_container_width=True):
+                    apply_study_payload(study["id"], payload)
+                    st.rerun()
+                if not study.get("archived") and st.button(
+                    "Arsivle",
+                    key=f"dashboard_archive_{study['id']}_{index}",
+                    use_container_width=True,
+                ):
+                    archive_study(study["id"])
+                    if st.session_state.get("current_study_id") == study["id"]:
+                        st.session_state.pop("current_study_id", None)
+                    st.rerun()
 
 
 def render_trait_bar(label: str, value: int) -> None:
@@ -1417,6 +1497,8 @@ with st.container(border=True):
         st.warning("En az bir araştırma rolü seçilmeden persona paneli anlamlı olmayacak.")
 
 if not title or not idea:
+    st.subheader("Studies")
+    render_studies_dashboard()
     st.info("Başlık ve ürün fikri girildiğinde araştırma planı ve rapor üretilebilir.")
     st.stop()
 
@@ -1426,6 +1508,9 @@ selected_roles = selected_role_rows(role_suggestions)
 panel_roles = build_panel_roles(role_suggestions)
 plan = build_research_plan(brief, panel_roles or None)
 personas = generate_personas(brief, panel_roles or None)
+
+with st.expander("Studies Dashboard", expanded=False):
+    render_studies_dashboard()
 
 plan_tab, persona_tab, script_tab, interview_tab, report_tab, raw_tab = st.tabs(
     ["Plan", "Personalar", "Script", "Görüşmeler", "Rapor", "Ham Çıktı"]
