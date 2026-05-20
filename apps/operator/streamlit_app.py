@@ -177,6 +177,101 @@ def render_persona_card(persona) -> None:
             render_trait_bar(trait, int(value))
 
 
+def persona_role_name(persona) -> str:
+    return persona.role_title or persona.segment or "Bilinmeyen"
+
+
+def average(values: list[int]) -> int:
+    return round(sum(values) / len(values)) if values else 0
+
+
+def persona_overview_rows(personas: list) -> list[dict[str, str | int]]:
+    rows: list[dict[str, str | int]] = []
+    for persona in personas:
+        rows.append(
+            {
+                "persona": persona.name,
+                "role": persona_role_name(persona),
+                "city": persona.city,
+                "age": persona.age,
+                "stance": persona.stance,
+                "price_sensitivity": persona.price_sensitivity,
+                "digital_confidence": persona.digital_confidence,
+                "trust_friction": int(persona.traits.get("Neuroticism", persona.price_sensitivity * 8)),
+                "openness": int(persona.traits.get("Openness", persona.digital_confidence * 9)),
+            }
+        )
+    return rows
+
+
+def count_by(items: list[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for item in items:
+        counts[item] = counts.get(item, 0) + 1
+    return counts
+
+
+def role_relevancy_rows(personas: list) -> list[dict[str, str | int]]:
+    grouped: dict[str, list] = {}
+    for persona in personas:
+        grouped.setdefault(persona_role_name(persona), []).append(persona)
+
+    rows: list[dict[str, str | int]] = []
+    for role, role_personas in grouped.items():
+        rows.append(
+            {
+                "role": role,
+                "count": len(role_personas),
+                "willingness_to_pay": average([10 - item.price_sensitivity for item in role_personas]) * 10,
+                "digital_readiness": average([item.digital_confidence for item in role_personas]) * 10,
+                "objection_strength": average([item.price_sensitivity for item in role_personas]) * 10,
+                "trust_risk": average([int(item.traits.get("Neuroticism", 50)) for item in role_personas]),
+                "research_fit": average(
+                    [
+                        min(
+                            10,
+                            3
+                            + item.digital_confidence // 2
+                            + (2 if item.stance in {"Skeptic", "Blocker"} else 1),
+                        )
+                        for item in role_personas
+                    ]
+                )
+                * 10,
+            }
+        )
+    return rows
+
+
+def render_persona_overview(personas: list) -> None:
+    rows = persona_overview_rows(personas)
+    ages = [int(row["age"]) for row in rows]
+    roles = [str(row["role"]) for row in rows]
+    cities = [str(row["city"]) for row in rows]
+
+    metric_cols = st.columns(4)
+    metric_cols[0].metric("Toplam Persona", len(personas))
+    metric_cols[1].metric("Yaş Aralığı", f"{min(ages)}-{max(ages)}" if ages else "-")
+    metric_cols[2].metric("Rol Sayısı", len(set(roles)))
+    metric_cols[3].metric("Şehir Sayısı", len(set(cities)))
+
+    st.markdown("#### Panel Dağılımı")
+    dist_cols = st.columns(2)
+    with dist_cols[0]:
+        st.caption("Roller")
+        st.bar_chart(count_by(roles))
+    with dist_cols[1]:
+        st.caption("Şehirler")
+        st.bar_chart(count_by(cities))
+
+    st.markdown("#### Rol Relevancy Skorları")
+    relevancy = role_relevancy_rows(personas)
+    st.dataframe(relevancy, use_container_width=True, hide_index=True)
+
+    st.markdown("#### Persona Özeti")
+    st.dataframe(rows, use_container_width=True, hide_index=True)
+
+
 def interview_quality_summary(interview: dict) -> dict[str, int]:
     turns = interview.get("turns", [])
     warning_count = 0
@@ -655,16 +750,21 @@ with plan_tab:
 
 with persona_tab:
     st.subheader("Persona Paneli")
-    if selected_roles:
-        st.markdown("#### Wizard Panel Kompozisyonu")
-        st.dataframe(selected_roles, use_container_width=True, hide_index=True)
-    else:
-        st.warning("Wizard tarafında seçili araştırma rolü yok.")
-    st.markdown("#### Üretilen Sentetik Personalar")
-    cols = st.columns(3)
-    for index, persona in enumerate(personas):
-        with cols[index % 3]:
-            render_persona_card(persona)
+    overview_tab, cards_tab = st.tabs(["Overview", "Kartlar"])
+    with overview_tab:
+        render_persona_overview(personas)
+
+    with cards_tab:
+        if selected_roles:
+            st.markdown("#### Wizard Panel Kompozisyonu")
+            st.dataframe(selected_roles, use_container_width=True, hide_index=True)
+        else:
+            st.warning("Wizard tarafında seçili araştırma rolü yok.")
+        st.markdown("#### Üretilen Sentetik Personalar")
+        cols = st.columns(3)
+        for index, persona in enumerate(personas):
+            with cols[index % 3]:
+                render_persona_card(persona)
 
 with script_tab:
     st.subheader("Interview Script")
@@ -673,9 +773,10 @@ with script_tab:
         with st.container(border=True):
             st.caption(question.label)
             st.markdown(f"#### {index}. {question.question}")
-            st.write(question.reason)
-            if question.tags:
-                st.caption("Etiketler: " + ", ".join(question.tags))
+            with st.expander("Soru amacı ve etiketler"):
+                st.write(question.reason)
+                if question.tags:
+                    st.caption("Etiketler: " + ", ".join(question.tags))
 
 if run_button:
     with st.spinner("Personalar sırayla görüşmeye alınıyor..."):
