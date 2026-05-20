@@ -25,6 +25,7 @@ from packages.research_engine.models import (
     ResearchBrief,
     ResearchPlan,
 )
+from packages.research_engine.pdf_export import export_html_to_pdf
 from packages.research_engine.providers import ModelProviderError, get_model_provider
 from packages.research_engine.reporting import render_markdown
 from packages.research_engine.workflow import build_research_plan, generate_personas, run_research, synthesize_report
@@ -268,6 +269,8 @@ def save_study_payload(study_id: str | None = None) -> str:
 
     report_json = st.session_state.get("report_json")
     report_markdown = st.session_state.get("report_markdown")
+    pdf_status = existing_metadata.get("pdf_status", "not_generated")
+    pdf_error = existing_metadata.get("pdf_error", "")
     metadata = {
         "id": study_id,
         "title": title,
@@ -277,17 +280,31 @@ def save_study_payload(study_id: str | None = None) -> str:
         "updated_at": created_at,
         "archived": False,
         "has_report": bool(report_json and report_markdown),
+        "has_pdf": bool(existing_metadata.get("has_pdf", False)),
+        "pdf_status": pdf_status,
+        "pdf_error": pdf_error,
     }
-    metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
     (path / "brief.json").write_text(json.dumps(brief_data, ensure_ascii=False, indent=2), encoding="utf-8")
     (path / "roles.json").write_text(
         json.dumps(current_role_state_snapshot(), ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     if report_json and report_markdown:
+        html_path = path / "report.html"
+        pdf_path = path / "report.pdf"
         (path / "report.json").write_text(json.dumps(report_json, ensure_ascii=False, indent=2), encoding="utf-8")
         (path / "report.md").write_text(report_markdown, encoding="utf-8")
-        (path / "report.html").write_text(render_report_html(report_json, report_markdown), encoding="utf-8")
+        html_path.write_text(render_report_html(report_json, report_markdown), encoding="utf-8")
+        try:
+            export_html_to_pdf(html_path, pdf_path)
+            metadata["has_pdf"] = True
+            metadata["pdf_status"] = "generated"
+            metadata["pdf_error"] = ""
+        except Exception as exc:
+            metadata["has_pdf"] = False
+            metadata["pdf_status"] = "skipped"
+            metadata["pdf_error"] = str(exc)
+    metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
     return study_id
 
 
@@ -327,6 +344,7 @@ def study_dashboard_rows(studies: list[dict]) -> list[dict]:
                 "category": study.get("category") or brief.get("category", ""),
                 "updated_at": study.get("updated_at", ""),
                 "status": "Archived" if study.get("archived") else ("Report ready" if study.get("has_report") else "Brief only"),
+                "pdf": "Ready" if study.get("has_pdf") else study.get("pdf_status", "not_generated"),
                 "personas": len(report_json.get("personas", [])),
                 "findings": len(report_json.get("findings", [])),
                 "id": study["id"],
@@ -355,6 +373,7 @@ def render_studies_dashboard() -> None:
         "status",
         "market",
         "category",
+        "pdf",
         "personas",
         "findings",
         "updated_at",

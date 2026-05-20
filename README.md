@@ -84,6 +84,18 @@ data/outputs/operator-report.md
 data/outputs/operator-report.json
 ```
 
+Saved studies are written under `data/studies/{study_id}` and are ignored by git. If Chrome or Edge is available, App-Q also creates `report.pdf` next to `report.html`. If the browser is not in a standard location, set:
+
+```powershell
+$env:APP_Q_BROWSER_PATH="C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+```
+
+You can export an existing HTML report manually:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\export_report_pdf.py data\studies\YOUR_STUDY_ID\report.html
+```
+
 Use Ollama instead of the mock model:
 
 ```powershell
