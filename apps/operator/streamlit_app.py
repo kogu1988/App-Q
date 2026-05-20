@@ -54,6 +54,81 @@ def persist_outputs(report_markdown: str, report_json: dict) -> None:
     )
 
 
+def render_report_dashboard(report_json: dict, report_markdown: str) -> None:
+    model_usage = report_json.get("model_usage", {})
+    quality_issues = report_json.get("quality_issues", [])
+    findings = report_json.get("findings", [])
+    pricing = report_json.get("pricing", {})
+
+    st.subheader("Yönetici Özeti")
+    for item in report_json.get("executive_summary", []):
+        st.markdown(f"- {item}")
+
+    metric_cols = st.columns(4)
+    metric_cols[0].metric("Persona", len(report_json.get("personas", [])))
+    metric_cols[1].metric("Görüşme Yanıtı", sum(model_usage.values()) if model_usage else 0)
+    metric_cols[2].metric("Kalite Uyarısı", len(quality_issues))
+    metric_cols[3].metric("Bulgu", len(findings))
+
+    st.markdown("#### Model Kullanımı")
+    if model_usage:
+        cols = st.columns(len(model_usage))
+        for index, (model_id, count) in enumerate(model_usage.items()):
+            cols[index].metric(model_id, count)
+    else:
+        st.info("Model kullanımı kaydedilmedi.")
+
+    st.markdown("#### Pain Point Matrisi")
+    matrix = report_json.get("pain_point_matrix", [])
+    if matrix:
+        st.dataframe(matrix, use_container_width=True, hide_index=True)
+    else:
+        st.info("Pain point matrisi henüz yok.")
+
+    st.markdown("#### Kritik Bulgular")
+    for finding in findings:
+        with st.container(border=True):
+            st.markdown(f"##### {finding.get('title', 'Bulgu')}")
+            st.write(finding.get("summary", ""))
+            st.caption(f"Kategori: {finding.get('category')} / Güven: {finding.get('confidence')}")
+            evidence = finding.get("evidence", [])
+            if evidence:
+                with st.expander("Kanıt alıntıları"):
+                    for item in evidence:
+                        st.markdown(
+                            f"- **{item.get('persona_name')} ({item.get('stance')})**: "
+                            f"“{item.get('quote')}”"
+                        )
+
+    st.markdown("#### Fiyat ve Paketleme")
+    st.write(pricing.get("acceptable_range", ""))
+    st.caption(pricing.get("packaging_suggestion", ""))
+    for point in pricing.get("resistance_points", []):
+        st.markdown(f"- {point}")
+
+    st.markdown("#### Aksiyon Listesi")
+    for item in report_json.get("action_items", []):
+        st.markdown(f"- {item}")
+
+    st.markdown("#### Kalite Kontrol")
+    if quality_issues:
+        fail_count = sum(1 for issue in quality_issues if issue.get("severity") == "fail")
+        if fail_count:
+            st.error(f"{fail_count} kritik kalite sorunu var. Raporu müşteriye göndermeden önce gözden geçir.")
+        else:
+            st.warning("Kalite uyarıları var. Zayıf cevapları kontrol et.")
+        st.dataframe(quality_issues, use_container_width=True, hide_index=True)
+    else:
+        st.success("Kritik kalite uyarısı yok.")
+
+    st.download_button(
+        "Markdown raporu indir",
+        data=report_markdown,
+        file_name="app-q-report.md",
+        mime="text/markdown",
+    )
+
+
 st.set_page_config(page_title="App-Q Operator", page_icon="Q", layout="wide")
 
 sample = load_sample()
@@ -121,7 +196,9 @@ brief = build_brief(brief_data)
 plan = build_research_plan(brief)
 personas = generate_personas(brief)
 
-plan_tab, persona_tab, report_tab, raw_tab = st.tabs(["Plan", "Personalar", "Rapor", "Ham Çıktı"])
+plan_tab, persona_tab, report_tab, interview_tab, raw_tab = st.tabs(
+    ["Plan", "Personalar", "Rapor", "Görüşmeler", "Ham Çıktı"]
+)
 
 with plan_tab:
     st.subheader("Araştırma Planı")
@@ -174,13 +251,24 @@ with report_tab:
     if "report_markdown" not in st.session_state:
         st.info("Raporu üretmek için sol panelden araştırmayı çalıştır.")
     else:
-        st.markdown(st.session_state["report_markdown"])
-        st.download_button(
-            "Markdown raporu indir",
-            data=st.session_state["report_markdown"],
-            file_name="app-q-report.md",
-            mime="text/markdown",
-        )
+        render_report_dashboard(st.session_state["report_json"], st.session_state["report_markdown"])
+
+with interview_tab:
+    if "report_json" not in st.session_state:
+        st.info("Görüşmeleri görmek için araştırmayı çalıştır.")
+    else:
+        for interview in st.session_state["report_json"].get("interviews", []):
+            persona = interview.get("persona", {})
+            with st.expander(f"{persona.get('name')} - {persona.get('segment')}", expanded=False):
+                for turn in interview.get("turns", []):
+                    st.markdown(f"**Soru:** {turn.get('question')}")
+                    st.write(turn.get("answer"))
+                    meta = [f"model: `{turn.get('model_id') or 'unknown'}`"]
+                    flags = turn.get("quality_flags") or []
+                    if flags:
+                        meta.append("uyarı: " + ", ".join(flags))
+                    st.caption(" / ".join(meta))
+                    st.divider()
 
 with raw_tab:
     if "report_json" not in st.session_state:
