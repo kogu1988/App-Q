@@ -61,6 +61,7 @@ class InterviewTurn:
     question: str
     answer: str
     tags: list[FindingCategory] = field(default_factory=list)
+    model_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -108,6 +109,7 @@ class ResearchReport:
     recommendations: list[str]
     validation_next_steps: list[str]
     limitations: list[str]
+    model_usage: dict[str, int] = field(default_factory=dict)
 
 
 class ResearchModel(Protocol):

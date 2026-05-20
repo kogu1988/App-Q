@@ -35,6 +35,50 @@ def strip_visible_reasoning(content: str) -> str:
 
 def choose_model_id(prompt: str, b2c_model_id: str, general_model_id: str) -> str:
     lower = prompt.lower()
+    persona_match = re.search(r"persona:\s*(.+)", lower)
+    persona_line = persona_match.group(1) if persona_match else ""
+    stance_match = re.search(r"duruş:\s*(.+)", lower)
+    stance_line = stance_match.group(1) if stance_match else ""
+
+    persona_general_markers = [
+        "kurumsal",
+        "ürün yöneticisi",
+        "ajans",
+        "stratejist",
+        "performans pazarlama",
+        "skeptic",
+        "observer",
+    ]
+    persona_b2c_markers = [
+        "e-ticaret marka sahibi",
+        "pazaryeri satıcısı",
+        "satıcı",
+        "kobi",
+        "kobİ",
+        "blocker",
+        "champion",
+    ]
+    persona_context = f"{persona_line} {stance_line}"
+    if any(marker in persona_context for marker in persona_general_markers):
+        return general_model_id
+    if any(marker.lower() in persona_context for marker in persona_b2c_markers):
+        return b2c_model_id
+
+    general_markers = [
+        "kurumsal",
+        "b2b",
+        "saas",
+        "ürün yöneticisi",
+        "ajans",
+        "stratejist",
+        "kvkk",
+        "güven",
+        "rapor kalitesi",
+        "kanıt zinciri",
+        "sentez",
+        "observer",
+        "skeptic",
+    ]
     b2c_markers = [
         "e-ticaret",
         "pazaryeri",
@@ -49,6 +93,8 @@ def choose_model_id(prompt: str, b2c_model_id: str, general_model_id: str) -> st
         "ürün listeleme",
         "reklam bütçesi",
     ]
+    if any(marker in lower for marker in general_markers):
+        return general_model_id
     return b2c_model_id if any(marker in lower for marker in b2c_markers) else general_model_id
 
 
@@ -58,6 +104,8 @@ class ModelProviderError(RuntimeError):
 
 class MockResearchModel:
     """Deterministic provider used until a real LLM is connected."""
+
+    last_model_id = "mock"
 
     def generate(self, system: str, prompt: str) -> str:
         prompt_lower = prompt.lower()
@@ -102,10 +150,12 @@ class OllamaResearchModel:
         timeout_seconds: int = 120,
     ) -> None:
         self.model_id = model_id
+        self.last_model_id = model_id
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = timeout_seconds
 
     def generate(self, system: str, prompt: str) -> str:
+        self.last_model_id = self.model_id
         system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
         payload = {
             "model": self.model_id,
@@ -165,7 +215,9 @@ class OllamaRouterResearchModel:
     def generate(self, system: str, prompt: str) -> str:
         model_id = choose_model_id(prompt, self.b2c_model_id, self.general_model_id)
         model = self.b2c_model if model_id == self.b2c_model_id else self.general_model
-        return model.generate(system, prompt)
+        answer = model.generate(system, prompt)
+        self.last_model_id = model_id
+        return answer
 
 
 def get_model_provider(provider: str | None = None) -> ResearchModel:

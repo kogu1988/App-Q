@@ -7,13 +7,25 @@ def render_markdown(report: ResearchReport) -> str:
     lines: list[str] = [
         f"# {report.title}",
         "",
+        "## Model Kullanımı",
+        "",
+    ]
+    if report.model_usage:
+        lines.extend(f"- `{model_id}`: {count} yanıt" for model_id, count in report.model_usage.items())
+    else:
+        lines.append("- Model kullanımı kaydedilmedi.")
+
+    lines.extend(
+        [
+            "",
         "## Araştırma Planı",
         "",
         report.plan.objective,
         "",
         "### Varsayımlar",
         "",
-    ]
+        ]
+    )
     lines.extend(f"- {item}" for item in report.plan.assumptions)
 
     lines.extend(["", "### Netleştirici Sorular", ""])

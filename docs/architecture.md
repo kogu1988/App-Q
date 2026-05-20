@@ -44,6 +44,8 @@ Initial providers:
 - `ollama`: single local Ollama model
 - `ollama-router`: two-model local router; B2C/e-commerce prompts use `app-q-trendyol`, general B2B/pricing/KVKK/synthesis prompts use `app-q-kizagan-e4b`
 
+Router calls are traceable in generated reports. Each interview turn stores the selected `model_id`, and each report includes a `model_usage` count so operators can audit whether Trendyol or Kızagan handled a given simulation.
+
 Future providers:
 
 - `transformers`: local Hugging Face model

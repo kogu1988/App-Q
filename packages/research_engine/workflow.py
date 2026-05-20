@@ -212,9 +212,25 @@ def run_interviews(brief: ResearchBrief, personas: list[Persona], model: Researc
                 "Kısa, somut ve Türkiye pazarı gerçeklerine uygun cevap ver."
             )
             answer = model.generate(system, prompt)
-            turns.append(InterviewTurn(question=question, answer=answer, tags=classify_question(question)))
+            turns.append(
+                InterviewTurn(
+                    question=question,
+                    answer=answer,
+                    tags=classify_question(question),
+                    model_id=getattr(model, "last_model_id", None),
+                )
+            )
         interviews.append(PersonaInterview(persona=persona, turns=turns, consistency_notes=consistency_notes))
     return interviews
+
+
+def summarize_model_usage(interviews: list[PersonaInterview]) -> dict[str, int]:
+    usage: dict[str, int] = {}
+    for interview in interviews:
+        for turn in interview.turns:
+            model_id = turn.model_id or "unknown"
+            usage[model_id] = usage.get(model_id, 0) + 1
+    return usage
 
 
 def collect_evidence(interviews: list[PersonaInterview], tag: str, limit: int = 4) -> list[Evidence]:
@@ -321,6 +337,7 @@ def synthesize_report(
         recommendations=recommendations,
         validation_next_steps=validation_next_steps,
         limitations=limitations,
+        model_usage=summarize_model_usage(interviews),
     )
 
 
