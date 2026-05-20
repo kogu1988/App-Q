@@ -27,6 +27,18 @@ WIZARD_SYSTEM_STYLE = (
     "Kibar ama gevşek değildir; kullanıcının fikrini onaylamak yerine karar alınabilir brief ister. "
     "Her adımda tek ana eksikliği yakalar, somut soru sorar ve sonunda araştırma hedefi ile rol önerilerini çıkarır."
 )
+BRIEF_STATE_KEYS = {
+    "title": "brief_title",
+    "market": "brief_market",
+    "category": "brief_category",
+    "idea": "brief_idea",
+    "target_users": "brief_target_users",
+    "questions": "brief_questions",
+    "competitors": "brief_competitors",
+    "expected_price": "brief_expected_price",
+    "sales_channel": "brief_sales_channel",
+    "success_metric": "brief_success_metric",
+}
 
 
 def parse_lines(value: str) -> list[str]:
@@ -37,12 +49,58 @@ def load_sample() -> dict:
     return json.loads(SAMPLE_PATH.read_text(encoding="utf-8"))
 
 
+def seed_brief_state(data: dict) -> None:
+    st.session_state[BRIEF_STATE_KEYS["title"]] = data.get("title", "")
+    st.session_state[BRIEF_STATE_KEYS["market"]] = data.get("market", "Türkiye")
+    st.session_state[BRIEF_STATE_KEYS["category"]] = data.get("category", "")
+    st.session_state[BRIEF_STATE_KEYS["idea"]] = data.get("idea", "")
+    st.session_state[BRIEF_STATE_KEYS["target_users"]] = "\n".join(data.get("target_users", []))
+    st.session_state[BRIEF_STATE_KEYS["questions"]] = "\n".join(data.get("questions", []))
+    st.session_state[BRIEF_STATE_KEYS["competitors"]] = "\n".join(data.get("competitors", []))
+    st.session_state[BRIEF_STATE_KEYS["expected_price"]] = data.get("expected_price", "")
+    st.session_state[BRIEF_STATE_KEYS["sales_channel"]] = data.get("sales_channel", "")
+    st.session_state[BRIEF_STATE_KEYS["success_metric"]] = data.get("success_metric", "")
+
+
+def current_brief_data() -> dict:
+    return {
+        "title": st.session_state.get(BRIEF_STATE_KEYS["title"], ""),
+        "market": st.session_state.get(BRIEF_STATE_KEYS["market"], "Türkiye"),
+        "category": st.session_state.get(BRIEF_STATE_KEYS["category"], ""),
+        "idea": st.session_state.get(BRIEF_STATE_KEYS["idea"], ""),
+        "target_users": parse_lines(st.session_state.get(BRIEF_STATE_KEYS["target_users"], "")),
+        "questions": parse_lines(st.session_state.get(BRIEF_STATE_KEYS["questions"], "")),
+        "competitors": parse_lines(st.session_state.get(BRIEF_STATE_KEYS["competitors"], "")),
+        "expected_price": st.session_state.get(BRIEF_STATE_KEYS["expected_price"], ""),
+        "sales_channel": st.session_state.get(BRIEF_STATE_KEYS["sales_channel"], ""),
+        "success_metric": st.session_state.get(BRIEF_STATE_KEYS["success_metric"], ""),
+    }
+
+
+def apply_wizard_answer(field_name: str, answer: str) -> None:
+    answer = answer.strip()
+    if not answer:
+        return
+    state_key = BRIEF_STATE_KEYS[field_name]
+    if field_name in {"target_users", "questions", "competitors"}:
+        existing = st.session_state.get(state_key, "").strip()
+        st.session_state[state_key] = f"{existing}\n{answer}".strip() if existing else answer
+    elif field_name == "title":
+        st.session_state[state_key] = answer.splitlines()[0][:90]
+    else:
+        st.session_state[state_key] = answer
+
+
+def append_wizard_message(role: str, content: str) -> None:
+    st.session_state.setdefault("wizard_messages", []).append({"role": role, "content": content})
+
+
 def wizard_missing_fields(data: dict) -> list[tuple[str, str]]:
     missing: list[tuple[str, str]] = []
-    if not data.get("title"):
-        missing.append(("title", "Bu çalışmaya raporda görünecek kısa bir başlık verelim."))
     if not data.get("idea"):
         missing.append(("idea", "Ürün fikrini ve çözdüğü problemi 4-5 cümleyle anlatır mısın?"))
+    if not data.get("title"):
+        missing.append(("title", "Bu çalışmaya raporda görünecek kısa bir başlık verelim."))
     if not data.get("target_users"):
         missing.append(("target_users", "En çok öğrenmek istediğin kullanıcı tipi kim: kimler, hangi durumda, ne için kullanacak?"))
     if not data.get("questions"):
@@ -248,6 +306,13 @@ def render_report_dashboard(report_json: dict, report_markdown: str) -> None:
 st.set_page_config(page_title="App-Q Operator", page_icon="Q", layout="wide")
 
 sample = load_sample()
+if "brief_initialized" not in st.session_state:
+    seed_brief_state(sample)
+    st.session_state["brief_initialized"] = True
+if "wizard_messages" not in st.session_state:
+    st.session_state["wizard_messages"] = [
+        {"role": "assistant", "content": build_wizard_reply(current_brief_data())}
+    ]
 
 st.title("App-Q")
 st.caption("Türkiye pazarı için lokal sentetik persona araştırma operatörü")
@@ -263,30 +328,43 @@ st.caption(f"Model provider: {provider_name} / model: {model_caption}")
 
 with st.sidebar:
     st.header("Araştırma Brief'i")
-    use_sample = st.toggle("Örnek brief'i yükle", value=True)
-    defaults = sample if use_sample else {}
+    col_sample, col_clear = st.columns(2)
+    if col_sample.button("Örneği yükle", use_container_width=True):
+        seed_brief_state(sample)
+        st.session_state["wizard_messages"] = [
+            {"role": "assistant", "content": build_wizard_reply(current_brief_data())}
+        ]
+        st.rerun()
+    if col_clear.button("Sıfırla", use_container_width=True):
+        seed_brief_state({"market": "Türkiye"})
+        st.session_state["wizard_messages"] = [
+            {"role": "assistant", "content": build_wizard_reply(current_brief_data())}
+        ]
+        st.session_state.pop("report_json", None)
+        st.session_state.pop("report_markdown", None)
+        st.rerun()
 
-    title = st.text_input("Başlık", value=defaults.get("title", ""))
-    market = st.text_input("Pazar", value=defaults.get("market", "Türkiye"))
-    category = st.text_input("Kategori", value=defaults.get("category", ""))
-    expected_price = st.text_input("Beklenen fiyat/paket", value=defaults.get("expected_price", ""))
-    sales_channel = st.text_input("Satış kanalı", value=defaults.get("sales_channel", ""))
-    success_metric = st.text_input("Başarı metriği", value=defaults.get("success_metric", ""))
-    idea = st.text_area("Ürün fikri / araştırma konusu", value=defaults.get("idea", ""), height=170)
+    title = st.text_input("Başlık", key=BRIEF_STATE_KEYS["title"])
+    market = st.text_input("Pazar", key=BRIEF_STATE_KEYS["market"])
+    category = st.text_input("Kategori", key=BRIEF_STATE_KEYS["category"])
+    expected_price = st.text_input("Beklenen fiyat/paket", key=BRIEF_STATE_KEYS["expected_price"])
+    sales_channel = st.text_input("Satış kanalı", key=BRIEF_STATE_KEYS["sales_channel"])
+    success_metric = st.text_input("Başarı metriği", key=BRIEF_STATE_KEYS["success_metric"])
+    idea = st.text_area("Ürün fikri / araştırma konusu", height=170, key=BRIEF_STATE_KEYS["idea"])
     target_users = st.text_area(
         "Hedef kullanıcılar",
-        value="\n".join(defaults.get("target_users", [])),
         height=100,
+        key=BRIEF_STATE_KEYS["target_users"],
     )
     competitors = st.text_area(
         "Alternatifler / rakipler",
-        value="\n".join(defaults.get("competitors", [])),
         height=90,
+        key=BRIEF_STATE_KEYS["competitors"],
     )
     research_questions = st.text_area(
         "Yanıtlanacak sorular",
-        value="\n".join(defaults.get("questions", [])),
         height=120,
+        key=BRIEF_STATE_KEYS["questions"],
     )
 
     run_button = st.button("Araştırmayı Çalıştır", type="primary", use_container_width=True)
@@ -318,6 +396,28 @@ with st.container(border=True):
 
     st.markdown("#### Wizard cevabı")
     st.write(build_wizard_reply(brief_data))
+
+    st.markdown("#### Defne ile brief sohbeti")
+    for message in st.session_state.get("wizard_messages", []):
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+
+    if missing_fields:
+        next_field, next_question = missing_fields[0]
+        with st.form("wizard_intake_form", clear_on_submit=True):
+            answer = st.text_area("Cevabın", placeholder=next_question, height=110)
+            submitted = st.form_submit_button("Defne'ye gönder", type="primary")
+        if submitted:
+            if answer.strip():
+                append_wizard_message("user", answer.strip())
+                apply_wizard_answer(next_field, answer)
+                updated_data = current_brief_data()
+                append_wizard_message("assistant", build_wizard_reply(updated_data))
+                st.rerun()
+            else:
+                st.warning("Defne'nin brief'i ilerletebilmesi için kısa bir cevap yaz.")
+    else:
+        st.caption("Brief tamamlandı. İstersen sol panelden manuel düzeltme yapabilir veya araştırmayı çalıştırabilirsin.")
 
     if missing_fields:
         st.markdown("#### Eksik netlik alanları")
