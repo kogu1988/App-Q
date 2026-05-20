@@ -7,6 +7,7 @@ from typing import Literal, Protocol
 ResearchStage = Literal["briefing", "persona_design", "interview", "synthesis"]
 FindingCategory = Literal["pain_point", "value", "objection", "pricing", "positioning", "risk"]
 PersonaStance = Literal["Champion", "Pragmatist", "Skeptic", "Blocker", "Observer"]
+QualitySeverity = Literal["info", "warning", "fail"]
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,17 @@ class InterviewTurn:
     answer: str
     tags: list[FindingCategory] = field(default_factory=list)
     model_id: str | None = None
+    quality_flags: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class QualityIssue:
+    persona_id: str
+    persona_name: str
+    question: str
+    severity: QualitySeverity
+    issue: str
+    recommendation: str
 
 
 @dataclass(frozen=True)
@@ -101,11 +113,15 @@ class PricingInsight:
 @dataclass(frozen=True)
 class ResearchReport:
     title: str
+    executive_summary: list[str]
     plan: ResearchPlan
     personas: list[Persona]
     interviews: list[PersonaInterview]
     findings: list[Finding]
     pricing: PricingInsight
+    pain_point_matrix: list[dict[str, str]]
+    action_items: list[str]
+    quality_issues: list[QualityIssue]
     recommendations: list[str]
     validation_next_steps: list[str]
     limitations: list[str]

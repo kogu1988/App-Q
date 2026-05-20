@@ -15,6 +15,9 @@ def render_markdown(report: ResearchReport) -> str:
     else:
         lines.append("- Model kullanımı kaydedilmedi.")
 
+    lines.extend(["", "## Yönetici Özeti", ""])
+    lines.extend(f"- {item}" for item in report.executive_summary)
+
     lines.extend(
         [
             "",
@@ -50,6 +53,25 @@ def render_markdown(report: ResearchReport) -> str:
             ]
         )
 
+    lines.extend(["## Pain Point Matrisi", ""])
+    lines.extend(
+        [
+            "| Persona | Segment | Ana Pain Point | Ana İtiraz | Fiyat Sinyali |",
+            "| --- | --- | --- | --- | --- |",
+        ]
+    )
+    for row in report.pain_point_matrix:
+        lines.append(
+            "| {persona} | {segment} | {primary_pain} | {main_objection} | {pricing_signal} |".format(
+                persona=row["persona"],
+                segment=row["segment"],
+                primary_pain=row["primary_pain"].replace("\n", " "),
+                main_objection=row["main_objection"].replace("\n", " "),
+                pricing_signal=row["pricing_signal"].replace("\n", " "),
+            )
+        )
+    lines.append("")
+
     lines.extend(["## Bulgular", ""])
     for finding in report.findings:
         lines.extend(
@@ -81,6 +103,19 @@ def render_markdown(report: ResearchReport) -> str:
         ]
     )
     lines.extend(f"- {item}" for item in report.pricing.resistance_points)
+
+    lines.extend(["", "## Aksiyon Listesi", ""])
+    lines.extend(f"- {item}" for item in report.action_items)
+
+    lines.extend(["", "## Kalite Kontrol", ""])
+    if report.quality_issues:
+        for issue in report.quality_issues:
+            lines.append(
+                f"- **{issue.severity.upper()}** {issue.persona_name}: {issue.issue} "
+                f"Öneri: {issue.recommendation}"
+            )
+    else:
+        lines.append("- Kritik kalite uyarısı yok.")
 
     lines.extend(["", "## Öneriler", ""])
     lines.extend(f"- {item}" for item in report.recommendations)

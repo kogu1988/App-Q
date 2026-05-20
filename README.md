@@ -100,6 +100,7 @@ Use the current two-model router:
 $env:APP_MODEL_PROVIDER="ollama-router"
 $env:APP_Q_B2C_MODEL_ID="app-q-trendyol"
 $env:APP_Q_GENERAL_MODEL_ID="app-q-kizagan-e4b"
+$env:APP_MODEL_TIMEOUT_SECONDS="240"
 $env:OLLAMA_BASE_URL="http://127.0.0.1:11434"
 .\.venv\Scripts\python.exe scripts\run_sample.py
 ```
