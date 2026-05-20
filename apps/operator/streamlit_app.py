@@ -177,6 +177,85 @@ def render_persona_card(persona) -> None:
             render_trait_bar(trait, int(value))
 
 
+def interview_quality_summary(interview: dict) -> dict[str, int]:
+    turns = interview.get("turns", [])
+    warning_count = 0
+    fail_count = 0
+    for turn in turns:
+        flags = turn.get("quality_flags") or []
+        warning_count += len(flags)
+        fail_count += sum(1 for flag in flags if flag in {"meta_tone", "visible_reasoning"})
+    return {
+        "turn_count": len(turns),
+        "warning_count": warning_count,
+        "fail_count": fail_count,
+    }
+
+
+def interview_model_usage(interview: dict) -> dict[str, int]:
+    usage: dict[str, int] = {}
+    for turn in interview.get("turns", []):
+        model_id = turn.get("model_id") or "unknown"
+        usage[model_id] = usage.get(model_id, 0) + 1
+    return usage
+
+
+def render_transcript_markdown(interview: dict) -> str:
+    persona = interview.get("persona", {})
+    lines = [
+        f"# {persona.get('name', 'Persona')} Transcript",
+        "",
+        f"- Segment: {persona.get('segment', '')}",
+        f"- Rol: {persona.get('role_title') or persona.get('segment', '')}",
+        f"- Şehir/yaş: {persona.get('city', '')}, {persona.get('age', '')}",
+        "",
+    ]
+    for index, turn in enumerate(interview.get("turns", []), start=1):
+        lines.extend(
+            [
+                f"## {index}. Soru",
+                "",
+                turn.get("question", ""),
+                "",
+                "Yanıt:",
+                "",
+                turn.get("answer", ""),
+                "",
+                f"Model: {turn.get('model_id') or 'unknown'}",
+                f"Kalite uyarıları: {', '.join(turn.get('quality_flags') or []) or 'yok'}",
+                "",
+            ]
+        )
+    return "\n".join(lines)
+
+
+def suggest_follow_up_question(interview: dict) -> str:
+    persona = interview.get("persona", {})
+    turns = interview.get("turns", [])
+    flagged_turn = next((turn for turn in turns if turn.get("quality_flags")), None)
+    pricing_turn = next((turn for turn in turns if "pricing" in (turn.get("tags") or [])), None)
+    objection_turn = next((turn for turn in turns if "objection" in (turn.get("tags") or [])), None)
+    if flagged_turn:
+        return (
+            f"{persona.get('name', 'Bu persona')}, az önceki cevabında yeterince somut olmayan nokta vardı. "
+            "Bunu gerçek bir satın alma anına bağlayıp hangi kanıtı görürsen fikrinin değişeceğini net söyler misin?"
+        )
+    if pricing_turn:
+        return (
+            f"{persona.get('name', 'Bu persona')}, fiyat tarafında tek bir eşik söyle: hangi TL seviyesinde "
+            "denemeye değer, hangi seviyede direkt vazgeçersin?"
+        )
+    if objection_turn:
+        return (
+            f"{persona.get('name', 'Bu persona')}, bu itirazı gidermek için ürün sayfasında veya satış görüşmesinde "
+            "hangi kanıtı açıkça görmek isterdin?"
+        )
+    return (
+        f"{persona.get('name', 'Bu persona')}, bu ürünü bir arkadaşına veya yöneticine önermek için hangi tek şartın "
+        "mutlaka sağlanması gerekir?"
+    )
+
+
 def wizard_missing_fields(data: dict) -> list[tuple[str, str]]:
     missing: list[tuple[str, str]] = []
     if not data.get("idea"):
@@ -620,9 +699,56 @@ with interview_tab:
     if "report_json" not in st.session_state:
         st.info("Görüşmeleri görmek için araştırmayı çalıştır.")
     else:
-        for interview in st.session_state["report_json"].get("interviews", []):
+        interviews = st.session_state["report_json"].get("interviews", [])
+        total_turns = sum(len(interview.get("turns", [])) for interview in interviews)
+        total_warnings = sum(interview_quality_summary(interview)["warning_count"] for interview in interviews)
+        completed = len(interviews)
+        summary_cols = st.columns(4)
+        summary_cols[0].metric("Tamamlanan Persona", completed)
+        summary_cols[1].metric("Toplam Yanıt", total_turns)
+        summary_cols[2].metric("Kalite Uyarısı", total_warnings)
+        summary_cols[3].metric("Script Sorusu", len(st.session_state["report_json"].get("plan", {}).get("interview_script", [])))
+
+        role_options = sorted(
+            {
+                interview.get("persona", {}).get("role_title")
+                or interview.get("persona", {}).get("segment", "Bilinmeyen")
+                for interview in interviews
+            }
+        )
+        selected_role_filter = st.segmented_control(
+            "Rol filtresi",
+            options=["Tümü", *role_options],
+            default="Tümü",
+        )
+
+        for interview in interviews:
             persona = interview.get("persona", {})
-            with st.expander(f"{persona.get('name')} - {persona.get('segment')}", expanded=False):
+            persona_role = persona.get("role_title") or persona.get("segment", "Bilinmeyen")
+            if selected_role_filter != "Tümü" and persona_role != selected_role_filter:
+                continue
+            quality = interview_quality_summary(interview)
+            model_usage = interview_model_usage(interview)
+            title = (
+                f"{persona.get('name')} - {persona_role} "
+                f"({quality['turn_count']}/{len(st.session_state['report_json'].get('plan', {}).get('interview_script', [])) or quality['turn_count']})"
+            )
+            with st.expander(title, expanded=False):
+                cols = st.columns(4)
+                cols[0].metric("Yanıt", quality["turn_count"])
+                cols[1].metric("Uyarı", quality["warning_count"])
+                cols[2].metric("Kritik", quality["fail_count"])
+                cols[3].metric("Model", ", ".join(f"{key} x{value}" for key, value in model_usage.items()))
+
+                st.caption(persona.get("bio") or persona.get("context", ""))
+                st.download_button(
+                    "Transcript indir",
+                    data=render_transcript_markdown(interview),
+                    file_name=f"{persona.get('name', 'persona').lower()}-transcript.md",
+                    mime="text/markdown",
+                    key=f"download_transcript_{persona.get('id')}",
+                )
+
                 for turn in interview.get("turns", []):
                     st.markdown(f"**Soru:** {turn.get('question')}")
                     st.write(turn.get("answer"))
@@ -632,6 +758,9 @@ with interview_tab:
                         meta.append("uyarı: " + ", ".join(flags))
                     st.caption(" / ".join(meta))
                     st.divider()
+
+                st.markdown("#### Takip Sorusu Önerisi")
+                st.info(suggest_follow_up_question(interview))
 
 with raw_tab:
     if "report_json" not in st.session_state:
