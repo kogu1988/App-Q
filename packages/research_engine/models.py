@@ -62,6 +62,12 @@ class Persona:
     goals: list[str]
     objections: list[str]
     knowledge_boundary: str
+    country_code: str = "TR"
+    origin_country: str = "Türkiye"
+    role_title: str = ""
+    bio: str = ""
+    attributes: dict[str, str] = field(default_factory=dict)
+    traits: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

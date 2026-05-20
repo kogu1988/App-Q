@@ -137,6 +137,46 @@ def build_panel_roles(role_rows: list[dict[str, str | int | bool]]) -> list[Pane
     ]
 
 
+def render_trait_bar(label: str, value: int) -> None:
+    cols = st.columns([0.68, 0.32])
+    cols[0].caption(label)
+    cols[1].caption(f"{value}/100")
+    st.progress(max(0, min(value, 100)) / 100)
+
+
+def render_persona_card(persona) -> None:
+    with st.container(border=True):
+        header_cols = st.columns([0.18, 0.82])
+        avatar = persona.name[:1].upper()
+        header_cols[0].markdown(f"## {avatar}")
+        header_cols[1].markdown(f"### {persona.name}")
+        header_cols[1].caption(
+            f"{persona.age} yaşında • {persona.city}, {persona.origin_country} • "
+            f"{persona.country_code} • {persona.role_title or persona.segment}"
+        )
+        header_cols[1].write(persona.bio or persona.context)
+
+        st.divider()
+        attribute_items = list(persona.attributes.items())[:8]
+        for label, value in attribute_items:
+            st.caption(label.upper())
+            st.write(value)
+
+        st.markdown("#### Karar Profili")
+        profile_cols = st.columns(3)
+        profile_cols[0].metric("Duruş", persona.stance)
+        profile_cols[1].metric("Fiyat", f"{persona.price_sensitivity}/10")
+        profile_cols[2].metric("Dijital", f"{persona.digital_confidence}/10")
+
+        st.markdown("#### İtirazlar")
+        for objection in persona.objections:
+            st.markdown(f"- {objection}")
+
+        st.markdown("#### Kişilik Skorları")
+        for trait, value in persona.traits.items():
+            render_trait_bar(trait, int(value))
+
+
 def wizard_missing_fields(data: dict) -> list[tuple[str, str]]:
     missing: list[tuple[str, str]] = []
     if not data.get("idea"):
@@ -542,19 +582,10 @@ with persona_tab:
     else:
         st.warning("Wizard tarafında seçili araştırma rolü yok.")
     st.markdown("#### Üretilen Sentetik Personalar")
-    cols = st.columns(2)
+    cols = st.columns(3)
     for index, persona in enumerate(personas):
-        with cols[index % 2]:
-            with st.container(border=True):
-                st.markdown(f"### {persona.name}")
-                st.write(f"{persona.age}, {persona.city} - {persona.segment}")
-                st.write(f"**Duruş:** {persona.stance}")
-                st.write(f"**Fiyat hassasiyeti:** {persona.price_sensitivity}/10")
-                st.write(f"**Dijital özgüven:** {persona.digital_confidence}/10")
-                st.caption(persona.context)
-                st.markdown("**İtirazlar**")
-                for objection in persona.objections:
-                    st.markdown(f"- {objection}")
+        with cols[index % 3]:
+            render_persona_card(persona)
 
 if run_button:
     with st.spinner("Personalar sırayla görüşmeye alınıyor..."):

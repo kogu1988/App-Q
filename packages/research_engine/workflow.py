@@ -25,6 +25,48 @@ INTERVIEW_GUIDE = [
     "Bu ürünü mevcut alternatiflerle kıyaslayınca en net avantaj ve dezavantaj ne olur?",
 ]
 
+DEFAULT_TRAIT_ORDER = ["Openness", "Conscientiousness", "Extraversion", "Agreeableness", "Neuroticism"]
+
+
+def persona_traits(seed: int, stance: str, price_sensitivity: int, digital_confidence: int) -> dict[str, int]:
+    openness = min(92, max(35, digital_confidence * 9 + (seed * 3 % 12)))
+    conscientiousness = 62 + (seed * 7 % 28)
+    extraversion = 42 + (seed * 5 % 35)
+    agreeableness = 72 - (seed * 6 % 24)
+    neuroticism = min(88, max(25, price_sensitivity * 7 + (seed * 4 % 18)))
+    if stance in {"Skeptic", "Blocker"}:
+        agreeableness = max(35, agreeableness - 12)
+        neuroticism = min(92, neuroticism + 10)
+    if stance == "Champion":
+        openness = min(96, openness + 8)
+        agreeableness = min(90, agreeableness + 10)
+    return {
+        "Openness": openness,
+        "Conscientiousness": conscientiousness,
+        "Extraversion": extraversion,
+        "Agreeableness": agreeableness,
+        "Neuroticism": neuroticism,
+    }
+
+
+def persona_attributes(
+    segment: str,
+    stance: str,
+    price_sensitivity: int,
+    digital_confidence: int,
+) -> dict[str, str]:
+    return {
+        "Hobbies": "Mobil uygulama denemek, kısa video içerikleri izlemek, hafta sonu şehir içi keşifler",
+        "Origin country": "Türkiye",
+        "Current workflow": "Notlar, Excel/Google Sheets, WhatsApp grupları ve birkaç parçalı SaaS aracı",
+        "Decision trigger": "Somut zaman veya para tasarrufu görürse denemeye yaklaşır",
+        "Buying friction": "Gizli ücret, uzun kurulum, belirsiz veri kullanımı ve kanıtlanmamış vaatler",
+        "Price posture": "Çok hassas" if price_sensitivity >= 8 else "Kanıt görürse ödeme yapabilir",
+        "Digital confidence": "Yüksek" if digital_confidence >= 8 else "Orta",
+        "Segment role": segment,
+        "Research stance": stance,
+    }
+
 
 def build_research_plan(brief: ResearchBrief) -> ResearchPlan:
     assumptions = [
@@ -108,6 +150,7 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
             age=34,
             city="İstanbul",
             segment="KOBİ e-ticaret marka sahibi",
+            role_title="Growth Odaklı Kurucu",
             stance="Champion",
             price_sensitivity=7,
             digital_confidence=8,
@@ -115,6 +158,9 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
             goals=["Ürün mesajını hızla test etmek", "Reklam bütçesini boşa harcamamak"],
             objections=["Raporun gerçek müşteri davranışını temsil edip etmediği"],
             knowledge_boundary="Kendi satış operasyonu, ürün listeleme ve reklam bütçesi hakkında konuşabilir.",
+            bio="Pazaryeri ve kendi sitesi arasında büyümeye çalışan, hızlı test yapmayı seven ama sonuçları kanıtla görmek isteyen marka sahibi.",
+            attributes=persona_attributes("KOBİ e-ticaret marka sahibi", "Champion", 7, 8),
+            traits=persona_traits(1, "Champion", 7, 8),
         ),
         Persona(
             id="p2",
@@ -122,6 +168,7 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
             age=29,
             city="İzmir",
             segment="Performans pazarlama uzmanı",
+            role_title="CRO ve Reklam Uzmanı",
             stance="Pragmatist",
             price_sensitivity=6,
             digital_confidence=9,
@@ -129,6 +176,9 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
             goals=["Landing page mesajını netleştirmek", "CRO risklerini erken görmek"],
             objections=["Çıktıların müşteriye sunulabilir kalitede olmaması"],
             knowledge_boundary="Kampanya, landing page, reklam mesajı ve CRO konularında yorum yapabilir.",
+            bio="Ajans müşterilerinde hızlı deney kuran, raporun sunulabilirliğine ve aksiyona dönüşmesine bakan pazarlama uzmanı.",
+            attributes=persona_attributes("Performans pazarlama uzmanı", "Pragmatist", 6, 9),
+            traits=persona_traits(2, "Pragmatist", 6, 9),
         ),
         Persona(
             id="p3",
@@ -136,6 +186,7 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
             age=38,
             city="Ankara",
             segment="Kurumsal ürün yöneticisi",
+            role_title="Kurumsal Ürün Karar Verici",
             stance="Skeptic",
             price_sensitivity=5,
             digital_confidence=7,
@@ -143,6 +194,9 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
             goals=["Yanlış ürün kararlarını azaltmak", "İç paydaşları ikna etmek"],
             objections=["Sentetik araştırmaya fazla güvenilmesi", "KVKK ve veri gizliliği riski"],
             knowledge_boundary="Ürün kararları, iç onay süreçleri ve risk değerlendirmesi hakkında konuşabilir.",
+            bio="Yeni araçları ancak iç paydaşlara açıklanabilir kanıtla savunabilen, risk ve uyumluluk tarafını önemseyen ürün yöneticisi.",
+            attributes=persona_attributes("Kurumsal ürün yöneticisi", "Skeptic", 5, 7),
+            traits=persona_traits(3, "Skeptic", 5, 7),
         ),
         Persona(
             id="p4",
@@ -150,6 +204,7 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
             age=45,
             city="Ankara",
             segment="Fiyat hassas pazaryeri satıcısı",
+            role_title="Maliyet Odaklı Satıcı",
             stance="Blocker",
             price_sensitivity=10,
             digital_confidence=5,
@@ -157,6 +212,9 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
             goals=["Aylık gideri düşük tutmak", "Somut satış etkisi görmek"],
             objections=["Abonelik maliyeti", "Ek araç öğrenme zahmeti", "Sonucun soyut kalması"],
             knowledge_boundary="Küçük satıcı maliyetleri, komisyon baskısı ve nakit akışı hakkında konuşabilir.",
+            bio="Komisyon, reklam ve kargo maliyetleri arasında sıkışmış; yeni abonelikleri ancak hızlı geri dönüş görürse kabul eden satıcı.",
+            attributes=persona_attributes("Fiyat hassas pazaryeri satıcısı", "Blocker", 10, 5),
+            traits=persona_traits(4, "Blocker", 10, 5),
         ),
         Persona(
             id="p5",
@@ -164,6 +222,7 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
             age=32,
             city="Bursa",
             segment="Ajans stratejisti",
+            role_title="Müşteri Sunumu Stratejisti",
             stance="Observer",
             price_sensitivity=6,
             digital_confidence=8,
@@ -171,6 +230,9 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
             goals=["Pitch öncesi hızlı içgörü üretmek", "Araştırmayı faturalandırılabilir hizmete çevirmek"],
             objections=["Raporun jenerik görünmesi", "Kanıt zinciri olmadan müşterinin ikna olmaması"],
             knowledge_boundary="Ajans sunumu, raporlama ve müşteri ikna süreçleri hakkında konuşabilir.",
+            bio="Müşteriye satılabilir araştırma çıktısı arayan, beyaz etiket kalite ve net metodoloji bekleyen stratejist.",
+            attributes=persona_attributes("Ajans stratejisti", "Observer", 6, 8),
+            traits=persona_traits(5, "Observer", 6, 8),
         ),
     ]
 
@@ -253,6 +315,7 @@ def generate_personas_from_roles(brief: ResearchBrief, panel_roles: list[PanelRo
                     age=26 + ((index * 4) % 23),
                     city=cities[index % len(cities)],
                     segment=str(template["segment"]),
+                    role_title=role.role,
                     stance=template["stance"],  # type: ignore[arg-type]
                     price_sensitivity=int(template["price_sensitivity"]),
                     digital_confidence=int(template["digital_confidence"]),
@@ -264,6 +327,22 @@ def generate_personas_from_roles(brief: ResearchBrief, panel_roles: list[PanelRo
                     objections=list(template["objections"]),
                     knowledge_boundary=(
                         "Kendi rolü, satın alma davranışı, alternatif kullanımı, fiyat ve güven itirazları hakkında konuşabilir."
+                    ),
+                    bio=(
+                        f"{role.role} perspektifinden konuşan, {brief.category or 'ürün'} fikrini kendi günlük kararı, "
+                        "bütçesi ve güven eşiği üzerinden değerlendiren Türkiye pazarı katılımcısı."
+                    ),
+                    attributes=persona_attributes(
+                        str(template["segment"]),
+                        str(template["stance"]),
+                        int(template["price_sensitivity"]),
+                        int(template["digital_confidence"]),
+                    ),
+                    traits=persona_traits(
+                        index + 1,
+                        str(template["stance"]),
+                        int(template["price_sensitivity"]),
+                        int(template["digital_confidence"]),
                     ),
                 )
             )

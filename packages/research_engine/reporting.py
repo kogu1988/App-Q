@@ -44,14 +44,24 @@ def render_markdown(report: ResearchReport) -> str:
                 f"### {persona.name} - {persona.segment}",
                 "",
                 f"- Şehir/yaş: {persona.city}, {persona.age}",
+                f"- Rol: {persona.role_title or persona.segment}",
                 f"- Duruş: {persona.stance}",
                 f"- Fiyat hassasiyeti: {persona.price_sensitivity}/10",
                 f"- Dijital özgüven: {persona.digital_confidence}/10",
+                f"- Kısa profil: {persona.bio or persona.context}",
                 f"- Bağlam: {persona.context}",
                 f"- Bilgi sınırı: {persona.knowledge_boundary}",
                 "",
             ]
         )
+        if persona.attributes:
+            lines.extend(["Davranış alanları:"])
+            lines.extend(f"- {key}: {value}" for key, value in persona.attributes.items())
+            lines.append("")
+        if persona.traits:
+            lines.extend(["Kişilik skorları:"])
+            lines.extend(f"- {key}: {value}/100" for key, value in persona.traits.items())
+            lines.append("")
 
     lines.extend(["## Pain Point Matrisi", ""])
     lines.extend(
