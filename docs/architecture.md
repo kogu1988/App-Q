@@ -41,12 +41,13 @@ The provider interface hides the selected model implementation.
 Initial providers:
 
 - `mock`: deterministic local provider for pipeline testing
+- `ollama`: single local Ollama model
+- `ollama-router`: two-model local router; B2C/e-commerce prompts use `app-q-trendyol`, general B2B/pricing/KVKK/synthesis prompts use `app-q-kizagan-e4b`
 
 Future providers:
 
 - `transformers`: local Hugging Face model
 - `llama_cpp`: local GGUF model
-- `ollama`: local GGUF-backed model server
 - `vllm`: GPU server
 - `http`: private inference endpoint
 

@@ -60,10 +60,15 @@ sample = load_sample()
 
 st.title("App-Q")
 st.caption("Türkiye pazarı için lokal sentetik persona araştırma operatörü")
-st.caption(
-    f"Model provider: {os.getenv('APP_MODEL_PROVIDER', 'mock')} / "
-    f"model: {os.getenv('APP_MODEL_ID', 'mock-research-model')}"
-)
+provider_name = os.getenv("APP_MODEL_PROVIDER", "mock")
+if provider_name == "ollama-router":
+    model_caption = (
+        f"B2C: {os.getenv('APP_Q_B2C_MODEL_ID', 'app-q-trendyol')} / "
+        f"Genel: {os.getenv('APP_Q_GENERAL_MODEL_ID', 'app-q-kizagan-e4b')}"
+    )
+else:
+    model_caption = os.getenv("APP_MODEL_ID", "mock-research-model")
+st.caption(f"Model provider: {provider_name} / model: {model_caption}")
 
 with st.sidebar:
     st.header("Araştırma Brief'i")

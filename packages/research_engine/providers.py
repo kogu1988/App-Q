@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 
@@ -15,8 +16,40 @@ App-Q üretim politikası:
 - Persona sorularında birinci tekil şahısla, gerçek kullanıcı gibi konuş.
 - Somut Türkiye pazarı bağlamı kullan: fiyat, taksit, kargo, komisyon, bütçe, güven, KVKK.
 - Araştırmacıyı memnun etmeye çalışma; zayıf noktaları açıkça söyle.
+- Gizli muhakeme, <think> bloğu veya iç analiz yazma.
 - Gereksiz maddeleme yapma; kısa ve doğrudan cevap ver.
 """
+
+
+B2C_MODEL_ENV = "APP_Q_B2C_MODEL_ID"
+GENERAL_MODEL_ENV = "APP_Q_GENERAL_MODEL_ID"
+DEFAULT_B2C_MODEL_ID = "app-q-trendyol"
+DEFAULT_GENERAL_MODEL_ID = "app-q-kizagan-e4b"
+
+
+def strip_visible_reasoning(content: str) -> str:
+    """Remove visible reasoning blocks emitted by some local reasoning models."""
+    without_tags = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL | re.IGNORECASE)
+    return without_tags.strip()
+
+
+def choose_model_id(prompt: str, b2c_model_id: str, general_model_id: str) -> str:
+    lower = prompt.lower()
+    b2c_markers = [
+        "e-ticaret",
+        "pazaryeri",
+        "trendyol",
+        "hepsiburada",
+        "n11",
+        "sepet",
+        "kargo",
+        "taksit",
+        "komisyon",
+        "satıcı",
+        "ürün listeleme",
+        "reklam bütçesi",
+    ]
+    return b2c_model_id if any(marker in lower for marker in b2c_markers) else general_model_id
 
 
 class ModelProviderError(RuntimeError):
@@ -103,7 +136,36 @@ class OllamaResearchModel:
         content = data.get("message", {}).get("content")
         if not content:
             raise ModelProviderError(f"Ollama boş yanıt döndürdü: {data}")
-        return content.strip()
+        return strip_visible_reasoning(content)
+
+
+class OllamaRouterResearchModel:
+    """Route App-Q calls across retained local Ollama models."""
+
+    def __init__(
+        self,
+        b2c_model_id: str = DEFAULT_B2C_MODEL_ID,
+        general_model_id: str = DEFAULT_GENERAL_MODEL_ID,
+        base_url: str = "http://127.0.0.1:11434",
+        timeout_seconds: int = 120,
+    ) -> None:
+        self.b2c_model_id = b2c_model_id
+        self.general_model_id = general_model_id
+        self.b2c_model = OllamaResearchModel(
+            model_id=b2c_model_id,
+            base_url=base_url,
+            timeout_seconds=timeout_seconds,
+        )
+        self.general_model = OllamaResearchModel(
+            model_id=general_model_id,
+            base_url=base_url,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def generate(self, system: str, prompt: str) -> str:
+        model_id = choose_model_id(prompt, self.b2c_model_id, self.general_model_id)
+        model = self.b2c_model if model_id == self.b2c_model_id else self.general_model
+        return model.generate(system, prompt)
 
 
 def get_model_provider(provider: str | None = None) -> ResearchModel:
@@ -115,4 +177,13 @@ def get_model_provider(provider: str | None = None) -> ResearchModel:
         base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
         timeout = int(os.getenv("APP_MODEL_TIMEOUT_SECONDS", "120"))
         return OllamaResearchModel(model_id=model_id, base_url=base_url, timeout_seconds=timeout)
+    if selected_provider == "ollama-router":
+        base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+        timeout = int(os.getenv("APP_MODEL_TIMEOUT_SECONDS", "120"))
+        return OllamaRouterResearchModel(
+            b2c_model_id=os.getenv(B2C_MODEL_ENV, DEFAULT_B2C_MODEL_ID),
+            general_model_id=os.getenv(GENERAL_MODEL_ENV, DEFAULT_GENERAL_MODEL_ID),
+            base_url=base_url,
+            timeout_seconds=timeout,
+        )
     raise ValueError(f"Unsupported model provider: {selected_provider}")

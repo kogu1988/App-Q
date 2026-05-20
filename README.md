@@ -94,6 +94,18 @@ $env:OLLAMA_BASE_URL="http://127.0.0.1:11434"
 .\.venv\Scripts\python.exe -m streamlit run apps\operator\streamlit_app.py
 ```
 
+Use the current two-model router:
+
+```powershell
+$env:APP_MODEL_PROVIDER="ollama-router"
+$env:APP_Q_B2C_MODEL_ID="app-q-trendyol"
+$env:APP_Q_GENERAL_MODEL_ID="app-q-kizagan-e4b"
+$env:OLLAMA_BASE_URL="http://127.0.0.1:11434"
+.\.venv\Scripts\python.exe scripts\run_sample.py
+```
+
+The router sends e-commerce and marketplace-heavy prompts to `app-q-trendyol`; B2B, pricing, KVKK, trust, and synthesis-heavy prompts default to `app-q-kizagan-e4b`.
+
 Run Turkish model quality evals:
 
 ```powershell
