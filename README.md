@@ -103,7 +103,7 @@ Run Turkish model quality evals:
 Eval results are written to:
 
 ```text
-data/outputs/turkish-eval-results.jsonl
+data/outputs/evals/{model_alias}.jsonl
 ```
 
 ## Safety Positioning
