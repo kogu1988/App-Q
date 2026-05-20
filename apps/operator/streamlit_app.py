@@ -657,6 +657,56 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
 
     role_rows = [{"role": role, "count": count} for role, count in role_counts.items()]
     model_rows = [{"model": model_id, "answers": count} for model_id, count in model_usage.items()]
+    script_rows = [
+        {"label": item.get("label", ""), "question": item.get("question", ""), "reason": item.get("reason", "")}
+        for item in plan.get("interview_script", [])[:8]
+    ]
+    persona_cards = []
+    for persona in personas[:6]:
+        persona_cards.append(
+            "<section class='persona-card'>"
+            f"<h3>{escape(persona.get('name', 'Persona'))}</h3>"
+            f"<p class='muted'>{escape(str(persona.get('age', '')))} - "
+            f"{escape(persona.get('city', ''))} - "
+            f"{escape(persona.get('role_title') or persona.get('segment') or '')}</p>"
+            f"<p>{escape(persona.get('bio') or persona.get('context') or '')}</p>"
+            f"<div class='mini-metrics'>"
+            f"<span>Fiyat {escape(str(persona.get('price_sensitivity', '-')))}/10</span>"
+            f"<span>Dijital {escape(str(persona.get('digital_confidence', '-')))}/10</span>"
+            f"<span>{escape(persona.get('stance', ''))}</span>"
+            f"</div>"
+            "</section>"
+        )
+    transcript_blocks = []
+    for interview in interviews[:4]:
+        persona = interview.get("persona", {})
+        first_turn = (interview.get("turns") or [{}])[0]
+        transcript_blocks.append(
+            "<section class='card transcript'>"
+            f"<div class='eyebrow'>{escape(persona.get('role_title') or persona.get('segment') or 'PERSONA')}</div>"
+            f"<h3>{escape(persona.get('name', 'Persona'))}</h3>"
+            f"<p><strong>Soru:</strong> {escape(first_turn.get('question', ''))}</p>"
+            f"<blockquote>{escape(first_turn.get('answer', ''))}"
+            f"<footer>{escape(first_turn.get('model_id') or 'model unknown')}</footer></blockquote>"
+            "</section>"
+        )
+    score_rows = [
+        {
+            "goal": "Satin alma niyeti",
+            "score": "Orta-Yuksek" if findings else "Belirsiz",
+            "evidence": "Fiyat ve deger bulgulari persona alintilariyla destekleniyor." if findings else "Rapor uretimi bekleniyor.",
+        },
+        {
+            "goal": "Guven / KVKK bariyeri",
+            "score": "Kritik",
+            "evidence": "Sentetik metodoloji, veri gizliligi ve kanit zinciri acikca anlatilmali.",
+        },
+        {
+            "goal": "MVP odak netligi",
+            "score": "Aksiyonlanabilir" if report_json.get("action_items") else "Eksik",
+            "evidence": "Aksiyon listesi ve acik sorular sonraki sprint kararlarini besliyor.",
+        },
+    ]
     open_questions = [
         "Hangi segmentte ödeme niyeti gerçek satış görüşmesiyle doğrulanmalı?",
         "En güçlü itirazı azaltmak için hangi kanıt veya demo akışı gerekir?",
@@ -724,6 +774,12 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
       max-width: 920px;
       color: #4f4a43;
     }}
+    .section-note {{
+      max-width: 760px;
+      color: var(--muted);
+      margin-top: -6px;
+      margin-bottom: 18px;
+    }}
     .metrics {{
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -740,6 +796,28 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
     .metric span {{ display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }}
     .metric strong {{ font-size: 28px; font-weight: 500; }}
     .grid {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }}
+    .persona-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }}
+    .persona-card {{
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+    }}
+    .persona-card h3 {{ margin-top: 0; }}
+    .mini-metrics {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }}
+    .mini-metrics span {{
+      border-radius: 999px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      padding: 4px 8px;
+      font-size: 12px;
+      color: #5e554a;
+    }}
     .finding-grid {{ display: grid; grid-template-columns: 1fr; gap: 16px; }}
     .eyebrow {{
       display: inline-block;
@@ -785,6 +863,16 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
     .locked span {{ color: #f8d37a; font-weight: 700; }}
     .quality-ok {{ color: var(--green); font-weight: 700; }}
     .quality-risk {{ color: var(--danger); font-weight: 700; }}
+    .transcript blockquote {{
+      max-height: 220px;
+      overflow: hidden;
+    }}
+    .next-study {{
+      border: 1px solid #f3d07d;
+      background: #fff9e8;
+      border-radius: 12px;
+      padding: 20px;
+    }}
     @media print {{
       body {{ background: #fff; }}
       .page {{ padding: 18mm; max-width: none; }}
@@ -815,6 +903,10 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
     <h2>Executive Summary</h2>
     <section class="card">{html_list(report_json.get('executive_summary', []))}</section>
 
+    <h2>Commercialisation Scorecard</h2>
+    <p class="section-note">Bu skor kartı, sentetik görüşme sinyallerini ürün kararı için okunabilir bir yönetici özetine indirger.</p>
+    {html_table(score_rows, [('goal', 'Goal'), ('score', 'Score'), ('evidence', 'Evidence')])}
+
     <h2>Panel Design</h2>
     <div class="grid">
       <section class="card">
@@ -826,6 +918,13 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
         {html_table(model_rows, [('model', 'Model'), ('answers', 'Answers')])}
       </section>
     </div>
+
+    <h2>Persona Panel Preview</h2>
+    <p class="section-note">Panel, aynı fikre farklı fiyat, güven, operasyon ve dijital olgunluk lenslerinden bakacak şekilde dengelenir.</p>
+    <div class="persona-grid">{''.join(persona_cards) or '<p class="muted">Persona yok.</p>'}</div>
+
+    <h2>Interview Script Coverage</h2>
+    {html_table(script_rows, [('label', 'Label'), ('question', 'Question'), ('reason', 'Why it matters')])}
 
     <h2>Pain Point Matrix</h2>
     {html_table(report_json.get('pain_point_matrix', []), [
@@ -843,6 +942,10 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
 
     <h2>Critical Findings</h2>
     <div class="finding-grid">{''.join(evidence_blocks)}</div>
+
+    <h2>Transcript Evidence Preview</h2>
+    <p class="section-note">Bu bölüm, rapordaki bulguların ham görüşme izlerine bağlanabildiğini gösterir.</p>
+    <div class="finding-grid">{''.join(transcript_blocks) or '<p class="muted">Transcript yok.</p>'}</div>
 
     <h2>Pricing and Packaging</h2>
     <section class="card">
@@ -869,7 +972,7 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
     </section>
 
     <h2>Open Questions for the Next Study</h2>
-    <section class="card">{html_list(open_questions)}</section>
+    <section class="next-study">{html_list(open_questions)}</section>
   </main>
 </body>
 </html>"""
