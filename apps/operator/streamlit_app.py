@@ -13,10 +13,19 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from packages.research_engine.models import PanelRole, ResearchBrief
+from packages.research_engine.models import (
+    ClarifyingQuestion,
+    InterviewQuestion,
+    InterviewTurn,
+    PanelRole,
+    Persona,
+    PersonaInterview,
+    ResearchBrief,
+    ResearchPlan,
+)
 from packages.research_engine.providers import ModelProviderError, get_model_provider
 from packages.research_engine.reporting import render_markdown
-from packages.research_engine.workflow import build_research_plan, generate_personas, run_research
+from packages.research_engine.workflow import build_research_plan, generate_personas, run_research, synthesize_report
 
 
 SAMPLE_PATH = ROOT / "data" / "samples" / "first-brief.json"
@@ -678,10 +687,100 @@ def run_follow_up_turn(interview: dict, question: str, model) -> dict:
     return {
         "question": question,
         "answer": answer,
-        "tags": ["risk"],
+        "tags": classify_follow_up_tags(question),
         "model_id": getattr(model, "last_model_id", None),
         "quality_flags": [],
     }
+
+
+def classify_follow_up_tags(question: str) -> list[str]:
+    lower = question.lower()
+    tags: list[str] = []
+    if any(marker in lower for marker in ["fiyat", "tl", "ödeme", "pahalı", "ucuz", "paket"]):
+        tags.append("pricing")
+    if any(marker in lower for marker in ["güven", "kanıt", "kvkk", "risk", "itiraz"]):
+        tags.extend(["objection", "risk"])
+    if any(marker in lower for marker in ["değer", "öner", "şart", "fayda"]):
+        tags.append("value")
+    return tags or ["risk"]
+
+
+def plan_from_json(data: dict) -> ResearchPlan:
+    return ResearchPlan(
+        objective=data.get("objective", ""),
+        assumptions=data.get("assumptions", []),
+        clarifying_questions=[
+            ClarifyingQuestion(
+                id=item.get("id", ""),
+                question=item.get("question", ""),
+                reason=item.get("reason", ""),
+                priority=item.get("priority", "medium"),
+            )
+            for item in data.get("clarifying_questions", [])
+        ],
+        interview_questions=data.get("interview_questions", []),
+        recommended_panel_size=data.get("recommended_panel_size", 0),
+        interview_script=[
+            InterviewQuestion(
+                id=item.get("id", ""),
+                label=item.get("label", ""),
+                question=item.get("question", ""),
+                reason=item.get("reason", ""),
+                tags=item.get("tags", []),
+            )
+            for item in data.get("interview_script", [])
+        ],
+    )
+
+
+def persona_from_json(data: dict) -> Persona:
+    return Persona(
+        id=data.get("id", ""),
+        name=data.get("name", ""),
+        age=int(data.get("age", 0)),
+        city=data.get("city", ""),
+        segment=data.get("segment", ""),
+        stance=data.get("stance", "Observer"),
+        price_sensitivity=int(data.get("price_sensitivity", 5)),
+        digital_confidence=int(data.get("digital_confidence", 5)),
+        context=data.get("context", ""),
+        goals=data.get("goals", []),
+        objections=data.get("objections", []),
+        knowledge_boundary=data.get("knowledge_boundary", ""),
+        country_code=data.get("country_code", "TR"),
+        origin_country=data.get("origin_country", "Türkiye"),
+        role_title=data.get("role_title", ""),
+        bio=data.get("bio", ""),
+        attributes=data.get("attributes", {}),
+        traits=data.get("traits", {}),
+    )
+
+
+def interview_from_json(data: dict) -> PersonaInterview:
+    return PersonaInterview(
+        persona=persona_from_json(data.get("persona", {})),
+        turns=[
+            InterviewTurn(
+                question=turn.get("question", ""),
+                answer=turn.get("answer", ""),
+                tags=turn.get("tags", []),
+                model_id=turn.get("model_id"),
+                quality_flags=turn.get("quality_flags", []),
+            )
+            for turn in data.get("turns", [])
+        ],
+        consistency_notes=data.get("consistency_notes", []),
+    )
+
+
+def resynthesize_report_json(report_json: dict, brief: ResearchBrief) -> tuple[dict, str]:
+    plan = plan_from_json(report_json.get("plan", {}))
+    interviews = [interview_from_json(item) for item in report_json.get("interviews", [])]
+    personas = [interview.persona for interview in interviews]
+    report = synthesize_report(brief, plan, personas, interviews)
+    report_dict = asdict(report)
+    report_markdown = render_markdown(report)
+    return report_dict, report_markdown
 
 
 def interview_progress(interview: dict, script_count: int) -> tuple[int, int]:
@@ -1305,14 +1404,14 @@ with interview_tab:
                     try:
                         follow_up_turn = run_follow_up_turn(interview, edited_follow_up, get_model_provider())
                         interview.setdefault("turns", []).append(follow_up_turn)
-                        st.session_state["report_json"]["model_usage"][follow_up_turn.get("model_id") or "unknown"] = (
-                            st.session_state["report_json"].get("model_usage", {}).get(
-                                follow_up_turn.get("model_id") or "unknown", 0
-                            )
-                            + 1
+                        updated_report_json, updated_report_markdown = resynthesize_report_json(
+                            st.session_state["report_json"],
+                            brief,
                         )
+                        st.session_state["report_json"] = updated_report_json
+                        st.session_state["report_markdown"] = updated_report_markdown
                         persist_outputs(st.session_state["report_markdown"], st.session_state["report_json"])
-                        st.success("Takip cevabı transcript'e eklendi.")
+                        st.success("Takip cevabı transcript'e eklendi ve rapor yeniden sentezlendi.")
                         st.rerun()
                     except ModelProviderError as exc:
                         st.error(str(exc))
