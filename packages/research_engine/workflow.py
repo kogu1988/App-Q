@@ -4,6 +4,7 @@ from .models import (
     ClarifyingQuestion,
     Evidence,
     Finding,
+    InterviewQuestion,
     InterviewTurn,
     PanelRole,
     Persona,
@@ -68,7 +69,101 @@ def persona_attributes(
     }
 
 
-def build_research_plan(brief: ResearchBrief) -> ResearchPlan:
+def generate_interview_script(
+    brief: ResearchBrief,
+    panel_roles: list[PanelRole] | None = None,
+) -> list[InterviewQuestion]:
+    category = brief.category or "ürün"
+    target = ", ".join(brief.target_users) or "hedef kullanıcılar"
+    competitors = ", ".join(brief.competitors) or "mevcut alternatifler"
+    expected_price = brief.expected_price or "önerilecek fiyat/paket"
+    role_text = ", ".join(f"{role.role} x{role.count}" for role in panel_roles or []) or "varsayılan panel"
+    script = [
+        InterviewQuestion(
+            id="q_context",
+            label="CONTEXT",
+            question=(
+                f"{category} bağlamında bugün bu problemi nasıl yaşıyorsun? Son yaşadığın somut bir örneği anlatır mısın?"
+            ),
+            reason="Pain point'i soyut fikir yerine gerçek olay üzerinden yakalamak.",
+            tags=["pain_point"],
+        ),
+        InterviewQuestion(
+            id="q_current_alternatives",
+            label="CURRENT-TOOLS",
+            question=(
+                f"Bugün bu ihtiyacı {competitors} gibi hangi yöntemlerle çözüyorsun ve bu yöntemlerde seni en çok ne zorluyor?"
+            ),
+            reason="Alternatifler, switching cost ve mevcut davranışı görünür yapmak.",
+            tags=["positioning", "pain_point"],
+        ),
+        InterviewQuestion(
+            id="q_value",
+            label="VALUE-PROPOSITION",
+            question=(
+                f"Bu fikir {target} için hangi durumda gerçekten değerli olur, hangi durumda gereksiz veya nice-to-have kalır?"
+            ),
+            reason="Değer önerisini satın alma bağlamında test etmek.",
+            tags=["value"],
+        ),
+        InterviewQuestion(
+            id="q_objection",
+            label="OBJECTIONS",
+            question="Satın alma veya deneme kararında seni en çok ne durdurur: güven, zaman, fiyat, veri gizliliği veya başka bir şey mi?",
+            reason="Ana bariyerleri ve anti-dalkavukluk sinyallerini toplamak.",
+            tags=["objection", "risk"],
+        ),
+        InterviewQuestion(
+            id="q_pricing",
+            label="PRICING",
+            question=(
+                f"{expected_price} için ödeme yapmayı düşünür müsün? Hangi fiyat aralığı makul, hangi nokta pahalı gelir?"
+            ),
+            reason="Türkiye pazarı için fiyat eşiğini ve paketleme sinyalini almak.",
+            tags=["pricing"],
+        ),
+        InterviewQuestion(
+            id="q_trust",
+            label="TRUST-KVKK",
+            question="Bu ürün kişisel/veri/gizlilik tarafında hangi güven kanıtlarını göstermeden seni ikna edemez?",
+            reason="KVKK, güven ve kanıt zinciri itirazlarını zorlamak.",
+            tags=["objection", "risk"],
+        ),
+        InterviewQuestion(
+            id="q_role_fit",
+            label="ROLE-FIT",
+            question=(
+                f"Bu araştırmadaki rol kompozisyonu ({role_text}) içinde kendi rolün açısından ürünün en güçlü ve en zayıf tarafı ne?"
+            ),
+            reason="Seçilen panel rolünün cevaba yansımasını kontrol etmek.",
+            tags=["positioning", "value"],
+        ),
+        InterviewQuestion(
+            id="q_decision",
+            label="DECISION",
+            question="Bu ürün canlıya alınmadan önce tek bir şeyi değiştirme hakkın olsa neyi değiştirirdin ve neden?",
+            reason="Ürünleştirilebilir aksiyon maddesi çıkarmak.",
+            tags=["risk", "value"],
+        ),
+    ]
+    if brief.questions:
+        for index, question in enumerate(brief.questions[:4], start=1):
+            script.append(
+                InterviewQuestion(
+                    id=f"q_user_{index}",
+                    label="USER-QUESTION",
+                    question=question,
+                    reason="Kullanıcının brief sırasında özellikle yanıtlanmasını istediği soru.",
+                    tags=classify_question(question),
+                )
+            )
+    return script
+
+
+def build_research_plan(
+    brief: ResearchBrief,
+    panel_roles: list[PanelRole] | None = None,
+) -> ResearchPlan:
     assumptions = [
         f"Araştırma pazarı: {brief.market or 'Türkiye'}",
         f"Kategori: {brief.category or 'Belirtilmedi'}",
@@ -129,12 +224,14 @@ def build_research_plan(brief: ResearchBrief) -> ResearchPlan:
         f"{brief.title} fikrinin {brief.market} pazarındaki pain point, değer önerisi, "
         "itiraz, fiyat hassasiyeti ve konumlandırma risklerini sentetik persona görüşmeleriyle test etmek."
     )
+    interview_script = generate_interview_script(brief, panel_roles)
     return ResearchPlan(
         objective=objective,
         assumptions=assumptions,
         clarifying_questions=clarifying_questions,
-        interview_questions=INTERVIEW_GUIDE,
+        interview_questions=[item.question for item in interview_script],
         recommended_panel_size=5,
+        interview_script=interview_script,
     )
 
 
@@ -387,8 +484,14 @@ def judge_answer_quality(persona: Persona, question: str, answer: str) -> list[s
     return flags
 
 
-def run_interviews(brief: ResearchBrief, personas: list[Persona], model: ResearchModel) -> list[PersonaInterview]:
+def run_interviews(
+    brief: ResearchBrief,
+    personas: list[Persona],
+    model: ResearchModel,
+    interview_script: list[InterviewQuestion] | None = None,
+) -> list[PersonaInterview]:
     interviews: list[PersonaInterview] = []
+    script = interview_script or generate_interview_script(brief)
     system = (
         "Tek bir izole Türk pazar araştırması personasını simüle ediyorsun. "
         "Araştırmacıyı memnun etmeye çalışma. Profilinle çelişme. Emin değilsen belirsizliği söyle."
@@ -399,7 +502,7 @@ def run_interviews(brief: ResearchBrief, personas: list[Persona], model: Researc
             f"Persona stance: {persona.stance}",
             f"Bilgi sınırı: {persona.knowledge_boundary}",
         ]
-        for question in INTERVIEW_GUIDE:
+        for script_question in script:
             prompt = (
                 f"Araştırma brief'i: {brief.idea}\n"
                 f"Hedef kullanıcılar: {', '.join(brief.target_users) or 'Belirtilmedi'}\n"
@@ -411,17 +514,18 @@ def run_interviews(brief: ResearchBrief, personas: list[Persona], model: Researc
                 f"Hedefler: {', '.join(persona.goals)}\n"
                 f"İtirazlar: {', '.join(persona.objections)}\n"
                 f"Bilgi sınırı: {persona.knowledge_boundary}\n"
-                f"Soru: {question}\n"
+                f"Soru etiketi: {script_question.label}\n"
+                f"Soru: {script_question.question}\n"
                 "Kısa, somut ve Türkiye pazarı gerçeklerine uygun cevap ver."
             )
             answer = model.generate(system, prompt)
             turns.append(
                 InterviewTurn(
-                    question=question,
+                    question=script_question.question,
                     answer=answer,
-                    tags=classify_question(question),
+                    tags=script_question.tags or classify_question(script_question.question),
                     model_id=getattr(model, "last_model_id", None),
-                    quality_flags=judge_answer_quality(persona, question, answer),
+                    quality_flags=judge_answer_quality(persona, script_question.question, answer),
                 )
             )
         interviews.append(PersonaInterview(persona=persona, turns=turns, consistency_notes=consistency_notes))
@@ -612,7 +716,7 @@ def run_research(
     model: ResearchModel,
     panel_roles: list[PanelRole] | None = None,
 ) -> ResearchReport:
-    plan = build_research_plan(brief)
+    plan = build_research_plan(brief, panel_roles)
     personas = generate_personas(brief, panel_roles)
-    interviews = run_interviews(brief, personas, model)
+    interviews = run_interviews(brief, personas, model, plan.interview_script)
     return synthesize_report(brief, plan, personas, interviews)

@@ -33,12 +33,22 @@ class ClarifyingQuestion:
 
 
 @dataclass(frozen=True)
+class InterviewQuestion:
+    id: str
+    label: str
+    question: str
+    reason: str
+    tags: list[FindingCategory] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class ResearchPlan:
     objective: str
     assumptions: list[str]
     clarifying_questions: list[ClarifyingQuestion]
     interview_questions: list[str]
     recommended_panel_size: int
+    interview_script: list[InterviewQuestion] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

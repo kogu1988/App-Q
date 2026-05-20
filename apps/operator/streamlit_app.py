@@ -545,14 +545,14 @@ if not title or not idea:
     st.stop()
 
 brief = build_brief(brief_data)
-plan = build_research_plan(brief)
 role_suggestions = build_role_suggestions(brief_data)
 selected_roles = selected_role_rows(role_suggestions)
 panel_roles = build_panel_roles(role_suggestions)
+plan = build_research_plan(brief, panel_roles or None)
 personas = generate_personas(brief, panel_roles or None)
 
-plan_tab, persona_tab, report_tab, interview_tab, raw_tab = st.tabs(
-    ["Plan", "Personalar", "Rapor", "Görüşmeler", "Ham Çıktı"]
+plan_tab, persona_tab, script_tab, interview_tab, report_tab, raw_tab = st.tabs(
+    ["Plan", "Personalar", "Script", "Görüşmeler", "Rapor", "Ham Çıktı"]
 )
 
 with plan_tab:
@@ -586,6 +586,17 @@ with persona_tab:
     for index, persona in enumerate(personas):
         with cols[index % 3]:
             render_persona_card(persona)
+
+with script_tab:
+    st.subheader("Interview Script")
+    st.caption("Brief ve seçilen araştırma rollerinden üretilen etiketli soru seti.")
+    for index, question in enumerate(plan.interview_script, start=1):
+        with st.container(border=True):
+            st.caption(question.label)
+            st.markdown(f"#### {index}. {question.question}")
+            st.write(question.reason)
+            if question.tags:
+                st.caption("Etiketler: " + ", ".join(question.tags))
 
 if run_button:
     with st.spinner("Personalar sırayla görüşmeye alınıyor..."):

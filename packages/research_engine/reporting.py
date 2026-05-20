@@ -37,6 +37,16 @@ def render_markdown(report: ResearchReport) -> str:
         for question in report.plan.clarifying_questions
     )
 
+    lines.extend(["", "### Görüşme Script'i", ""])
+    for index, question in enumerate(report.plan.interview_script, start=1):
+        lines.extend(
+            [
+                f"{index}. **{question.label}** - {question.question}",
+                f"   - Amaç: {question.reason}",
+                f"   - Etiketler: {', '.join(question.tags) if question.tags else 'risk'}",
+            ]
+        )
+
     lines.extend(["", "## Persona Paneli", ""])
     for persona in report.personas:
         lines.extend(
