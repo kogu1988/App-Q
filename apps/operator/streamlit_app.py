@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
+from datetime import datetime
 from html import escape
 from dataclasses import asdict
 from pathlib import Path
@@ -30,6 +32,7 @@ from packages.research_engine.workflow import build_research_plan, generate_pers
 
 SAMPLE_PATH = ROOT / "data" / "samples" / "first-brief.json"
 OUTPUT_DIR = ROOT / "data" / "outputs"
+STUDIES_DIR = ROOT / "data" / "studies"
 WIZARD_NAME = "Defne"
 WIZARD_ROLE = "App-Q araştırma mimarı"
 WIZARD_SYSTEM_STYLE = (
@@ -157,6 +160,157 @@ def build_panel_roles(role_rows: list[dict[str, str | int | bool]]) -> list[Pane
         PanelRole(role=str(role["role"]), why=str(role["why"]), count=int(role["count"]))
         for role in selected_role_rows(role_rows)
         if int(role["count"]) > 0
+    ]
+
+
+def current_role_state_snapshot() -> list[dict[str, str | int | bool]]:
+    role_rows = build_role_suggestions(current_brief_data())
+    snapshot: list[dict[str, str | int | bool]] = []
+    for role in role_rows:
+        role_name = str(role["role"])
+        selected_key = role_state_key(role_name, "selected")
+        count_key = role_state_key(role_name, "count")
+        snapshot.append(
+            {
+                "role": role_name,
+                "why": str(role["why"]),
+                "selected": bool(st.session_state.get(selected_key, bool(role["selected"]))),
+                "count": int(st.session_state.get(count_key, int(role["count"]))),
+            }
+        )
+    return snapshot
+
+
+def restore_role_state(saved_roles: list[dict[str, str | int | bool]]) -> None:
+    role_rows = build_role_suggestions(current_brief_data())
+    saved_by_name = {str(role.get("role")): role for role in saved_roles}
+    for role in role_rows:
+        role_name = str(role["role"])
+        saved = saved_by_name.get(role_name, {})
+        st.session_state[role_state_key(role_name, "selected")] = bool(
+            saved.get("selected", role.get("selected", False))
+        )
+        st.session_state[role_state_key(role_name, "count")] = int(saved.get("count", role.get("count", 0)))
+    st.session_state["wizard_role_names"] = sorted(str(role["role"]) for role in role_rows)
+
+
+def clear_generated_state() -> None:
+    for key in ["report_json", "report_markdown", "selected_interview_id"]:
+        st.session_state.pop(key, None)
+    for key in list(st.session_state.keys()):
+        if key.startswith("follow_up_question_") or key.startswith("focus_follow_up_"):
+            st.session_state.pop(key, None)
+
+
+def slugify_title(value: str) -> str:
+    normalized = value.lower().strip()
+    normalized = normalized.replace("ı", "i").replace("ğ", "g").replace("ü", "u")
+    normalized = normalized.replace("ş", "s").replace("ö", "o").replace("ç", "c")
+    normalized = re.sub(r"[^a-z0-9]+", "-", normalized).strip("-")
+    return normalized[:60] or "study"
+
+
+def now_iso() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+def study_path(study_id: str) -> Path:
+    return STUDIES_DIR / study_id
+
+
+def list_studies() -> list[dict]:
+    if not STUDIES_DIR.exists():
+        return []
+    studies: list[dict] = []
+    for metadata_path in STUDIES_DIR.glob("*/metadata.json"):
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if metadata.get("archived"):
+            continue
+        metadata["id"] = metadata.get("id") or metadata_path.parent.name
+        studies.append(metadata)
+    return sorted(studies, key=lambda item: item.get("updated_at", ""), reverse=True)
+
+
+def load_study_payload(study_id: str) -> dict:
+    path = study_path(study_id)
+    payload: dict = {}
+    for file_name, key in [
+        ("metadata.json", "metadata"),
+        ("brief.json", "brief"),
+        ("roles.json", "roles"),
+        ("report.json", "report_json"),
+    ]:
+        target = path / file_name
+        if target.exists():
+            payload[key] = json.loads(target.read_text(encoding="utf-8"))
+    markdown_path = path / "report.md"
+    if markdown_path.exists():
+        payload["report_markdown"] = markdown_path.read_text(encoding="utf-8")
+    return payload
+
+
+def save_study_payload(study_id: str | None = None) -> str:
+    brief_data = current_brief_data()
+    title = brief_data.get("title") or "Adsiz App-Q Calismasi"
+    created_at = now_iso()
+    if not study_id:
+        study_id = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{slugify_title(title)}"
+    path = study_path(study_id)
+    path.mkdir(parents=True, exist_ok=True)
+
+    metadata_path = path / "metadata.json"
+    existing_metadata: dict = {}
+    if metadata_path.exists():
+        existing_metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+
+    report_json = st.session_state.get("report_json")
+    report_markdown = st.session_state.get("report_markdown")
+    metadata = {
+        "id": study_id,
+        "title": title,
+        "market": brief_data.get("market", ""),
+        "category": brief_data.get("category", ""),
+        "created_at": existing_metadata.get("created_at", created_at),
+        "updated_at": created_at,
+        "archived": False,
+        "has_report": bool(report_json and report_markdown),
+    }
+    metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    (path / "brief.json").write_text(json.dumps(brief_data, ensure_ascii=False, indent=2), encoding="utf-8")
+    (path / "roles.json").write_text(
+        json.dumps(current_role_state_snapshot(), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    if report_json and report_markdown:
+        (path / "report.json").write_text(json.dumps(report_json, ensure_ascii=False, indent=2), encoding="utf-8")
+        (path / "report.md").write_text(report_markdown, encoding="utf-8")
+        (path / "report.html").write_text(render_report_html(report_json, report_markdown), encoding="utf-8")
+    return study_id
+
+
+def archive_study(study_id: str) -> None:
+    metadata_path = study_path(study_id) / "metadata.json"
+    if not metadata_path.exists():
+        return
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["archived"] = True
+    metadata["updated_at"] = now_iso()
+    metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def apply_study_payload(study_id: str, payload: dict) -> None:
+    seed_brief_state(payload.get("brief", {}))
+    restore_role_state(payload.get("roles", []))
+    clear_generated_state()
+    if payload.get("report_json") and payload.get("report_markdown"):
+        st.session_state["report_json"] = payload["report_json"]
+        st.session_state["report_markdown"] = payload["report_markdown"]
+    st.session_state["current_study_id"] = study_id
+    st.session_state["wizard_messages"] = [
+        {"role": "assistant", "content": build_wizard_reply(current_brief_data())}
     ]
 
 
@@ -1075,6 +1229,53 @@ else:
 st.caption(f"Model provider: {provider_name} / model: {model_caption}")
 
 with st.sidebar:
+    with st.expander("Kayitli Calismalar", expanded=True):
+        studies = list_studies()
+        current_study_id = st.session_state.get("current_study_id")
+        if current_study_id:
+            st.caption(f"Acik calisma: `{current_study_id}`")
+        else:
+            st.caption("Henuz kayitli bir calisma acik degil.")
+
+        study_options = {
+            f"{item.get('title', item['id'])} - {item.get('updated_at', '')}": item["id"]
+            for item in studies
+        }
+        selected_study_label = st.selectbox(
+            "Calisma sec",
+            options=list(study_options.keys()),
+            index=0 if study_options else None,
+            placeholder="Kayitli calisma yok",
+            label_visibility="collapsed",
+        )
+        study_cols = st.columns(3)
+        if study_cols[0].button("Ac", use_container_width=True, disabled=not selected_study_label):
+            selected_study_id = study_options[selected_study_label]
+            apply_study_payload(selected_study_id, load_study_payload(selected_study_id))
+            st.success("Calisma yuklendi.")
+            st.rerun()
+        if study_cols[1].button("Kaydet", use_container_width=True):
+            saved_id = save_study_payload(current_study_id)
+            st.session_state["current_study_id"] = saved_id
+            st.success("Calisma kaydedildi.")
+            st.rerun()
+        if study_cols[2].button("Arsivle", use_container_width=True, disabled=not selected_study_label):
+            selected_study_id = study_options[selected_study_label]
+            archive_study(selected_study_id)
+            if current_study_id == selected_study_id:
+                st.session_state.pop("current_study_id", None)
+            st.success("Calisma arsivlendi.")
+            st.rerun()
+
+        if st.button("Yeni bos calisma", use_container_width=True):
+            seed_brief_state({"market": "TÃ¼rkiye"})
+            st.session_state["wizard_messages"] = [
+                {"role": "assistant", "content": build_wizard_reply(current_brief_data())}
+            ]
+            st.session_state.pop("wizard_role_names", None)
+            st.session_state.pop("current_study_id", None)
+            clear_generated_state()
+            st.rerun()
     st.header("Araştırma Brief'i")
     col_sample, col_clear = st.columns(2)
     if col_sample.button("Örneği yükle", use_container_width=True):
@@ -1083,6 +1284,8 @@ with st.sidebar:
             {"role": "assistant", "content": build_wizard_reply(current_brief_data())}
         ]
         st.session_state.pop("wizard_role_names", None)
+        st.session_state.pop("current_study_id", None)
+        clear_generated_state()
         st.rerun()
     if col_clear.button("Sıfırla", use_container_width=True):
         seed_brief_state({"market": "Türkiye"})
@@ -1090,8 +1293,8 @@ with st.sidebar:
             {"role": "assistant", "content": build_wizard_reply(current_brief_data())}
         ]
         st.session_state.pop("wizard_role_names", None)
-        st.session_state.pop("report_json", None)
-        st.session_state.pop("report_markdown", None)
+        st.session_state.pop("current_study_id", None)
+        clear_generated_state()
         st.rerun()
 
     title = st.text_input("Başlık", key=BRIEF_STATE_KEYS["title"])
@@ -1286,6 +1489,8 @@ if run_button:
             persist_outputs(report_markdown, report_json)
             st.session_state["report_json"] = report_json
             st.session_state["report_markdown"] = report_markdown
+            if st.session_state.get("current_study_id"):
+                save_study_payload(st.session_state["current_study_id"])
         except ModelProviderError as exc:
             st.error(str(exc))
 
@@ -1411,6 +1616,8 @@ with interview_tab:
                         st.session_state["report_json"] = updated_report_json
                         st.session_state["report_markdown"] = updated_report_markdown
                         persist_outputs(st.session_state["report_markdown"], st.session_state["report_json"])
+                        if st.session_state.get("current_study_id"):
+                            save_study_payload(st.session_state["current_study_id"])
                         st.success("Takip cevabı transcript'e eklendi ve rapor yeniden sentezlendi.")
                         st.rerun()
                     except ModelProviderError as exc:

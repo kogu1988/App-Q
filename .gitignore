@@ -14,6 +14,8 @@ data/outputs/*
 !data/outputs/evals/
 data/outputs/evals/*
 !data/outputs/evals/README.md
+data/studies/*
+!data/studies/.gitkeep
 models/*
 !models/README.md
 !models/ollama/
