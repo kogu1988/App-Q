@@ -20,6 +20,13 @@ from packages.research_engine.workflow import build_research_plan, generate_pers
 
 SAMPLE_PATH = ROOT / "data" / "samples" / "first-brief.json"
 OUTPUT_DIR = ROOT / "data" / "outputs"
+WIZARD_NAME = "Defne"
+WIZARD_ROLE = "App-Q araştırma mimarı"
+WIZARD_SYSTEM_STYLE = (
+    "Defne, pazara çıkmadan önce ürün fikrini keskinleştiren kıdemli bir araştırma mimarıdır. "
+    "Kibar ama gevşek değildir; kullanıcının fikrini onaylamak yerine karar alınabilir brief ister. "
+    "Her adımda tek ana eksikliği yakalar, somut soru sorar ve sonunda araştırma hedefi ile rol önerilerini çıkarır."
+)
 
 
 def parse_lines(value: str) -> list[str]:
@@ -28,6 +35,115 @@ def parse_lines(value: str) -> list[str]:
 
 def load_sample() -> dict:
     return json.loads(SAMPLE_PATH.read_text(encoding="utf-8"))
+
+
+def wizard_missing_fields(data: dict) -> list[tuple[str, str]]:
+    missing: list[tuple[str, str]] = []
+    if not data.get("title"):
+        missing.append(("title", "Bu çalışmaya raporda görünecek kısa bir başlık verelim."))
+    if not data.get("idea"):
+        missing.append(("idea", "Ürün fikrini ve çözdüğü problemi 4-5 cümleyle anlatır mısın?"))
+    if not data.get("target_users"):
+        missing.append(("target_users", "En çok öğrenmek istediğin kullanıcı tipi kim: kimler, hangi durumda, ne için kullanacak?"))
+    if not data.get("questions"):
+        missing.append(("questions", "Bu araştırma sonunda hangi kararı almak istiyorsun: fiyat, özellik önceliği, mesaj, hedef segment veya devam/iptal kararı mı?"))
+    if not data.get("expected_price"):
+        missing.append(("expected_price", "Aklındaki fiyat, paket veya ödeme modeli ne? Bilmiyorsan test etmek istediğin aralığı yaz."))
+    if not data.get("competitors"):
+        missing.append(("competitors", "Kullanıcı bugün bu ihtiyacı hangi alternatiflerle çözüyor? Rakip, Excel, WhatsApp, ajans, manuel süreç olabilir."))
+    if not data.get("success_metric"):
+        missing.append(("success_metric", "Bu araştırmada başarı sinyali ne olacak: satın alma niyeti, güven, fiyat kabulü, özellik önceliği veya churn riski?"))
+    return missing
+
+
+def wizard_readiness_score(data: dict) -> int:
+    fields = ["title", "idea", "target_users", "questions", "expected_price", "competitors", "success_metric"]
+    complete = 0
+    for field_name in fields:
+        value = data.get(field_name)
+        if isinstance(value, list):
+            complete += 1 if value else 0
+        else:
+            complete += 1 if value else 0
+    return round(100 * complete / len(fields))
+
+
+def build_wizard_reply(data: dict) -> str:
+    missing = wizard_missing_fields(data)
+    score = wizard_readiness_score(data)
+    if not data.get("idea"):
+        return (
+            "Önce fikrin çekirdeğini netleştirelim. Ne inşa etmeyi düşünüyorsun, kimin hangi problemine çözüm olacak "
+            "ve kullanıcı bugün bu işi nasıl çözüyor?"
+        )
+    if missing:
+        next_question = missing[0][1]
+        return (
+            f"Brief şu an %{score} hazır. Fikir anlaşılır, ama araştırmanın karar üretebilmesi için bir boşluğu "
+            f"kapatmamız gerekiyor: {next_question}"
+        )
+    return (
+        f"Brief %{score} hazır. Bu haliyle persona üretimine geçebiliriz. Ben bu çalışmayı fikir doğrulama, fiyat "
+        "itirazları, alternatiflere göre konumlandırma ve satın alma bariyerleri üzerinden koştururdum."
+    )
+
+
+def build_generated_goal(data: dict) -> str:
+    target = ", ".join(data.get("target_users", [])) or "hedef kullanıcılar"
+    questions = ", ".join(data.get("questions", [])) or "satın alma ve kullanım bariyerleri"
+    price = data.get("expected_price") or "belirlenecek fiyat/paket"
+    return (
+        f"{data.get('title') or 'Yeni ürün fikri'} için {data.get('market') or 'Türkiye'} pazarında {target} "
+        f"segmentlerinin {data.get('idea') or 'ürün fikrine'} tepkisini test etmek; özellikle {questions}, "
+        f"{price} kabulü, güven bariyerleri ve mevcut alternatiflere göre avantaj/dezavantajları ortaya çıkarmak."
+    )
+
+
+def build_role_suggestions(data: dict) -> list[dict[str, str | int | bool]]:
+    category = (data.get("category") or "").lower()
+    targets = " ".join(data.get("target_users", [])).lower()
+    is_b2c = any(marker in f"{category} {targets}" for marker in ["e-ticaret", "pazaryeri", "tüketici", "mobil", "alışveriş"])
+    if is_b2c:
+        return [
+            {
+                "selected": True,
+                "role": "Fiyat Hassas Kullanıcı",
+                "why": "TL fiyat, kampanya, taksit, kargo ve beklenmeyen ücretlere sert tepki verir.",
+                "count": 3,
+            },
+            {
+                "selected": True,
+                "role": "Dijital Rahat Kullanıcı",
+                "why": "Mobil akış, hız, tasarım ve kolaylık beklentisini temsil eder.",
+                "count": 2,
+            },
+            {
+                "selected": True,
+                "role": "Güven Şüphecisi",
+                "why": "KVKK, kart bilgisi, yorum güveni ve satıcı güvenilirliği itirazlarını üretir.",
+                "count": 2,
+            },
+        ]
+    return [
+        {
+            "selected": True,
+            "role": "Bütçe Sahibi Karar Verici",
+            "why": "Satın alma niyeti, ROI beklentisi ve abonelik direncini test eder.",
+            "count": 2,
+        },
+        {
+            "selected": True,
+            "role": "Operasyonel Kullanıcı",
+            "why": "Günlük iş akışı, zaman kazancı ve öğrenme zahmeti üzerinden değerlendirir.",
+            "count": 2,
+        },
+        {
+            "selected": True,
+            "role": "Kurumsal Şüpheci",
+            "why": "KVKK, güvenilirlik, iç onay ve kanıt zinciri risklerini zorlar.",
+            "count": 1,
+        },
+    ]
 
 
 def build_brief(data: dict) -> ResearchBrief:
@@ -187,6 +303,44 @@ brief_data = {
     "sales_channel": sales_channel,
     "success_metric": success_metric,
 }
+
+wizard_score = wizard_readiness_score(brief_data)
+missing_fields = wizard_missing_fields(brief_data)
+
+with st.container(border=True):
+    header_cols = st.columns([0.72, 0.28])
+    with header_cols[0]:
+        st.subheader(f"{WIZARD_NAME} - {WIZARD_ROLE}")
+        st.caption(WIZARD_SYSTEM_STYLE)
+    with header_cols[1]:
+        st.metric("Brief Hazırlığı", f"%{wizard_score}")
+        st.progress(wizard_score / 100)
+
+    st.markdown("#### Wizard cevabı")
+    st.write(build_wizard_reply(brief_data))
+
+    if missing_fields:
+        st.markdown("#### Eksik netlik alanları")
+        for _, question in missing_fields[:4]:
+            st.markdown(f"- {question}")
+    else:
+        st.success("Brief araştırma akışını başlatmak için yeterli görünüyor.")
+
+    if idea:
+        st.markdown("#### Üretilen araştırma hedefi")
+        st.info(build_generated_goal(brief_data))
+
+    st.markdown("#### Önerilen araştırma rolleri")
+    role_rows = build_role_suggestions(brief_data)
+    role_cols = st.columns(len(role_rows))
+    for index, role in enumerate(role_rows):
+        with role_cols[index]:
+            with st.container(border=True):
+                status = "Seçili" if role["selected"] else "Opsiyonel"
+                st.caption(status)
+                st.markdown(f"##### {role['role']}")
+                st.write(role["why"])
+                st.metric("Önerilen sayı", role["count"])
 
 if not title or not idea:
     st.info("Başlık ve ürün fikri girildiğinde araştırma planı ve rapor üretilebilir.")
