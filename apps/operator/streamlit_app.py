@@ -430,6 +430,43 @@ def run_follow_up_turn(interview: dict, question: str, model) -> dict:
     }
 
 
+def interview_progress(interview: dict, script_count: int) -> tuple[int, int]:
+    turn_count = len(interview.get("turns", []))
+    target = script_count or turn_count or 1
+    return min(turn_count, target), target
+
+
+def render_interview_card(interview: dict, script_count: int, card_key: str) -> None:
+    persona = interview.get("persona", {})
+    quality = interview_quality_summary(interview)
+    done, target = interview_progress(interview, script_count)
+    progress = done / target if target else 0
+    persona_role = persona.get("role_title") or persona.get("segment", "Bilinmeyen")
+    with st.container(border=True):
+        header_cols = st.columns([0.18, 0.82])
+        header_cols[0].markdown(f"## {str(persona.get('name', '?'))[:1]}")
+        header_cols[1].markdown(f"#### {persona.get('name')}, {persona.get('age')}")
+        header_cols[1].caption(f"{persona_role} · {persona.get('city')}, {persona.get('origin_country', 'Türkiye')}")
+
+        status = "Completed" if done >= target and quality["fail_count"] == 0 else "Review"
+        st.caption(f"{done}/{target}")
+        st.progress(progress)
+        if status == "Completed":
+            st.success("Completed", icon="✓")
+        else:
+            st.warning("Review needed", icon="!")
+
+        if quality["warning_count"]:
+            st.caption(f"{quality['warning_count']} kalite uyarısı")
+        if st.button("View Transcript", key=f"view_transcript_{card_key}", use_container_width=True):
+            st.session_state["selected_interview_id"] = persona.get("id")
+            st.rerun()
+        if st.button("Follow Up Question", key=f"follow_up_select_{card_key}", use_container_width=True):
+            st.session_state["selected_interview_id"] = persona.get("id")
+            st.session_state[f"focus_follow_up_{persona.get('id')}"] = True
+            st.rerun()
+
+
 def wizard_missing_fields(data: dict) -> list[tuple[str, str]]:
     missing: list[tuple[str, str]] = []
     if not data.get("idea"):
@@ -932,18 +969,48 @@ with interview_tab:
             default="Tümü",
         )
 
+        script_count = len(st.session_state["report_json"].get("plan", {}).get("interview_script", []))
+        visible_interviews = []
         for interview in interviews:
             persona = interview.get("persona", {})
             persona_role = persona.get("role_title") or persona.get("segment", "Bilinmeyen")
-            if selected_role_filter != "Tümü" and persona_role != selected_role_filter:
-                continue
+            if selected_role_filter == "Tümü" or persona_role == selected_role_filter:
+                visible_interviews.append(interview)
+
+        st.markdown("#### Interview Cards")
+        card_cols = st.columns(3)
+        for index, interview in enumerate(visible_interviews):
+            with card_cols[index % 3]:
+                persona = interview.get("persona", {})
+                render_interview_card(interview, script_count, f"{persona.get('id')}_{index}")
+
+        if visible_interviews and "selected_interview_id" not in st.session_state:
+            st.session_state["selected_interview_id"] = visible_interviews[0].get("persona", {}).get("id")
+
+        selected_interview = next(
+            (
+                interview
+                for interview in visible_interviews
+                if interview.get("persona", {}).get("id") == st.session_state.get("selected_interview_id")
+            ),
+            visible_interviews[0] if visible_interviews else None,
+        )
+
+        st.markdown("#### Transcript Detail")
+        if not selected_interview:
+            st.info("Bu filtrede görüşme yok.")
+        else:
+            interview = selected_interview
+            persona = interview.get("persona", {})
+            persona_role = persona.get("role_title") or persona.get("segment", "Bilinmeyen")
             quality = interview_quality_summary(interview)
             model_usage = interview_model_usage(interview)
             title = (
                 f"{persona.get('name')} - {persona_role} "
                 f"({quality['turn_count']}/{len(st.session_state['report_json'].get('plan', {}).get('interview_script', [])) or quality['turn_count']})"
             )
-            with st.expander(title, expanded=False):
+            with st.container(border=True):
+                st.markdown(f"### {title}")
                 cols = st.columns(4)
                 cols[0].metric("Yanıt", quality["turn_count"])
                 cols[1].metric("Uyarı", quality["warning_count"])
@@ -972,6 +1039,8 @@ with interview_tab:
                 st.markdown("#### Takip Sorusu Önerisi")
                 follow_up_question = suggest_follow_up_question(interview)
                 follow_up_key = f"follow_up_question_{persona.get('id')}"
+                if st.session_state.pop(f"focus_follow_up_{persona.get('id')}", False):
+                    st.info("Karttan takip sorusu alanına geldin. Soruyu düzenleyip çalıştırabilirsin.")
                 edited_follow_up = st.text_area(
                     "Takip sorusu",
                     value=st.session_state.get(follow_up_key, follow_up_question),
