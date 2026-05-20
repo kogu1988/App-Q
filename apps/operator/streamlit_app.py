@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from html import escape
 from dataclasses import asdict
 from pathlib import Path
 
@@ -27,6 +28,19 @@ WIZARD_SYSTEM_STYLE = (
     "Kibar ama gevşek değildir; kullanıcının fikrini onaylamak yerine karar alınabilir brief ister. "
     "Her adımda tek ana eksikliği yakalar, somut soru sorar ve sonunda araştırma hedefi ile rol önerilerini çıkarır."
 )
+CITY_COORDS = {
+    "İstanbul": {"lat": 41.0082, "lon": 28.9784},
+    "Izmir": {"lat": 38.4237, "lon": 27.1428},
+    "İzmir": {"lat": 38.4237, "lon": 27.1428},
+    "Ankara": {"lat": 39.9334, "lon": 32.8597},
+    "Bursa": {"lat": 40.1826, "lon": 29.0665},
+    "Antalya": {"lat": 36.8969, "lon": 30.7133},
+    "Konya": {"lat": 37.8746, "lon": 32.4932},
+    "Kocaeli": {"lat": 40.7654, "lon": 29.9408},
+    "Eskişehir": {"lat": 39.7667, "lon": 30.5256},
+    "Adana": {"lat": 37.0, "lon": 35.3213},
+    "Kayseri": {"lat": 38.7205, "lon": 35.4826},
+}
 BRIEF_STATE_KEYS = {
     "title": "brief_title",
     "market": "brief_market",
@@ -243,6 +257,23 @@ def role_relevancy_rows(personas: list) -> list[dict[str, str | int]]:
     return rows
 
 
+def persona_map_rows(personas: list) -> list[dict[str, float | str]]:
+    rows: list[dict[str, float | str]] = []
+    for persona in personas:
+        coords = CITY_COORDS.get(persona.city)
+        if coords:
+            rows.append(
+                {
+                    "lat": coords["lat"],
+                    "lon": coords["lon"],
+                    "persona": persona.name,
+                    "role": persona_role_name(persona),
+                    "city": persona.city,
+                }
+            )
+    return rows
+
+
 def render_persona_overview(personas: list) -> None:
     rows = persona_overview_rows(personas)
     ages = [int(row["age"]) for row in rows]
@@ -263,6 +294,11 @@ def render_persona_overview(personas: list) -> None:
     with dist_cols[1]:
         st.caption("Şehirler")
         st.bar_chart(count_by(cities))
+
+    map_rows = persona_map_rows(personas)
+    if map_rows:
+        st.markdown("#### Demografi Haritası")
+        st.map(map_rows, latitude="lat", longitude="lon")
 
     st.markdown("#### Rol Relevancy Skorları")
     relevancy = role_relevancy_rows(personas)
@@ -324,6 +360,24 @@ def render_transcript_markdown(interview: dict) -> str:
     return "\n".join(lines)
 
 
+def render_report_html(report_markdown: str) -> str:
+    return f"""<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>App-Q Research Report</title>
+  <style>
+    body {{ font-family: Arial, sans-serif; color: #2f2a24; margin: 40px; line-height: 1.55; }}
+    pre {{ white-space: pre-wrap; font-family: Arial, sans-serif; }}
+    @media print {{ body {{ margin: 18mm; }} }}
+  </style>
+</head>
+<body>
+<pre>{escape(report_markdown)}</pre>
+</body>
+</html>"""
+
+
 def suggest_follow_up_question(interview: dict) -> str:
     persona = interview.get("persona", {})
     turns = interview.get("turns", [])
@@ -349,6 +403,31 @@ def suggest_follow_up_question(interview: dict) -> str:
         f"{persona.get('name', 'Bu persona')}, bu ürünü bir arkadaşına veya yöneticine önermek için hangi tek şartın "
         "mutlaka sağlanması gerekir?"
     )
+
+
+def run_follow_up_turn(interview: dict, question: str, model) -> dict:
+    persona = interview.get("persona", {})
+    system = (
+        "Tek bir izole Türk pazar araştırması personasını simüle ediyorsun. "
+        "Önceki cevaplarınla çelişme. Birinci tekil şahısla, somut ve kısa cevap ver."
+    )
+    prompt = (
+        f"Persona: {persona.get('name')}, {persona.get('age')}, {persona.get('city')}, {persona.get('segment')}\n"
+        f"Duruş: {persona.get('stance')}\n"
+        f"Bağlam: {persona.get('context')}\n"
+        f"Bio: {persona.get('bio')}\n"
+        f"İtirazlar: {', '.join(persona.get('objections') or [])}\n"
+        f"Takip sorusu: {question}\n"
+        "Cevabında yeni ve karar verilebilir bir detay ver."
+    )
+    answer = model.generate(system, prompt)
+    return {
+        "question": question,
+        "answer": answer,
+        "tags": ["risk"],
+        "model_id": getattr(model, "last_model_id", None),
+        "quality_flags": [],
+    }
 
 
 def wizard_missing_fields(data: dict) -> list[tuple[str, str]]:
@@ -400,6 +479,23 @@ def build_wizard_reply(data: dict) -> str:
         f"Brief %{score} hazır. Bu haliyle persona üretimine geçebiliriz. Ben bu çalışmayı fikir doğrulama, fiyat "
         "itirazları, alternatiflere göre konumlandırma ve satın alma bariyerleri üzerinden koştururdum."
     )
+
+
+def build_llm_wizard_reply(data: dict, model) -> str:
+    missing = wizard_missing_fields(data)
+    next_question = missing[0][1] if missing else "Brief yeterli. Araştırmayı başlatmadan önce en riskli varsayımı seçtir."
+    system = (
+        "Sen Defne'sin: App-Q içinde çalışan kıdemli Türkçe pazar araştırması mimarı. "
+        "Kullanıcıyı memnun etmeye çalışma; karar alınabilir brief üret. "
+        "Tek seferde en fazla bir ana soru sor. Kısa, net, Türkçe cevap ver."
+    )
+    prompt = (
+        f"Mevcut brief JSON:\n{json.dumps(data, ensure_ascii=False, indent=2)}\n\n"
+        f"Deterministik sıradaki soru: {next_question}\n\n"
+        "Görevin: Kısa bir durum değerlendirmesi yap, eksik alanı söyle ve kullanıcıya tek net soru sor. "
+        "Eğer brief tamam ise araştırma hedefini onayla ve en riskli varsayımı seçmesini iste."
+    )
+    return model.generate(system, prompt)
 
 
 def build_generated_goal(data: dict) -> str:
@@ -557,6 +653,12 @@ def render_report_dashboard(report_json: dict, report_markdown: str) -> None:
         file_name="app-q-report.md",
         mime="text/markdown",
     )
+    st.download_button(
+        "HTML raporu indir",
+        data=render_report_html(report_markdown),
+        file_name="app-q-report.html",
+        mime="text/html",
+    )
 
 
 st.set_page_config(page_title="App-Q Operator", page_icon="Q", layout="wide")
@@ -654,6 +756,13 @@ with st.container(border=True):
 
     st.markdown("#### Wizard cevabı")
     st.write(build_wizard_reply(brief_data))
+    if st.button("Defne cevabını lokal modelle iyileştir", use_container_width=True):
+        try:
+            llm_reply = build_llm_wizard_reply(brief_data, get_model_provider())
+            append_wizard_message("assistant", llm_reply)
+            st.rerun()
+        except ModelProviderError as exc:
+            st.error(str(exc))
 
     st.markdown("#### Defne ile brief sohbeti")
     for message in st.session_state.get("wizard_messages", []):
@@ -861,7 +970,29 @@ with interview_tab:
                     st.divider()
 
                 st.markdown("#### Takip Sorusu Önerisi")
-                st.info(suggest_follow_up_question(interview))
+                follow_up_question = suggest_follow_up_question(interview)
+                follow_up_key = f"follow_up_question_{persona.get('id')}"
+                edited_follow_up = st.text_area(
+                    "Takip sorusu",
+                    value=st.session_state.get(follow_up_key, follow_up_question),
+                    key=follow_up_key,
+                    height=90,
+                )
+                if st.button("Takip sorusunu çalıştır", key=f"run_follow_up_{persona.get('id')}"):
+                    try:
+                        follow_up_turn = run_follow_up_turn(interview, edited_follow_up, get_model_provider())
+                        interview.setdefault("turns", []).append(follow_up_turn)
+                        st.session_state["report_json"]["model_usage"][follow_up_turn.get("model_id") or "unknown"] = (
+                            st.session_state["report_json"].get("model_usage", {}).get(
+                                follow_up_turn.get("model_id") or "unknown", 0
+                            )
+                            + 1
+                        )
+                        persist_outputs(st.session_state["report_markdown"], st.session_state["report_json"])
+                        st.success("Takip cevabı transcript'e eklendi.")
+                        st.rerun()
+                    except ModelProviderError as exc:
+                        st.error(str(exc))
 
 with raw_tab:
     if "report_json" not in st.session_state:
