@@ -5,6 +5,7 @@ from .models import (
     Evidence,
     Finding,
     InterviewTurn,
+    PanelRole,
     Persona,
     PersonaInterview,
     PricingInsight,
@@ -95,7 +96,10 @@ def build_research_plan(brief: ResearchBrief) -> ResearchPlan:
     )
 
 
-def generate_personas(brief: ResearchBrief) -> list[Persona]:
+def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None = None) -> list[Persona]:
+    if panel_roles:
+        return generate_personas_from_roles(brief, panel_roles)
+
     market = brief.market or "Türkiye"
     return [
         Persona(
@@ -169,6 +173,101 @@ def generate_personas(brief: ResearchBrief) -> list[Persona]:
             knowledge_boundary="Ajans sunumu, raporlama ve müşteri ikna süreçleri hakkında konuşabilir.",
         ),
     ]
+
+
+def generate_personas_from_roles(brief: ResearchBrief, panel_roles: list[PanelRole]) -> list[Persona]:
+    market = brief.market or "Türkiye"
+    persona_templates = {
+        "Fiyat Hassas Kullanıcı": {
+            "segment": "Fiyat hassas tüketici",
+            "stance": "Blocker",
+            "price_sensitivity": 10,
+            "digital_confidence": 5,
+            "goals": ["Parasının karşılığını almak", "Gizli ücret ve taahhütlerden kaçınmak"],
+            "objections": ["Fiyatın beklenenden yüksek olması", "Taksit veya ücretsiz deneme olmaması"],
+        },
+        "Dijital Rahat Kullanıcı": {
+            "segment": "Dijital alışkanlığı yüksek kullanıcı",
+            "stance": "Pragmatist",
+            "price_sensitivity": 6,
+            "digital_confidence": 9,
+            "goals": ["Hızlı ve zahmetsiz deneyim", "Mobilde net değer görmek"],
+            "objections": ["Karmaşık onboarding", "Yavaş veya eski görünen arayüz"],
+        },
+        "Güven Şüphecisi": {
+            "segment": "Güven ve gizlilik odaklı kullanıcı",
+            "stance": "Skeptic",
+            "price_sensitivity": 7,
+            "digital_confidence": 6,
+            "goals": ["Güvenli işlem yapmak", "Verisinin nasıl kullanıldığını bilmek"],
+            "objections": ["KVKK belirsizliği", "Kart/veri güvenliği riski", "Kanıtlanmamış vaatler"],
+        },
+        "Bütçe Sahibi Karar Verici": {
+            "segment": "Bütçe sahibi karar verici",
+            "stance": "Skeptic",
+            "price_sensitivity": 7,
+            "digital_confidence": 7,
+            "goals": ["ROI görmek", "İç paydaşları ikna etmek"],
+            "objections": ["Abonelik maliyeti", "Kanıt zinciri olmadan satın alma riski"],
+        },
+        "Operasyonel Kullanıcı": {
+            "segment": "Operasyonel kullanıcı",
+            "stance": "Pragmatist",
+            "price_sensitivity": 6,
+            "digital_confidence": 8,
+            "goals": ["Günlük işi hızlandırmak", "Ek araç öğrenme yükünü azaltmak"],
+            "objections": ["Mevcut iş akışına uymaması", "Kullanım zahmeti"],
+        },
+        "Kurumsal Şüpheci": {
+            "segment": "Kurumsal şüpheci",
+            "stance": "Skeptic",
+            "price_sensitivity": 5,
+            "digital_confidence": 7,
+            "goals": ["Riskleri azaltmak", "Gizlilik ve uyumluluğu korumak"],
+            "objections": ["KVKK ve veri gizliliği riski", "Sentetik çıktıya fazla güvenilmesi"],
+        },
+    }
+    names = ["Elif", "Mert", "Selin", "Ahmet", "Derya", "Ceren", "Burak", "Zeynep", "Onur", "Aylin"]
+    cities = ["İstanbul", "İzmir", "Ankara", "Bursa", "Antalya", "Konya", "Kocaeli", "Eskişehir", "Adana", "Kayseri"]
+    personas: list[Persona] = []
+    for role in panel_roles:
+        if role.count <= 0:
+            continue
+        template = persona_templates.get(
+            role.role,
+            {
+                "segment": role.role,
+                "stance": "Observer",
+                "price_sensitivity": 6,
+                "digital_confidence": 7,
+                "goals": ["Ürünün net faydasını anlamak"],
+                "objections": ["Değer önerisinin belirsiz kalması"],
+            },
+        )
+        for _ in range(role.count):
+            index = len(personas)
+            personas.append(
+                Persona(
+                    id=f"p{index + 1}",
+                    name=names[index % len(names)],
+                    age=26 + ((index * 4) % 23),
+                    city=cities[index % len(cities)],
+                    segment=str(template["segment"]),
+                    stance=template["stance"],  # type: ignore[arg-type]
+                    price_sensitivity=int(template["price_sensitivity"]),
+                    digital_confidence=int(template["digital_confidence"]),
+                    context=(
+                        f"{market} pazarında {role.role} rolünü temsil eder. "
+                        f"Rol gerekçesi: {role.why} Araştırma konusu: {brief.title}."
+                    ),
+                    goals=list(template["goals"]),
+                    objections=list(template["objections"]),
+                    knowledge_boundary=(
+                        "Kendi rolü, satın alma davranışı, alternatif kullanımı, fiyat ve güven itirazları hakkında konuşabilir."
+                    ),
+                )
+            )
+    return personas
 
 
 def classify_question(question: str) -> list[str]:
@@ -429,8 +528,12 @@ def synthesize_report(
     )
 
 
-def run_research(brief: ResearchBrief, model: ResearchModel) -> ResearchReport:
+def run_research(
+    brief: ResearchBrief,
+    model: ResearchModel,
+    panel_roles: list[PanelRole] | None = None,
+) -> ResearchReport:
     plan = build_research_plan(brief)
-    personas = generate_personas(brief)
+    personas = generate_personas(brief, panel_roles)
     interviews = run_interviews(brief, personas, model)
     return synthesize_report(brief, plan, personas, interviews)

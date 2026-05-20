@@ -42,6 +42,13 @@ class ResearchPlan:
 
 
 @dataclass(frozen=True)
+class PanelRole:
+    role: str
+    why: str
+    count: int
+
+
+@dataclass(frozen=True)
 class Persona:
     id: str
     name: str

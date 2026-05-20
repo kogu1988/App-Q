@@ -12,7 +12,7 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from packages.research_engine.models import ResearchBrief
+from packages.research_engine.models import PanelRole, ResearchBrief
 from packages.research_engine.providers import ModelProviderError, get_model_provider
 from packages.research_engine.reporting import render_markdown
 from packages.research_engine.workflow import build_research_plan, generate_personas, run_research
@@ -93,6 +93,48 @@ def apply_wizard_answer(field_name: str, answer: str) -> None:
 
 def append_wizard_message(role: str, content: str) -> None:
     st.session_state.setdefault("wizard_messages", []).append({"role": role, "content": content})
+
+
+def role_state_key(role_name: str, suffix: str) -> str:
+    normalized = "".join(char.lower() if char.isalnum() else "_" for char in role_name)
+    return f"wizard_role_{normalized}_{suffix}"
+
+
+def sync_role_state(role_rows: list[dict[str, str | int | bool]]) -> None:
+    current_roles = {role["role"] for role in role_rows}
+    previous_roles = set(st.session_state.get("wizard_role_names", []))
+    if current_roles != previous_roles:
+        for role in role_rows:
+            selected_key = role_state_key(str(role["role"]), "selected")
+            count_key = role_state_key(str(role["role"]), "count")
+            st.session_state[selected_key] = bool(role["selected"])
+            st.session_state[count_key] = int(role["count"])
+        st.session_state["wizard_role_names"] = sorted(current_roles)
+
+
+def selected_role_rows(role_rows: list[dict[str, str | int | bool]]) -> list[dict[str, str | int]]:
+    selected: list[dict[str, str | int]] = []
+    for role in role_rows:
+        role_name = str(role["role"])
+        selected_key = role_state_key(role_name, "selected")
+        count_key = role_state_key(role_name, "count")
+        if st.session_state.get(selected_key, bool(role["selected"])):
+            selected.append(
+                {
+                    "role": role_name,
+                    "why": str(role["why"]),
+                    "count": int(st.session_state.get(count_key, int(role["count"]))),
+                }
+            )
+    return selected
+
+
+def build_panel_roles(role_rows: list[dict[str, str | int | bool]]) -> list[PanelRole]:
+    return [
+        PanelRole(role=str(role["role"]), why=str(role["why"]), count=int(role["count"]))
+        for role in selected_role_rows(role_rows)
+        if int(role["count"]) > 0
+    ]
 
 
 def wizard_missing_fields(data: dict) -> list[tuple[str, str]]:
@@ -334,12 +376,14 @@ with st.sidebar:
         st.session_state["wizard_messages"] = [
             {"role": "assistant", "content": build_wizard_reply(current_brief_data())}
         ]
+        st.session_state.pop("wizard_role_names", None)
         st.rerun()
     if col_clear.button("Sıfırla", use_container_width=True):
         seed_brief_state({"market": "Türkiye"})
         st.session_state["wizard_messages"] = [
             {"role": "assistant", "content": build_wizard_reply(current_brief_data())}
         ]
+        st.session_state.pop("wizard_role_names", None)
         st.session_state.pop("report_json", None)
         st.session_state.pop("report_markdown", None)
         st.rerun()
@@ -432,15 +476,29 @@ with st.container(border=True):
 
     st.markdown("#### Önerilen araştırma rolleri")
     role_rows = build_role_suggestions(brief_data)
+    sync_role_state(role_rows)
+    selected_roles = selected_role_rows(role_rows)
     role_cols = st.columns(len(role_rows))
     for index, role in enumerate(role_rows):
+        role_name = str(role["role"])
+        selected_key = role_state_key(role_name, "selected")
+        count_key = role_state_key(role_name, "count")
         with role_cols[index]:
             with st.container(border=True):
-                status = "Seçili" if role["selected"] else "Opsiyonel"
-                st.caption(status)
-                st.markdown(f"##### {role['role']}")
+                st.checkbox("Seç", key=selected_key)
+                st.markdown(f"##### {role_name}")
                 st.write(role["why"])
-                st.metric("Önerilen sayı", role["count"])
+                st.number_input("Sayı", min_value=0, max_value=10, step=1, key=count_key)
+
+    total_selected = sum(int(role["count"]) for role in selected_roles)
+    if selected_roles:
+        st.caption(
+            "Seçilen panel: "
+            + ", ".join(f"{role['role']} x{role['count']}" for role in selected_roles)
+            + f" / toplam {total_selected} katılımcı"
+        )
+    else:
+        st.warning("En az bir araştırma rolü seçilmeden persona paneli anlamlı olmayacak.")
 
 if not title or not idea:
     st.info("Başlık ve ürün fikri girildiğinde araştırma planı ve rapor üretilebilir.")
@@ -448,7 +506,10 @@ if not title or not idea:
 
 brief = build_brief(brief_data)
 plan = build_research_plan(brief)
-personas = generate_personas(brief)
+role_suggestions = build_role_suggestions(brief_data)
+selected_roles = selected_role_rows(role_suggestions)
+panel_roles = build_panel_roles(role_suggestions)
+personas = generate_personas(brief, panel_roles or None)
 
 plan_tab, persona_tab, report_tab, interview_tab, raw_tab = st.tabs(
     ["Plan", "Personalar", "Rapor", "Görüşmeler", "Ham Çıktı"]
@@ -475,6 +536,12 @@ with plan_tab:
 
 with persona_tab:
     st.subheader("Persona Paneli")
+    if selected_roles:
+        st.markdown("#### Wizard Panel Kompozisyonu")
+        st.dataframe(selected_roles, use_container_width=True, hide_index=True)
+    else:
+        st.warning("Wizard tarafında seçili araştırma rolü yok.")
+    st.markdown("#### Üretilen Sentetik Personalar")
     cols = st.columns(2)
     for index, persona in enumerate(personas):
         with cols[index % 2]:
@@ -492,7 +559,7 @@ with persona_tab:
 if run_button:
     with st.spinner("Personalar sırayla görüşmeye alınıyor..."):
         try:
-            report = run_research(brief, get_model_provider())
+            report = run_research(brief, get_model_provider(), panel_roles or None)
             report_json = asdict(report)
             report_markdown = render_markdown(report)
             persist_outputs(report_markdown, report_json)
@@ -526,6 +593,6 @@ with interview_tab:
 
 with raw_tab:
     if "report_json" not in st.session_state:
-        st.json(asdict(plan))
+        st.json({"plan": asdict(plan), "wizard_roles": selected_roles})
     else:
-        st.json(st.session_state["report_json"])
+        st.json({"report": st.session_state["report_json"], "wizard_roles": selected_roles})
