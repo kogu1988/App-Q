@@ -138,6 +138,19 @@ function Reveal({ children, className = "", delay = 0 }: { children: React.React
   );
 }
 
+// ── Scroll-aware hook ────────────────────────────────────────────────────────
+
+function useScrolled(threshold = 60) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > threshold);
+    handler();
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, [threshold]);
+  return scrolled;
+}
+
 // ── Main page ───────────────────────────────────────────────────────────────
 
 export default function HomePage() {
@@ -145,6 +158,7 @@ export default function HomePage() {
   const getBilling = (name: string) => cardBilling[name] ?? "monthly";
   const toggleBilling = (name: string) =>
     setCardBilling((prev) => ({ ...prev, [name]: prev[name] === "annual" ? "monthly" : "annual" }));
+  const scrolled = useScrolled();
 
   return (
     <div className="min-h-screen bg-[#ffffff] text-[#212121]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
@@ -157,22 +171,54 @@ export default function HomePage() {
         </span>
       </div>
 
-      {/* ── NAV ──────────────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 border-b border-[#d9d9dd] bg-white/95 backdrop-blur-sm">
+      <nav
+        className="sticky top-0 z-50 transition-all duration-300"
+        style={{
+          background: scrolled ? "rgba(255,255,255,0.90)" : "transparent",
+          backdropFilter: scrolled ? "blur(14px) saturate(1.6)" : "none",
+          WebkitBackdropFilter: scrolled ? "blur(14px) saturate(1.6)" : "none",
+          borderBottom: scrolled ? "1px solid rgba(217,217,221,0.8)" : "1px solid transparent",
+        }}
+      >
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src="/logo.svg" alt="Clarere logo" className="h-8 w-auto object-contain" />
-            <span className="font-semibold text-base tracking-tight text-[#17171c]">Clarere</span>
+            <span
+              className="font-semibold text-base tracking-tight transition-colors duration-300"
+              style={{ color: scrolled ? "#17171c" : "#ffffff" }}
+            >
+              Clarere
+            </span>
           </div>
           <div className="flex items-center gap-6">
-            <a href="#pricing" className="text-sm text-[#93939f] hover:text-[#212121] transition-colors hidden sm:block">Fiyatlandırma</a>
-            <a href="#faq" className="text-sm text-[#93939f] hover:text-[#212121] transition-colors hidden sm:block">SSS</a>
-            <Link href="/admin" className="text-sm text-[#93939f] hover:text-[#212121] transition-colors hidden md:block">
+            <a
+              href="#pricing"
+              className="text-sm transition-colors duration-300 hidden sm:block hover:opacity-100"
+              style={{ color: scrolled ? "#93939f" : "rgba(255,255,255,0.72)" }}
+            >
+              Fiyatlandırma
+            </a>
+            <a
+              href="#faq"
+              className="text-sm transition-colors duration-300 hidden sm:block hover:opacity-100"
+              style={{ color: scrolled ? "#93939f" : "rgba(255,255,255,0.72)" }}
+            >
+              SSS
+            </a>
+            <Link
+              href="/admin"
+              className="text-sm transition-colors duration-300 hidden md:block hover:opacity-100"
+              style={{ color: scrolled ? "#93939f" : "rgba(255,255,255,0.72)" }}
+            >
               Yönetim
             </Link>
             <Link
               href="/client"
-              className="btn-pill-primary text-sm"
+              className="btn-pill-primary text-sm transition-all duration-300"
+              style={scrolled
+                ? { background: "#17171c", color: "#ffffff", border: "none" }
+                : { background: "rgba(255,255,255,0.14)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)", backdropFilter: "blur(6px)" }
+              }
             >
               Giriş Yap
             </Link>
