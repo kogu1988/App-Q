@@ -233,7 +233,7 @@ export default function NewResearchWizard() {
               <div className="text-sm text-muted-foreground mt-0.5">Ürün/hizmet fikri doğrulama, hedef kitle ve fiyat araştırması</div>
             </div>
             {researchMode === "research" && (
-              <Badge className="w-fit bg-[#17171c] hover:bg-[#17171c] text-xs">Seçildi</Badge>
+                            <Badge className="w-fit bg-[#17171c] hover:bg-[#17171c] text-white text-xs">Seçildi</Badge>
             )}
           </button>
 
@@ -270,7 +270,7 @@ export default function NewResearchWizard() {
               <div className="text-sm text-muted-foreground mt-0.5">İki farklı mesaj, fiyat veya özellik varyantını karşılaştır</div>
             </div>
             {researchMode === "ab_test" && !abTestLocked && (
-              <Badge className="w-fit bg-[#17171c] hover:bg-[#17171c] text-xs">Seçildi</Badge>
+                            <Badge className="w-fit bg-[#17171c] hover:bg-[#17171c] text-white text-xs">Seçildi</Badge>
             )}
           </button>
         </div>

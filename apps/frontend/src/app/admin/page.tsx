@@ -504,7 +504,7 @@ export default function AdminPage() {
                           </TableCell>
                           <TableCell>
                             {cli.status === "Aktif"
-                              ? <Badge className="bg-[#003c33] hover:bg-[#003c33]/85 text-xs">Aktif</Badge>
+                              ? <Badge className="bg-[#003c33] hover:bg-[#003c33]/85 text-white text-xs">Aktif</Badge>
                               : <Badge variant="secondary" className="text-xs">{cli.status}</Badge>}
                           </TableCell>
                           <TableCell className="text-right">
@@ -586,7 +586,7 @@ export default function AdminPage() {
                   <div className="space-y-1.5">
                     <Label>PII Maskeleme (KVKK)</Label>
                     <div className="flex items-center gap-3 h-10">
-                      <Badge className={config.pii_active === "true" ? "bg-[#003c33] hover:bg-[#003c33]/85" : "bg-[#f5f4f1]0"}>
+                      <Badge className={config.pii_active === "true" ? "bg-[#003c33] hover:bg-[#003c33]/85 text-white" : "bg-[#eeece7] text-[#212121]"}>
                         {config.pii_active === "true" ? "Aktif" : "Pasif"}
                       </Badge>
                       <Button size="sm" variant="outline" onClick={() => saveConfig("pii_active", config.pii_active === "true" ? "false" : "true")}>
@@ -1128,7 +1128,7 @@ export default function AdminPage() {
                           </Button>
                           <Button
                             size="sm"
-                            className="gap-1.5 bg-[#17171c] hover:bg-[#17171c]"
+                            className="gap-1.5 bg-[#17171c] hover:bg-[#17171c] text-white"
                             disabled={savingDefaults}
                             onClick={async () => {
                               setSavingDefaults(true);
