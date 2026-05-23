@@ -16,7 +16,7 @@ const spaceMono = Space_Mono({
 
 
 export const metadata: Metadata = {
-  title: "App-Q — Yapay Zeka Destekli Sentetik Pazar Araştırması",
+  title: "Clarere — Yapay Zeka Destekli Sentetik Pazar Araştırması",
   description:
     "Gerçek mülakata gerek kalmadan AI destekli sentetik panellerle ürün fikirlerinizi test edin. Rogers Diffusion + Van Westendorp + OCEAN metodolojisiyle saatler içinde içgörü.",
   keywords: [
@@ -32,27 +32,27 @@ export const metadata: Metadata = {
     "Grounded Simulation",
   ],
   openGraph: {
-    title: "App-Q — Yapay Zeka Destekli Sentetik Pazar Araştırması",
+    title: "Clarere — Yapay Zeka Destekli Sentetik Pazar Araştırması",
     description:
       "Gerçek mülakata gerek kalmadan AI destekli sentetik panellerle ürün fikirlerinizi test edin.",
     type: "website",
     locale: "tr_TR",
-    siteName: "App-Q",
+    siteName: "Clarere",
     images: [
       {
-        url: "https://appq.ai/og-image.png",
+        url: "https://clarere.com/og-image.png",
         width: 1200,
         height: 630,
-        alt: "App-Q — Sentetik Pazar Araştırması Platformu",
+        alt: "Clarere — Sentetik Pazar Araştırması Platformu",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "App-Q — Sentetik Pazar Araştırması",
+    title: "Clarere — Sentetik Pazar Araştırması",
     description:
       "Rogers Diffusion + OCEAN + Van Westendorp ile AI destekli tüketici panel simülasyonu.",
-    images: ["https://appq.ai/og-image.png"],
+    images: ["https://clarere.com/og-image.png"],
   },
   robots: {
     index: true,
@@ -65,10 +65,10 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "App-Q",
+  name: "Clarere",
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
-  url: "https://appq.ai",
+  url: "https://clarere.com",
   description:
     "Türkiye odaklı yapay zeka destekli sentetik pazar araştırma platformu. Rogers Diffusion, OCEAN psikometri ve Van Westendorp metodolojisiyle gerçek mülakata gerek kalmadan ürün fikirlerini test eder.",
   inLanguage: "tr-TR",
@@ -116,10 +116,10 @@ const faqJsonLd = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "App-Q nedir?",
+      name: "Clarere nedir?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "App-Q, yapıy zeka destekli sentetik pazar araştırması platformudur. Gerçek mülakat ve katılımcı rekrutümanı gerektirmeden, bilimsel olarak zemine oturtulmuş sentetik persona panelleriyle ürün fikirlerinizi, fiyatlandırmanızı ve mesajlaşmanızı test edersiniz.",
+        text: "Clarere, yapıy zeka destekli sentetik pazar araştırması platformudur. Gerçek mülakat ve katılımcı rekrutümanı gerektirmeden, bilimsel olarak zemine oturtulmuş sentetik persona panelleriyle ürün fikirlerinizi, fiyatlandırmanızı ve mesajlaşmanızı test edersiniz.",
       },
     },
     {
@@ -127,7 +127,7 @@ const faqJsonLd = {
       name: "Sentetik araştırma gerçek müşteri araştırmasının yerini tutar mı?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Hayır. App-Q bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve büdçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel güven iddiasında bulunmaz.",
+        text: "Hayır. Clarere bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve büdçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel güven iddiasında bulunmaz.",
       },
     },
     {
@@ -135,7 +135,7 @@ const faqJsonLd = {
       name: "Metodoloji ne kadar güvenilir?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "App-Q, Grounded Simulation mimarisini (Bilal, 2026) kullanır. Bağımsız akademik değlendirmede 46 çalışmada ortalama Araştırma Bütünlüğü Endeksi (RFI) = 0.815 elde edilmiştir. 23 kör UX araştırmacısının değlendirmesinde sistem uzman referans bulgularının %93\'lüne ulaşmış; değerlendiricilerin %65'i sistemin çıktısını insan üretimi olarak tanımlamıştır.",
+        text: "Clarere, Grounded Simulation mimarisini (Bilal, 2026) kullanır. Bağımsız akademik değlendirmede 46 çalışmada ortalama Araştırma Bütünlüğü Endeksi (RFI) = 0.815 elde edilmiştir. 23 kör UX araştırmacısının değlendirmesinde sistem uzman referans bulgularının %93\'lüne ulaşmış; değerlendiricilerin %65'i sistemin çıktısını insan üretimi olarak tanımlamıştır.",
       },
     },
     {

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Kullanım Koşulları — App-Q",
+  title: "Kullanım Koşulları — Clarere",
   description:
-    "App-Q platformunu kullanmadan önce lütfen kullanım koşullarını okuyunuz. Hizmet kapsamı, sorumluluk sınırları ve tarafların hak ve yükümlülükleri.",
+    "Clarere platformunu kullanmadan önce lütfen kullanım koşullarını okuyunuz. Hizmet kapsamı, sorumluluk sınırları ve tarafların hak ve yükümlülükleri.",
   robots: { index: true, follow: true },
 };
 
@@ -18,7 +18,7 @@ export default function TermsPage() {
             <div className="w-8 h-8 bg-primary text-primary-foreground flex items-center justify-center text-sm font-black rounded-lg">
               Q
             </div>
-            <span className="font-bold text-lg tracking-tight">App-Q</span>
+            <span className="font-bold text-lg tracking-tight">Clarere</span>
           </Link>
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             ← Ana Sayfa
@@ -31,7 +31,7 @@ export default function TermsPage() {
         <header className="space-y-4 pb-8 border-b border-border">
           <h1 className="text-4xl font-black tracking-tight">Kullanım Koşulları</h1>
           <p className="text-muted-foreground text-lg">
-            App-Q platformunu kullanarak aşağıdaki koşulları kabul etmiş sayılırsınız.
+            Clarere platformunu kullanarak aşağıdaki koşulları kabul etmiş sayılırsınız.
           </p>
           <p className="text-xs text-muted-foreground">Son güncelleme: 23 Mayıs 2026</p>
         </header>
@@ -39,7 +39,7 @@ export default function TermsPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold">1. Taraflar ve Kapsam</h2>
           <p className="text-muted-foreground leading-relaxed">
-            Bu kullanım koşulları, <strong className="text-foreground">App-Q</strong> platformu
+            Bu kullanım koşulları, <strong className="text-foreground">Clarere</strong> platformu
             ("Platform") ile platformu kullanan bireysel veya kurumsal kullanıcılar ("Kullanıcı")
             arasındaki hukuki ilişkiyi düzenlemektedir. Platforma erişerek veya herhangi bir
             özelliğini kullanarak bu koşulları kabul etmiş sayılırsınız.
@@ -49,14 +49,14 @@ export default function TermsPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold">2. Hizmetin Tanımı</h2>
           <p className="text-muted-foreground leading-relaxed">
-            App-Q, <strong className="text-foreground">yapay zeka destekli sentetik pazar araştırması</strong> platformudur.
+            Clarere, <strong className="text-foreground">yapay zeka destekli sentetik pazar araştırması</strong> platformudur.
             Platform; araştırma brief'i alımı, sentetik persona oluşturma, mülakat simülasyonu ve
             rapor sentezi hizmetleri sunar.
           </p>
           <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-2">
             <p className="text-foreground font-semibold text-sm">⚠️ Önemli Kapsam Bildirimi</p>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              App-Q bir <strong className="text-foreground">hipotez ve araştırma triage aracıdır</strong>.
+              Clarere bir <strong className="text-foreground">hipotez ve araştırma triage aracıdır</strong>.
               Gerçek müşteri araştırmasının yerini almaz; gerçek pazar testlerinden önce zaman ve
               bütçe kaybını azaltmak amacıyla kullanılır. Platform çıktıları, istatistiksel güven
               iddiasında bulunmaz; kararlar için referans, gerçek araştırma için başlangıç noktası
@@ -145,7 +145,7 @@ export default function TermsPage() {
             <div className="p-4 rounded-xl border border-border bg-muted/20">
               <p className="font-semibold text-foreground mb-2">Tescilli Teknoloji ve Ticari Sır</p>
               <p className="leading-relaxed text-sm">
-                App-Q'nun çalışma algoritması — persona oluşturma motoru, mülakat simülasyon
+                Clarere'nun çalışma algoritması — persona oluşturma motoru, mülakat simülasyon
                 katmanı, sentez pipeline'ı, anti-sycophancy mekanizması ve Research Fidelity
                 Index (RFI) puanlama sistemi dahil olmak üzere tüm bileşenleri — platform
                 sahibinin <strong className="text-foreground">ticari sırrını ve tescilli
@@ -186,7 +186,7 @@ export default function TermsPage() {
             <p className="leading-relaxed">
               <strong className="text-foreground">Kullanıcı içeriği:</strong> Kullanıcının
               platforma yüklediği araştırma brief'leri ve oluşturulan raporlar kullanıcıya aittir.
-              App-Q bu içerikleri üçüncü taraflarla paylaşmaz; yalnızca hizmet iyileştirmesi
+              Clarere bu içerikleri üçüncü taraflarla paylaşmaz; yalnızca hizmet iyileştirmesi
               için anonim istatistiksel veriler kullanabilir.
             </p>
 
@@ -204,7 +204,7 @@ export default function TermsPage() {
           <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/30 dark:bg-amber-950/10 space-y-2">
             <p className="font-semibold text-sm text-amber-800 dark:text-amber-300">Yasal Uyarı</p>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              App-Q, platform çıktılarının (raporlar, persona yanıtları, fiyat analizi) doğruluğunu
+              Clarere, platform çıktılarının (raporlar, persona yanıtları, fiyat analizi) doğruluğunu
               garanti etmez. Sentetik araştırma bulguları, yatırım kararı, yasal süreç, tıbbi tavsiye
               veya benzeri kritik kararlar için tek kaynak olarak kullanılamaz. Platform, kullanıcının
               bu koşulları ihlal etmesinden veya platform çıktılarını yanlış yorumlamasından doğan
@@ -220,7 +220,7 @@ export default function TermsPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold">8. Hizmet Durdurma ve Hesap İptali</h2>
           <p className="text-muted-foreground leading-relaxed">
-            App-Q, aşağıdaki durumlarda kullanıcı hesabını geçici olarak askıya alabilir veya
+            Clarere, aşağıdaki durumlarda kullanıcı hesabını geçici olarak askıya alabilir veya
             kalıcı olarak iptal edebilir:
           </p>
           <ul className="space-y-1 text-muted-foreground pl-4">
@@ -247,7 +247,7 @@ export default function TermsPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold">10. Koşullardaki Değişiklikler</h2>
           <p className="text-muted-foreground leading-relaxed">
-            App-Q bu koşulları önceden bildirmeksizin güncelleyebilir. Önemli değişiklikler
+            Clarere bu koşulları önceden bildirmeksizin güncelleyebilir. Önemli değişiklikler
             için kayıtlı kullanıcılar 30 gün önceden bilgilendirilir. Değişikliklerden sonra
             platformu kullanmaya devam etmeniz, yeni koşulları kabul ettiğiniz anlamına gelir.
           </p>
@@ -257,8 +257,8 @@ export default function TermsPage() {
           <h2 className="text-xl font-bold">11. İletişim</h2>
           <p className="text-muted-foreground">
             Kullanım koşullarına ilişkin sorularınız için:{" "}
-            <a href="mailto:legal@appq.ai" className="text-primary hover:underline">
-              legal@appq.ai
+            <a href="mailto:legal@clarere.com" className="text-primary hover:underline">
+              legal@clarere.com
             </a>
           </p>
         </section>
@@ -269,7 +269,7 @@ export default function TermsPage() {
         <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-black rounded">Q</div>
-            <span>App-Q © 2026</span>
+            <span>Clarere © 2026</span>
           </div>
           <div className="flex gap-6">
             <Link href="/" className="hover:text-foreground transition-colors">Ana Sayfa</Link>

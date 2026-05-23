@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Gizlilik Politikası & KVKK Aydınlatma Metni — App-Q",
+  title: "Gizlilik Politikası & KVKK Aydınlatma Metni — Clarere",
   description:
-    "App-Q'nun kişisel verileri nasıl işlediğini, KVKK kapsamındaki haklarınızı ve veri güvenliği uygulamalarımızı öğrenin.",
+    "Clarere'nun kişisel verileri nasıl işlediğini, KVKK kapsamındaki haklarınızı ve veri güvenliği uygulamalarımızı öğrenin.",
   robots: { index: true, follow: true },
 };
 
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
             <div className="w-8 h-8 bg-primary text-primary-foreground flex items-center justify-center text-sm font-black rounded-lg">
               Q
             </div>
-            <span className="font-bold text-lg tracking-tight">App-Q</span>
+            <span className="font-bold text-lg tracking-tight">Clarere</span>
           </Link>
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             ← Ana Sayfa
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold">1. Veri Sorumlusu</h2>
           <p className="text-muted-foreground leading-relaxed">
-            Bu aydınlatma metni, <strong className="text-foreground">App-Q</strong> platformunu işleten veri sorumlusu tarafından
+            Bu aydınlatma metni, <strong className="text-foreground">Clarere</strong> platformunu işleten veri sorumlusu tarafından
             6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") madde 10 uyarınca hazırlanmıştır.
             Platform, Türkiye'deki kullanıcılara yapay zeka destekli sentetik pazar araştırması hizmetleri sunmaktadır.
           </p>
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
           <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-2">
             <p className="text-foreground font-semibold">Önemli: Sentetik Persona Verileri</p>
             <p className="text-muted-foreground leading-relaxed">
-              App-Q'nun ürettiği sentetik personalar ve mülakat yanıtları, gerçek kişilere ait veriler değildir.
+              Clarere'nun ürettiği sentetik personalar ve mülakat yanıtları, gerçek kişilere ait veriler değildir.
               Bu veriler, yapay zeka modelleri tarafından istatistiksel örüntüler kullanılarak üretilmiş
               kurgusal içeriklerdir. Hiçbir sentetik persona gerçek bir bireyi temsil etmez veya ona atıfta bulunmaz.
             </p>
@@ -175,8 +175,8 @@ export default function PrivacyPage() {
           </div>
           <p className="text-muted-foreground text-sm">
             Haklarınızı kullanmak için:{" "}
-            <a href="mailto:privacy@appq.ai" className="text-primary hover:underline">
-              privacy@appq.ai
+            <a href="mailto:privacy@clarere.com" className="text-primary hover:underline">
+              privacy@clarere.com
             </a>{" "}
             adresine yazılı başvuruda bulunabilirsiniz.
           </p>
@@ -185,7 +185,7 @@ export default function PrivacyPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold">9. Çerezler (Cookies)</h2>
           <p className="text-muted-foreground leading-relaxed">
-            App-Q, oturum yönetimi için <strong className="text-foreground">localStorage</strong> kullanmaktadır.
+            Clarere, oturum yönetimi için <strong className="text-foreground">localStorage</strong> kullanmaktadır.
             Geleneksel çerez (cookie) mekanizması şu an kullanılmamaktadır. Kullanıcı adı ve oturum bilgileri
             yalnızca tarayıcınızın yerel depolama alanında tutulur ve sunuculara gönderilmez.
           </p>
@@ -206,7 +206,7 @@ export default function PrivacyPage() {
         <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-black rounded">Q</div>
-            <span>App-Q © 2026</span>
+            <span>Clarere © 2026</span>
           </div>
           <div className="flex gap-6">
             <Link href="/" className="hover:text-foreground transition-colors">Ana Sayfa</Link>

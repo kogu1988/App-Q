@@ -54,7 +54,7 @@ const PLAN_META = [
     name: "Enterprise",
     description: "Kurumsal özelleştirme, SLA ve öncelikli destek.",
     cta: "Bize Ulaş",
-    ctaHref: "mailto:hello@appq.ai",
+    ctaHref: "mailto:hello@clarere.com",
     highlight: false,
     hasBillingToggle: false,
     limits: ["Sınırsız", "Özel persona havuzu", "White-label", "Fine-tuning export", "Audit log"],
@@ -167,7 +167,7 @@ export default function HomePage() {
             >
               Q
             </div>
-            <span className="font-semibold text-base tracking-tight text-[#17171c]">App-Q</span>
+            <span className="font-semibold text-base tracking-tight text-[#17171c]">Clarere</span>
           </div>
           <div className="flex items-center gap-6">
             <a href="#pricing" className="text-sm text-[#93939f] hover:text-[#212121] transition-colors hidden sm:block">Fiyatlandırma</a>
@@ -446,16 +446,16 @@ export default function HomePage() {
           <div className="space-y-0">
             {[
               {
-                q: "App-Q nedir?",
-                a: "App-Q, yapay zeka destekli sentetik pazar araştırması platformudur. Gerçek mülakat ve katılımcı rekrutümanı gerektirmeden, bilimsel olarak zemine oturtulmuş sentetik persona panelleriyle ürün fikirlerinizi, fiyatlandırmanızı ve mesajlaşmanızı test edersiniz.",
+                q: "Clarere nedir?",
+                a: "Clarere, yapay zeka destekli sentetik pazar araştırması platformudur. Gerçek mülakat ve katılımcı rekrutümanı gerektirmeden, bilimsel olarak zemine oturtulmuş sentetik persona panelleriyle ürün fikirlerinizi, fiyatlandırmanızı ve mesajlaşmanızı test edersiniz.",
               },
               {
                 q: "Sentetik araştırma gerçek müşteri araştırmasının yerini tutar mı?",
-                a: "Hayır. App-Q bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve bütçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel güven iddiasında bulunmaz.",
+                a: "Hayır. Clarere bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve bütçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel güven iddiasında bulunmaz.",
               },
               {
                 q: "Metodoloji ne kadar güvenilir?",
-                a: "App-Q'nun araştırma motoru; kişilik psikolojisi, bilişsel mimari ve kültürel boyut çerçevelerine dayanan çok katmanlı bilimsel bir altyapı üzerinde çalışır. Bağımsız değerlendirmelerde sistem, 46 farklı araştırma alanında yüksek tema doğruluğu sergilemiş ve uzman UX araştırmacılarının büyük çoğunluğu tarafından insan kalitesinde üretim olarak nitelendirilmiştir.",
+                a: "Clarere'nun araştırma motoru; kişilik psikolojisi, bilişsel mimari ve kültürel boyut çerçevelerine dayanan çok katmanlı bilimsel bir altyapı üzerinde çalışır. Bağımsız değerlendirmelerde sistem, 46 farklı araştırma alanında yüksek tema doğruluğu sergilemiş ve uzman UX araştırmacılarının büyük çoğunluğu tarafından insan kalitesinde üretim olarak nitelendirilmiştir.",
               },
               {
                 q: "Hangi sektör ve ekipler için uygundur?",
@@ -513,7 +513,7 @@ export default function HomePage() {
             >
               Q
             </div>
-            <span className="text-sm text-[#93939f]">App-Q © 2026</span>
+            <span className="text-sm text-[#93939f]">Clarere © 2026</span>
           </div>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-[#93939f]">
             <Link href="/#faq" className="hover:text-[#212121] transition-colors">SSS</Link>

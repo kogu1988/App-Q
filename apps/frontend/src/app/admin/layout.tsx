@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 // Yönetici paneli — arama motorlarında görünmemeli
 export const metadata: Metadata = {
-  title: "App-Q Yönetici Paneli",
+  title: "Clarere Yönetici Paneli",
   robots: {
     index: false,
     follow: false,

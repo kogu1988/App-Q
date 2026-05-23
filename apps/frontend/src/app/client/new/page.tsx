@@ -192,7 +192,7 @@ export default function NewResearchWizard() {
           category: brief.category || (researchMode === "ab_test" ? "A/B Test" : "Genel"),
           title: brief.title || "Araştırma",
           context: brief.idea || "",
-          brand: "App-Q",
+          brand: "Clarere",
           budget: "Standart",
           variant_a: brief.variant_a,
           variant_b: brief.variant_b,

@@ -45,7 +45,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           <div className="w-8 h-8 bg-accent text-accent-foreground flex items-center justify-center font-bold rounded-md">
             Q
           </div>
-          <span className="font-semibold tracking-tight text-lg">App-Q</span>
+          <span className="font-semibold tracking-tight text-lg">Clarere</span>
         </Link>
         <button 
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -66,7 +66,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <div className="w-8 h-8 bg-accent text-accent-foreground flex items-center justify-center font-bold rounded-md">
               Q
             </div>
-            <span className="font-semibold tracking-tight text-lg">App-Q</span>
+            <span className="font-semibold tracking-tight text-lg">Clarere</span>
           </Link>
           <button 
             onClick={() => setSidebarOpen(false)}

@@ -10,6 +10,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin/", "/client/", "/api/"],
       },
     ],
-    sitemap: "https://appq.ai/sitemap.xml",
+    sitemap: "https://clarere.com/sitemap.xml",
   };
 }

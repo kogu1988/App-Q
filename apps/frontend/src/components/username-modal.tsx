@@ -72,7 +72,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
           <div className="w-9 h-9 bg-primary text-primary-foreground flex items-center justify-center text-base font-black rounded-xl">
             Q
           </div>
-          <span className="font-bold text-lg tracking-tight">App-Q</span>
+          <span className="font-bold text-lg tracking-tight">Clarere</span>
         </div>
 
         {/* Başlık */}
