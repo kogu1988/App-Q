@@ -1,10 +1,10 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Check, X, BarChart2, FlaskConical, ShieldCheck, Zap, Brain, FileText } from "lucide-react";
+import { Check, X, BarChart2, FlaskConical, ShieldCheck, Zap, Brain, FileText, ArrowRight } from "lucide-react";
 
-// ── Pricing config ─────────────────────────────────────────────────────────────
+// ── Pricing config ──────────────────────────────────────────────────────────
 
 const MONTHLY_PRICES: Record<string, number | null> = {
   Free: 0,
@@ -14,16 +14,13 @@ const MONTHLY_PRICES: Record<string, number | null> = {
 };
 
 function annualPrice(monthly: number) {
-  // 1 ay bedava = 11 ay öde, 12 ay kullan
   return monthly * 11;
 }
-
 function monthlyEquivalent(monthly: number) {
   return Math.round((monthly * 11) / 12);
 }
 
-
-// ── Plan verisi ────────────────────────────────────────────────────────────────
+// ── Plan data ───────────────────────────────────────────────────────────────
 
 const PLAN_META = [
   {
@@ -111,32 +108,76 @@ const FEATURE_HIGHLIGHTS = [
   },
 ];
 
+// ── Scroll reveal hook ──────────────────────────────────────────────────────
+
+function useReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { el.classList.add("visible"); obs.unobserve(el); } },
+      { threshold: 0.12 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return ref;
+}
+
+function Reveal({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  const ref = useReveal();
+  return (
+    <div
+      ref={ref}
+      className={`reveal ${className}`}
+      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ── Main page ───────────────────────────────────────────────────────────────
+
 export default function HomePage() {
-  // Per-kart faturalama durumu: her plan kendi toggle'ına sahip
   const [cardBilling, setCardBilling] = useState<Record<string, "monthly" | "annual">>({});
   const getBilling = (name: string) => cardBilling[name] ?? "monthly";
   const toggleBilling = (name: string) =>
     setCardBilling((prev) => ({ ...prev, [name]: prev[name] === "annual" ? "monthly" : "annual" }));
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-[#ffffff] text-[#212121]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
 
-      {/* ── NAV ─────────────────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
+      {/* ── ANNOUNCEMENT BAR ─────────────────────────────────────────────── */}
+      <div className="announcement-bar">
+        <span>
+          Grounded Simulation metodolojisi — akademik temelli sentetik araştırma.{" "}
+          <a href="#faq" className="underline underline-offset-2 hover:opacity-70 transition-opacity">Daha fazla bilgi</a>
+        </span>
+      </div>
+
+      {/* ── NAV ──────────────────────────────────────────────────────────── */}
+      <nav className="sticky top-0 z-50 border-b border-[#d9d9dd] bg-white/95 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-primary text-primary-foreground flex items-center justify-center text-sm font-black rounded-lg">
+            <div
+              className="w-8 h-8 flex items-center justify-center text-sm font-bold rounded-[4px]"
+              style={{ background: "#17171c", color: "#fff", fontFamily: "var(--font-mono, monospace)", letterSpacing: "0.04em" }}
+            >
               Q
             </div>
-            <span className="font-bold text-lg tracking-tight">App-Q</span>
+            <span className="font-semibold text-base tracking-tight text-[#17171c]">App-Q</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/admin" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <div className="flex items-center gap-6">
+            <a href="#pricing" className="text-sm text-[#93939f] hover:text-[#212121] transition-colors hidden sm:block">Fiyatlandırma</a>
+            <a href="#faq" className="text-sm text-[#93939f] hover:text-[#212121] transition-colors hidden sm:block">SSS</a>
+            <Link href="/admin" className="text-sm text-[#93939f] hover:text-[#212121] transition-colors hidden md:block">
               Yönetim
             </Link>
             <Link
               href="/client"
-              className="text-sm font-semibold px-4 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              className="btn-pill-primary text-sm"
             >
               Giriş Yap
             </Link>
@@ -144,69 +185,102 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* ── HERO ────────────────────────────────────────────────────────────── */}
-      <section className="max-w-4xl mx-auto px-6 pt-24 pb-20 text-center space-y-6">
-        <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-accent bg-accent/10 px-3 py-1 rounded-full">
-          Grounded Simulation Metodolojisi
-        </div>
-        <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-tight">
-          Gerçek mülakatlardan önce<br />
-          <span className="text-primary">sentetik panel</span> kur.
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Rogers Diffusion + OCEAN psikometrisi + Adversarial Review ile
-          ürün fikirlerinizi AI destekli tüketici panelleriyle test edin.
-          Saatler içinde karar alınabilir içgörü.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-          <Link
-            href="/client"
-            className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-base hover:opacity-90 transition-opacity shadow-md"
-          >
-            Ücretsiz Başla →
-          </Link>
-          <a
-            href="#pricing"
-            className="px-6 py-3 rounded-xl border border-border text-base font-medium hover:bg-muted transition-colors"
-          >
-            Planları Gör
-          </a>
-        </div>
-      </section>
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      {/* Cohere-style: massive type over white canvas, centered, no split */}
+      <section className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
+        <Reveal>
+          <div className="inline-flex items-center gap-2 mb-8">
+            <span className="chip-coral">Grounded Simulation</span>
+            <span className="mono-label text-[#93939f]">Bilal, 2026</span>
+          </div>
+        </Reveal>
 
-      {/* ── FEATURE HIGHLIGHTS ──────────────────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto px-6 pb-24">
-        <div className="text-center mb-10 space-y-2">
-          <h2 className="text-2xl font-black tracking-tight">Nasıl Çalışır?</h2>
-          <p className="text-sm text-muted-foreground">Defne'den sentez raporuna — 6 adımda AI destekli araştırma.</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURE_HIGHLIGHTS.map(({ icon: Icon, title, desc }) => (
-            <div
-              key={title}
-              className="p-6 rounded-2xl border border-border bg-card hover:border-accent/50 hover:shadow-md transition-all duration-300 space-y-3"
-            >
-              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                <Icon size={20} className="text-accent" />
-              </div>
-              <h3 className="font-bold text-base">{title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+        <Reveal delay={80}>
+          <h1 className="display-hero text-[#17171c] mb-6" style={{ maxWidth: "880px", margin: "0 auto 1.5rem" }}>
+            Gerçek mülakatlardan önce{" "}
+            <span style={{ color: "#ff7759" }}>sentetik panel</span> kur.
+          </h1>
+        </Reveal>
+
+        <Reveal delay={160}>
+          <p className="text-lg text-[#616161] max-w-2xl mx-auto leading-relaxed mb-10" style={{ fontWeight: 400 }}>
+            Rogers Diffusion + OCEAN psikometrisi + Adversarial Review ile
+            ürün fikirlerinizi AI destekli tüketici panelleriyle test edin.
+            Saatler içinde karar alınabilir içgörü.
+          </p>
+        </Reveal>
+
+        <Reveal delay={240}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link href="/client" className="btn-pill-primary text-sm">
+              Ücretsiz Başla <ArrowRight size={14} className="ml-2 inline" />
+            </Link>
+            <a href="#pricing" className="btn-text-link text-sm">
+              Planları Gör
+            </a>
+          </div>
+        </Reveal>
+
+        {/* Trust strip */}
+        <Reveal delay={320}>
+          <div className="mt-16 pt-8 border-t border-[#d9d9dd]">
+            <p className="mono-label text-[#93939f] mb-6">Platform hakkında</p>
+            <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 text-sm text-[#93939f]">
+              <span>RFI Skoru 0.815</span>
+              <span className="text-[#d9d9dd]">·</span>
+              <span>46 araştırma alanında test edildi</span>
+              <span className="text-[#d9d9dd]">·</span>
+              <span>%93 tema doğruluğu</span>
+              <span className="text-[#d9d9dd]">·</span>
+              <span>Türkiye odaklı TÜAD 2025 veri seti</span>
             </div>
-          ))}
+          </div>
+        </Reveal>
+      </section>
+
+      {/* ── DARK FEATURE BAND — Cohere "dark-feature-band" ─────────────── */}
+      <section className="band-deep-green py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <Reveal>
+            <p className="mono-label text-[#edfce9]/60 mb-4">Nasıl çalışır?</p>
+            <h2 className="display-section text-white mb-3">
+              6 adımda AI araştırma
+            </h2>
+            <p className="text-lg text-white/60 mb-12 max-w-xl">Defne'den sentez raporuna — bilimsel altyapı ile desteklenen tam araştırma akışı.</p>
+          </Reveal>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {FEATURE_HIGHLIGHTS.map(({ icon: Icon, title, desc }, i) => (
+              <Reveal key={title} delay={i * 60}>
+                <div
+                  className="p-6 rounded-[8px] border border-white/10 hover:border-white/25 transition-all duration-300"
+                  style={{ background: "rgba(255,255,255,0.04)" }}
+                >
+                  <div className="w-9 h-9 rounded-[4px] flex items-center justify-center mb-4" style={{ background: "#ff7759" }}>
+                    <Icon size={18} color="#fff" />
+                  </div>
+                  <h3 className="text-white font-semibold text-base mb-2">{title}</h3>
+                  <p className="text-white/55 text-sm leading-relaxed">{desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
-
-      {/* ── PRICING ─────────────────────────────────────────────────────────── */}
-      <section id="pricing" className="max-w-6xl mx-auto px-6 pb-24 space-y-12 scroll-mt-16">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl font-black tracking-tight">Planlar & Fiyatlandırma</h2>
-          <p className="text-muted-foreground">İstediğin zaman yükselt veya düşür. Gizli ücret yok.</p>
-        </div>
+      {/* ── PRICING ──────────────────────────────────────────────────────── */}
+      <section id="pricing" className="max-w-6xl mx-auto px-6 py-24 scroll-mt-16">
+        <Reveal>
+          <div className="mb-12">
+            <p className="mono-label text-[#93939f] mb-3">Planlar</p>
+            <h2 className="display-section text-[#17171c] mb-2">Fiyatlandırma</h2>
+            <p className="text-[#616161] text-base">İstediğin zaman yükselt veya düşür. Gizli ücret yok.</p>
+          </div>
+        </Reveal>
 
         {/* Plan Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {PLAN_META.map((plan) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+          {PLAN_META.map((plan, idx) => {
             const monthlyPx = MONTHLY_PRICES[plan.name];
             const isVariable = monthlyPx === null;
             const isAnnual = getBilling(plan.name) === "annual";
@@ -223,186 +297,229 @@ export default function HomePage() {
             const periodDisplay = isVariable ? "" : showAnnual ? "/yıl" : "/ay";
 
             return (
-              <div
-                key={plan.name}
-                className={`relative rounded-2xl border p-6 flex flex-col gap-4 transition-all duration-300 ${
-                  plan.highlight
-                    ? "border-primary bg-primary/5 shadow-xl shadow-primary/10 scale-[1.02]"
-                    : "border-border bg-card hover:shadow-md hover:border-border/80"
-                }`}
-              >
-                {plan.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-bold tracking-wider uppercase shadow">
-                    En Popüler
-                  </div>
-                )}
-                <div>
-                  <h3 className="text-lg font-bold">{plan.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{plan.description}</p>
-                </div>
-
-                {/* Per-card billing toggle */}
-                {plan.hasBillingToggle && (
-                  <div className="flex items-center gap-1 p-0.5 bg-muted rounded-lg border border-border/70 self-start">
-                    <button
-                      onClick={() => toggleBilling(plan.name)}
-                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${
-                        !isAnnual
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      Aylık
-                    </button>
-                    <button
-                      onClick={() => toggleBilling(plan.name)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${
-                        isAnnual
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      Yıllık
-                      <span className="text-[9px] font-bold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 px-1 py-0.5 rounded-full leading-none">
-                        -8%
-                      </span>
-                    </button>
-                  </div>
-                )}
-
-                <div className="space-y-0.5">
-                  <div className="flex items-end gap-1">
-                    <span className="text-3xl font-black">{priceDisplay}</span>
-                    <span className="text-sm text-muted-foreground mb-0.5">{periodDisplay}</span>
-                  </div>
-                  {showAnnual && monthlyPx && (
-                    <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-                      Aylık ₺{monthlyEquivalent(monthlyPx).toLocaleString("tr-TR")} &mdash; 1 ay bedava
-                    </p>
-                  )}
-                </div>
-                <ul className="space-y-1.5 flex-1">
-                  {plan.limits.map((l) => (
-                    <li key={l} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check size={13} className="text-green-500 shrink-0" />
-                      {l}
-                    </li>
-                  ))}
-                  <li className="flex items-center gap-2 text-xs text-muted-foreground/60 pt-1 border-t border-border/40 mt-1">
-                    <X size={11} className="text-muted-foreground/40 shrink-0" />
-                    Kullanılmayan haklar devretmez
-                  </li>
-                </ul>
-                <Link
-                  href={plan.ctaHref}
-                  className={`text-center text-sm font-semibold py-2.5 rounded-xl transition-all ${
+              <Reveal key={plan.name} delay={idx * 60}>
+                <div
+                  className={`relative rounded-[8px] border p-6 flex flex-col gap-4 h-full transition-all duration-300 ${
                     plan.highlight
-                      ? "bg-primary text-primary-foreground hover:opacity-90 shadow"
-                      : "bg-muted hover:bg-muted/70 text-foreground"
+                      ? "border-[#17171c] bg-[#17171c] text-white shadow-xl"
+                      : "border-[#d9d9dd] bg-white hover:border-[#17171c] hover:shadow-sm"
                   }`}
                 >
-                  {plan.cta}
-                </Link>
-              </div>
+                  {plan.highlight && (
+                    <div
+                      className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold tracking-wider uppercase"
+                      style={{ background: "#ff7759", color: "#fff" }}
+                    >
+                      En Popüler
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="text-base font-semibold mb-0.5">{plan.name}</h3>
+                    <p className={`text-xs ${plan.highlight ? "text-white/55" : "text-[#93939f]"}`}>{plan.description}</p>
+                  </div>
+
+                  {/* Billing toggle */}
+                  {plan.hasBillingToggle && (
+                    <div
+                      className={`flex items-center gap-0.5 p-0.5 self-start rounded-full border ${
+                        plan.highlight ? "border-white/20 bg-white/10" : "border-[#d9d9dd] bg-[#f5f4f1]"
+                      }`}
+                    >
+                      <button
+                        onClick={() => toggleBilling(plan.name)}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                          !isAnnual
+                            ? plan.highlight ? "bg-white text-[#17171c] shadow-sm" : "bg-white text-[#17171c] shadow-sm"
+                            : plan.highlight ? "text-white/50" : "text-[#93939f]"
+                        }`}
+                      >
+                        Aylık
+                      </button>
+                      <button
+                        onClick={() => toggleBilling(plan.name)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                          isAnnual
+                            ? plan.highlight ? "bg-white text-[#17171c] shadow-sm" : "bg-white text-[#17171c] shadow-sm"
+                            : plan.highlight ? "text-white/50" : "text-[#93939f]"
+                        }`}
+                      >
+                        Yıllık
+                        <span className="text-[9px] font-bold bg-[#ff7759] text-white px-1 py-0.5 rounded-full leading-none">
+                          -8%
+                        </span>
+                      </button>
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex items-end gap-1">
+                      <span className="text-3xl font-bold tracking-tight" style={{ letterSpacing: "-0.03em" }}>{priceDisplay}</span>
+                      <span className={`text-sm mb-0.5 ${plan.highlight ? "text-white/50" : "text-[#93939f]"}`}>{periodDisplay}</span>
+                    </div>
+                    {showAnnual && monthlyPx && (
+                      <p className="text-xs mt-1" style={{ color: plan.highlight ? "#edfce9" : "#003c33" }}>
+                        Aylık ₺{monthlyEquivalent(monthlyPx).toLocaleString("tr-TR")} — 1 ay bedava
+                      </p>
+                    )}
+                  </div>
+
+                  <ul className="space-y-1.5 flex-1">
+                    {plan.limits.map((l) => (
+                      <li key={l} className={`flex items-center gap-2 text-sm ${plan.highlight ? "text-white/80" : "text-[#616161]"}`}>
+                        <Check size={13} color={plan.highlight ? "#edfce9" : "#003c33"} className="shrink-0" />
+                        {l}
+                      </li>
+                    ))}
+                    <li className={`flex items-center gap-2 text-xs pt-1 border-t mt-1 ${plan.highlight ? "border-white/10 text-white/30" : "border-[#d9d9dd] text-[#93939f]/60"}`}>
+                      <X size={11} className="shrink-0" />
+                      Kullanılmayan haklar devretmez
+                    </li>
+                  </ul>
+
+                  <Link
+                    href={plan.ctaHref}
+                    className={`text-center text-sm font-medium py-2.5 rounded-full transition-all ${
+                      plan.highlight
+                        ? "bg-white text-[#17171c] hover:bg-white/90"
+                        : "bg-[#17171c] text-white hover:opacity-85 btn-pill-primary"
+                    }`}
+                  >
+                    {plan.cta}
+                  </Link>
+                </div>
+              </Reveal>
             );
           })}
         </div>
 
-        {/* Comparison Table */}
-        <div className="overflow-x-auto rounded-2xl border border-border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="text-left px-5 py-3.5 font-semibold text-muted-foreground">Özellik</th>
-                {PLAN_META.map((p) => (
-                  <th
-                    key={p.name}
-                    className={`text-center px-4 py-3.5 font-bold ${p.highlight ? "text-primary" : "text-foreground"}`}
-                  >
-                    {p.name}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {FEATURES.map((f, i) => (
-                <tr
-                  key={f.label}
-                  className={`border-b border-border/50 ${i % 2 === 0 ? "bg-background" : "bg-muted/20"}`}
-                >
-                  <td className="px-5 py-3 font-medium text-foreground">{f.label}</td>
-                  {f.plans.map((has, j) => (
-                    <td key={j} className="px-4 py-3 text-center">
-                      {has
-                        ? <Check size={15} className="text-green-500 mx-auto" />
-                        : <X size={15} className="text-muted-foreground/30 mx-auto" />}
-                    </td>
+        {/* Comparison table */}
+        <Reveal>
+          <div className="overflow-x-auto rounded-[8px] border border-[#d9d9dd]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#d9d9dd] bg-[#f5f4f1]">
+                  <th className="text-left px-5 py-3.5 font-medium text-[#93939f]">Özellik</th>
+                  {PLAN_META.map((p) => (
+                    <th
+                      key={p.name}
+                      className={`text-center px-4 py-3.5 font-semibold ${p.highlight ? "text-[#17171c]" : "text-[#616161]"}`}
+                    >
+                      {p.name}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <p className="text-center text-xs text-muted-foreground">
-          Tüm fiyatlar KDV hariçtir. Yıllık faturalamalarda %20 indirim uygulanır.
-        </p>
-      </section>
-
-      {/* ── FAQ ────────────────────────────────────────────────────────────────────── */}
-      <section id="faq" className="max-w-3xl mx-auto px-6 pb-24 scroll-mt-16">
-        <div className="text-center mb-10 space-y-2">
-          <h2 className="text-2xl font-black tracking-tight">Sıkça Sorulan Sorular</h2>
-          <p className="text-sm text-muted-foreground">Sentetik araştırma hakkında merak ettikleriniz.</p>
-        </div>
-        <div className="space-y-3">
-          {[
-            {
-              q: "App-Q nedir?",
-              a: "App-Q, yapay zeka destekli sentetik pazar araştırması platformudur. Gerçek mülakat ve katılımcı rekrutümanı gerektirmeden, bilimsel olarak zemine oturtulmuş sentetik persona panelleriyle ürün fikirlerinizi, fiyatlandırmanızı ve mesajlaşmanızı test edersiniz."
-            },
-            {
-              q: "Sentetik araştırma gerçek müşteri araştırmasının yerini tutar mı?",
-              a: "Hayır. App-Q bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve bütçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel güven iddiasında bulunmaz."
-            },
-            {
-              q: "Metodoloji ne kadar güvenilir?",
-              a: "App-Q’nun araştırma motoru; kişilik psikolojisi, bilişsel mimari ve kültürel boyut çerçevelerine dayanan çok katmanlı bilimsel bir altyapı üzerinde çalışır. Bağımsız değerlendirmelerde sistem, 46 farklı araştırma alanında yüksek tema doğruluğu sergilemiş ve uzman UX araştırmacılarının büyük çoğunluğu tarafından insan kalitesinde üretim olarak nitelendirilmiştir. Ham yapay zeka çıktısına kıyasla çok daha odaklı ve gürültüsüz bulgular elde edilmesini sağlar."
-            },
-            {
-              q: "Hangi sektör ve ekipler için uygundur?",
-              a: "Strateji ve kreatif ajanslar, B2B SaaS ürün ekipleri, e-ticaret kurucuları, büyüme pazarlamacıları ve konumlandırma / fiyatlandırma / mesajlaşma testlerini hızla çalıştırmak isteyen ürün yöneticileri için tasarlandı."
-            },
-            {
-              q: "Ücretsiz plan ne kadar süre kullanılabilir?",
-              a: "Ücretsiz plan süresiz kullanılabilir; aylık 2 simülasyon ve 50.000 token ile sınırlıdır. Kart bilgisi gerekmez. Daha fazla simülasyon için Starter, Pro veya Enterprise planlarına geçiş yapabilirsiniz."
-            },
-          ].map(({ q, a }, i) => (
-            <details key={i} className="group border border-border rounded-xl overflow-hidden">
-              <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-semibold text-sm hover:bg-muted/30 transition-colors list-none">
-                <span>{q}</span>
-                <span className="text-muted-foreground group-open:rotate-45 transition-transform duration-200 text-lg font-light">+</span>
-              </summary>
-              <div className="px-5 pb-4 text-sm text-muted-foreground leading-relaxed border-t border-border pt-3">
-                {a}
-              </div>
-            </details>
-          ))}
-        </div>
-      </section>
-
-      {/* ── FOOTER ───────────────────────────────────────────────────────────────────── */}
-      <footer className="border-t border-border py-8">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-black rounded">Q</div>
-            <span>App-Q © 2026</span>
+              </thead>
+              <tbody>
+                {FEATURES.map((f, i) => (
+                  <tr
+                    key={f.label}
+                    className={`border-b border-[#f2f2f2] ${i % 2 === 0 ? "bg-white" : "bg-[#fafafa]"}`}
+                  >
+                    <td className="px-5 py-3 font-medium text-[#212121]">{f.label}</td>
+                    {f.plans.map((has, j) => (
+                      <td key={j} className="px-4 py-3 text-center">
+                        {has
+                          ? <Check size={14} color="#003c33" className="mx-auto" />
+                          : <X size={14} className="text-[#d9d9dd] mx-auto" />}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="flex flex-wrap justify-center gap-6">
-            <Link href="/#faq" className="hover:text-foreground transition-colors">SSS</Link>
-            <Link href="/#pricing" className="hover:text-foreground transition-colors">Fiyatlandırma</Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">Gizlilik Politikası</Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors">Kullanım Koşulları</Link>
+          <p className="text-center text-xs text-[#93939f] mt-4">
+            Tüm fiyatlar KDV hariçtir. Yıllık faturalamalarda %8 indirim uygulanır.
+          </p>
+        </Reveal>
+      </section>
+
+      {/* ── FAQ — Cohere research-table style ────────────────────────────── */}
+      <section id="faq" className="surface-stone py-20 px-6 scroll-mt-16">
+        <div className="max-w-3xl mx-auto">
+          <Reveal>
+            <p className="mono-label text-[#93939f] mb-3">Merak edilenler</p>
+            <h2 className="display-section text-[#17171c] mb-10">Sıkça Sorulan Sorular</h2>
+          </Reveal>
+
+          <div className="space-y-0">
+            {[
+              {
+                q: "App-Q nedir?",
+                a: "App-Q, yapay zeka destekli sentetik pazar araştırması platformudur. Gerçek mülakat ve katılımcı rekrutümanı gerektirmeden, bilimsel olarak zemine oturtulmuş sentetik persona panelleriyle ürün fikirlerinizi, fiyatlandırmanızı ve mesajlaşmanızı test edersiniz.",
+              },
+              {
+                q: "Sentetik araştırma gerçek müşteri araştırmasının yerini tutar mı?",
+                a: "Hayır. App-Q bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve bütçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel güven iddiasında bulunmaz.",
+              },
+              {
+                q: "Metodoloji ne kadar güvenilir?",
+                a: "App-Q'nun araştırma motoru; kişilik psikolojisi, bilişsel mimari ve kültürel boyut çerçevelerine dayanan çok katmanlı bilimsel bir altyapı üzerinde çalışır. Bağımsız değerlendirmelerde sistem, 46 farklı araştırma alanında yüksek tema doğruluğu sergilemiş ve uzman UX araştırmacılarının büyük çoğunluğu tarafından insan kalitesinde üretim olarak nitelendirilmiştir.",
+              },
+              {
+                q: "Hangi sektör ve ekipler için uygundur?",
+                a: "Strateji ve kreatif ajanslar, B2B SaaS ürün ekipleri, e-ticaret kurucuları, büyüme pazarlamacıları ve konumlandırma / fiyatlandırma / mesajlaşma testlerini hızla çalıştırmak isteyen ürün yöneticileri için tasarlandı.",
+              },
+              {
+                q: "Ücretsiz plan ne kadar süre kullanılabilir?",
+                a: "Ücretsiz plan süresiz kullanılabilir; aylık 2 simülasyon ve 50.000 token ile sınırlıdır. Kart bilgisi gerekmez.",
+              },
+            ].map(({ q, a }, i) => (
+              <Reveal key={i} delay={i * 40}>
+                <details className="group border-b border-[#d9d9dd] py-1">
+                  <summary className="flex items-start justify-between py-4 cursor-pointer font-medium text-base text-[#17171c] hover:text-[#212121] list-none gap-4">
+                    <span>{q}</span>
+                    <span className="text-[#93939f] group-open:rotate-45 transition-transform duration-200 text-xl font-light shrink-0 mt-0.5">+</span>
+                  </summary>
+                  <div className="pb-5 text-sm text-[#616161] leading-relaxed max-w-2xl">
+                    {a}
+                  </div>
+                </details>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA BAND ─────────────────────────────────────────────────────── */}
+      <section className="band-primary py-20 px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <Reveal>
+            <p className="mono-label text-white/40 mb-6">Başlamak için hazır mısın?</p>
+            <h2 className="display-section text-white mb-4">
+              İlk araştırmanı<br />bugün çalıştır.
+            </h2>
+            <p className="text-white/55 text-base mb-10 max-w-md mx-auto">
+              Kart bilgisi gerekmez. Ücretsiz plan ile platformu tanı, hazır olunca yükselt.
+            </p>
+            <Link
+              href="/client"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white text-[#17171c] font-medium text-sm hover:bg-white/90 transition-all"
+            >
+              Ücretsiz Başla <ArrowRight size={14} />
+            </Link>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── FOOTER ───────────────────────────────────────────────────────── */}
+      <footer className="border-t border-[#d9d9dd] bg-white py-8 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-5 h-5 flex items-center justify-center text-[10px] font-bold rounded-[4px]"
+              style={{ background: "#17171c", color: "#fff", fontFamily: "var(--font-mono, monospace)" }}
+            >
+              Q
+            </div>
+            <span className="text-sm text-[#93939f]">App-Q © 2026</span>
+          </div>
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-[#93939f]">
+            <Link href="/#faq" className="hover:text-[#212121] transition-colors">SSS</Link>
+            <Link href="/#pricing" className="hover:text-[#212121] transition-colors">Fiyatlandırma</Link>
+            <Link href="/privacy" className="hover:text-[#212121] transition-colors">Gizlilik</Link>
+            <Link href="/terms" className="hover:text-[#212121] transition-colors">Kullanım Koşulları</Link>
           </div>
         </div>
       </footer>

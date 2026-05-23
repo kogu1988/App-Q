@@ -4,117 +4,156 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ── Cohere Design System — Space Grotesk + Inter fallback ──────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500&family=Space+Mono:wght@400;700&display=swap');
+
 @theme {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
+  /* Cohere palette — from DESIGN.md */
+  --color-cohere-black:    #000000;
+  --color-primary:         #17171c;
+  --color-ink:             #212121;
+  --color-deep-green:      #003c33;
+  --color-dark-navy:       #071829;
+  --color-canvas:          #ffffff;
+  --color-soft-stone:      #eeece7;
+  --color-pale-green:      #edfce9;
+  --color-pale-blue:       #f1f5ff;
+  --color-hairline:        #d9d9dd;
+  --color-border-light:    #e5e7eb;
+  --color-card-border:     #f2f2f2;
+  --color-muted-text:      #93939f;
+  --color-slate:           #75758a;
+  --color-body-muted:      #616161;
+  --color-action-blue:     #1863dc;
+  --color-focus-blue:      #4c6ee6;
+  --color-coral:           #ff7759;
+  --color-coral-soft:      #ffad9b;
+  --color-error:           #b30000;
+
+  /* shadcn compat tokens — mapped to Cohere palette */
+  --color-background:        var(--background);
+  --color-foreground:        var(--foreground);
+  --color-card:              var(--card);
+  --color-card-foreground:   var(--card-foreground);
+  --color-popover:           var(--popover);
+  --color-popover-foreground:var(--popover-foreground);
+  --color-secondary:         var(--secondary);
+  --color-secondary-foreground:var(--secondary-foreground);
+  --color-muted:             var(--muted);
+  --color-muted-foreground:  var(--muted-foreground);
+  --color-accent:            var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-destructive:       var(--destructive);
+  --color-border:            var(--border);
+  --color-input:             var(--input);
+  --color-ring:              var(--ring);
+  --color-sidebar-ring:      var(--sidebar-ring);
+  --color-sidebar-border:    var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent:    var(--sidebar-accent);
+  --color-sidebar-primary-foreground:var(--sidebar-primary-foreground);
+  --color-sidebar-primary:   var(--sidebar-primary);
+  --color-sidebar-foreground:var(--sidebar-foreground);
+  --color-sidebar:           var(--sidebar);
+  --color-chart-5:           var(--chart-5);
+  --color-chart-4:           var(--chart-4);
+  --color-chart-3:           var(--chart-3);
+  --color-chart-2:           var(--chart-2);
+  --color-chart-1:           var(--chart-1);
+
+  /* Radius — Cohere scale */
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   16px;
+  --radius-lg:   22px;
+  --radius-xl:   30px;
+  --radius-pill: 32px;
+  --radius-full: 9999px;
+
+  /* radius aliases for shadcn */
+  --radius-sm:   calc(var(--radius) * 0.6);
+  --radius-md:   calc(var(--radius) * 0.8);
+  --radius-lg:   var(--radius);
+  --radius-xl:   calc(var(--radius) * 1.4);
+  --radius-2xl:  calc(var(--radius) * 1.8);
+  --radius-3xl:  calc(var(--radius) * 2.2);
+  --radius-4xl:  calc(var(--radius) * 2.6);
+
+  /* Fonts */
+  --font-sans:    'Space Grotesk', 'Inter', ui-sans-serif, system-ui;
+  --font-mono:    'Space Mono', ui-monospace, monospace;
+  --font-heading: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui;
 }
 
 :root {
-  --background: #F8FAFC;
-  --foreground: #334155;
-  --card: #FFFFFF;
-  --card-foreground: #334155;
-  --popover: #FFFFFF;
-  --popover-foreground: #334155;
-  --primary: #1E293B;
-  --primary-foreground: #FFFFFF;
-  --secondary: #E2E8F0;
-  --secondary-foreground: #1E293B;
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
-  --accent: #6366F1;
-  --accent-foreground: #FFFFFF;
-  --destructive: #EF4444;
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #6366F1;
-  --chart-1: #1E293B;
-  --chart-2: #6366F1;
-  --chart-3: #10B981;
-  --chart-4: #F59E0B;
-  --chart-5: #3B82F6;
-  --radius: 0.5rem;
-  --sidebar: #F8FAFC;
-  --sidebar-foreground: #334155;
-  --sidebar-primary: #1E293B;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #E2E8F0;
-  --sidebar-accent-foreground: #1E293B;
-  --sidebar-border: #E2E8F0;
-  --sidebar-ring: #6366F1;
+  /* Cohere light canvas */
+  --background:              #ffffff;
+  --foreground:              #212121;
+  --card:                    #ffffff;
+  --card-foreground:         #212121;
+  --popover:                 #ffffff;
+  --popover-foreground:      #212121;
+  --primary:                 #17171c;
+  --primary-foreground:      #ffffff;
+  --secondary:               #eeece7;
+  --secondary-foreground:    #17171c;
+  --muted:                   #f5f4f1;
+  --muted-foreground:        #93939f;
+  --accent:                  #ff7759;   /* coral — Cohere editorial accent, NO purple */
+  --accent-foreground:       #17171c;
+  --destructive:             #b30000;
+  --border:                  #d9d9dd;
+  --input:                   #e5e7eb;
+  --ring:                    #4c6ee6;
+  --radius:                  0.5rem;
+  --chart-1:                 #17171c;
+  --chart-2:                 #ff7759;
+  --chart-3:                 #003c33;
+  --chart-4:                 #1863dc;
+  --chart-5:                 #93939f;
+  --sidebar:                 #eeece7;
+  --sidebar-foreground:      #212121;
+  --sidebar-primary:         #17171c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent:          #d9d9dd;
+  --sidebar-accent-foreground: #17171c;
+  --sidebar-border:          #d9d9dd;
+  --sidebar-ring:            #4c6ee6;
 }
 
+/* Dark mode — Cohere deep green / dark navy */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background:              #17171c;
+  --foreground:              #ffffff;
+  --card:                    #212121;
+  --card-foreground:         #ffffff;
+  --popover:                 #212121;
+  --popover-foreground:      #ffffff;
+  --primary:                 #ffffff;
+  --primary-foreground:      #17171c;
+  --secondary:               #2c2c33;
+  --secondary-foreground:    #ffffff;
+  --muted:                   #2c2c33;
+  --muted-foreground:        #93939f;
+  --accent:                  #ff7759;
+  --accent-foreground:       #ffffff;
+  --destructive:             #ff4444;
+  --border:                  rgba(255,255,255,0.10);
+  --input:                   rgba(255,255,255,0.12);
+  --ring:                    #4c6ee6;
+  --chart-1:                 #ffffff;
+  --chart-2:                 #ff7759;
+  --chart-3:                 #edfce9;
+  --chart-4:                 #1863dc;
+  --chart-5:                 #75758a;
+  --sidebar:                 #212121;
+  --sidebar-foreground:      #ffffff;
+  --sidebar-primary:         #ffffff;
+  --sidebar-primary-foreground: #17171c;
+  --sidebar-accent:          #2c2c33;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border:          rgba(255,255,255,0.10);
+  --sidebar-ring:            #4c6ee6;
 }
 
 @layer base {
@@ -123,14 +162,146 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
   }
   html {
-    @apply font-sans;
+    font-family: var(--font-sans);
   }
   .toaster {
     --normal-bg: var(--popover);
     --normal-text: var(--popover-foreground);
     --normal-border: var(--border);
     --border-radius: var(--radius);
+  }
+}
+
+/* ── Cohere-specific utilities ─────────────────────────────────────────────── */
+@layer utilities {
+  /* Tight display headline — Cohere's monumental type */
+  .display-hero {
+    font-family: var(--font-heading);
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .display-section {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 3.75rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .display-card {
+    font-family: var(--font-heading);
+    font-size: clamp(1.25rem, 3vw, 2rem);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .mono-label {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Dark product bands */
+  .band-deep-green {
+    background-color: #003c33;
+    color: #ffffff;
+  }
+  .band-dark-navy {
+    background-color: #071829;
+    color: #ffffff;
+  }
+  .band-primary {
+    background-color: #17171c;
+    color: #ffffff;
+  }
+
+  /* Soft stone surface */
+  .surface-stone {
+    background-color: #eeece7;
+    color: #212121;
+  }
+
+  /* Pill CTA — Cohere's primary action style */
+  .btn-pill-primary {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.75rem;
+    border-radius: 9999px;
+    background-color: #17171c;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: opacity 0.15s ease;
+    text-decoration: none;
+  }
+  .btn-pill-primary:hover { opacity: 0.85; }
+
+  .btn-text-link {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.9375rem;
+    font-weight: 400;
+    color: #212121;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: opacity 0.15s;
+  }
+  .btn-text-link:hover { opacity: 0.65; }
+
+  .btn-pill-outline {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 1rem;
+    border-radius: 9999px;
+    border: 1px solid #d9d9dd;
+    font-size: 0.875rem;
+    font-weight: 400;
+    background: transparent;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .btn-pill-outline:hover { border-color: #17171c; background: #f5f4f1; }
+
+  /* Coral chip */
+  .chip-coral {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    border: 1px solid #ff7759;
+    color: #ff7759;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: transparent;
+  }
+
+  /* Announcement bar */
+  .announcement-bar {
+    height: 36px;
+    background-color: #000000;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    letter-spacing: 0;
+  }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
   }
 }
