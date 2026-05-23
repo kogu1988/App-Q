@@ -3,15 +3,123 @@
 import Link from "next/link";
 import { Toaster } from "@/components/ui/sonner";
 import { useState, useEffect, Suspense } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, User, Zap, ArrowUpRight } from "lucide-react";
 import { UsernameModal } from "@/components/username-modal";
+import { useClientPlan } from "@/hooks/use-client-plan";
+
+// ── Sidebar Plan Widget ──────────────────────────────────────────────────────
+
+function SidebarPlanWidget() {
+  const { plan, loading } = useClientPlan();
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-border bg-background p-3 space-y-2 animate-pulse">
+        <div className="h-3 bg-muted rounded w-2/3" />
+        <div className="h-2 bg-muted rounded w-full" />
+        <div className="h-2 bg-muted rounded w-1/2" />
+      </div>
+    );
+  }
+
+  const used = plan.period_simulations;
+  const max = plan.limits.max_simulations;
+  const isUnlimited = max >= 9999;
+  const pct = isUnlimited ? 100 : Math.min(Math.round((used / max) * 100), 100);
+  const isNearLimit = !isUnlimited && pct >= 80;
+  const remaining = isUnlimited ? null : Math.max(0, max - used);
+
+  const periodEnd = (() => {
+    if (!plan.period_start) return null;
+    const start = new Date(plan.period_start);
+    const days = plan.billing_cycle === "annual" ? 365 : 30;
+    start.setDate(start.getDate() + days);
+    return start.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+  })();
+
+  const PLAN_COLORS: Record<string, { bg: string; text: string }> = {
+    Free:       { bg: "bg-[#eeece7]",  text: "text-[#17171c]" },
+    Starter:    { bg: "bg-[#f1f5ff]",  text: "text-[#1863dc]" },
+    Pro:        { bg: "bg-[#edfce9]",  text: "text-[#003c33]" },
+    Enterprise: { bg: "bg-amber-100",  text: "text-amber-800" },
+  };
+  const planColor = PLAN_COLORS[plan.plan_type] ?? PLAN_COLORS.Free;
+  const showUpgrade = plan.plan_type === "Free" || plan.plan_type === "Starter";
+
+  return (
+    <div className={`rounded-xl border p-3 space-y-2.5 transition-colors ${
+      isNearLimit ? "border-amber-300 bg-amber-50" : "border-border bg-background"
+    }`}>
+      {/* Plan badge + icon */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Zap size={12} className={isNearLimit ? "text-amber-500" : "text-muted-foreground"} />
+          <span className="text-[11px] font-semibold text-muted-foreground">Plan</span>
+        </div>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${planColor.bg} ${planColor.text}`}>
+          {plan.plan_type}
+        </span>
+      </div>
+
+      {/* Usage */}
+      {!isUnlimited ? (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-muted-foreground">
+              Bu dönem kullanım
+            </span>
+            <span className={`text-[11px] font-bold tabular-nums ${
+              isNearLimit ? "text-amber-600" : "text-[#212121]"
+            }`}>
+              {used} / {max}
+            </span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                isNearLimit ? "bg-amber-500" : "bg-[#003c33]"
+              }`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground/70">
+            {remaining === 0
+              ? "Limit doldu"
+              : `${remaining} araştırma hakkı kaldı`}
+          </p>
+        </div>
+      ) : (
+        <p className="text-[11px] text-[#003c33] font-semibold">Sinirsiz araştırma</p>
+      )}
+
+      {/* Period reset */}
+      {periodEnd && (
+        <p className="text-[10px] text-muted-foreground/60 border-t border-border pt-2">
+          Sıfırlanma: <span className="font-medium text-muted-foreground">{periodEnd}</span>
+        </p>
+      )}
+
+      {/* Upgrade CTA */}
+      {showUpgrade && (
+        <Link
+          href="/#pricing"
+          className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg bg-[#17171c] text-white text-[11px] font-semibold hover:opacity-85 transition-opacity"
+        >
+          <span>Planı Yükselt</span>
+          <ArrowUpRight size={12} />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+// ── Layout ───────────────────────────────────────────────────────────────────
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
 
-  // İlk yüklemede username kontrolü
   useEffect(() => {
     const username = localStorage.getItem("appq_username");
     if (!username) {
@@ -29,7 +137,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
 
-      {/* Username Modal — ilk girişte göster */}
       {showModal && (
         <Suspense>
           <UsernameModal onComplete={(username) => {
@@ -45,7 +152,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           <img src="/logo.png" alt="Clarere" className="h-8 w-auto object-contain" />
           <span className="font-semibold tracking-tight text-lg">Clarere</span>
         </Link>
-        <button 
+        <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="p-2 border border-border rounded-md hover:bg-sidebar-accent transition-colors"
           aria-label="Toggle menu"
@@ -54,17 +161,18 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         </button>
       </header>
 
-      {/* Sidebar - Desktop & Mobile Drawer */}
+      {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 border-r border-border bg-sidebar p-6 flex flex-col gap-8 transition-transform duration-300 md:translate-x-0 md:static md:z-auto
+        fixed inset-y-0 left-0 z-50 w-64 border-r border-border bg-sidebar flex flex-col transition-transform duration-300 md:translate-x-0 md:static md:z-auto
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
-        <div className="flex items-center justify-between">
+        {/* Logo */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
           <Link href="/" className="flex items-center gap-2">
             <img src="/logo.png" alt="Clarere" className="h-8 w-auto object-contain" />
             <span className="font-semibold tracking-tight text-lg">Clarere</span>
           </Link>
-          <button 
+          <button
             onClick={() => setSidebarOpen(false)}
             className="md:hidden p-1 border border-border rounded-md hover:bg-sidebar-accent transition-colors"
             aria-label="Close menu"
@@ -72,43 +180,58 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <X size={16} />
           </button>
         </div>
-        
-        <nav className="flex flex-col gap-2 flex-1">
-          <Link 
-            href="/client" 
+
+        {/* Nav */}
+        <nav className="flex flex-col gap-1 flex-1 px-3 py-4">
+          <Link
+            href="/client"
             onClick={() => setSidebarOpen(false)}
             className="px-3 py-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm font-medium transition-colors"
           >
             Dashboard
           </Link>
+          <Link
+            href="/client/new"
+            onClick={() => setSidebarOpen(false)}
+            className="px-3 py-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm font-medium transition-colors"
+          >
+            Yeni Araştırma
+          </Link>
         </nav>
 
-        <div className="mt-auto border-t border-border pt-4">
-          <p className="text-xs text-muted-foreground">
-            {currentUsername ? (
-              <span>👤 <strong>{currentUsername}</strong></span>
-            ) : (
-              "Oturum: Client"
-            )}
-          </p>
-          <button
-            onClick={handleLogout}
-            className="text-xs text-accent hover:underline mt-1 inline-block bg-transparent border-none p-0 cursor-pointer"
-          >
-            Çıkış Yap
-          </button>
+        {/* Bottom: Plan widget + user */}
+        <div className="px-3 pb-5 space-y-3 border-t border-border pt-4">
+          {/* Plan widget */}
+          <SidebarPlanWidget />
+
+          {/* User row */}
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <User size={13} className="text-muted-foreground shrink-0" />
+              <span className="text-xs font-medium text-foreground truncate">
+                {currentUsername ?? "Misafir"}
+              </span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              title="Çıkış Yap"
+            >
+              <LogOut size={12} />
+              Çıkış
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Backdrop for mobile */}
+      {/* Backdrop */}
       {sidebarOpen && (
-        <div 
+        <div
           onClick={() => setSidebarOpen(false)}
           className="fixed inset-0 z-40 bg-black/40 md:hidden animate-in fade-in"
         />
       )}
 
-      {/* Main Content */}
       <main className="flex-1 overflow-auto">
         {children}
       </main>
