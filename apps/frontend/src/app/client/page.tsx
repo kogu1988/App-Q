@@ -36,17 +36,9 @@ export default function ClientDashboard() {
 
   return (
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>
-        </div>
-        <Link href="/client/new">
-          <Button className="gap-2 bg-[#17171c] text-white hover:opacity-85">
-            <Plus size={16} />
-            Yeni Araştırma
-          </Button>
-        </Link>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>
       </div>
 
       <Card>
