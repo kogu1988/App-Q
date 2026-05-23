@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   title: "Clarere — Yapay Zeka Destekli Sentetik Pazar Araştırması",
   description:
     "Gerçek mülakata gerek kalmadan AI destekli sentetik panellerle ürün fikirlerinizi test edin. Rogers Diffusion + Van Westendorp + OCEAN metodolojisiyle saatler içinde içgörü.",
+  icons: {
+    icon: "/logo.ico",
+    shortcut: "/logo.ico",
+  },
   keywords: [
     "pazar araştırması yapay zeka",
     "sentetik persona simülasyonu",
@@ -40,7 +44,7 @@ export const metadata: Metadata = {
     siteName: "Clarere",
     images: [
       {
-        url: "https://clarere.com/og-image.png",
+        url: "https://clarere.com/og-image.svg",
         width: 1200,
         height: 630,
         alt: "Clarere — Sentetik Pazar Araştırması Platformu",
@@ -52,7 +56,7 @@ export const metadata: Metadata = {
     title: "Clarere — Sentetik Pazar Araştırması",
     description:
       "Rogers Diffusion + OCEAN + Van Westendorp ile AI destekli tüketici panel simülasyonu.",
-    images: ["https://clarere.com/og-image.png"],
+    images: ["https://clarere.com/og-image.svg"],
   },
   robots: {
     index: true,
