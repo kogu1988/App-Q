@@ -42,7 +42,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-sidebar">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.png" alt="Clarere" className="w-8 h-8 object-contain" />
+          <img src="/logo.png" alt="Clarere" className="h-8 w-auto object-contain" />
           <span className="font-semibold tracking-tight text-lg">Clarere</span>
         </Link>
         <button 
@@ -61,7 +61,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       `}>
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="Clarere" className="w-8 h-8 object-contain" />
+            <img src="/logo.png" alt="Clarere" className="h-8 w-auto object-contain" />
             <span className="font-semibold tracking-tight text-lg">Clarere</span>
           </Link>
           <button 

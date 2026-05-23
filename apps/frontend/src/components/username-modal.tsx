@@ -69,7 +69,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
       <div className="w-full max-w-sm mx-4 rounded-2xl border border-border bg-card shadow-2xl p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="Clarere" className="w-9 h-9 object-contain" />
+          <img src="/logo.png" alt="Clarere" className="h-9 w-auto object-contain" />
           <span className="font-bold text-lg tracking-tight">Clarere</span>
         </div>
 
