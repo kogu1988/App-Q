@@ -324,7 +324,7 @@ export default function NewResearchWizard() {
                 <div key={idx} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
                   {msg.role === "assistant" && (
                     <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-[#d9d9dd] ring-[#003c33]/40 shadow-sm mt-0.5">
-                      <Image src="/defne.png" alt="Defne" width={36} height={36} className="object-cover w-full h-full" />
+                      <img src="/agent.svg" alt="Defne" className="object-cover w-full h-full" />
                     </div>
                   )}
                   <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
@@ -344,7 +344,7 @@ export default function NewResearchWizard() {
               {loading && (
                 <div className="flex gap-3 justify-start animate-in fade-in duration-200">
                   <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-[#d9d9dd] ring-[#003c33]/40 shadow-sm">
-                    <Image src="/defne.png" alt="Defne" width={36} height={36} className="object-cover w-full h-full" />
+                    <img src="/agent.svg" alt="Defne" className="object-cover w-full h-full" />
                   </div>
                   <div className="px-4 py-3 bg-white  border border-[#d9d9dd]/60  rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
                     <Loader2 size={14} className="animate-spin text-[#ff7759]" />
