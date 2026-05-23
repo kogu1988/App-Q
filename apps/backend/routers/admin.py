@@ -6,7 +6,8 @@ from packages.research_engine.database import (
     get_clients, get_system_config, get_feedbacks, get_audit_logs,
     add_client, update_client, delete_client, update_system_config,
     get_personas_pool, get_question_collection, update_question_liked_status,
-    update_question_purpose, delete_from_question_collection
+    update_question_purpose, delete_from_question_collection,
+    get_db
 )
 from packages.research_engine.plan_config import PLAN_CONFIG, PLAN_ORDER, FEATURE_MIN_PLAN
 
@@ -15,7 +16,6 @@ _ADMIN_KEY = os.getenv("ADMIN_SECRET_KEY", "")
 def require_admin(x_admin_key: str = Header(default="")) -> None:
     """Admin endpoint koruyucu dependency. ADMIN_SECRET_KEY env var zorunlu."""
     if not _ADMIN_KEY:
-        # Geliştirme ortamı: key set edilmemişse uyar ama geçir
         print("[WARN] ADMIN_SECRET_KEY ayarlanmamış — admin API korumasız!")
         return
     if x_admin_key != _ADMIN_KEY:
@@ -56,8 +56,8 @@ async def list_clients():
 @router.post("/clients")
 async def create_client(client: ClientCreate):
     add_client(
-        client.username, client.email, client.plan_type, 
-        client.max_simulations, client.max_tokens, 
+        client.username, client.email, client.plan_type,
+        client.max_simulations, client.max_tokens,
         client.plan_start, client.plan_end
     )
     return {"status": "success"}
@@ -65,8 +65,8 @@ async def create_client(client: ClientCreate):
 @router.put("/clients/{username}")
 async def update_client_endpoint(username: str, client: ClientUpdate):
     update_client(
-        username, client.email, client.plan_type, 
-        client.max_simulations, client.max_tokens, 
+        username, client.email, client.plan_type,
+        client.max_simulations, client.max_tokens,
         client.plan_start, client.plan_end, client.status
     )
     return {"status": "success"}
@@ -116,11 +116,100 @@ async def delete_question(question_id: int):
     delete_from_question_collection(question_id)
     return {"status": "success"}
 
-# ─── Agent Schemas & Template Management ────────────────────────────────────────────────
+
+# ─── Metrics ─────────────────────────────────────────────────────────────────
+
+@router.get("/metrics")
+async def get_metrics():
+    """Token kullanim, model ve simulasyon metriklerini toplu doner."""
+    with get_db() as (conn, cur):
+        # Per-client token verileri
+        cur.execute("""
+            SELECT username, plan_type, tokens_used, max_tokens,
+                   total_simulations, max_simulations, status, period_simulations
+            FROM clients
+            ORDER BY tokens_used DESC
+        """)
+        clients_raw = [dict(r) for r in cur.fetchall()]
+
+        # Plan bazinda dagilim
+        cur.execute("""
+            SELECT plan_type,
+                   COUNT(*)                AS count,
+                   SUM(tokens_used)        AS total_tokens,
+                   SUM(total_simulations)  AS total_sims
+            FROM clients
+            GROUP BY plan_type
+        """)
+        plan_dist = [dict(r) for r in cur.fetchall()]
+
+        # Genel toplamlar
+        cur.execute("""
+            SELECT COUNT(*)                    AS total_clients,
+                   SUM(tokens_used)            AS total_tokens_used,
+                   SUM(max_tokens)             AS total_tokens_capacity,
+                   SUM(total_simulations)      AS total_simulations
+            FROM clients
+        """)
+        totals = dict(cur.fetchone())
+
+        # Study metrikleri
+        cur.execute("""
+            SELECT COUNT(*)                                     AS total_studies,
+                   AVG(quality_score)                          AS avg_quality,
+                   COUNT(CASE WHEN has_report THEN 1 END)      AS with_report,
+                   COUNT(CASE WHEN archived THEN 1 END)        AS archived
+            FROM studies
+        """)
+        study_stats = dict(cur.fetchone())
+
+        # Kategori dagilimi
+        cur.execute("""
+            SELECT category, COUNT(*) AS count
+            FROM studies
+            WHERE category IS NOT NULL AND category != ''
+            GROUP BY category
+            ORDER BY count DESC
+            LIMIT 8
+        """)
+        categories = [dict(r) for r in cur.fetchall()]
+
+        # Hata sayisi
+        cur.execute("SELECT COUNT(*) AS error_count FROM audit_logs")
+        error_count = cur.fetchone()["error_count"]
+
+    config = get_system_config()
+    active_models = {
+        "b2c": config.get("b2c_model", "—"),
+        "b2b": config.get("b2b_model", "—"),
+    }
+
+    return {
+        "totals": {
+            "clients":           int(totals.get("total_clients") or 0),
+            "tokens_used":       int(totals.get("total_tokens_used") or 0),
+            "tokens_capacity":   int(totals.get("total_tokens_capacity") or 0),
+            "simulations":       int(totals.get("total_simulations") or 0),
+        },
+        "plan_distribution": plan_dist,
+        "clients":           clients_raw,
+        "study_stats": {
+            "total":       int(study_stats.get("total_studies") or 0),
+            "avg_quality": round(float(study_stats.get("avg_quality") or 0), 1),
+            "with_report": int(study_stats.get("with_report") or 0),
+            "archived":    int(study_stats.get("archived") or 0),
+            "error_count": int(error_count or 0),
+        },
+        "categories": categories,
+        "models":     active_models,
+    }
+
+
+# ─── Agent Schemas & Template Management ──────────────────────────────────────
 
 @router.get("/schemas")
 async def get_agent_schemas():
-    """Tüm ajanların beklediği JSON şemalarını, varsayılan soruları ve concept pool'ları döner."""
+    """Tum ajanlarin bekledigı JSON semalari, varsayilan sorular ve concept pool'lari doner."""
     import json
     from packages.research_engine.workflow import DEFAULT_QUESTIONS
     from packages.research_engine.intake import CONCEPT_POOLS
@@ -142,42 +231,42 @@ async def get_agent_schemas():
 
     return {
         "brief_schema": {
-            "description": "Defne ajanına iletilen araştırma brief'i yapısı",
+            "description": "Defne ajanina iletilen arastirma brief'i yapisi",
             "fields": [
-                {"key": "title",          "type": "str",       "required": True,  "desc": "Çalışmanın kısa adı"},
-                {"key": "market",         "type": "str",       "required": False, "desc": "Hedef pazar (varsayılan: Türkiye)"},
+                {"key": "title",          "type": "str",       "required": True,  "desc": "Calismanin kisa adi"},
+                {"key": "market",         "type": "str",       "required": False, "desc": "Hedef pazar (varsayilan: Türkiye)"},
                 {"key": "category",       "type": "str",       "required": False, "desc": "Ürün/hizmet kategorisi"},
-                {"key": "idea",           "type": "str",       "required": True,  "desc": "Ürün fikri ve çözülen problem"},
-                {"key": "target_users",   "type": "list[str]", "required": False, "desc": "Hedef kullanıcı segmentleri"},
-                {"key": "questions",      "type": "list[str]", "required": False, "desc": "Araştırmada yanıtlanacak sorular"},
+                {"key": "idea",           "type": "str",       "required": True,  "desc": "Ürün fikri ve cozulen problem"},
+                {"key": "target_users",   "type": "list[str]", "required": False, "desc": "Hedef kullanici segmentleri"},
+                {"key": "questions",      "type": "list[str]", "required": False, "desc": "Arastirmada yanitlanacak sorular"},
                 {"key": "competitors",    "type": "list[str]", "required": False, "desc": "Rakipler ve mevcut alternatifler"},
-                {"key": "expected_price", "type": "str",       "required": False, "desc": "Fiyat modeli / aralığı"},
-                {"key": "sales_channel",  "type": "str",       "required": False, "desc": "Satış kanalı (web, mobil, mağaza vb.)"},
-                {"key": "success_metric", "type": "str",       "required": False, "desc": "Araştırmanın başarı kriteri"},
+                {"key": "expected_price", "type": "str",       "required": False, "desc": "Fiyat modeli / araligi"},
+                {"key": "sales_channel",  "type": "str",       "required": False, "desc": "Satis kanali (web, mobil, magaza vb.)"},
+                {"key": "success_metric", "type": "str",       "required": False, "desc": "Arastirmanin basari kriteri"},
                 {"key": "variant_a",      "type": "str",       "required": False, "desc": "[A/B Test] Varyant A metni"},
                 {"key": "variant_b",      "type": "str",       "required": False, "desc": "[A/B Test] Varyant B metni"},
             ],
             "defaults": brief_defaults,
         },
         "persona_schema": {
-            "description": "LLM persona üretim şablonu — workflow.py generate_personas_from_roles()",
+            "description": "LLM persona uretim sablonu — workflow.py generate_personas_from_roles()",
             "fields": [
-                {"key": "name",               "type": "str",       "desc": "Türkçe isim"},
-                {"key": "age",                "type": "int",       "desc": "Yaş (18-65)"},
-                {"key": "city",               "type": "str",       "desc": "Türkiye şehri"},
+                {"key": "name",               "type": "str",       "desc": "Türkce isim"},
+                {"key": "age",                "type": "int",       "desc": "Yas (18-65)"},
+                {"key": "city",               "type": "str",       "desc": "Türkiye sehri"},
                 {"key": "segment",            "type": "str",       "desc": "Pazar segmenti"},
                 {"key": "stance",             "type": "enum",      "desc": "Champion | Pragmatist | Skeptic | Blocker | Observer"},
                 {"key": "price_sensitivity",  "type": "int 1-10",  "desc": "Fiyat hassasiyeti"},
-                {"key": "digital_confidence", "type": "int 1-10",  "desc": "Dijital özgüven"},
-                {"key": "context",            "type": "str",       "desc": "Persona bağlamı"},
-                {"key": "goals",              "type": "list[str]", "desc": "Kısa vadeli hedefler"},
-                {"key": "objections",         "type": "list[str]", "desc": "Ürüne itirazları"},
-                {"key": "knowledge_boundary", "type": "str",       "desc": "Bilgi sınırı"},
-                {"key": "bio",                "type": "str",       "desc": "Kısa hikaye"},
+                {"key": "digital_confidence", "type": "int 1-10",  "desc": "Dijital ozguven"},
+                {"key": "context",            "type": "str",       "desc": "Persona baglamı"},
+                {"key": "goals",              "type": "list[str]", "desc": "Kisa vadeli hedefler"},
+                {"key": "objections",         "type": "list[str]", "desc": "Urune itirazlari"},
+                {"key": "knowledge_boundary", "type": "str",       "desc": "Bilgi siniri"},
+                {"key": "bio",                "type": "str",       "desc": "Kisa hikaye"},
             ],
         },
         "interview_schema": {
-            "description": "Her persona-soru turunda modele iletilen prompt değişkenleri",
+            "description": "Her persona-soru turunda modele iletilen prompt degiskenleri",
             "prompt_variables": [
                 "brief.idea", "brief.target_users", "persona.name", "persona.age",
                 "persona.city", "persona.segment", "persona.stance",
@@ -186,10 +275,10 @@ async def get_agent_schemas():
                 "persona.knowledge_boundary", "question.label", "question.question",
             ],
             "output": {
-                "question":      "str — Sorulan mülakat sorusu",
-                "answer":        "str — Personanın cevabı",
+                "question":      "str — Sorulan mulakat sorusu",
+                "answer":        "str — Personanin cevabi",
                 "tags":          "list[str] — pain_point | value | objection | pricing | positioning | risk",
-                "model_id":      "str — Yanıtı üreten model",
+                "model_id":      "str — Yaniti ureten model",
                 "quality_flags": "list[str] — meta_tone | visible_reasoning | too_short | weak_skepticism | ...",
             },
         },
@@ -215,7 +304,7 @@ async def get_agent_schemas():
 
 @router.put("/schemas/brief-defaults")
 async def update_brief_defaults(data: dict):
-    """Brief varsayılan değerlerini system_config'e kaydeder."""
+    """Brief varsayilan degerlerini system_config'e kaydeder."""
     allowed = {"default_market", "default_category", "default_expected_price",
                "default_sales_channel", "default_success_metric"}
     for key, value in data.items():
@@ -225,7 +314,7 @@ async def update_brief_defaults(data: dict):
 
 @router.put("/schemas/interview-questions")
 async def update_interview_questions(data: DefaultQuestionsUpdate):
-    """Varsayılan mülakat sorularını system_config'e JSON olarak kaydeder."""
+    """Varsayilan mulakat sorularini system_config'e JSON olarak kaydeder."""
     import json
     update_system_config("default_interview_questions", json.dumps(data.questions, ensure_ascii=False))
     return {"status": "success"}
@@ -233,9 +322,7 @@ async def update_interview_questions(data: DefaultQuestionsUpdate):
 
 @router.get("/plan-config")
 async def get_plan_config_endpoint():
-    """Plan konfigürasyonunu JSON olarak döner.
-    Frontend bu endpoint'i kullanarak PLAN_ORDER ve PLAN_CONFIG'i backend'den çekebilir.
-    Bu, frontend-backend duplikasyonunu (R18) ortadan kaldırır."""
+    """Plan konfigurasyonunu JSON olarak doner."""
     return {
         "plan_order": PLAN_ORDER,
         "plans": {
@@ -249,3 +336,4 @@ async def get_plan_config_endpoint():
         },
         "feature_min_plan": FEATURE_MIN_PLAN,
     }
+
