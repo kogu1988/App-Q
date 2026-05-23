@@ -176,6 +176,10 @@ export default function HomePage() {
 
       {/* ── FEATURE HIGHLIGHTS ──────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-6 pb-24">
+        <div className="text-center mb-10 space-y-2">
+          <h2 className="text-2xl font-black tracking-tight">Nasıl Çalışır?</h2>
+          <p className="text-sm text-muted-foreground">Defne'den sentez raporuna — 6 adımda AI destekli araştırma.</p>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURE_HIGHLIGHTS.map(({ icon: Icon, title, desc }) => (
             <div
@@ -191,6 +195,7 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
 
       {/* ── PRICING ─────────────────────────────────────────────────────────── */}
       <section id="pricing" className="max-w-6xl mx-auto px-6 pb-24 space-y-12 scroll-mt-16">
