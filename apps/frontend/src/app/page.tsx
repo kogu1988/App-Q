@@ -160,13 +160,8 @@ export default function HomePage() {
       {/* ── NAV ──────────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 border-b border-[#d9d9dd] bg-white/95 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 flex items-center justify-center text-sm font-bold rounded-[4px]"
-              style={{ background: "#17171c", color: "#fff", fontFamily: "var(--font-mono, monospace)", letterSpacing: "0.04em" }}
-            >
-              Q
-            </div>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="Clarere logo" className="w-8 h-8 object-contain" />
             <span className="font-semibold text-base tracking-tight text-[#17171c]">Clarere</span>
           </div>
           <div className="flex items-center gap-6">
@@ -507,12 +502,7 @@ export default function HomePage() {
       <footer className="border-t border-[#d9d9dd] bg-white py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div
-              className="w-5 h-5 flex items-center justify-center text-[10px] font-bold rounded-[4px]"
-              style={{ background: "#17171c", color: "#fff", fontFamily: "var(--font-mono, monospace)" }}
-            >
-              Q
-            </div>
+            <img src="/logo.png" alt="Clarere" className="w-5 h-5 object-contain" />
             <span className="text-sm text-[#93939f]">Clarere © 2026</span>
           </div>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-[#93939f]">

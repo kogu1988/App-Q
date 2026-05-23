@@ -15,9 +15,7 @@ export default function PrivacyPage() {
       <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-primary text-primary-foreground flex items-center justify-center text-sm font-black rounded-lg">
-              Q
-            </div>
+            <img src="/logo.png" alt="Clarere" className="w-8 h-8 object-contain" />
             <span className="font-bold text-lg tracking-tight">Clarere</span>
           </Link>
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -205,7 +203,7 @@ export default function PrivacyPage() {
       <footer className="border-t border-border py-8 mt-16">
         <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-black rounded">Q</div>
+            <img src="/logo.png" alt="Clarere" className="w-6 h-6 object-contain" />
             <span>Clarere © 2026</span>
           </div>
           <div className="flex gap-6">

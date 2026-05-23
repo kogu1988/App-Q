@@ -68,10 +68,8 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-md">
       <div className="w-full max-w-sm mx-4 rounded-2xl border border-border bg-card shadow-2xl p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
         {/* Logo */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-primary text-primary-foreground flex items-center justify-center text-base font-black rounded-xl">
-            Q
-          </div>
+        <div className="flex items-center gap-2">
+          <img src="/logo.png" alt="Clarere" className="w-9 h-9 object-contain" />
           <span className="font-bold text-lg tracking-tight">Clarere</span>
         </div>
 

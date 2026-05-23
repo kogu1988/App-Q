@@ -41,10 +41,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-sidebar">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-accent text-accent-foreground flex items-center justify-center font-bold rounded-md">
-            Q
-          </div>
+        <Link href="/" className="flex items-center gap-2">
+          <img src="/logo.png" alt="Clarere" className="w-8 h-8 object-contain" />
           <span className="font-semibold tracking-tight text-lg">Clarere</span>
         </Link>
         <button 
@@ -62,10 +60,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
         <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-accent text-accent-foreground flex items-center justify-center font-bold rounded-md">
-              Q
-            </div>
+          <Link href="/" className="flex items-center gap-2">
+            <img src="/logo.png" alt="Clarere" className="w-8 h-8 object-contain" />
             <span className="font-semibold tracking-tight text-lg">Clarere</span>
           </Link>
           <button 
