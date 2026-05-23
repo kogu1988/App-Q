@@ -279,7 +279,7 @@ export default function NewResearchWizard() {
               if (abTestLocked) {
                 toast.error(
                   "A/B Test Modu Pro planında kullanılabilir.",
-                  { action: { label: "Planı Yükselt", onClick: () => router.push("/#pricing") } }
+                  { action: { label: "Planı Yükselt", onClick: () => router.push("/client/upgrade") } }
                 );
                 return;
               }
@@ -324,7 +324,7 @@ export default function NewResearchWizard() {
         {abTestLocked && researchMode === "ab_test" && (
           <p className="text-center text-xs text-muted-foreground">
             A/B Test modu{" "}
-            <Link href="/#pricing" className="text-accent underline underline-offset-2 font-medium">Pro planında</Link>
+            <Link href="/client/upgrade" className="text-accent underline underline-offset-2 font-medium">Pro planında</Link>
             {" "}kullanılabilir.
           </p>
         )}

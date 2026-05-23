@@ -99,7 +99,7 @@ function SidebarPlanWidget() {
       {/* Upgrade CTA */}
       {showUpgrade && (
         <Link
-          href="/#pricing"
+          href="/client/upgrade"
           className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg bg-[#17171c] text-white text-[11px] font-semibold hover:opacity-85 transition-opacity"
         >
           <span>Planı Yükselt</span>
