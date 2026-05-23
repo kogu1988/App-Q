@@ -21,46 +21,52 @@ def reframe_user_input(text: str) -> tuple[str, bool]:
     Returns:
         (reframed_text, was_reframed): Metin ve reframe yapılıp yapılmadığı
     """
-    # Yüksek epistemik kesinlik pattern'ları (Türkçe)
+    # Unicode-aware kelime karakteri (Türkçe ğ, ş, ı, ç, ö, ü dahil)
+    _W = r"[\w\u00C0-\u024F]+"
+
+    # Yüksek epistemik kesinlik pattern'ları — UTF-8 ve ASCII fallback
     HIGH_CERTAINTY_PATTERNS = [
         # Kesinlik bildiren sıfatlar
-        r"kesinlikle\s+\w+\s+\w+",
-        r"mutlaka\s+\w+",
-        r"\w+\s+kesinlikle\s+\w+",
-        # Satış/benimseme garantisi
-        r"\w+\s+satacak",
-        r"\w+\s+sevecek(?:ler)?",
-        r"\w+\s+beğenecek(?:ler)?",
-        r"\w+\s+isteyecek(?:ler)?",
-        r"herkes\s+\w+",
-        # Pazar garantısi
-        r"pazar(?:da)?\s+\w+\s+ihtiyaç",
-        r"\w+\s+biliyor(?:um|um ki)",
-        # Onay arama sonu eklentileri
-        r".+\s+değil mi\s*\?",
-        r".+\s+doğru mu\s*\?",
-        r".+\s+iyi değil mi\s*\?",
+        rf"kesinlikle\s+{_W}\s+{_W}",
+        rf"mutlaka\s+{_W}",
+        rf"{_W}\s+kesinlikle\s+{_W}",
+        # Satış/benimseme garantisi — UTF-8 ve ASCII karşılıkları
+        rf"{_W}\s+satacak",
+        rf"{_W}\s+sevecek(?:ler)?",
+        rf"{_W}\s+be[gğ]enecek(?:ler)?",   # beğenecek veya begenecek
+        rf"{_W}\s+isteyecek(?:ler)?",
+        rf"herkes\s+{_W}",
+        # Pazar garantisi
+        rf"pazar(?:da)?\s+{_W}\s+ihtiya[cç]",  # ihtiyaç veya ihtiyac
+        rf"{_W}\s+biliyor(?:um|um ki)",
+        # Onay arama sonu eklentileri — UTF-8 ve ASCII fallback
+        r".+\s+de[gğ]il mi\s*\?",         # değil mi / degil mi
+        r".+\s+do[gğ]ru mu\s*\?",         # doğru mu / dogru mu
+        r".+\s+iyi de[gğ]il mi\s*\?",     # iyi değil mi / iyi degil mi
     ]
     # Reframe eşleşme: pattern grubuna göre özel öneri veya jenerik öneri
     REFRAME_MAP = [
-        (r"(kesinlikle|mutlaka).{0,40}(satacak|sevecek|beğenecek|isteyecek)",
+        # kesinlikle/mutlaka + satış garantisi — UTF-8 ve ASCII
+        (rf"(kesinlikle|mutlaka).{{0,40}}(satacak|sevecek|be[gğ]enecek|isteyecek)",
          "Bu ürünün pazar potansiyeli ve satış engelleri nelerdir?"),
-        (r"herkes.{0,30}\w+",
+        # herkes ifadesi
+        (rf"herkes.{{0,30}}{_W}",
          "Hedef kitlenin bu konudaki farklı bakış açıları ve olası itirazları nelerdir?"),
-        (r".+(değil mi|doğru mu|iyi değil mi)\s*\?",
+        # onay arayan soru ekleri — UTF-8 ve ASCII fallback
+        (r".+(de[gğ]il mi|do[gğ]ru mu|iyi de[gğ]il mi)\s*\?",
          "Bu konudaki potansiyel güçlü ve zayıf taraflar nelerdir?"),
     ]
 
     text_lower = text.lower().strip()
 
-    # Özel eşleşme denemeleri
+    # Özel eşleşme denemeleri (UNICODE flag ile)
     for pattern, reframed in REFRAME_MAP:
-        if re.search(pattern, text_lower):
+        if re.search(pattern, text_lower, re.UNICODE):
             return reframed, True
 
     # Genel yüksek kesinlik tespiti → jenerik soru dönüşümü
     for pattern in HIGH_CERTAINTY_PATTERNS:
-        if re.search(pattern, text_lower):
+        if re.search(pattern, text_lower, re.UNICODE):
             return f"'{text.strip()}' öngörüsünün gerçek pazarı yansıtıp yansıtmadığını ve olası riskleri nelerdir?", True
 
     return text, False
