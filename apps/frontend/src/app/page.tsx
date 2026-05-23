@@ -161,7 +161,7 @@ export default function HomePage() {
   const scrolled = useScrolled();
 
   return (
-    <div className="min-h-screen bg-[#ffffff] text-[#212121]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+    <div className="min-h-screen text-[#212121]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
 
       {/* ── ANNOUNCEMENT BAR ─────────────────────────────────────────────── */}
       <div className="announcement-bar">
@@ -172,7 +172,7 @@ export default function HomePage() {
       </div>
 
       <nav
-        className="sticky top-0 z-50 transition-all duration-300"
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
         style={{
           background: scrolled ? "rgba(255,255,255,0.90)" : "transparent",
           backdropFilter: scrolled ? "blur(14px) saturate(1.6)" : "none",
@@ -227,7 +227,8 @@ export default function HomePage() {
       </nav>
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
+      {/* min-h-screen: full viewport, announcement bar pushes content down naturally */}
+      <section className="relative overflow-hidden min-h-screen">
         {/* Full-bleed background image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -343,7 +344,8 @@ export default function HomePage() {
       </section>
 
       {/* ── PRICING ──────────────────────────────────────────────────────── */}
-      <section id="pricing" className="max-w-6xl mx-auto px-6 py-24 scroll-mt-16">
+      <section id="pricing" className="bg-white max-w-full px-6 py-24 scroll-mt-16">
+        <div className="max-w-6xl mx-auto">
         <Reveal>
           <div className="mb-12">
             <p className="mono-label text-[#93939f] mb-3">Planlar</p>
@@ -502,10 +504,11 @@ export default function HomePage() {
             Tüm fiyatlar KDV hariçtir. Yıllık faturalamalarda %8 indirim uygulanır.
           </p>
         </Reveal>
+        </div>
       </section>
 
-      {/* ── FAQ — Cohere research-table style ────────────────────────────── */}
-      <section id="faq" className="surface-stone py-20 px-6 scroll-mt-16">
+      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
+      <section id="faq" className="bg-white surface-stone py-20 px-6 scroll-mt-16">
         <div className="max-w-3xl mx-auto">
           <Reveal>
             <p className="mono-label text-[#93939f] mb-3">Merak edilenler</p>
