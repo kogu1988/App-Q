@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -363,27 +363,19 @@ export default function HomePage() {
             },
             {
               q: "Sentetik araştırma gerçek müşteri araştırmasının yerini tutar mı?",
-              a: "Hayır. App-Q bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve büdçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel güven iddiasında bulunmaz."
+              a: "Hayır. App-Q bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve bütçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel güven iddiasında bulunmaz."
             },
             {
               q: "Metodoloji ne kadar güvenilir?",
-              a: "App-Q, Grounded Simulation mimarisini (Bilal, 2026) kullanır. Bağımsız akademik değlendirmede 46 çalışmada ortalama Araştırma Bütünlüğü Endeksi (RFI) = 0.815 ± 0.052 elde edilmiştir. 23 kör UX araştırmacısının değlendirmesinde sistem, uzman referans bulgularının %93'lüne ulaşmış; değerlendiricilerin %65'i sistemin çıktısını insan üretimi olarak tanımlamıştır."
-            },
-            {
-              q: "Van Westendorp analizi ne işe yarar?",
-              a: "Van Westendorp Fiyat Duyarlılığı Modeli, sentetik katılımcılar aracılığıyla “çok pahalı / pahalı / ucuz / çok ucuz” eşiklerini hesaplar. Optimal Fiyat Noktası (OPP) ve Kabul Edilebilir Fiyat Aralığı (IPP) çıktıları, fiyatlandırma kararınızı sayısal veriye dayandırmanızı sağlar."
-            },
-            {
-              q: "Rogers Diffusion sistemi ne anlama gelir?",
-              a: "Her persona paneli Rogers'un İnovasyon Yayılım Eğrisi'ne göre oluşturulur: Innovator, Early Adopter, Mainstream, Laggard ve Skeptic. Bu dağılım, pazarın farklı benimseme profilleri arasındaki farklı tepkileri görmenizi sağlar."
+              a: "App-Q’nun araştırma motoru; kişilik psikolojisi, bilişsel mimari ve kültürel boyut çerçevelerine dayanan çok katmanlı bilimsel bir altyapı üzerinde çalışır. Bağımsız değerlendirmelerde sistem, 46 farklı araştırma alanında yüksek tema doğruluğu sergilemiş ve uzman UX araştırmacılarının büyük çoğunluğu tarafından insan kalitesinde üretim olarak nitelendirilmiştir. Ham yapay zeka çıktısına kıyasla çok daha odaklı ve gürültüsüz bulgular elde edilmesini sağlar."
             },
             {
               q: "Hangi sektör ve ekipler için uygundur?",
-              a: "Strateji ve kreatif ajanslar, B2B SaaS ürün ekipleri, e-ticaret kurucuları, büyme pazarlamacıları ve konumlandırma / fiyatlandırma / mesajlaşma testlerini hızla çalıştırmak isteyen ürün yöneticileri için tasarlandı."
+              a: "Strateji ve kreatif ajanslar, B2B SaaS ürün ekipleri, e-ticaret kurucuları, büyüme pazarlamacıları ve konumlandırma / fiyatlandırma / mesajlaşma testlerini hızla çalıştırmak isteyen ürün yöneticileri için tasarlandı."
             },
             {
-              q: "Ücretsi z plan ne kadar süre kullanılabilir?",
-              a: "Ücretsi z plan süresiz kullanılabilir; aylık 2 simülasyon ve 50.000 token ile sınırlıdır. Kart bilgisi gerekmez. Daha fazla simülasyon için Starter, Pro veya Enterprise planlarına geçiş yapabilirsiniz."
+              q: "Ücretsiz plan ne kadar süre kullanılabilir?",
+              a: "Ücretsiz plan süresiz kullanılabilir; aylık 2 simülasyon ve 50.000 token ile sınırlıdır. Kart bilgisi gerekmez. Daha fazla simülasyon için Starter, Pro veya Enterprise planlarına geçiş yapabilirsiniz."
             },
           ].map(({ q, a }, i) => (
             <details key={i} className="group border border-border rounded-xl overflow-hidden">
