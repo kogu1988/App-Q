@@ -380,7 +380,7 @@ export default function AdminPage() {
             {showClientForm && (
               <Card className="border-[#d9d9dd]  bg-[#edfce9]/30  animate-in fade-in slide-in-from-top-2 duration-200">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base text-[#003c33] dark:text-[#ff7759]/70">Yeni Danışan Ekle</CardTitle>
+                  <CardTitle className="text-base text-[#003c33] ">Yeni Danışan Ekle</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {/* Plan Template Quick-Select */}
@@ -398,7 +398,7 @@ export default function AdminPage() {
                               : "border-border hover:border-[#17171c] dark:hover:border-[#17171c]"
                           }`}
                         >
-                          <span className={`font-bold text-sm ${clientForm.plan_type === name ? "text-[#003c33] dark:text-[#ff7759]/70" : ""}`}>{name}</span>
+                          <span className={`font-bold text-sm ${clientForm.plan_type === name ? "text-[#003c33] " : ""}`}>{name}</span>
                           <span className="text-[10px] text-muted-foreground">
                             {tpl.max_simulations >= 9999 ? "∞" : tpl.max_simulations} sim · {tpl.max_tokens >= 1_000_000 ? (tpl.max_tokens / 1_000_000).toFixed(0) + "M" : (tpl.max_tokens / 1_000).toFixed(0) + "K"} token
                           </span>
@@ -769,7 +769,7 @@ export default function AdminPage() {
                           </div>
                         )}
                         {q.purpose_context && editingQuestion !== q.id && (
-                          <p className="text-xs text-[#ff7759] dark:text-[#ff7759]/80 italic">Amaç: {q.purpose_context}</p>
+                          <p className="text-xs text-[#ff7759] /80 italic">Amaç: {q.purpose_context}</p>
                         )}
                       </div>
                     ))}
@@ -902,20 +902,20 @@ export default function AdminPage() {
                 {/* ── Flow Diagram ── */}
                 <Card className="border-[#d9d9dd]  bg-[#edfce9]/20 ">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-bold text-[#003c33] dark:text-[#ff7759]/70">Veri Akış Şeması</CardTitle>
+                    <CardTitle className="text-sm font-bold text-[#003c33]">Veri Akış Şeması</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap items-center gap-2 text-sm font-mono">
                       {[
-                        { label: "Brief (Defne)", color: "bg-[#edfce9] text-[#003c33]  dark:text-[#ff7759]/70" },
-                        { label: "→", color: "text-muted-foreground" },
-                        { label: "ResearchPlan", color: "bg-[#f1f5ff] text-[#1863dc]0" },
-                        { label: "→", color: "text-muted-foreground" },
-                        { label: "Persona[]", color: "bg-emerald-100 text-[#003c33] dark:bg-emerald-900/40 dark:text-emerald-300" },
-                        { label: "→", color: "text-muted-foreground" },
-                        { label: "Interview[]", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-                        { label: "→", color: "text-muted-foreground" },
-                        { label: "ResearchReport", color: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300" },
+                        { label: "Brief (Defne)",   color: "bg-[#edfce9] text-[#003c33]" },
+                        { label: "→",               color: "text-muted-foreground" },
+                        { label: "ResearchPlan",    color: "bg-[#f1f5ff] text-[#1863dc]" },
+                        { label: "→",               color: "text-muted-foreground" },
+                        { label: "Persona[]",       color: "bg-[#edfce9] text-[#003c33]" },
+                        { label: "→",               color: "text-muted-foreground" },
+                        { label: "Interview[]",     color: "bg-amber-100 text-amber-800" },
+                        { label: "→",               color: "text-muted-foreground" },
+                        { label: "ResearchReport",  color: "bg-rose-100 text-rose-800" },
                       ].map((s, i) => (
                         <span key={i} className={`px-2.5 py-1 rounded-lg font-semibold text-xs ${s.color}`}>{s.label}</span>
                       ))}
@@ -930,7 +930,7 @@ export default function AdminPage() {
                       title: "Brief Şeması",
                       desc: schemas.brief_schema?.description ?? "",
                       badge: "Defne → intake.py",
-                      badgeColor: "border-[#d9d9dd] text-[#003c33]  dark:text-[#ff7759]/70",
+                      badgeColor: "border-[#d9d9dd] text-[#003c33]  ",
                       rows: (schemas.brief_schema?.fields ?? []).map(f => [
                         f.key, f.type, f.required ? "Zorunlu" : "Opsiyonel", f.desc,
                       ]),
@@ -940,7 +940,7 @@ export default function AdminPage() {
                       title: "Persona Şeması",
                       desc: schemas.persona_schema?.description ?? "",
                       badge: "workflow.py → LLM",
-                      badgeColor: "border-[#003c33]/30 text-[#003c33] dark:border-emerald-800 dark:text-emerald-300",
+                      badgeColor: "border-[#003c33]/30 text-[#003c33] dark:border-emerald-800 ",
                       rows: (schemas.persona_schema?.fields ?? []).map(f => ([f.key, f.type, "", f.desc])),
                       headers: ["Alan", "Tip", "", "Açıklama"],
                     },
@@ -948,7 +948,7 @@ export default function AdminPage() {
                       title: "Mülakat Turu Çıktısı",
                       desc: schemas.interview_schema?.description ?? "",
                       badge: "interview turn → LLM",
-                      badgeColor: "border-amber-200 text-amber-700 dark:border-amber-800 dark:text-amber-300",
+                      badgeColor: "border-amber-200 text-amber-700 dark:border-amber-800 ",
                       rows: Object.entries(schemas.interview_schema?.output ?? {}).map(([k, v]) => ([k, "", "", v])),
                       headers: ["Alan", "", "", "Açıklama"],
                     },
@@ -956,7 +956,7 @@ export default function AdminPage() {
                       title: "Sentez Raporu Çıktısı",
                       desc: schemas.synthesis_schema?.description ?? "",
                       badge: "analytics.py",
-                      badgeColor: "border-rose-200 text-rose-700 dark:border-rose-800 dark:text-rose-300",
+                      badgeColor: "border-rose-200 text-rose-700 dark:border-rose-800 ",
                       rows: (schemas.synthesis_schema?.output_fields ?? []).map(f => ([f, "", "", ""])),
                       headers: ["Alan", "", "", ""],
                     },
@@ -985,7 +985,7 @@ export default function AdminPage() {
                                 <tr key={ri} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                                   {row.filter((_, ci) => card.headers[ci]).map((cell, ci) => (
                                     <td key={ci} className={`py-1.5 px-3 ${
-                                      ci === 0 ? "font-mono font-bold text-[#003c33] dark:text-[#ff7759]/70" : "text-muted-foreground"
+                                      ci === 0 ? "font-mono font-bold text-[#003c33] " : "text-muted-foreground"
                                     } ${ci === 2 && cell === "Zorunlu" ? "text-red-600 dark:text-red-400 font-semibold" : ""}`}>
                                       {cell}
                                     </td>
@@ -1155,7 +1155,7 @@ export default function AdminPage() {
                         {schemas.default_interview_questions.map((q, qi) => (
                           <li key={qi} className="flex gap-2 text-xs">
                             <span className="font-mono text-muted-foreground shrink-0">{qi + 1}.</span>
-                            <span className="text-[#212121] dark:text-[#93939f]">{q}</span>
+                            <span className="text-[#212121] ">{q}</span>
                           </li>
                         ))}
                       </ol>
@@ -1187,7 +1187,7 @@ export default function AdminPage() {
                           <div className="px-4 pb-4 space-y-3 border-t border-border bg-muted/20">
                             <div className="mt-3">
                               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-1">Odak Alanları</div>
-                              <p className="text-xs text-[#616161] dark:text-[#93939f] leading-relaxed">{pool.focus_areas}</p>
+                              <p className="text-xs text-[#616161] leading-relaxed">{pool.focus_areas}</p>
                             </div>
                             <div>
                               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Soru Havuzu ({pool.questions.length})</div>
@@ -1195,7 +1195,7 @@ export default function AdminPage() {
                                 {pool.questions.map((q, qi) => (
                                   <li key={qi} className="flex gap-2 text-xs">
                                     <span className="font-mono text-muted-foreground shrink-0">{qi + 1}.</span>
-                                    <span className="text-[#212121] dark:text-[#93939f]">{q}</span>
+                                    <span className="text-[#212121] ">{q}</span>
                                   </li>
                                 ))}
                               </ol>

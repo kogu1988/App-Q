@@ -65,7 +65,7 @@ function BriefPreview({ brief, mode }: { brief: Brief; mode: "research" | "ab_te
   return (
     <Card className="sticky top-6 shadow-sm border-[#d9d9dd] ">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-bold text-[#003c33] dark:text-[#ff7759]/70 flex items-center gap-2">
+        <CardTitle className="text-sm font-bold text-[#003c33] flex items-center gap-2">
           <FileText size={14} />
           Canlı Brief Özeti
         </CardTitle>
@@ -76,7 +76,7 @@ function BriefPreview({ brief, mode }: { brief: Brief; mode: "research" | "ab_te
               style={{ width: `${pct}%` }}
             />
           </div>
-          <span className="text-xs font-bold text-[#ff7759] dark:text-[#ff7759]/80 tabular-nums">{pct}%</span>
+          <span className="text-xs font-bold text-[#ff7759] /80 tabular-nums">{pct}%</span>
         </div>
       </CardHeader>
       <CardContent className="space-y-2.5">
@@ -86,7 +86,7 @@ function BriefPreview({ brief, mode }: { brief: Brief; mode: "research" | "ab_te
             <div className="min-w-0">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{label}</div>
               {value
-                ? <div className="text-xs text-[#212121] dark:text-[#93939f] font-medium leading-relaxed truncate">{value}</div>
+                ? <div className="text-xs text-[#212121] font-medium leading-relaxed truncate">{value}</div>
                 : <div className="text-xs text-[#93939f] italic">Henüz doldurulmadı</div>
               }
             </div>
@@ -258,7 +258,7 @@ export default function NewResearchWizard() {
             }`}
           >
             {abTestLocked && (
-              <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded-full">
+              <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
                 <Lock size={9} /> Pro
               </span>
             )}
@@ -335,7 +335,7 @@ export default function NewResearchWizard() {
                     {msg.content}
                   </div>
                   {msg.role === "user" && (
-                    <div className="h-8 w-8 rounded-full bg-[#d9d9dd]  text-[#616161] dark:text-[#93939f] flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="h-8 w-8 rounded-full bg-[#d9d9dd]  text-[#616161] flex items-center justify-center shrink-0 mt-0.5">
                       <User size={15} />
                     </div>
                   )}

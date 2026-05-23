@@ -35,7 +35,7 @@ export function PlanGate({
     return (
       <div className="relative inline-flex items-center gap-1.5 opacity-60 cursor-not-allowed select-none">
         {children}
-        <span className="inline-flex items-center gap-1 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-xs font-medium bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
           <Lock size={10} />
           {requiredPlan}
         </span>

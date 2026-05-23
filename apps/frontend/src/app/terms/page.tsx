@@ -200,7 +200,7 @@ export default function TermsPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold">7. Sorumluluk Sınırları</h2>
           <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/30 dark:bg-amber-950/10 space-y-2">
-            <p className="font-semibold text-sm text-amber-800 dark:text-amber-300">Yasal Uyarı</p>
+            <p className="font-semibold text-sm text-amber-800 ">Yasal Uyarı</p>
             <p className="text-muted-foreground text-sm leading-relaxed">
               Clarere, platform çıktılarının (raporlar, persona yanıtları, fiyat analizi) doğruluğunu
               garanti etmez. Sentetik araştırma bulguları, yatırım kararı, yasal süreç, tıbbi tavsiye

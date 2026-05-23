@@ -158,8 +158,8 @@ function ChannelBarChart({ data }: { data: NonNullable<StudyDetail["channel_map"
     <div className="space-y-2.5">
       {data.map((row, i) => (
         <div key={row.channel} className="flex items-center gap-3">
-          <span className="text-xs font-medium text-slate-600 dark:text-slate-300 w-40 shrink-0 truncate">{row.channel}</span>
-          <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+          <span className="text-xs font-medium text-slate-600 w-40 shrink-0 truncate">{row.channel}</span>
+          <div className="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{ width: `${(row.count / maxCount) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }}
@@ -306,7 +306,7 @@ function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendorp"]> }
               <line x1="0" y1="5" x2="24" y2="5" stroke={l.color} strokeWidth="2"
                 strokeDasharray={l.dash || undefined} />
             </svg>
-            <span className="text-slate-600 dark:text-slate-300">{l.label}</span>
+            <span className="text-slate-600 ">{l.label}</span>
           </div>
         ))}
       </div>
@@ -421,7 +421,7 @@ export default function StudyDetailPage() {
         const cleanText = line.trim().replace(/^[-*]\s+/, "");
         // Highlight bold elements inside bullet points
         return (
-          <li key={idx} className="list-disc pl-2 ml-5 text-slate-600 dark:text-slate-300 leading-relaxed my-1">
+          <li key={idx} className="list-disc pl-2 ml-5 text-slate-600 leading-relaxed my-1">
             {parseBoldText(cleanText)}
           </li>
         );
@@ -430,7 +430,7 @@ export default function StudyDetailPage() {
       // Blockquotes / Warnings
       if (line.startsWith("> ")) {
         return (
-          <div key={idx} className="border-l-4 border-indigo-500 pl-4 py-2 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-r-md text-slate-700 dark:text-slate-300 italic my-4">
+          <div key={idx} className="border-l-4 border-indigo-500 pl-4 py-2 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-r-md text-slate-700 italic my-4">
             {line.replace("> ", "")}
           </div>
         );
@@ -440,7 +440,7 @@ export default function StudyDetailPage() {
       if (line.trim() === "") return <div key={idx} className="h-2" />;
 
       return (
-        <p key={idx} className="text-slate-600 dark:text-slate-300 leading-relaxed my-3">
+        <p key={idx} className="text-slate-600 leading-relaxed my-3">
           {parseBoldText(line)}
         </p>
       );
@@ -501,7 +501,7 @@ export default function StudyDetailPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
+              <Badge variant="outline" className="bg-slate-100 text-slate-600 text-xs font-semibold">
                 {metadata?.category || "Genel"}
               </Badge>
               {isCompleted ? (
@@ -541,7 +541,7 @@ export default function StudyDetailPage() {
                 size="sm" 
                 onClick={handleArchive}
                 disabled={archiving}
-                className="gap-2 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="gap-2 text-slate-600 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 {archiving ? <Loader2 size={14} className="animate-spin" /> : <Archive size={14} />}
                 Arşivle
@@ -557,12 +557,12 @@ export default function StudyDetailPage() {
       </div>
 
       {/* 🔮 Interactive Tabs Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 bg-slate-100/80 dark:bg-slate-900/60 p-1.5 rounded-xl border border-border">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 bg-slate-100/80 /60 p-1.5 rounded-xl border border-border">
         <button 
           onClick={() => setActiveTab("summary")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "summary" 
-              ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 dark:border-slate-700/50" 
+              ? "bg-white text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 /50" 
               : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
           }`}
         >
@@ -574,7 +574,7 @@ export default function StudyDetailPage() {
           onClick={() => setActiveTab("personas")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "personas" 
-              ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 dark:border-slate-700/50" 
+              ? "bg-white text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 /50" 
               : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
           }`}
         >
@@ -586,7 +586,7 @@ export default function StudyDetailPage() {
           onClick={() => setActiveTab("interviews")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "interviews" 
-              ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 dark:border-slate-700/50" 
+              ? "bg-white text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 /50" 
               : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
           }`}
         >
@@ -598,7 +598,7 @@ export default function StudyDetailPage() {
           onClick={() => setActiveTab("report")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "report" 
-              ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 dark:border-slate-700/50" 
+              ? "bg-white text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 /50" 
               : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
           }`}
         >
@@ -624,18 +624,18 @@ export default function StudyDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-3.5 bg-slate-50 dark:bg-slate-900 border border-border rounded-lg">
+                    <div className="p-3.5 bg-slate-50 border border-border rounded-lg">
                       <span className="text-xs font-semibold text-muted-foreground block uppercase">Marka / Ürün</span>
                       <span className="font-bold text-slate-800 dark:text-slate-100">{brief?.brand || "Belirtilmemiş"}</span>
                     </div>
-                    <div className="p-3.5 bg-slate-50 dark:bg-slate-900 border border-border rounded-lg">
+                    <div className="p-3.5 bg-slate-50 border border-border rounded-lg">
                       <span className="text-xs font-semibold text-muted-foreground block uppercase">Bütçe / Panel</span>
                       <span className="font-bold text-slate-800 dark:text-slate-100">{brief?.budget || "Standart"}</span>
                     </div>
                   </div>
                   <div className="space-y-1.5">
                     <span className="text-xs font-semibold text-muted-foreground uppercase block">Araştırma Problemi (Brief Context)</span>
-                    <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed bg-slate-50/50 dark:bg-slate-900/50 border border-border/60 p-4 rounded-xl">
+                    <p className="text-slate-700 text-sm leading-relaxed bg-slate-50/50 /50 border border-border/60 p-4 rounded-xl">
                       {brief?.context || "Brief bağlamı girilmemiş."}
                     </p>
                   </div>
@@ -652,7 +652,7 @@ export default function StudyDetailPage() {
                     {plan.objective && (
                       <div className="space-y-1.5">
                         <span className="text-xs font-semibold text-muted-foreground uppercase block">Ana Araştırma Hedefi</span>
-                        <p className="text-slate-800 dark:text-slate-200 text-sm font-medium bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-border">
+                        <p className="text-slate-800 text-sm font-medium bg-slate-50 /50 p-4 rounded-xl border border-border">
                           {plan.objective}
                         </p>
                       </div>
@@ -665,7 +665,7 @@ export default function StudyDetailPage() {
                           {plan.assumptions.map((ass: string, i: number) => (
                             <div key={i} className="flex gap-2 p-3 bg-indigo-50/20 dark:bg-indigo-950/10 border border-indigo-100/50 dark:border-indigo-900/20 rounded-lg text-sm">
                               <span className="font-bold text-indigo-600 dark:text-indigo-400">#{i + 1}</span>
-                              <span className="text-slate-700 dark:text-slate-300">{ass}</span>
+                              <span className="text-slate-700 ">{ass}</span>
                             </div>
                           ))}
                         </div>
@@ -687,12 +687,12 @@ export default function StudyDetailPage() {
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-black text-emerald-600 dark:text-emerald-400">{metadata.quality_score}</span>
                       <span className="text-slate-400 font-semibold text-xl">/100</span>
-                      <Badge className="ml-2 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 hover:bg-emerald-50 border border-emerald-200 dark:border-emerald-900/40">
+                      <Badge className="ml-2 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 hover:bg-emerald-50 border border-emerald-200 /40">
                         Sınıf: {metadata.quality_grade || "A"}
                       </Badge>
                     </div>
                     {metadata.quality_summary && (
-                      <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed border-t border-border pt-3">
+                      <p className="text-slate-600 text-xs leading-relaxed border-t border-border pt-3">
                         {metadata.quality_summary}
                       </p>
                     )}
@@ -779,7 +779,7 @@ export default function StudyDetailPage() {
                           Araştırma Bütünlüğü (RFI)
                           <Badge
                             className={valid
-                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40"
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 /40"
                               : "bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400 border border-red-200 dark:border-red-900/40"}
                           >
                             {valid ? "Geçerli" : "Eşik Altı"}
@@ -803,7 +803,7 @@ export default function StudyDetailPage() {
                             {Object.entries(components).map(([key, val]) => (
                               <div key={key} className="flex items-center gap-2">
                                 <span className="text-[10px] font-semibold text-slate-500 w-28 shrink-0">{COMPONENT_LABELS[key] ?? key}</span>
-                                <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                                <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
                                   <div
                                     className="h-full rounded-full transition-all duration-700"
                                     style={{ width: `${(val as number) * 100}%`, backgroundColor: COMPONENT_COLORS[key] ?? "#94a3b8" }}
@@ -823,7 +823,7 @@ export default function StudyDetailPage() {
                             <p className="text-[10px] font-bold text-muted-foreground uppercase">Adversarial Review Aşamaları</p>
                             <div className="flex flex-wrap gap-1.5">
                               {phasesPassed.map(ph => (
-                                <Badge key={ph} className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40">
+                                <Badge key={ph} className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 /40">
                                   ✓ {ph}
                                 </Badge>
                               ))}
@@ -849,7 +849,7 @@ export default function StudyDetailPage() {
                         )}
 
                         {adversarialSummary && (
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 border-t border-border pt-2 leading-relaxed">
+                          <p className="text-[10px] text-slate-500 border-t border-border pt-2 leading-relaxed">
                             {adversarialSummary}
                           </p>
                         )}
@@ -869,7 +869,7 @@ export default function StudyDetailPage() {
                   <CardContent className="p-0 max-h-[300px] overflow-y-auto">
                     <div className="divide-y divide-border/60">
                       {plan.interview_questions.map((q: string, i: number) => (
-                        <div key={i} className="flex gap-3 p-3.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+                        <div key={i} className="flex gap-3 p-3.5 text-xs text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
                           <HelpCircle size={14} className="text-indigo-500 shrink-0 mt-0.5" />
                           <span className="leading-relaxed">{q}</span>
                         </div>
@@ -899,7 +899,7 @@ export default function StudyDetailPage() {
                 {personas.map((persona: Persona, index: number) => (
                   <Card key={persona.id || index} className="shadow-sm border hover:border-indigo-200 dark:hover:border-indigo-900/50 hover:shadow-md transition-all duration-300 group flex flex-col justify-between overflow-hidden">
                     <div>
-                      <div className="p-6 bg-slate-50/50 dark:bg-slate-900/30 border-b border-border/50 flex justify-between items-start gap-2">
+                      <div className="p-6 bg-slate-50/50 /30 border-b border-border/50 flex justify-between items-start gap-2">
                         <div className="space-y-0.5">
                           <h3 className="font-bold text-lg text-slate-950 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                             {persona.name}
@@ -916,7 +916,7 @@ export default function StudyDetailPage() {
                       <CardContent className="p-6 space-y-4">
                         <div className="space-y-1.5">
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Biyografi & Karakteristik</span>
-                          <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed italic line-clamp-3">
+                          <p className="text-slate-600 text-xs leading-relaxed italic line-clamp-3">
                             "{persona.bio || persona.context}"
                           </p>
                         </div>
@@ -926,9 +926,9 @@ export default function StudyDetailPage() {
                           <div className="space-y-1">
                             <div className="flex justify-between text-[10px] font-semibold">
                               <span className="text-muted-foreground">Fiyat Hassasiyeti</span>
-                              <span className="text-slate-800 dark:text-slate-200">{persona.price_sensitivity}/5</span>
+                              <span className="text-slate-800 ">{persona.price_sensitivity}/5</span>
                             </div>
-                            <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                               <div 
                                 className="h-full bg-indigo-500 rounded-full" 
                                 style={{ width: `${(persona.price_sensitivity / 5) * 100}%` }}
@@ -939,9 +939,9 @@ export default function StudyDetailPage() {
                           <div className="space-y-1">
                             <div className="flex justify-between text-[10px] font-semibold">
                               <span className="text-muted-foreground">Dijital Güven</span>
-                              <span className="text-slate-800 dark:text-slate-200">{persona.digital_confidence}/5</span>
+                              <span className="text-slate-800 ">{persona.digital_confidence}/5</span>
                             </div>
-                            <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                               <div 
                                 className="h-full bg-blue-500 rounded-full" 
                                 style={{ width: `${(persona.digital_confidence / 5) * 100}%` }}
@@ -954,7 +954,7 @@ export default function StudyDetailPage() {
                         <div className="space-y-2 border-t border-border/50 pt-3">
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-muted-foreground">Pazar Yaklaşımı:</span>
-                            <Badge variant="outline" className="font-semibold text-slate-700 dark:text-slate-300">
+                            <Badge variant="outline" className="font-semibold text-slate-700 ">
                               {persona.stance}
                             </Badge>
                           </div>
@@ -963,8 +963,8 @@ export default function StudyDetailPage() {
                               {persona.ses_group && (
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                                   persona.ses_group === "AB" ? "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-400" :
-                                  persona.ses_group === "C1" ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/20 dark:border-blue-800 dark:text-blue-400" :
-                                  persona.ses_group === "C2" ? "bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400" :
+                                  persona.ses_group === "C1" ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/20 dark:border-blue-800 " :
+                                  persona.ses_group === "C2" ? "bg-slate-50 border-slate-200 text-slate-600 " :
                                   "bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/20 dark:border-rose-800 dark:text-rose-400"
                                 }`}>SES {persona.ses_group}</span>
                               )}
@@ -1039,8 +1039,8 @@ export default function StudyDetailPage() {
                             <td className="py-2 pr-4">
                               <span className={`px-2 py-0.5 rounded text-xs font-bold ${
                                 row.ses_group === "AB" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" :
-                                row.ses_group === "C1" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" :
-                                row.ses_group === "C2" ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400" :
+                                row.ses_group === "C1" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 " :
+                                row.ses_group === "C2" ? "bg-slate-100 text-slate-700 " :
                                 "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400"
                               }`}>{row.ses_group}</span>
                             </td>
@@ -1052,7 +1052,7 @@ export default function StudyDetailPage() {
                                 <td key={s} className="text-center py-2 px-2">
                                   {count > 0 ? (
                                     <span className={`inline-flex w-7 h-7 rounded-full text-xs font-bold items-center justify-center ${
-                                      count === max ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                                      count === max ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 "
                                     }`}>{count}</span>
                                   ) : <span className="text-muted-foreground">—</span>}
                                 </td>
@@ -1085,10 +1085,10 @@ export default function StudyDetailPage() {
                           <Badge variant="secondary" className="text-xs">{rt.count} kişi</Badge>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Ort. fiyat hassasiyeti: <strong className="text-slate-700 dark:text-slate-300">{rt.avg_price_sensitivity.toFixed(1)}/10</strong>
+                          Ort. fiyat hassasiyeti: <strong className="text-slate-700 ">{rt.avg_price_sensitivity.toFixed(1)}/10</strong>
                         </div>
                         {rt.top_pain && (
-                          <div className="text-xs bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-lg p-2 text-rose-700 dark:text-rose-400 italic line-clamp-2">
+                          <div className="text-xs bg-rose-50 dark:bg-rose-950/20 border border-rose-100 /30 rounded-lg p-2 text-rose-700 dark:text-rose-400 italic line-clamp-2">
                             &ldquo;{rt.top_pain}&rdquo;
                           </div>
                         )}
@@ -1130,7 +1130,7 @@ export default function StudyDetailPage() {
                       className={`w-full text-left p-3.5 rounded-xl border transition-all duration-300 flex items-center justify-between gap-2 ${
                         selectedPersonaIdx === idx 
                           ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-900/60 text-indigo-950 dark:text-indigo-200 shadow-sm" 
-                          : "bg-card hover:bg-slate-50 dark:hover:bg-slate-900 border-border text-slate-800 dark:text-slate-300"
+                          : "bg-card hover:bg-slate-50 dark:hover:bg-slate-900 border-border text-slate-800 "
                       }`}
                     >
                       <div className="space-y-1">
@@ -1151,7 +1151,7 @@ export default function StudyDetailPage() {
                 {/* Dialogues Chat Canvas */}
                 <div className="lg:col-span-3">
                   <Card className="shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-                    <div className="p-4 bg-slate-50 dark:bg-slate-900 border-b border-border/80 flex items-center justify-between gap-3">
+                    <div className="p-4 bg-slate-50 border-b border-border/80 flex items-center justify-between gap-3">
                       <div>
                         <h4 className="font-bold text-slate-900 dark:text-white text-sm">
                           Mülakat Katılımcısı: {interviews[selectedPersonaIdx]?.persona?.name}
@@ -1160,7 +1160,7 @@ export default function StudyDetailPage() {
                           {interviews[selectedPersonaIdx]?.persona?.role_title || "Sentetik Persona"} • {interviews[selectedPersonaIdx]?.persona?.age} Yaş • {interviews[selectedPersonaIdx]?.persona?.city}
                         </p>
                       </div>
-                      <Badge variant="outline" className="bg-white dark:bg-slate-800 font-semibold text-xs text-slate-700 dark:text-slate-300">
+                      <Badge variant="outline" className="bg-white font-semibold text-xs text-slate-700 ">
                         {interviews[selectedPersonaIdx]?.persona?.stance} Profil
                       </Badge>
                     </div>
@@ -1171,10 +1171,10 @@ export default function StudyDetailPage() {
                           
                           {/* AI Interviewer Bubble */}
                           <div className="flex gap-3 max-w-[85%] animate-in slide-in-from-left-4 duration-200">
-                            <div className="h-8 w-8 rounded-full bg-slate-800 dark:bg-slate-700 text-white flex items-center justify-center font-bold text-xs shrink-0 select-none">
+                            <div className="h-8 w-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs shrink-0 select-none">
                               Q
                             </div>
-                            <div className="p-3.5 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl rounded-tl-none shadow-sm text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
+                            <div className="p-3.5 bg-white border border-slate-200/60 /60 rounded-2xl rounded-tl-none shadow-sm text-sm text-slate-800 leading-relaxed">
                               {turn.question}
                             </div>
                           </div>
@@ -1211,7 +1211,7 @@ export default function StudyDetailPage() {
                                 </button>
                               </div>
                             </div>
-                            <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-900/40 flex items-center justify-center font-bold text-xs shrink-0 select-none mt-0.5">
+                            <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 border border-indigo-200/50 dark:border-indigo-900/40 flex items-center justify-center font-bold text-xs shrink-0 select-none mt-0.5">
                               {interviews[selectedPersonaIdx]?.persona?.name.charAt(0) || "P"}
                             </div>
                           </div>
@@ -1223,7 +1223,7 @@ export default function StudyDetailPage() {
                     {/* Consistency insights if available */}
                     {interviews[selectedPersonaIdx]?.consistency_notes && interviews[selectedPersonaIdx].consistency_notes!.length > 0 && (
                       <div className="p-4 bg-amber-500/5 border-t border-amber-500/10 text-xs text-amber-800 dark:text-amber-400 space-y-1">
-                        <span className="font-bold block text-amber-900 dark:text-amber-300">Tutarlılık Değerlendirmesi:</span>
+                        <span className="font-bold block text-amber-900 ">Tutarlılık Değerlendirmesi:</span>
                         <ul className="list-disc pl-4 space-y-0.5">
                           {interviews[selectedPersonaIdx].consistency_notes!.map((note: string, noteIdx: number) => (
                             <li key={noteIdx}>{note}</li>
@@ -1248,7 +1248,7 @@ export default function StudyDetailPage() {
             </div>
 
             {!isCompleted ? (
-              <div className="text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl bg-slate-50/50 dark:bg-slate-900/30">
+              <div className="text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl bg-slate-50/50 /30">
                 Bu araştırma henüz tamamlanmamış veya nihai sentez raporu üretilmemiş.
               </div>
             ) : (
@@ -1345,7 +1345,7 @@ export default function StudyDetailPage() {
                           <p className="text-xs font-semibold text-muted-foreground uppercase">Çağrışım Haritası</p>
                           {Object.entries(study.brand_health.associations).map(([brand, words]) => (
                             <div key={brand} className="flex flex-wrap items-center gap-2">
-                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 w-24 shrink-0">{brand}</span>
+                              <span className="text-xs font-bold text-slate-700 w-24 shrink-0">{brand}</span>
                               {words.map(w => (
                                 <Badge key={w} variant="outline" className="text-[10px] font-medium">{w}</Badge>
                               ))}
@@ -1360,7 +1360,7 @@ export default function StudyDetailPage() {
 
                 {/* Channel Discovery Card */}
                 {study?.channel_map && study.channel_map.length > 0 && (
-                  <Card className="shadow-sm border-emerald-100 dark:border-emerald-900/30">
+                  <Card className="shadow-sm border-emerald-100 /30">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base text-emerald-700 dark:text-emerald-400">Keşif Kanalı Haritası</CardTitle>
                       <CardDescription>Sentetik personaların ürünü keşfetmek için tercih ettiği kanallar.</CardDescription>

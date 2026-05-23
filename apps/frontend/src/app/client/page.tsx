@@ -40,16 +40,16 @@ function UsageWidget() {
   })();
 
   const planColors: Record<string, string> = {
-    Free:       "bg-[#eeece7] text-[#212121]  dark:text-[#93939f]",
-    Starter:    "bg-[#f1f5ff] text-[#1863dc]0",
-    Pro:        "bg-[#edfce9] text-[#003c33]  dark:text-[#ff7759]/70",
-    Enterprise: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    Free:       "bg-[#eeece7] text-[#17171c]",
+    Starter:    "bg-[#f1f5ff] text-[#1863dc]",
+    Pro:        "bg-[#edfce9] text-[#003c33]",
+    Enterprise: "bg-amber-100 text-amber-800",
   };
 
   return (
     <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-colors ${
       isNearLimit
-        ? "border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700"
+        ? "border-amber-300 bg-amber-50 dark:bg-amber-950/20 "
         : "border-border bg-card"
     }`}>
       <Zap size={14} className={isNearLimit ? "text-amber-500" : "text-muted-foreground"} />
