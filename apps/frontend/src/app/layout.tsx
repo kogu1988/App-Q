@@ -106,6 +106,54 @@ const jsonLd = {
   ],
 };
 
+// FAQPage JSON-LD — Google Rich Snippets + GEO (AI arama görünürlüğü)
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "App-Q nedir?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "App-Q, yapıy zeka destekli sentetik pazar araştırması platformudur. Gerçek mülakat ve katılımcı rekrutümanı gerektirmeden, bilimsel olarak zemine oturtulmuş sentetik persona panelleriyle ürün fikirlerinizi, fiyatlandırmanızı ve mesajlaşmanızı test edersiniz.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Sentetik araştırma gerçek müşteri araştırmasının yerini tutar mı?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Hayır. App-Q bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve büdçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel güven iddiasında bulunmaz.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Metodoloji ne kadar güvenilir?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "App-Q, Grounded Simulation mimarisini (Bilal, 2026) kullanır. Bağımsız akademik değlendirmede 46 çalışmada ortalama Araştırma Bütünlüğü Endeksi (RFI) = 0.815 elde edilmiştir. 23 kör UX araştırmacısının değlendirmesinde sistem uzman referans bulgularının %93\'lüne ulaşmış; değerlendiricilerin %65'i sistemin çıktısını insan üretimi olarak tanımlamıştır.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Van Westendorp analizi ne işe yarar?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Van Westendorp Fiyat Duyarlılığı Modeli, sentetik katılımcılar aracılığıyla çok pahalı / pahalı / ucuz / çok ucuz eşiklerini hesaplar. Optimal Fiyat Noktası (OPP) ve Kabul Edilebilir Fiyat Aralığı (IPP) çıktıları, fiyatlandırma kararınızı sayısal veriye dayandırmanızı sağlar.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Hangi sektör ve ekipler için uygundur?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Strateji ve kreatif ajanslar, B2B SaaS ürün ekipleri, e-ticaret kurucuları, büyme pazarlamacıları ve konumlandırma / fiyatlandırma / mesajlaşma testlerini hızla çalıştırmak isteyen ürün yöneticileri için tasarlandı.",
+      },
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -120,6 +168,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>

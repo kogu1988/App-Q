@@ -349,17 +349,68 @@ export default function HomePage() {
         </p>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────────────────────────────────── */}
+      {/* ── FAQ ────────────────────────────────────────────────────────────────────── */}
+      <section id="faq" className="max-w-3xl mx-auto px-6 pb-24 scroll-mt-16">
+        <div className="text-center mb-10 space-y-2">
+          <h2 className="text-2xl font-black tracking-tight">Sıkça Sorulan Sorular</h2>
+          <p className="text-sm text-muted-foreground">Sentetik araştırma hakkında merak ettikleriniz.</p>
+        </div>
+        <div className="space-y-3">
+          {[
+            {
+              q: "App-Q nedir?",
+              a: "App-Q, yapay zeka destekli sentetik pazar araştırması platformudur. Gerçek mülakat ve katılımcı rekrutümanı gerektirmeden, bilimsel olarak zemine oturtulmuş sentetik persona panelleriyle ürün fikirlerinizi, fiyatlandırmanızı ve mesajlaşmanızı test edersiniz."
+            },
+            {
+              q: "Sentetik araştırma gerçek müşteri araştırmasının yerini tutar mı?",
+              a: "Hayır. App-Q bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve büdçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel güven iddiasında bulunmaz."
+            },
+            {
+              q: "Metodoloji ne kadar güvenilir?",
+              a: "App-Q, Grounded Simulation mimarisini (Bilal, 2026) kullanır. Bağımsız akademik değlendirmede 46 çalışmada ortalama Araştırma Bütünlüğü Endeksi (RFI) = 0.815 ± 0.052 elde edilmiştir. 23 kör UX araştırmacısının değlendirmesinde sistem, uzman referans bulgularının %93'lüne ulaşmış; değerlendiricilerin %65'i sistemin çıktısını insan üretimi olarak tanımlamıştır."
+            },
+            {
+              q: "Van Westendorp analizi ne işe yarar?",
+              a: "Van Westendorp Fiyat Duyarlılığı Modeli, sentetik katılımcılar aracılığıyla “çok pahalı / pahalı / ucuz / çok ucuz” eşiklerini hesaplar. Optimal Fiyat Noktası (OPP) ve Kabul Edilebilir Fiyat Aralığı (IPP) çıktıları, fiyatlandırma kararınızı sayısal veriye dayandırmanızı sağlar."
+            },
+            {
+              q: "Rogers Diffusion sistemi ne anlama gelir?",
+              a: "Her persona paneli Rogers'un İnovasyon Yayılım Eğrisi'ne göre oluşturulur: Innovator, Early Adopter, Mainstream, Laggard ve Skeptic. Bu dağılım, pazarın farklı benimseme profilleri arasındaki farklı tepkileri görmenizi sağlar."
+            },
+            {
+              q: "Hangi sektör ve ekipler için uygundur?",
+              a: "Strateji ve kreatif ajanslar, B2B SaaS ürün ekipleri, e-ticaret kurucuları, büyme pazarlamacıları ve konumlandırma / fiyatlandırma / mesajlaşma testlerini hızla çalıştırmak isteyen ürün yöneticileri için tasarlandı."
+            },
+            {
+              q: "Ücretsi z plan ne kadar süre kullanılabilir?",
+              a: "Ücretsi z plan süresiz kullanılabilir; aylık 2 simülasyon ve 50.000 token ile sınırlıdır. Kart bilgisi gerekmez. Daha fazla simülasyon için Starter, Pro veya Enterprise planlarına geçiş yapabilirsiniz."
+            },
+          ].map(({ q, a }, i) => (
+            <details key={i} className="group border border-border rounded-xl overflow-hidden">
+              <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-semibold text-sm hover:bg-muted/30 transition-colors list-none">
+                <span>{q}</span>
+                <span className="text-muted-foreground group-open:rotate-45 transition-transform duration-200 text-lg font-light">+</span>
+              </summary>
+              <div className="px-5 pb-4 text-sm text-muted-foreground leading-relaxed border-t border-border pt-3">
+                {a}
+              </div>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FOOTER ───────────────────────────────────────────────────────────────────── */}
       <footer className="border-t border-border py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-black rounded">Q</div>
             <span>App-Q © 2026</span>
           </div>
-          <div className="flex gap-6">
-            <Link href="/admin" className="hover:text-foreground transition-colors">Yönetim Paneli</Link>
-            <Link href="/client" className="hover:text-foreground transition-colors">Danışan Portalı</Link>
+          <div className="flex flex-wrap justify-center gap-6">
+            <Link href="/#faq" className="hover:text-foreground transition-colors">SSS</Link>
             <Link href="/#pricing" className="hover:text-foreground transition-colors">Fiyatlandırma</Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Gizlilik Politikası</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Kullanım Koşulları</Link>
           </div>
         </div>
       </footer>
