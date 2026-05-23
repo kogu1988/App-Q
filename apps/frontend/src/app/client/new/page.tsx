@@ -39,6 +39,24 @@ interface Brief {
 
 // ─── Brief Preview Card ───────────────────────────────────────────────────────
 
+function renderBriefValue(value: string) {
+  // Numbered list detection: "1. xxx 2. xxx" or newline-separated
+  const numbered = value.split(/(?=\d+\.\s)/).map(s => s.replace(/^\d+\.\s*/, "").trim()).filter(Boolean);
+  if (numbered.length > 1) {
+    return (
+      <ul className="space-y-1 mt-0.5">
+        {numbered.map((item, i) => (
+          <li key={i} className="flex gap-1.5 text-xs text-[#212121] font-medium leading-relaxed">
+            <span className="text-[#ff7759] shrink-0 mt-px">·</span>
+            <span className="break-words">{item}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  return <div className="text-xs text-[#212121] font-medium leading-relaxed break-words whitespace-pre-wrap">{value}</div>;
+}
+
 function BriefPreview({ brief, mode }: { brief: Brief; mode: "research" | "ab_test" }) {
   const fields = mode === "ab_test"
     ? [
@@ -83,10 +101,10 @@ function BriefPreview({ brief, mode }: { brief: Brief; mode: "research" | "ab_te
         {fields.map(({ icon: Icon, label, value }) => (
           <div key={label} className={`flex gap-2 p-2 rounded-lg transition-colors ${value ? "bg-[#edfce9]/50 " : "opacity-40"}`}>
             <Icon size={13} className={value ? "text-[#ff7759] shrink-0 mt-0.5" : "text-[#93939f] shrink-0 mt-0.5"} />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{label}</div>
               {value
-                ? <div className="text-xs text-[#212121] font-medium leading-relaxed truncate">{value}</div>
+                ? renderBriefValue(value)
                 : <div className="text-xs text-[#93939f] italic">Henüz doldurulmadı</div>
               }
             </div>
@@ -184,25 +202,35 @@ export default function NewResearchWizard() {
       toast.error("Brief henüz tamamlanmadı.");
       return;
     }
+    const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
     try {
       const res = await fetch("http://localhost:8000/api/client/plan", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(username ? { "X-Username": username } : {}),
+        },
         body: JSON.stringify({
           category: brief.category || (researchMode === "ab_test" ? "A/B Test" : "Genel"),
           title: brief.title || "Araştırma",
           context: brief.idea || "",
           brand: "Clarere",
           budget: "Standart",
-          variant_a: brief.variant_a,
-          variant_b: brief.variant_b,
         }),
       });
-      if (!res.ok) throw new Error("Plan oluşturulamadı.");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.detail || `Sunucu hatası: ${res.status}`);
+      }
       toast.success("Araştırma planı oluşturuldu! Yönlendiriliyorsunuz...");
       router.push("/client");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Bir hata oluştu.");
+      const isNetwork = err instanceof TypeError;
+      toast.error(
+        isNetwork
+          ? "Araştırma motoru şu an ulaşılamıyor. Sayfayı yenileyin veya birkaç saniye bekleyip tekrar deneyin."
+          : err instanceof Error ? err.message : "Bir hata oluştu."
+      );
     }
   };
 
@@ -298,12 +326,12 @@ export default function NewResearchWizard() {
 
   // ── STEP 1: Defne Chat ──────────────────────────────────────────────────────
   return (
-    <div className="p-4 sm:p-6 animate-in fade-in duration-300">
-      <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 animate-in fade-in duration-300 h-full flex flex-col">
+      <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto flex-1 min-h-0">
 
         {/* ── LEFT: Chat Panel ── */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="mb-4">
+          <div className="mb-4 shrink-0">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs gap-1 border-[#d9d9dd] ">
                 {researchMode === "ab_test" ? <FlaskConical size={11} /> : <BarChart2 size={11} />}
@@ -318,8 +346,8 @@ export default function NewResearchWizard() {
           </div>
 
           {/* Chat bubbles */}
-          <Card className="flex flex-col flex-1 shadow-sm overflow-hidden" style={{ minHeight: "480px" }}>
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-[#f5f4f1]/30 ">
+          <Card className="flex flex-col flex-1 min-h-0 shadow-sm overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4 bg-[#f5f4f1]/30 ">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
                   {msg.role === "assistant" && (
@@ -356,7 +384,7 @@ export default function NewResearchWizard() {
             </div>
 
             {/* Input area */}
-            <div className="p-4 border-t border-border bg-white/90  backdrop-blur-sm">
+            <div className="shrink-0 p-4 border-t border-border bg-white/90  backdrop-blur-sm">
               {isReady && (
                 <div className="mb-3 p-3 bg-[#edfce9]  border border-[#003c33]/30  rounded-xl flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-[#003c33] text-sm font-semibold">
@@ -396,7 +424,7 @@ export default function NewResearchWizard() {
         </div>
 
         {/* ── RIGHT: Brief Preview ── */}
-        <div className="lg:w-80 xl:w-96">
+        <div className="lg:w-80 xl:w-96 overflow-y-auto">
           <BriefPreview brief={brief} mode={researchMode} />
         </div>
       </div>
