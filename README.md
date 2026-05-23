@@ -190,7 +190,7 @@ npm install
 npm run dev
 ```
 
-Frontend: [http://localhost:3000](http://localhost:3000)
+Frontend: [http://localhost:3001](http://localhost:3001)
 
 ### 7. Ollama Modeli (Opsiyonel)
 
@@ -372,9 +372,10 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 ## ⚠️ Güvenlik Notları
 
 - **Lokal/Demo:** Mevcut `X-Username` header auth bu ortam için yeterlidir
-- **Production öncesi:** JWT auth migrasyonu zorunludur — bkz. [`docs/PLAN-jwt-auth-migration.md`](docs/PLAN-jwt-auth-migration.md)
-- **`ADMIN_SECRET_KEY`** set edilmezse admin API korumasız çalışır (development uyarısı verir)
+- **Production öncesi:** JWT auth migrasyonu zorunludur — `PLAN-jwt-auth-migration.md` olarak `docs/` altında oluşturulacak
+- **`ADMIN_SECRET_KEY`** set edilmezse admin API korumasız çalışır — development'ta terminal uyarısı verir, production'da **zorunludur**
 - **`POSTGRES_PASSWORD`** `.env`'de tutulmalı, asla commit edilmemeli
+- **CORS:** Production'da `ALLOWED_ORIGINS` mutlaka kısıtlanmalı (varsayılan `*` yalnızca geliştirme içindir)
 
 ---
 

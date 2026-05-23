@@ -45,43 +45,18 @@ Aday modeller şu kriterlere göre değerlendirilir:
 
 ### Mevcut Model Benchmark Sonuçları
 
-Detay: [`model-benchmark-notes.md`](model-benchmark-notes.md)
+Detaylı değlendirme: [`model-benchmark-notes.md`](model-benchmark-notes.md)
 
-| Alias | Rol | Karar |
-|---|---|---|
-| `app-q-trendyol` | E-ticaret/B2C | **Koru** |
-| `app-q-kizagan-e4b` | B2B, fiyat itirazı, KVKK muhakemesi | **Koru** |
-| `app-q-turkish-llama8b` | Genel Türkçe | **Reject** — asistan moduna kayıyor |
-| `app-q-turkish-gemma9b` | Raporlama (yavaş) | **Bekle** — RTX 4060'ta 40-56s/cevap |
-| `app-q-llama3-tr-ft` | Turkish ince ayar | **Reject** — garip Türkçe, halüsinasyon |
+**Mevcut routing:**
+- `app-q-trendyol` → E-ticaret/B2C persona
+- `app-q-kizagan-e4b` → B2B, fiyat itirazı, KVKK muhakemesi, sentez
 
-### Model Kalitesi Gereksinimleri
-
-Türkçe çıktı:
-- Doğal, çeviri gibi değil
-- Türkiye pazarına özgü (e-ticaret + B2B)
-- Şüphecilik, fiyat duyarlılığı, pratik itiraz üretebilmeli
-- Uzun persona mülakatlarında tutarlı
-- Hafif editleme sonrası müşteriye sunulabilir
-
-### Değerlendirme Seti
-
-`data/evals/turkish_quality_eval.jsonl` üzerinden Ollama ile test, manuel skor:
-
-```
-Kategoriler: e-ticaret checkout itirazı, fiyat/paket hassasiyeti,
-pazar yeri satıcı iş akışı, ajans pitch araştırması, B2B SaaS
-konumlandırma, KVKK/gizlilik endişesi, skeptik persona, rapor sentezi
-
-Skor kriterleri (1-5): Türkçe doğallık, persona tutarlılığı,
-içgörü kullanışlılığı, özgüllük, halüsinasyon riski, rapor hazırlığı
-```
+**Reject edilenler:** `turkish-llama8b` (asistan mod kayması), `llama3-tr-ft` (halüsinasyon), `turkish-gemma9b` (RTX 4060'ta 40-56s/cevap — batch-only)
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\run_turkish_eval.py
+# Çıktı: data/outputs/turkish-eval-results.jsonl
 ```
-
-Çıktı: `data/outputs/turkish-eval-results.jsonl`
 
 ---
 
