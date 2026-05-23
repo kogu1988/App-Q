@@ -73,6 +73,15 @@ class BriefRequest(BaseModel):
     context: str
     brand: str
     budget: str
+    target_users: list[str] = []
+    competitors: list[str] = []
+    expected_price: str | None = None
+    sales_channel: str | None = None
+    success_metric: str | None = None
+    variant_a: str | None = None
+    variant_b: str | None = None
+    questions: list[str] = []
+    discovery_channels: list[str] = []
 
 class StudyPayload(BaseModel):
     metadata: dict
@@ -291,17 +300,26 @@ async def create_persona(persona: PersonaCreate):
 @router.post("/plan")
 async def create_plan(request: BriefRequest, x_username: str | None = Header(default=None)):
     plan_type, _ = _resolve_plan(x_username)
-    # A/B Test modu: Starter+ gerektirir (app_mode kontrolü intake'de yapılır;
-    # burada category=="ab_test" sinyali gelirse gate uygula)
     if request.category.lower() in ("ab_test", "a/b test", "ab test"):
         _require_feature(plan_type, "ab_test")
-    plan = build_research_plan(
-        category=request.category,
+
+    from packages.research_engine.models import ResearchBrief
+    brief = ResearchBrief(
         title=request.title,
-        context=request.context,
-        brand=request.brand,
-        budget=request.budget,
+        market="Türkiye",
+        category=request.category,
+        idea=request.context,
+        target_users=request.target_users,
+        questions=request.questions,
+        competitors=request.competitors,
+        expected_price=request.expected_price,
+        sales_channel=request.sales_channel,
+        success_metric=request.success_metric,
+        variant_a=request.variant_a,
+        variant_b=request.variant_b,
+        discovery_channels=request.discovery_channels,
     )
+    plan = build_research_plan(brief)
     return plan
 
 @router.post("/personas/generate")

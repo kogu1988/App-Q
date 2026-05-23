@@ -216,6 +216,14 @@ export default function NewResearchWizard() {
           context: brief.idea || "",
           brand: "Clarere",
           budget: "Standart",
+          target_users: brief.target_users || [],
+          competitors: brief.competitors || [],
+          expected_price: brief.expected_price || null,
+          sales_channel: brief.sales_channel || null,
+          success_metric: brief.success_metric || null,
+          variant_a: brief.variant_a || null,
+          variant_b: brief.variant_b || null,
+          questions: brief.questions || [],
         }),
       });
       if (!res.ok) {
