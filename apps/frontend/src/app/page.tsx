@@ -163,14 +163,6 @@ export default function HomePage() {
   return (
     <div className="min-h-screen text-[#212121]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
 
-      {/* ── ANNOUNCEMENT BAR ─────────────────────────────────────────────── */}
-      <div className="announcement-bar">
-        <span>
-          Grounded Simulation metodolojisi — akademik temelli sentetik araştırma.{" "}
-          <a href="#faq" className="underline underline-offset-2 hover:opacity-70 transition-opacity">Daha fazla bilgi</a>
-        </span>
-      </div>
-
       <nav
         className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
         style={{
@@ -242,15 +234,8 @@ export default function HomePage() {
           aria-hidden="true"
         />
 
-        <div className="relative max-w-5xl mx-auto px-6 pt-24 pb-20 text-center">
+        <div className="relative max-w-5xl mx-auto px-6 pt-28 pb-20 text-center">
           <Reveal>
-            <div className="inline-flex items-center gap-2 mb-8">
-              <span className="chip-coral" style={{ borderColor: "#ff7759", color: "#ff7759" }}>Grounded Simulation</span>
-              <span className="mono-label" style={{ color: "rgba(237,252,233,0.65)" }}>Bilal, 2026</span>
-            </div>
-          </Reveal>
-
-          <Reveal delay={80}>
             <h1 className="display-hero text-white mb-6" style={{ maxWidth: "880px", margin: "0 auto 1.5rem" }}>
               Gerçek mülakatlardan önce{" "}
               <span style={{ color: "#ff7759" }}>sentetik panel</span> kur.
