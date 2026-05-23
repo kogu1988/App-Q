@@ -370,7 +370,7 @@ export default function AdminPage() {
                 <h2 className="text-xl font-bold">Danışan Yönetimi</h2>
                 <p className="text-sm text-muted-foreground">Sisteme kayıtlı kurumsal müşteriler ve simülasyon limitleri.</p>
               </div>
-              <Button onClick={() => setShowClientForm(!showClientForm)} className="gap-2">
+              <Button onClick={() => setShowClientForm(!showClientForm)} className="gap-2 bg-[#17171c] text-white hover:opacity-85">
                 <Plus size={16} />
                 Yeni Danışan
               </Button>
@@ -431,7 +431,7 @@ export default function AdminPage() {
                   </div>
                   <div className="flex gap-2 mt-4 justify-end">
                     <Button variant="outline" onClick={() => setShowClientForm(false)}>İptal</Button>
-                    <Button onClick={createClient} disabled={savingClient || !clientForm.username} className="gap-2">
+                    <Button onClick={createClient} disabled={savingClient || !clientForm.username} className="gap-2 bg-[#17171c] text-white hover:opacity-85">
                       {savingClient && <Loader2 size={14} className="animate-spin" />}
                       Kaydet
                     </Button>
@@ -759,7 +759,7 @@ export default function AdminPage() {
                               placeholder="Bu sorunun amacı / bağlamı..."
                               className="text-xs h-8 flex-1"
                             />
-                            <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={() => savePurpose(q.id)}>
+                            <Button size="sm" className="h-8 gap-1.5 text-xs bg-[#17171c] text-white hover:opacity-85" onClick={() => savePurpose(q.id)}>
                               <Check size={13} />
                               Kaydet
                             </Button>

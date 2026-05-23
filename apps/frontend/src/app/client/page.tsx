@@ -118,7 +118,7 @@ export default function ClientDashboard() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <UsageWidget />
           <Link href="/client/new" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto gap-2">
+            <Button className="w-full sm:w-auto gap-2 bg-[#17171c] text-white hover:opacity-85">
               <Plus size={16} />
               Yeni Araştırma
             </Button>

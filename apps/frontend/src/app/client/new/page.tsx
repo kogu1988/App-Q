@@ -359,7 +359,7 @@ export default function NewResearchWizard() {
             <div className="p-4 border-t border-border bg-white/90  backdrop-blur-sm">
               {isReady && (
                 <div className="mb-3 p-3 bg-[#edfce9]  border border-[#003c33]/30  rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-[#003c33] dark:text-[#edfce9] text-sm font-semibold">
+                  <div className="flex items-center gap-2 text-[#003c33] text-sm font-semibold">
                     <CheckCircle2 size={16} />
                     Brief hazır! Araştırmayı başlatabilirsiniz.
                   </div>
