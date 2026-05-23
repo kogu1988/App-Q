@@ -14,15 +14,16 @@ Bu belge tamamlanan sprint geçmişini, bekleyen özellik fikirlerini ve metodol
 | SEO/GEO Optimizasyonu | robots.ts, sitemap.ts, middleware, JSON-LD schema, OG image | ✅ Tamamlandı |
 | Yasal Sayfalar | /privacy (KVKK), /terms (kullanım koşulları + algoritma koruması) | ✅ Tamamlandı |
 | Landing Page FAQ | 5 soruluk SSS bölümü + FAQPage JSON-LD | ✅ Tamamlandı |
+| **Akademik Sentez Entegrasyonu** | ELEPHANT anti-sycophancy, Input Reframing, ACT-R turn memory, Agreeableness kalibrasyonu | ✅ Tamamlandı |
 
 ---
 
 ## 🔒 Güvenlik — Kritik (Production Öncesi Zorunlu)
 
 | Görev | Açıklama | Öncelik |
-|-------|----------|---------|
+|-------|----------|---------| 
 | **JWT Auth Migrasyonu** | Mevcut `X-Username` header auth → Bearer JWT. `docs/PLAN-jwt-auth-migration.md` oluşturulacak | 🔴 Kritik |
-| **ADMIN_SECRET_KEY** | `.env`'de set edilmeli — production'da API korumas&#305;z çalışmaz | 🔴 Kritik |
+| **ADMIN_SECRET_KEY** | `.env`'de set edilmeli — production'da API korumasız çalışmaz | 🔴 Kritik |
 | **CORS Kısıtlaması** | `ALLOWED_ORIGINS=*` yalnızca dev — production'da domain kısıtlanmalı | 🔴 Kritik |
 
 ---
@@ -116,6 +117,65 @@ Bu belge tamamlanan sprint geçmişini, bekleyen özellik fikirlerini ve metodol
 - **Hedef:** `/client/personas/new` → çok adımlı form (Temel Bilgiler → B2B Metrikleri → Özel Trait'ler).
 - **Güvenlik notu:** Özel metrik key'lerinde SQL injection vektörlerine dikkat.
 - **İlgili:** `apps/frontend/src/app/client/personas/`, `packages/research_engine/db_vectors.py`
+
+---
+
+### Akademik Sentez Entegrasyonu — Tamamlanan Değişiklikler (2026-05-23)
+
+Akademik Sentez Raporu'ndaki 4 sütun `research_engine`'e entegre edildi. Commit: `5d37ece`.
+
+#### Ne yapıldı:
+
+**`models.py` — STANCE_PROFILE Agreeableness Kalibrasyonu**
+- Innovator `agreeableness_mod` +8 → +4 olarak düşürüldü.
+- **Neden:** Pairit araştırması (1258 katılımcı, X platformu): Yüksek Agreeableness'lı ajan en düşük araştırma kalitesini üretiyor. Innovator hâlâ açık fikirli ama artık abartısız pozitif.
+
+**`workflow.py` — `build_elephant_system_prompt()` Fonksiyonu**
+- Her mülakat personası için Agreeableness skoruna göre dinamik sistem promptu üretiliyor.
+- Agreeableness < 40 → güçlü red izni (`Skeptic/Laggard`): "Kanıt talep et, açıkça direniş göster."
+- Agreeableness 40–65 → standart ELEPHANT promptu (`Mainstream`).
+- Agreeableness > 65 → ek uyarı (`Innovator/EarlyAdopter`): "Her şeye evet demek değil."
+- `run_interviews()` ve `run_interviews_stream()` artık persona'ya özgü promptu kullanıyor.
+- **Kaynak:** ELEPHANT Anti-Sycophancy Çerçevesi, arXiv:2602.23971 — Explicit Rejection Permission.
+
+**`workflow.py` — Basit ACT-R Cross-Turn Memory**
+- Her mülakat turn'undan önce son 2 yanıtın etiketi + ilk 80 karakteri prompt'a ekleniyor (`turn_memory`).
+- **Sınır:** Ephemeral, per-session. Kalıcı bellek için bkz. aşağıdaki backlog.
+- **Kaynak:** engineering-notes.md §4 — "yoksul adamın ACT-R'ı"
+
+**`intake.py` — `reframe_user_input()` — Input Reframing Katmanı**
+- Kullanıcının yüksek epistemik kesinlik içeren ifadelerini nesnel araştırma sorusuna dönüştürür.
+- Tetikleyiciler: "kesinlikle çok satacak", "herkes sevecek", "iyi değil mi?" vb.
+- Kural bazlı regex — LLM çağrısı yok, latency sıfır.
+- Şeffaf mod (Seçenek B): Defne, reframe gerçekleştiğinde kullanıcıya bildirir.
+- **Kaynak:** arXiv:2602.23971 — "soru kalıbı, genel anti-sycophancy prompt'tan çok daha etkili"
+
+---
+
+### Akademik Sentez — Kapsam Dışı Bırakılan, Sıradaki Adımlar
+
+#### Generative Agents Reflection Katmanı — `analytics.py` `[Efor: Orta]` — S4 Backlog
+
+- **Amaç:** Ham mülakat epizotları → hiyerarşik soyut çıkarımlar. Şu an `synthesize_report()` tek geçişte LLM çağrısı yapıyor; Reflection eklenirse ham yanıt → orta katman özet → nihai bulgu şeklinde 2 aşamalı olur.
+- **Neden şimdi değil:** Mülakat kalitesi (engine) önce stabil olmalı. Analytics sentez katmanını sonra iyileştir — sıralama önemliydi.
+- **Ön koşul:** `run_interviews_stream()` çıktısının stabil olduğu onaylanmalı.
+- **İlgili:** `packages/research_engine/analytics.py → synthesize_report()`
+
+#### ACT-R Kalıcı Bellek — DB Şema Değişikliği `[Efor: Yüksek]` — S5 Backlog
+
+- **Amaç:** Mülakat turn'larını `interview_turns` tablosunda zaman damgalı saklamak ve ACT-R aktivasyon formülüyle (`A_i = B_i + Σ(W_j × S_ji) + noise`) geri çağırmak. CoALA Epizodik Bellek katmanına karşılık gelir.
+- **Neden şimdi değil:** DB şema değişikliği migration riski taşır. Stateful mülakat mimarisine önce karar verilmeli.
+- **Gerekli DB değişiklikleri:**
+  - `interview_turns` tablosu: `turn_id`, `session_id`, `persona_id`, `question_tag`, `answer_summary`, `activation_score`, `timestamp`
+  - `personas_pool`'a `agreeableness_score INT` kolonu
+- **Kritik mimari not:** Süreçsel bellek (iş kuralları, plan konfigürasyonu) asla Vector DB'ye bırakılmamalı — non-deterministik çağrılma riski. `plan_config.py` deterministik kod olarak kalmalı.
+- **İlgili:** `packages/research_engine/database.py`, `models.py → InterviewTurn`
+
+#### Frontend Agreeableness Skoru Gösterimi `[Efor: Düşük]` — S4 Backlog
+
+- **Amaç:** Persona kartlarında Agreeableness skoru ve stance bazlı ELEPHANT uyarı seviyesini göstermek. Kullanıcıya "Bu persona neden daha eleştirel?" sorusunun cevabını vermek.
+- **Neden şimdi değil:** Engine çıktısı zaten `traits` dict'inde `Agreeableness` değerini içeriyor. Frontend tarafında sadece render edilmesi gerekiyor. UX polish olarak ele alınacak.
+- **İlgili:** `apps/frontend/src/app/client/studies/[id]/page.tsx` — Persona kartı bileşeni
 
 ---
 
