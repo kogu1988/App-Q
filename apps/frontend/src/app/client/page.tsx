@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, Plus } from "lucide-react";
+import { FileText } from "lucide-react";
 
 interface Study {
   id: string;
