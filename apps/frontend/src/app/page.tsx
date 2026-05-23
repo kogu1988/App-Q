@@ -244,18 +244,18 @@ export default function HomePage() {
             <p className="text-lg text-white/60 mb-12 max-w-xl">Defne'den sentez raporuna — bilimsel altyapı ile desteklenen tam araştırma akışı.</p>
           </Reveal>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
             {FEATURE_HIGHLIGHTS.map(({ icon: Icon, title, desc }, i) => (
-              <Reveal key={title} delay={i * 60}>
+              <Reveal key={title} delay={i * 60} className="h-full">
                 <div
-                  className="p-6 rounded-[8px] border border-white/10 hover:border-white/25 transition-all duration-300"
+                  className="h-full p-6 rounded-[8px] border border-white/10 hover:border-white/25 transition-all duration-300 flex flex-col"
                   style={{ background: "rgba(255,255,255,0.04)" }}
                 >
-                  <div className="w-9 h-9 rounded-[4px] flex items-center justify-center mb-4" style={{ background: "#ff7759" }}>
+                  <div className="w-9 h-9 rounded-[4px] flex items-center justify-center mb-4 shrink-0" style={{ background: "#ff7759" }}>
                     <Icon size={18} color="#fff" />
                   </div>
-                  <h3 className="text-white font-semibold text-base mb-2">{title}</h3>
-                  <p className="text-white/55 text-sm leading-relaxed">{desc}</p>
+                  <h3 className="text-white font-semibold text-base mb-2 shrink-0">{title}</h3>
+                  <p className="text-white/55 text-sm leading-relaxed flex-1">{desc}</p>
                 </div>
               </Reveal>
             ))}
