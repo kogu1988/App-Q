@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, Plus, Zap } from "lucide-react";
-import { useClientPlan } from "@/hooks/use-client-plan";
+import { FileText, Plus } from "lucide-react";
 
 interface Study {
   id: string;
@@ -17,82 +16,9 @@ interface Study {
   has_report: boolean;
 }
 
-// ── Kullanım Sayacı Widget ─────────────────────────────────────────────────────
-
-function UsageWidget() {
-  const { plan, loading } = useClientPlan();
-  if (loading) return null;
-
-  // Bu dönemde kullanılan hak (toplam değil)
-  const used = plan.period_simulations;
-  const max = plan.limits.max_simulations;
-  const isUnlimited = max >= 9999;
-  const pct = isUnlimited ? 100 : Math.min(Math.round((used / max) * 100), 100);
-  const isNearLimit = !isUnlimited && pct >= 80;
-
-  // Dönem bitiş tarihi
-  const periodEnd = (() => {
-    if (!plan.period_start) return null;
-    const start = new Date(plan.period_start);
-    const days = plan.billing_cycle === "annual" ? 365 : 30;
-    start.setDate(start.getDate() + days);
-    return start.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
-  })();
-
-  const planColors: Record<string, string> = {
-    Free:       "bg-[#eeece7] text-[#17171c]",
-    Starter:    "bg-[#f1f5ff] text-[#1863dc]",
-    Pro:        "bg-[#edfce9] text-[#003c33]",
-    Enterprise: "bg-amber-100 text-amber-800",
-  };
-
-  return (
-    <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-colors ${
-      isNearLimit
-        ? "border-amber-300 bg-amber-50 dark:bg-amber-950/20 "
-        : "border-border bg-card"
-    }`}>
-      <Zap size={14} className={isNearLimit ? "text-amber-500" : "text-muted-foreground"} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <span className="text-xs font-medium text-muted-foreground">
-            {isUnlimited
-              ? `${used} araştırma kullanıldı`
-              : `${used} / ${max} araştırma (bu dönem)`}
-          </span>
-          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${planColors[plan.plan_type] ?? planColors.Free}`}>
-            {plan.plan_type}
-          </span>
-        </div>
-        {!isUnlimited && (
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                isNearLimit ? "bg-amber-500" : "bg-[#003c33]"
-              }`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-        )}
-        {periodEnd && (
-          <p className="text-[10px] text-muted-foreground/60 mt-1">
-            Dönem yenileme: {periodEnd}
-          </p>
-        )}
-      </div>
-      {(plan.plan_type === "Free" || plan.plan_type === "Starter") && (
-        <Link
-          href="/#pricing"
-          className="text-[10px] font-semibold text-accent hover:underline whitespace-nowrap"
-        >
-          Yükselt →
-        </Link>
-      )}
-    </div>
-  );
-}
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
+
 
 export default function ClientDashboard() {
   const [studies, setStudies] = useState<Study[]>([]);
@@ -110,20 +36,17 @@ export default function ClientDashboard() {
 
   return (
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <UsageWidget />
-          <Link href="/client/new" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto gap-2 bg-[#17171c] text-white hover:opacity-85">
-              <Plus size={16} />
-              Yeni Araştırma
-            </Button>
-          </Link>
-        </div>
+        <Link href="/client/new">
+          <Button className="gap-2 bg-[#17171c] text-white hover:opacity-85">
+            <Plus size={16} />
+            Yeni Araştırma
+          </Button>
+        </Link>
       </div>
 
       <Card>
