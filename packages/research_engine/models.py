@@ -18,7 +18,7 @@ STANCE_PROFILE: dict[str, dict] = {
         "risk_tolerance": 9,        # 1–10; belirsizliğe tolerans
         "evidence_need": 2,         # 1–10; karar için ne kadar kanıt ister
         "roi_threshold": 2,         # 1–10; ROI beklentisi ne kadar yüksek
-        "agreeableness_mod": +8,    # Big Five Agreeableness delta
+        "agreeableness_mod": +4,    # Big Five Agreeableness delta — +4 (ELEPHANT/Pairit: yüksek agreeableness araştırma kalitesini düşürür)
         "openness_mod": +12,        # Big Five Openness delta
         "neuroticism_mod": -8,      # Big Five Neuroticism delta
         "tr_description": "Teknolojiyi ilk benimseyen. Risk almaktan çekinmez. Referans değeri yüksek.",

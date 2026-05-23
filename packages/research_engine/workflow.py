@@ -43,6 +43,67 @@ DEFAULT_QUESTIONS = [
     "Bu ürünü mevcut alternatiflerle kıyaslayınca en net avantaj ve dezavantaj ne olur?",
 ]
 
+
+def build_elephant_system_prompt(persona: "Persona") -> str:
+    """ELEPHANT çerçevesi (Akademik Sentez Raporu, 2026) temelinde persona'ya özgü
+    anti-dalkavukluk sistem promptu üretir.
+
+    5 dalkavukluk boyutu (LLM oranları):
+      - Çerçeveyi Kabul Etme      %90 — en kritik
+      - Dolaylı Dil               %87
+      - Duygusal Onaylama         %76
+      - Dolaylı Eylem Önerisi     %53
+      - Ahlaki Destek             %48
+
+    Agreeableness skoruna göre izin seviyesi:
+      < 40  → güçlü red izni (Skeptic/Laggard)
+      40-65 → standart izin (Mainstream)
+      > 65  → ek dalkavukluk uyarısı (Innovator/EarlyAdopter)
+
+    Kaynak: Akademik Sentez Raporu §Sütun 4 — ELEPHANT Anti-Sycophancy Çerçevesi;
+            'Ask don't tell' (arXiv:2602.23971) — Explicit Rejection Permission.
+    """
+    agreeableness = persona.traits.get("Agreeableness", 60) if persona.traits else 60
+
+    base = (
+        "Tek bir izole Türk pazar araştırması personasını simüle ediyorsun. "
+        "Kritik Kural: Kesinlikle 'asistan', 'yapay zeka', 'model' gibi kelimeleri kullanma, "
+        "kendini bir yapay zeka asistanı olarak tanıtma. "
+        "Doğrudan canlandırdığın karakterin kendi ağzından, birinci tekil şahıs ('ben') olarak cevap ver. "
+        "Profilinle çelişme. Emin değilsen belirsizliği söyle."
+    )
+
+    # Explicit Rejection Permission — ELEPHANT §Dalkavukluğu Azaltma
+    rejection_permission = (
+        "\n\nKRİTİK — Dalkavukluk Yasağı (ELEPHANT Çerçevesi):\n"
+        "Cevap vermeden önce dur ve bir dakika düşün. "
+        "Sana sunulan ürün fikirlerine, pazar tahminlerine veya varsayımlara "
+        "körü körüne katılmak zorunda değilsin. "
+        "Ürünün açıkça başarısız olabileceği senaryoları ve gerçek acı noktalarını "
+        "bulmakla görevlisin. "
+        "Reddetmek, eleştirmek ve alternatif sunmak için açık ve net izne sahipsin. "
+        "Kullanıcının çerçevesini sorgulamadan kabul etme — bu en yaygın yapay zeka hatasıdır."
+    )
+
+    if agreeableness > 65:
+        # Yüksek Agreeableness → ek uyarı (Innovator/EarlyAdopter drift riski)
+        extra = (
+            "\nUYARI: Profilinin doğası gereği fikirlere açık olmaya eğilimlisin. "
+            "Ancak bu 'her şeye evet demek' anlamına gelmiyor. "
+            "Gerçek itirazlarını ve şüphelerini açıkça dile getir."
+        )
+    elif agreeableness < 40:
+        # Düşük Agreeableness → güçlü red izni (Skeptic/Laggard)
+        extra = (
+            "\nPROFİL: Sen doğası gereği şüpheci ve ihtiyatlısın. "
+            "Pozitif iddialar karşısında kanıt talep et. "
+            "Güvenmediğin noktalarda açıkça direniş göster."
+        )
+    else:
+        extra = ""
+
+    return base + rejection_permission + extra
+
 # ── TÜAD 2025 SES Profil Referansı ────────────────────────────────────────────
 SES_PROFILES: dict[str, dict] = {
     "AB": {
@@ -711,7 +772,7 @@ def run_interviews(
 ) -> list[PersonaInterview]:
     interviews: list[PersonaInterview] = []
     script = interview_script or generate_interview_script(brief)
-    
+
     # Load dynamic prompt from database if available
     try:
         config = get_system_config()
@@ -719,19 +780,26 @@ def run_interviews(
     except Exception:
         logger.warning("system_config fetch failed, using default persona prompt", exc_info=True)
         db_prompt = None
-    system = db_prompt if db_prompt else (
-        "Tek bir izole Türk pazar araştırması personasını simüle ediyorsun. "
-        "Araştırmacıyı memnun etmeye çalışma. Profilinle çelişme. Emin değilsen belirsizliği söyle. "
-        "Kritik Kural: Kesinlikle 'asistan', 'yapay zeka', 'model' gibi kelimeleri kullanma, kendini bir yapay zeka asistanı olarak tanıtma. "
-        "Doğrudan canlandırdığın karakterin kendi ağzından, birinci tekil şahıs ('ben') olarak cevap ver."
-    )
+
     for persona in personas:
+        # ELEPHANT anti-sycophancy: persona'ya özgü sistem promptu
+        # Kaynak: Akademik Sentez Raporu §Sütun 4; build_elephant_system_prompt()
+        system = db_prompt if db_prompt else build_elephant_system_prompt(persona)
+
         turns: list[InterviewTurn] = []
         consistency_notes = [
             f"Persona stance: {persona.stance}",
             f"Bilgi sınırı: {persona.knowledge_boundary}",
         ]
         for script_question in script:
+            # Basit ACT-R cross-turn tutarlılık notu — son 2 yanıtı özetle
+            # Kaynak: engineering-notes.md §4 — 'yoksul adamın ACT-R'ı'
+            turn_memory = ""
+            if turns:
+                recent = turns[-2:]
+                summaries = [f"[{t.tags[0] if t.tags else '?'}] {t.answer[:80].strip()}..." for t in recent]
+                turn_memory = "\nSon yanıtlarından tutarlılık notu:\n" + "\n".join(summaries)
+
             prompt = (
                 f"Araştırma brief'i: {brief.idea}\n"
                 f"Hedef kullanıcılar: {', '.join(brief.target_users) or 'Belirtilmedi'}\n"
@@ -748,6 +816,7 @@ def run_interviews(
                 f"Hedefler: {', '.join(persona.goals)}\n"
                 f"İtirazlar: {', '.join(persona.objections)}\n"
                 f"Bilgi sınırı: {persona.knowledge_boundary}\n"
+                f"{turn_memory}\n"
                 f"Soru etiketi: {script_question.label}\n"
                 f"Soru: {script_question.question}\n"
                 "Kısa, somut ve Türkiye pazarı gerçeklerine uygun cevap ver."
@@ -783,14 +852,11 @@ def run_interviews_stream(
     except Exception:
         logger.warning("system_config fetch failed (stream), using default persona prompt", exc_info=True)
         db_prompt = None
-    base_system = db_prompt if db_prompt else (
-        "Tek bir izole Türk pazar araştırması personasını simüle ediyorsun. "
-        "Araştırmacıyı memnun etmeye çalışma. Profilinle çelişme. Emin değilsen belirsizliği söyle. "
-        "Kritik Kural: Kesinlikle 'asistan', 'yapay zeka', 'model' gibi kelimeleri kullanma, kendini bir yapay zeka asistanı olarak tanıtma. "
-        "Doğrudan canlandırdığın karakterin kendi ağzından, birinci tekil şahıs ('ben') olarak cevap ver."
-    )
-    
     for persona in personas:
+        # ELEPHANT anti-sycophancy: persona'ya özgü sistem promptu (stream)
+        # Kaynak: Akademik Sentez Raporu §Sütun 4; build_elephant_system_prompt()
+        base_system = db_prompt if db_prompt else build_elephant_system_prompt(persona)
+
         yield ("persona_start", {"persona": persona})
         turns: list[InterviewTurn] = []
         consistency_notes = [
@@ -808,11 +874,21 @@ def run_interviews_stream(
                     yield ("retry", {"persona": persona, "question": script_question, "attempt": attempt})
                     system = base_system + "\nUYARI: Önceki cevabında asistan/yapay zeka olduğunu belli ettin veya çok jenerik/kısa konuştun. LÜTFEN ASLA ASİSTAN OLDUĞUNU BELLİ ETME, %100 gerçek bir insan gibi cevap ver."
 
+                # Basit ACT-R cross-turn tutarlılık notu — son 2 yanıtı özetle (stream)
+                turn_memory = ""
+                if turns:
+                    recent = turns[-2:]
+                    summaries = [f"[{t.tags[0] if t.tags else '?'}] {t.answer[:80].strip()}..." for t in recent]
+                    turn_memory = "\nSon yanıtlarından tutarlılık notu:\n" + "\n".join(summaries)
+
                 prompt = (
                     f"Araştırma brief'i: {brief.idea}\n"
                     f"Hedef kullanıcılar: {', '.join(brief.target_users) or 'Belirtilmedi'}\n"
                     f"Persona: {persona.name}, {persona.age}, {persona.city}, {persona.segment}\n"
                     f"Duruş: {persona.stance}\n"
+                    f"SES Grubu: {persona.ses_group} ({SES_PROFILES.get(persona.ses_group, {}).get('profile', '')})\n"
+                    f"Katılımcı Tipi: {persona.respondent_type}\n"
+                    f"Yerleşim: {persona.settlement_type}\n"
                     f"Fiyat hassasiyeti: {persona.price_sensitivity}/10\n"
                     f"Dijital özgüven: {persona.digital_confidence}/10\n"
                     f"Kullanım sıklığı: {persona.usage_frequency}\n"
@@ -821,6 +897,7 @@ def run_interviews_stream(
                     f"Hedefler: {', '.join(persona.goals)}\n"
                     f"İtirazlar: {', '.join(persona.objections)}\n"
                     f"Bilgi sınırı: {persona.knowledge_boundary}\n"
+                    f"{turn_memory}\n"
                     f"Soru etiketi: {script_question.label}\n"
                     f"Soru: {script_question.question}\n"
                     "Kısa, somut ve Türkiye pazarı gerçeklerine uygun cevap ver."

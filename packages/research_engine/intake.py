@@ -1,6 +1,70 @@
 import json
+import re
 from typing import Any
 from .models import ResearchModel
+
+
+# ── INPUT REFRAMING LAYER — ELEPHANT Çerçevesi (Akademik Sentez Raporu, 2026) ———————————
+def reframe_user_input(text: str) -> tuple[str, bool]:
+    """Kullanıcının yüksek epistemik kesinlik taşıyan ifadelerini
+    nesnel araştırma sorusuna dönüştürür (Input Reframing).
+
+    Kaynak: Akademik Sentez Raporu §Sütun 4 — 'Ask don't tell' (arXiv:2602.23971).
+    Araştırma: Soru kalıbına dönüştürme, genel 'dalkavukluk yapma' system
+    prompt'undan çok daha etkili.
+
+    Uygulama:
+    - Kural bazlı regex — LLM gerektirmez, latency sıfır
+    - Sadece yüksek kesinlik içeren ifadeleri reframe eder
+    - Nötr ve soru kalıbındaki ifadelere dokunmaz
+
+    Returns:
+        (reframed_text, was_reframed): Metin ve reframe yapılıp yapılmadığı
+    """
+    # Yüksek epistemik kesinlik pattern'ları (Türkçe)
+    HIGH_CERTAINTY_PATTERNS = [
+        # Kesinlik bildiren sıfatlar
+        r"kesinlikle\s+\w+\s+\w+",
+        r"mutlaka\s+\w+",
+        r"\w+\s+kesinlikle\s+\w+",
+        # Satış/benimseme garantisi
+        r"\w+\s+satacak",
+        r"\w+\s+sevecek(?:ler)?",
+        r"\w+\s+beğenecek(?:ler)?",
+        r"\w+\s+isteyecek(?:ler)?",
+        r"herkes\s+\w+",
+        # Pazar garantısi
+        r"pazar(?:da)?\s+\w+\s+ihtiyaç",
+        r"\w+\s+biliyor(?:um|um ki)",
+        # Onay arama sonu eklentileri
+        r".+\s+değil mi\s*\?",
+        r".+\s+doğru mu\s*\?",
+        r".+\s+iyi değil mi\s*\?",
+    ]
+    # Reframe eşleşme: pattern grubuna göre özel öneri veya jenerik öneri
+    REFRAME_MAP = [
+        (r"(kesinlikle|mutlaka).{0,40}(satacak|sevecek|beğenecek|isteyecek)",
+         "Bu ürünün pazar potansiyeli ve satış engelleri nelerdir?"),
+        (r"herkes.{0,30}\w+",
+         "Hedef kitlenin bu konudaki farklı bakış açıları ve olası itirazları nelerdir?"),
+        (r".+(değil mi|doğru mu|iyi değil mi)\s*\?",
+         "Bu konudaki potansiyel güçlü ve zayıf taraflar nelerdir?"),
+    ]
+
+    text_lower = text.lower().strip()
+
+    # Özel eşleşme denemeleri
+    for pattern, reframed in REFRAME_MAP:
+        if re.search(pattern, text_lower):
+            return reframed, True
+
+    # Genel yüksek kesinlik tespiti → jenerik soru dönüşümü
+    for pattern in HIGH_CERTAINTY_PATTERNS:
+        if re.search(pattern, text_lower):
+            return f"'{text.strip()}' öngörüsünün gerçek pazarı yansıtıp yansıtmadığını ve olası riskleri nelerdir?", True
+
+    return text, False
+
 
 # ── CONCEPT POOLS & DYNAMIC PERSONAS ─────────────────────────────────────────
 CONCEPT_POOLS = {
@@ -283,6 +347,18 @@ def process_intake_chat(current_brief: dict[str, Any], chat_history: list[dict[s
             "   c. 'assistant_reply' içinde bu önerdiğin örnekleri veya kendi ürettiğin başlığı kullanıcıya sun ve onayını al (Örn: 'Sizin için şu başlığı ve soruları ekledim, ne dersiniz?')."
         )
     
+    # ── INPUT REFRAMING (ELEPHANT Çerçevesi) ————————————————————————————————————
+    # Kaynak: Akademik Sentez Raporu §Sütun 4 — arXiv:2602.23971
+    # Şeffaf mod (Seçenek B): reframe yapıldıysa Defne kullanıcıya bildirir.
+    reframed_message, was_reframed = reframe_user_input(user_message)
+    reframe_notice = ""
+    if was_reframed:
+        reframe_notice = (
+            f'\n\n[Defne Notu: "İfadenı tarafsız bir araştırma sorusu olarak ele aldım: '
+            f'"{reframed_message}" Bu şekilde daha gerçekçi bulgular elde edebiliriz.]'
+        )
+        user_message = reframed_message
+
     prompt = (
         f"Mevcut Brief (JSON):\n{json.dumps(current_brief, ensure_ascii=False, indent=2)}\n\n"
         f"Son Sohbet Geçmişi:\n{history_text}\n"
@@ -307,13 +383,17 @@ def process_intake_chat(current_brief: dict[str, Any], chat_history: list[dict[s
             response_text = match.group(0)
             
         result = json.loads(response_text)
-        
+
         # Varsayılan yapıyı koruma
         if "updated_brief" not in result:
             result["updated_brief"] = current_brief
         if "assistant_reply" not in result:
             result["assistant_reply"] = "Anladım. Başka eklemek istediğin bir şey var mı?"
-            
+
+        # Reframe notu varsa asistan yanıtına ekle (şeffaf mod)
+        if reframe_notice:
+            result["assistant_reply"] = result["assistant_reply"] + reframe_notice
+
         return result
     except Exception as e:
         print(f"Intake parsing error: {e}")
