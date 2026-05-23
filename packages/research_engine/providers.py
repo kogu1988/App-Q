@@ -7,6 +7,7 @@ import urllib.error
 import urllib.request
 
 from .models import ResearchModel
+from .caching import check_semantic_cache, save_to_semantic_cache
 
 
 APP_Q_GENERATION_POLICY = """
@@ -18,6 +19,15 @@ App-Q üretim politikası:
 - Araştırmacıyı memnun etmeye çalışma; zayıf noktaları açıkça söyle.
 - Gizli muhakeme, <think> bloğu veya iç analiz yazma.
 - Gereksiz maddeleme yapma; kısa ve doğrudan cevap ver.
+"""
+
+INTAKE_POLICY = """
+App-Q Asistan (Defne) politikası:
+- Türkçe, kibar, empatik ve destekleyici bir tonda cevap ver.
+- Kullanıcıyı asla azarlama, eksiklerini yüzüne vurma veya eleştirme ("göz ardı edemeyiz", "belirsiz zemine oturtamayız" gibi sert ifadeler KULLANMA).
+- Kullanıcı bir konuda (örn. rakipler) fikri olmadığını veya eksik olduğunu belirtirse, onu rahatlat ve 2-3 jenerik, mantıklı varsayım/örnek üreterek süreci ilerlet.
+- Kısa, net ve yapıcı ol. Gereksiz maddeleme yapma.
+- Gizli muhakeme, <think> bloğu veya iç analiz yazma.
 """
 
 
@@ -139,6 +149,12 @@ class MockResearchModel:
             "test edilmesi gereken hipotezler olarak ele alınmalı."
         )
 
+    def generate_stream(self, system: str, prompt: str):
+        answer = self.generate(system, prompt)
+        words = answer.split(" ")
+        for i, word in enumerate(words):
+            yield word + (" " if i < len(words) - 1 else "")
+
 
 class OllamaResearchModel:
     """Local Ollama adapter using the chat API on localhost."""
@@ -149,14 +165,31 @@ class OllamaResearchModel:
         base_url: str = "http://127.0.0.1:11434",
         timeout_seconds: int = 120,
     ) -> None:
-        self.model_id = model_id
-        self.last_model_id = model_id
+        import re
+        match = re.search(r'\(([^)]+)\)', model_id)
+        if match:
+            clean_id = match.group(1).strip()
+        else:
+            clean_id = model_id.strip()
+
+        self.model_id = clean_id
+        self.last_model_id = clean_id
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = timeout_seconds
 
     def generate(self, system: str, prompt: str) -> str:
         self.last_model_id = self.model_id
-        system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
+        if "Defne" in system:
+            system = f"{INTAKE_POLICY}\n\n{system}"
+        else:
+            system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
+            
+        # 1. Check Cache
+        cached_response = check_semantic_cache(prompt, system)
+        if cached_response:
+            return cached_response
+            
+        # 2. Proceed with LLM Call
         payload = {
             "model": self.model_id,
             "stream": False,
@@ -166,7 +199,7 @@ class OllamaResearchModel:
             ],
             "options": {
                 "temperature": 0.7,
-                "num_ctx": 4096,
+                "num_ctx": int(os.getenv("APP_MODEL_CONTEXT_LENGTH", "8192")),
             },
         }
         request = urllib.request.Request(
@@ -186,7 +219,80 @@ class OllamaResearchModel:
         content = data.get("message", {}).get("content")
         if not content:
             raise ModelProviderError(f"Ollama boş yanıt döndürdü: {data}")
-        return strip_visible_reasoning(content)
+            
+        final_response = strip_visible_reasoning(content)
+        
+        # 3. Save to Cache
+        save_to_semantic_cache(prompt, final_response, system)
+        
+        return final_response
+
+    def generate_stream(self, system: str, prompt: str):
+        self.last_model_id = self.model_id
+        if "Defne" in system:
+            system = f"{INTAKE_POLICY}\n\n{system}"
+        else:
+            system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
+            
+        # 1. Check Cache
+        cached_response = check_semantic_cache(prompt, system)
+        if cached_response:
+            # Simulate streaming by yielding words
+            words = cached_response.split(" ")
+            for i, word in enumerate(words):
+                yield word + (" " if i < len(words) - 1 else "")
+            return
+            
+        payload = {
+            "model": self.model_id,
+            "stream": True,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            "options": {
+                "temperature": 0.7,
+                "num_ctx": int(os.getenv("APP_MODEL_CONTEXT_LENGTH", "8192")),
+            },
+        }
+        request = urllib.request.Request(
+            url=f"{self.base_url}/api/chat",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
+                inside_think_block = False
+                full_response = []
+                for line in response:
+                    if not line.strip():
+                        continue
+                    try:
+                        data = json.loads(line.decode("utf-8"))
+                        content = data.get("message", {}).get("content", "")
+                        if content:
+                            if "<think>" in content:
+                                inside_think_block = True
+                                content = content.split("<think>")[0]
+                            elif "</think>" in content:
+                                inside_think_block = False
+                                content = content.split("</think>")[-1]
+                            
+                            if not inside_think_block and content:
+                                full_response.append(content)
+                                yield content
+                    except json.JSONDecodeError:
+                        continue
+                
+                # 3. Save full streamed response to cache
+                final_text = "".join(full_response).strip()
+                if final_text:
+                    save_to_semantic_cache(prompt, final_text, system)
+        except (TimeoutError, urllib.error.URLError) as exc:
+            raise ModelProviderError(
+                "Ollama yanıt vermedi. Ollama'nın çalıştığından ve modelin yüklü olduğundan emin olun."
+            ) from exc
 
 
 class OllamaRouterResearchModel:
@@ -219,13 +325,43 @@ class OllamaRouterResearchModel:
         self.last_model_id = model_id
         return answer
 
+    def generate_stream(self, system: str, prompt: str):
+        model_id = choose_model_id(prompt, self.b2c_model_id, self.general_model_id)
+        model = self.b2c_model if model_id == self.b2c_model_id else self.general_model
+        self.last_model_id = model_id
+        for chunk in model.generate_stream(system, prompt):
+            yield chunk
+
+
+def discover_ollama_models(base_url: str = "http://127.0.0.1:11434") -> list[str]:
+    import urllib.request
+    import json
+    try:
+        req = urllib.request.Request(f"{base_url.rstrip('/')}/api/tags")
+        with urllib.request.urlopen(req, timeout=2) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            return [model["name"] for model in data.get("models", [])]
+    except Exception:
+        return []
+
 
 def get_model_provider(provider: str | None = None) -> ResearchModel:
-    selected_provider = provider or os.getenv("APP_MODEL_PROVIDER", "mock")
+    selected_provider = provider or os.getenv("APP_MODEL_PROVIDER", "ollama-router")
+    
+    # Try fetching model configurations from SQLite dynamically
+    try:
+        from .database import get_system_config
+        config = get_system_config()
+    except Exception:
+        config = {}
+        
+    b2c_model_id = config.get("b2c_model") or os.getenv(B2C_MODEL_ENV, DEFAULT_B2C_MODEL_ID)
+    general_model_id = config.get("b2b_model") or os.getenv(GENERAL_MODEL_ENV, DEFAULT_GENERAL_MODEL_ID)
+    
     if selected_provider == "mock":
         return MockResearchModel()
     if selected_provider == "ollama":
-        model_id = os.getenv("APP_MODEL_ID", "sentetik-tr-motor")
+        model_id = config.get("b2c_model") or os.getenv("APP_MODEL_ID", "sentetik-tr-motor")
         base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
         timeout = int(os.getenv("APP_MODEL_TIMEOUT_SECONDS", "120"))
         return OllamaResearchModel(model_id=model_id, base_url=base_url, timeout_seconds=timeout)
@@ -233,9 +369,10 @@ def get_model_provider(provider: str | None = None) -> ResearchModel:
         base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
         timeout = int(os.getenv("APP_MODEL_TIMEOUT_SECONDS", "120"))
         return OllamaRouterResearchModel(
-            b2c_model_id=os.getenv(B2C_MODEL_ENV, DEFAULT_B2C_MODEL_ID),
-            general_model_id=os.getenv(GENERAL_MODEL_ENV, DEFAULT_GENERAL_MODEL_ID),
+            b2c_model_id=b2c_model_id,
+            general_model_id=general_model_id,
             base_url=base_url,
             timeout_seconds=timeout,
         )
     raise ValueError(f"Unsupported model provider: {selected_provider}")
+

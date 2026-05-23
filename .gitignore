@@ -8,6 +8,14 @@ node_modules/
 .next/
 dist/
 build/
+
+# Geliştirici araçları — repo'ya eklenmez
+.agent/
+.vscode/
+App-Q.code-workspace
+
+# Yerel veri
+data/app_q.db
 data/outputs/*
 !data/outputs/.gitkeep
 !data/outputs/README.md

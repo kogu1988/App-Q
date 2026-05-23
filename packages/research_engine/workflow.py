@@ -1,5 +1,7 @@
 from __future__ import annotations
-
+import logging
+from dataclasses import asdict
+from typing import Any, Generator
 from .models import (
     ClarifyingQuestion,
     Evidence,
@@ -15,10 +17,25 @@ from .models import (
     ResearchModel,
     ResearchPlan,
     ResearchReport,
+    RespondentType,
+    SESGroup,
+    STANCE_PROFILE,
+    DEFAULT_STANCE_COHORT,
 )
+import json
+import uuid
+from .database import save_study, save_persona_to_pool, get_system_config, log_audit
 
+logger = logging.getLogger(__name__)
 
-INTERVIEW_GUIDE = [
+from .analytics import (
+    synthesize_report,
+    build_pain_point_matrix,
+    collect_evidence,
+    collect_quality_issues,
+    summarize_model_usage,
+)
+DEFAULT_QUESTIONS = [
     "Bu ürün fikrini ilk duyduğunda hangi problemi çözdüğünü düşünüyorsun?",
     "Satın alma veya deneme kararında seni en çok ne durdurur?",
     "Bu çözüm hangi durumda para ödemeye değer olur?",
@@ -26,28 +43,150 @@ INTERVIEW_GUIDE = [
     "Bu ürünü mevcut alternatiflerle kıyaslayınca en net avantaj ve dezavantaj ne olur?",
 ]
 
+# ── TÜAD 2025 SES Profil Referansı ────────────────────────────────────────────
+SES_PROFILES: dict[str, dict] = {
+    "AB": {
+        "label": "AB — Üst Grup (%21.5)",
+        "profile": "Yüksek eğitimli, üst düzey yönetici veya serbest meslek. Lüks/konfor odaklı, prestij hassas.",
+        "price_sensitivity_range": (1, 4),
+        "digital_confidence_range": (7, 10),
+    },
+    "C1": {
+        "label": "C1 — Üst-Orta Grup (%22.4)",
+        "profile": "Profesyonel meslek sahibi, orta düzey yönetici. Uzun vadeli yatırım ve lokasyon öncelikli.",
+        "price_sensitivity_range": (3, 6),
+        "digital_confidence_range": (6, 9),
+    },
+    "C2": {
+        "label": "C2 — Alt-Orta Grup (%32.5)",
+        "profile": "Memur, teknik personel, küçük esnaf. Fiyat-fayda dengesi öncelikli, fiyat duyarlı.",
+        "price_sensitivity_range": (6, 9),
+        "digital_confidence_range": (4, 7),
+    },
+    "DE": {
+        "label": "DE — Alt Grup (%23.6)",
+        "profile": "Vasıfsız işçi, emekli. Temel ihtiyaç odaklı, çok yüksek fiyat duyarlılığı.",
+        "price_sensitivity_range": (8, 10),
+        "digital_confidence_range": (2, 5),
+    },
+}
+
+# ── Respondent Type → Soru Tag Filtresi ──────────────────────────────────────
+RESPONDENT_QUESTION_FILTER: dict[str, list[str]] = {
+    "potential_customer": ["pain_point", "value", "positioning"],
+    "competitor_user":    ["objection", "pricing", "positioning", "risk"],
+    "churned_user":       ["pain_point", "objection", "risk"],
+    "decision_maker":     ["pricing", "value", "risk"],
+    "individual_user":    ["pain_point", "value", "positioning"],
+}
+
+# ── TÜAD 2025 SES Kota Yönetimi ──────────────────────────────────────────────
+# Türkiye nüfus dağılımı (TÜAD 2025 verileri, yaklaşık oranlar)
+TUAD_SES_QUOTA: dict[str, float] = {
+    "AB": 0.215,   # Üst grup — %21.5
+    "C1": 0.224,   # Üst-orta — %22.4
+    "C2": 0.325,   # Alt-orta — %32.5 (en büyük dilim)
+    "DE": 0.236,   # Alt grup — %23.6
+}
+
+
+def apply_ses_quota(
+    panel_size: int,
+    target_ses: list[str] | None = None,
+) -> dict[str, int]:
+    """
+    TÜAD 2025 nüfus oranlarına göre SES başına panel kota hesaplar.
+
+    Args:
+        panel_size: Toplam panel büyüklüğü
+        target_ses: Belirli SES gruplarına odaklanmak için liste (None → tüm gruplar)
+
+    Returns:
+        {"AB": 2, "C1": 2, "C2": 3, "DE": 2} gibi kota sözlüğü
+    """
+    quota_groups = target_ses or list(TUAD_SES_QUOTA.keys())
+    weights = {ses: TUAD_SES_QUOTA.get(ses, 0.25) for ses in quota_groups}
+    total_w = sum(weights.values())
+
+    # Ham hesaplama
+    counts: dict[str, int] = {
+        ses: max(1, round(panel_size * w / total_w))
+        for ses, w in weights.items()
+    }
+
+    # Toplam düzeltmesi — yuvarlama hatası varsa en büyük grubu ayarla
+    diff = panel_size - sum(counts.values())
+    if diff != 0:
+        dominant = max(counts, key=lambda k: weights[k])
+        counts[dominant] = max(1, counts[dominant] + diff)
+
+    return counts
+
+
+def filter_questions_by_respondent(
+    questions: list[InterviewQuestion],
+    respondent_type: RespondentType,
+) -> list[InterviewQuestion]:
+    """Respondent tipine göre ilgisiz soruları filtreler. Soru kalmamassa tümünü döner."""
+    allowed = RESPONDENT_QUESTION_FILTER.get(respondent_type, [])
+    if not allowed:
+        return questions
+    filtered = [q for q in questions if any(t in (q.tags or []) for t in allowed)]
+    return filtered if filtered else questions
+
+
 DEFAULT_TRAIT_ORDER = ["Openness", "Conscientiousness", "Extraversion", "Agreeableness", "Neuroticism"]
 
 
 def persona_traits(seed: int, stance: str, price_sensitivity: int, digital_confidence: int) -> dict[str, int]:
+    """Big Five domain skorlarını Rogers Diffusion stance profiliyle kalibre eder.
+    Kaynak: Rogers (2003), Bilal (2026) Grounded Simulation §4.3, NEO-PI-R (Costa & McCrae 1992)
+    """
+    profile = STANCE_PROFILE.get(stance, STANCE_PROFILE["Mainstream"])
+    # Temel hesaplama (deterministik, seed bazlı)
     openness = min(92, max(35, digital_confidence * 9 + (seed * 3 % 12)))
     conscientiousness = 62 + (seed * 7 % 28)
     extraversion = 42 + (seed * 5 % 35)
     agreeableness = 72 - (seed * 6 % 24)
     neuroticism = min(88, max(25, price_sensitivity * 7 + (seed * 4 % 18)))
-    if stance in {"Skeptic", "Blocker"}:
-        agreeableness = max(35, agreeableness - 12)
-        neuroticism = min(92, neuroticism + 10)
-    if stance == "Champion":
-        openness = min(96, openness + 8)
-        agreeableness = min(90, agreeableness + 10)
+    # Rogers stance profili modiförleri uygula
+    openness = min(100, max(1, openness + profile["openness_mod"]))
+    agreeableness = min(100, max(1, agreeableness + profile["agreeableness_mod"]))
+    neuroticism = min(100, max(1, neuroticism + profile["neuroticism_mod"]))
     return {
-        "Openness": openness,
-        "Conscientiousness": conscientiousness,
-        "Extraversion": extraversion,
-        "Agreeableness": agreeableness,
-        "Neuroticism": neuroticism,
+        "Openness": min(100, max(1, openness)),
+        "Conscientiousness": min(100, max(1, conscientiousness)),
+        "Extraversion": min(100, max(1, extraversion)),
+        "Agreeableness": min(100, max(1, agreeableness)),
+        "Neuroticism": min(100, max(1, neuroticism)),
     }
+
+
+def neo_facets_from_traits(traits: dict[str, int], stance: str) -> dict[str, int]:
+    """Big Five domain skorlarından NEO-PI-R facet yaklaşımsalı üret.
+    Her domain 6 facet'e bölünür; seed varyasyonu ile farklılaştırılır.
+    Bu temsili bir yaklaşımdır — tam NEO-PI-R normative verisi gerektirir.
+    """
+    profile = STANCE_PROFILE.get(stance, STANCE_PROFILE["Mainstream"])
+    evidence_mod = profile["evidence_need"]  # 1-10
+    facets: dict[str, int] = {}
+    # Openness facets
+    o = traits.get("Openness", 60)
+    facets["O1_Fantasy"] = min(100, o + 5)
+    facets["O2_Aesthetics"] = min(100, o - 3)
+    facets["O3_Feelings"] = min(100, o + evidence_mod * 2)
+    facets["O4_Actions"] = min(100, o - evidence_mod * 3)  # Skeptic'te düşük
+    facets["O5_Ideas"] = min(100, o + 8)
+    facets["O6_Values"] = min(100, o - 5)
+    # Neuroticism facets (fiyat hassasiyeti kaynağı)
+    n = traits.get("Neuroticism", 50)
+    facets["N1_Anxiety"] = min(100, n + evidence_mod * 2)
+    facets["N2_Anger"] = min(100, n - 5)
+    facets["N3_Depression"] = min(100, n - 10)
+    facets["N4_SelfConsciousness"] = min(100, n + 3)
+    facets["N5_Impulsiveness"] = min(100, max(1, 60 - n + evidence_mod))
+    facets["N6_Vulnerability"] = min(100, n + evidence_mod)
+    return {k: max(1, v) for k, v in facets.items()}
 
 
 def persona_attributes(
@@ -78,6 +217,67 @@ def generate_interview_script(
     competitors = ", ".join(brief.competitors) or "mevcut alternatifler"
     expected_price = brief.expected_price or "önerilecek fiyat/paket"
     role_text = ", ".join(f"{role.role} x{role.count}" for role in panel_roles or []) or "varsayılan panel"
+    
+    # A/B Testi Modu (Varyantlar mevcutsa)
+    if brief.variant_a and brief.variant_b:
+        script = [
+            InterviewQuestion(
+                id="q_context",
+                label="CONTEXT",
+                question=(
+                    f"{category} bağlamında bugün bu problemi nasıl yaşıyorsun? Son yaşadığın somut bir örneği anlatır mısın?"
+                ),
+                reason="Hedef kitlenin problemi yaşama şeklini yakalamak.",
+                tags=["pain_point"],
+            ),
+            InterviewQuestion(
+                id="q_variant_compare",
+                label="VARIANT-COMPARE",
+                question=(
+                    f"Sana bu problemi çözmek için iki farklı yaklaşım/teklif sunsam:\n"
+                    f"Varyant A: '{brief.variant_a}'\n"
+                    f"Varyant B: '{brief.variant_b}'\n"
+                    f"Bu iki teklifi/mesajı karşılaştırdığında ilk izlenimin ne olur? Hangisi ilgini çeker ve neden?"
+                ),
+                reason="Varyantların ilk izlenim ve ikna edicilik kıyaslaması.",
+                tags=["value", "positioning"],
+            ),
+            InterviewQuestion(
+                id="q_variant_preference",
+                label="VARIANT-PREFERENCE",
+                question=(
+                    f"Varyant A ('{brief.variant_a}') ile Varyant B ('{brief.variant_b}') arasında kesin bir seçim yapacak olsan hangisini seçersin? "
+                    "Lütfen cevabında 'Varyant A' veya 'Varyant B' ibaresini açıkça geçirerek nedenini söyle."
+                ),
+                reason="Personanın net varyant tercihini ve satın alma niyetini yakalamak.",
+                tags=["value", "pricing"],
+            ),
+            InterviewQuestion(
+                id="q_objection",
+                label="OBJECTIONS",
+                question="İlgini çeken veya tercih ettiğin bu teklifle ilgili aklına takılan en büyük şüphe, itiraz veya güven/gizlilik endişesi nedir?",
+                reason="Varyantlara yönelik ana bariyerleri toplamak.",
+                tags=["objection", "risk"],
+            ),
+            InterviewQuestion(
+                id="q_pricing",
+                label="PRICING",
+                question=(
+                    f"Bu teklif için {expected_price} ödemeyi düşünür müsün? Bu hizmet için kafandaki makul fiyat/model nedir?"
+                ),
+                reason="Fiyat eşiğini ve bütçe kabulünü ölçmek.",
+                tags=["pricing"],
+            ),
+            InterviewQuestion(
+                id="q_decision",
+                label="DECISION",
+                question="Bu teklifin seni gerçekten heyecanlandırması ve hemen satın alman için onda neyi değiştirmemizi veya eklememizi istersin?",
+                reason="Aksiyonlanabilir iyileştirme önerisi almak.",
+                tags=["risk", "value"],
+            ),
+        ]
+        return script
+
     script = [
         InterviewQuestion(
             id="q_context",
@@ -145,7 +345,69 @@ def generate_interview_script(
             reason="Ürünleştirilebilir aksiyon maddesi çıkarmak.",
             tags=["risk", "value"],
         ),
+        InterviewQuestion(
+            id="q_psm_cheap",
+            label="PSM-TOO-CHEAP",
+            question=(
+                f"Eğer bu ürün aylık hangi fiyata düşse 'bu kadar ucuzsa kalitesine güvenemem' dersin? "
+                f"Hem çok ucuz bulacağın hem de 'ucuz ama makul' bulacağın TL rakamlarını söyler misin?"
+            ),
+            reason="Van Westendorp PSM: 'too cheap' ve 'cheap/acceptable' eşiğini TL bazında tespit etmek.",
+            tags=["pricing"],
+        ),
+        InterviewQuestion(
+            id="q_psm_expensive",
+            label="PSM-TOO-EXPENSIVE",
+            question=(
+                f"Bu ürün aylık hangi fiyata ulaşırsa 'pahalı ama yine de düşünebilirim' dersin, "
+                f"hangi fiyatta 'kesinlikle almam' kararı verirsin? TL cinsinden belirt."
+            ),
+            reason="Van Westendorp PSM: 'expensive' ve 'too expensive' eşiğini TL bazında tespit etmek.",
+            tags=["pricing"],
+        ),
+        InterviewQuestion(
+            id="q_brand_unaided",
+            label="BRAND-UNAIDED",
+            question=(
+                f"{category} kategorisinde bir ürün veya hizmet arayışına girseydin "
+                f"aklına ilk gelen 2-3 marka ya da çözüm hangisi olurdu?"
+            ),
+            reason="Yardımsız marka bilinirliği (unaided recall) — rakip konumlandırması için.",
+            tags=["positioning"],
+        ),
     ]
+
+    # Marka sağlığı soruları: rakip varsa ekle
+    if brief.competitors:
+        comp_str = ", ".join(brief.competitors[:3])
+        script.append(
+            InterviewQuestion(
+                id="q_brand_association",
+                label="BRAND-ASSOCIATION",
+                question=(
+                    f"{comp_str} markalarını düşününce aklına gelen ilk 2-3 kelime nedir? "
+                    f"Bu markalar sende hangi duyguyu çağrıştırıyor?"
+                ),
+                reason="Marka çağrışım haritası — rakibe karşı duygusal konumlandırma tespiti.",
+                tags=["positioning"],
+            )
+        )
+
+    # Keşif kanalı sorusu: her araştırmaya dahil
+    script.append(
+        InterviewQuestion(
+            id="q_channel",
+            label="CHANNEL",
+            question=(
+                f"Bu tür bir ürünü/hizmeti keşfetmek için genellikle hangi kanalı kullanırsın: "
+                f"sosyal medya, arama motoru (Google/Yandex), arkadaş tavsiyesi, haber/blog, "
+                f"uygulama mağazası veya başka bir yol mu?"
+            ),
+            reason="Hedef kitle için en etkili keşif ve satın alma kanalını tespit etmek.",
+            tags=["positioning"],
+        )
+    )
+
     if brief.questions:
         for index, question in enumerate(brief.questions[:4], start=1):
             script.append(
@@ -225,6 +487,7 @@ def build_research_plan(
         "itiraz, fiyat hassasiyeti ve konumlandırma risklerini sentetik persona görüşmeleriyle test etmek."
     )
     interview_script = generate_interview_script(brief, panel_roles)
+    ses_quota = apply_ses_quota(5)  # Varsayılan panel büyüklüğü 5
     return ResearchPlan(
         objective=objective,
         assumptions=assumptions,
@@ -232,15 +495,18 @@ def build_research_plan(
         interview_questions=[item.question for item in interview_script],
         recommended_panel_size=5,
         interview_script=interview_script,
+        ses_quota=ses_quota,
     )
 
 
-def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None = None) -> list[Persona]:
+def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None = None, model: ResearchModel | None = None) -> list[Persona]:
     if panel_roles:
-        return generate_personas_from_roles(brief, panel_roles)
+        return generate_personas_from_roles(brief, panel_roles, model)
 
+    # ... keeping default fallback ...
     market = brief.market or "Türkiye"
     return [
+        # ... (simplified default hardcoded personas removed for brevity, will just generate one mock or fallback if no panel roles)
         Persona(
             id="p1",
             name="Elif",
@@ -251,198 +517,151 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
             stance="Champion",
             price_sensitivity=7,
             digital_confidence=8,
-            context=f"{market} pazarında hızlı büyümek isteyen, araç denemeye açık satıcı.",
-            goals=["Ürün mesajını hızla test etmek", "Reklam bütçesini boşa harcamamak"],
-            objections=["Raporun gerçek müşteri davranışını temsil edip etmediği"],
-            knowledge_boundary="Kendi satış operasyonu, ürün listeleme ve reklam bütçesi hakkında konuşabilir.",
-            bio="Pazaryeri ve kendi sitesi arasında büyümeye çalışan, hızlı test yapmayı seven ama sonuçları kanıtla görmek isteyen marka sahibi.",
+            context=f"{market} pazarında hızlı büyümek isteyen satıcı.",
+            goals=["Ürün mesajını hızla test etmek"],
+            objections=["Raporun gerçek müşteri davranışını temsil etmemesi"],
+            knowledge_boundary="Kendi satış operasyonu hakkında konuşabilir.",
+            bio="Pazaryeri ve kendi sitesi arasında büyümeye çalışan marka sahibi.",
             attributes=persona_attributes("KOBİ e-ticaret marka sahibi", "Champion", 7, 8),
             traits=persona_traits(1, "Champion", 7, 8),
-        ),
-        Persona(
-            id="p2",
-            name="Mert",
-            age=29,
-            city="İzmir",
-            segment="Performans pazarlama uzmanı",
-            role_title="CRO ve Reklam Uzmanı",
-            stance="Pragmatist",
-            price_sensitivity=6,
-            digital_confidence=9,
-            context="Veri ve çıktı kalitesi görmeden bütçe ayırmayan ajans çalışanı.",
-            goals=["Landing page mesajını netleştirmek", "CRO risklerini erken görmek"],
-            objections=["Çıktıların müşteriye sunulabilir kalitede olmaması"],
-            knowledge_boundary="Kampanya, landing page, reklam mesajı ve CRO konularında yorum yapabilir.",
-            bio="Ajans müşterilerinde hızlı deney kuran, raporun sunulabilirliğine ve aksiyona dönüşmesine bakan pazarlama uzmanı.",
-            attributes=persona_attributes("Performans pazarlama uzmanı", "Pragmatist", 6, 9),
-            traits=persona_traits(2, "Pragmatist", 6, 9),
-        ),
-        Persona(
-            id="p3",
-            name="Selin",
-            age=38,
-            city="Ankara",
-            segment="Kurumsal ürün yöneticisi",
-            role_title="Kurumsal Ürün Karar Verici",
-            stance="Skeptic",
-            price_sensitivity=5,
-            digital_confidence=7,
-            context="Sentetik araştırmaya temkinli yaklaşan, gerçek kullanıcı kanıtı isteyen karar verici.",
-            goals=["Yanlış ürün kararlarını azaltmak", "İç paydaşları ikna etmek"],
-            objections=["Sentetik araştırmaya fazla güvenilmesi", "KVKK ve veri gizliliği riski"],
-            knowledge_boundary="Ürün kararları, iç onay süreçleri ve risk değerlendirmesi hakkında konuşabilir.",
-            bio="Yeni araçları ancak iç paydaşlara açıklanabilir kanıtla savunabilen, risk ve uyumluluk tarafını önemseyen ürün yöneticisi.",
-            attributes=persona_attributes("Kurumsal ürün yöneticisi", "Skeptic", 5, 7),
-            traits=persona_traits(3, "Skeptic", 5, 7),
-        ),
-        Persona(
-            id="p4",
-            name="Ahmet",
-            age=45,
-            city="Ankara",
-            segment="Fiyat hassas pazaryeri satıcısı",
-            role_title="Maliyet Odaklı Satıcı",
-            stance="Blocker",
-            price_sensitivity=10,
-            digital_confidence=5,
-            context="Yeni SaaS giderlerine dirençli, hızlı ROI görmezse ürünü reddeden kullanıcı.",
-            goals=["Aylık gideri düşük tutmak", "Somut satış etkisi görmek"],
-            objections=["Abonelik maliyeti", "Ek araç öğrenme zahmeti", "Sonucun soyut kalması"],
-            knowledge_boundary="Küçük satıcı maliyetleri, komisyon baskısı ve nakit akışı hakkında konuşabilir.",
-            bio="Komisyon, reklam ve kargo maliyetleri arasında sıkışmış; yeni abonelikleri ancak hızlı geri dönüş görürse kabul eden satıcı.",
-            attributes=persona_attributes("Fiyat hassas pazaryeri satıcısı", "Blocker", 10, 5),
-            traits=persona_traits(4, "Blocker", 10, 5),
-        ),
-        Persona(
-            id="p5",
-            name="Derya",
-            age=32,
-            city="Bursa",
-            segment="Ajans stratejisti",
-            role_title="Müşteri Sunumu Stratejisti",
-            stance="Observer",
-            price_sensitivity=6,
-            digital_confidence=8,
-            context="Müşteriye sunulabilir rapor kalitesi ve beyaz etiket kullanımına bakan stratejist.",
-            goals=["Pitch öncesi hızlı içgörü üretmek", "Araştırmayı faturalandırılabilir hizmete çevirmek"],
-            objections=["Raporun jenerik görünmesi", "Kanıt zinciri olmadan müşterinin ikna olmaması"],
-            knowledge_boundary="Ajans sunumu, raporlama ve müşteri ikna süreçleri hakkında konuşabilir.",
-            bio="Müşteriye satılabilir araştırma çıktısı arayan, beyaz etiket kalite ve net metodoloji bekleyen stratejist.",
-            attributes=persona_attributes("Ajans stratejisti", "Observer", 6, 8),
-            traits=persona_traits(5, "Observer", 6, 8),
-        ),
+        )
     ]
 
-
-def generate_personas_from_roles(brief: ResearchBrief, panel_roles: list[PanelRole]) -> list[Persona]:
+def generate_personas_from_roles(brief: ResearchBrief, panel_roles: list[PanelRole], model: ResearchModel | None = None) -> list[Persona]:
     market = brief.market or "Türkiye"
-    persona_templates = {
-        "Fiyat Hassas Kullanıcı": {
-            "segment": "Fiyat hassas tüketici",
-            "stance": "Blocker",
-            "price_sensitivity": 10,
-            "digital_confidence": 5,
-            "goals": ["Parasının karşılığını almak", "Gizli ücret ve taahhütlerden kaçınmak"],
-            "objections": ["Fiyatın beklenenden yüksek olması", "Taksit veya ücretsiz deneme olmaması"],
-        },
-        "Dijital Rahat Kullanıcı": {
-            "segment": "Dijital alışkanlığı yüksek kullanıcı",
-            "stance": "Pragmatist",
-            "price_sensitivity": 6,
-            "digital_confidence": 9,
-            "goals": ["Hızlı ve zahmetsiz deneyim", "Mobilde net değer görmek"],
-            "objections": ["Karmaşık onboarding", "Yavaş veya eski görünen arayüz"],
-        },
-        "Güven Şüphecisi": {
-            "segment": "Güven ve gizlilik odaklı kullanıcı",
-            "stance": "Skeptic",
-            "price_sensitivity": 7,
-            "digital_confidence": 6,
-            "goals": ["Güvenli işlem yapmak", "Verisinin nasıl kullanıldığını bilmek"],
-            "objections": ["KVKK belirsizliği", "Kart/veri güvenliği riski", "Kanıtlanmamış vaatler"],
-        },
-        "Bütçe Sahibi Karar Verici": {
-            "segment": "Bütçe sahibi karar verici",
-            "stance": "Skeptic",
-            "price_sensitivity": 7,
-            "digital_confidence": 7,
-            "goals": ["ROI görmek", "İç paydaşları ikna etmek"],
-            "objections": ["Abonelik maliyeti", "Kanıt zinciri olmadan satın alma riski"],
-        },
-        "Operasyonel Kullanıcı": {
-            "segment": "Operasyonel kullanıcı",
-            "stance": "Pragmatist",
-            "price_sensitivity": 6,
-            "digital_confidence": 8,
-            "goals": ["Günlük işi hızlandırmak", "Ek araç öğrenme yükünü azaltmak"],
-            "objections": ["Mevcut iş akışına uymaması", "Kullanım zahmeti"],
-        },
-        "Kurumsal Şüpheci": {
-            "segment": "Kurumsal şüpheci",
-            "stance": "Skeptic",
-            "price_sensitivity": 5,
-            "digital_confidence": 7,
-            "goals": ["Riskleri azaltmak", "Gizlilik ve uyumluluğu korumak"],
-            "objections": ["KVKK ve veri gizliliği riski", "Sentetik çıktıya fazla güvenilmesi"],
-        },
-    }
-    names = ["Elif", "Mert", "Selin", "Ahmet", "Derya", "Ceren", "Burak", "Zeynep", "Onur", "Aylin"]
-    cities = ["İstanbul", "İzmir", "Ankara", "Bursa", "Antalya", "Konya", "Kocaeli", "Eskişehir", "Adana", "Kayseri"]
     personas: list[Persona] = []
+    
     for role in panel_roles:
         if role.count <= 0:
             continue
-        template = persona_templates.get(
-            role.role,
-            {
-                "segment": role.role,
-                "stance": "Observer",
-                "price_sensitivity": 6,
-                "digital_confidence": 7,
-                "goals": ["Ürünün net faydasını anlamak"],
-                "objections": ["Değer önerisinin belirsiz kalması"],
-            },
-        )
-        for _ in range(role.count):
-            index = len(personas)
+            
+        # 1. Try to get from pool
+        pooled_data = get_personas_from_pool_by_role(role.role, limit=role.count)
+        
+        needed_count = role.count - len(pooled_data)
+        
+        # Load pooled personas
+        for data in pooled_data:
             personas.append(
                 Persona(
-                    id=f"p{index + 1}",
-                    name=names[index % len(names)],
-                    age=26 + ((index * 4) % 23),
-                    city=cities[index % len(cities)],
-                    segment=str(template["segment"]),
-                    role_title=role.role,
-                    stance=template["stance"],  # type: ignore[arg-type]
-                    price_sensitivity=int(template["price_sensitivity"]),
-                    digital_confidence=int(template["digital_confidence"]),
-                    context=(
-                        f"{market} pazarında {role.role} rolünü temsil eder. "
-                        f"Rol gerekçesi: {role.why} Araştırma konusu: {brief.title}."
-                    ),
-                    goals=list(template["goals"]),
-                    objections=list(template["objections"]),
-                    knowledge_boundary=(
-                        "Kendi rolü, satın alma davranışı, alternatif kullanımı, fiyat ve güven itirazları hakkında konuşabilir."
-                    ),
-                    bio=(
-                        f"{role.role} perspektifinden konuşan, {brief.category or 'ürün'} fikrini kendi günlük kararı, "
-                        "bütçesi ve güven eşiği üzerinden değerlendiren Türkiye pazarı katılımcısı."
-                    ),
-                    attributes=persona_attributes(
-                        str(template["segment"]),
-                        str(template["stance"]),
-                        int(template["price_sensitivity"]),
-                        int(template["digital_confidence"]),
-                    ),
-                    traits=persona_traits(
-                        index + 1,
-                        str(template["stance"]),
-                        int(template["price_sensitivity"]),
-                        int(template["digital_confidence"]),
-                    ),
+                    id=data["id"],
+                    name=data["name"],
+                    age=data["age"],
+                    city=data["city"],
+                    segment=data["segment"],
+                    role_title=data["role_title"],
+                    stance=data["stance"],
+                    price_sensitivity=data["price_sensitivity"],
+                    digital_confidence=data["digital_confidence"],
+                    context=data["context"],
+                    goals=data["goals"],
+                    objections=data["objections"],
+                    knowledge_boundary=data["knowledge_boundary"],
+                    country_code=data["country_code"],
+                    origin_country=data["origin_country"],
+                    bio=data["bio"],
+                    attributes=data["attributes"],
+                    traits=data["traits"]
                 )
             )
+            
+        if needed_count > 0:
+            if model:
+                # LLM based generation
+                system = "Sen App-Q için dinamik persona üreticisisin. İstenilen rolünde, Türkiye pazarında inandırıcı, spesifik bir persona JSON'u üret. JSON dışında hiçbir şey yazma."
+                prompt = (
+                    f"Araştırma Brief'i: {brief.idea}\n"
+                    f"Rol: {role.role} (Gerekçe: {role.why})\n"
+                    f"Üretilecek Persona Sayısı: {needed_count}\n\n"
+                    "Lütfen aşağıdaki yapıda bir JSON listesi döndür:\n"
+                    "[\n"
+                    "  {\n"
+                    "    \"name\": \"Türkçe isim\",\n"
+                    "    \"age\": 30,\n"
+                    "    \"city\": \"Türkiye şehri\",\n"
+                    "    \"segment\": \"Pazar segmenti\",\n"
+                    "    \"stance\": \"Innovator, EarlyAdopter, Mainstream, Laggard veya Skeptic\",\n"
+                    "    \"price_sensitivity\": 7,\n"
+                    "    \"digital_confidence\": 8,\n"
+                    "    \"ses_group\": \"AB, C1, C2 veya DE (TÜAD 2025)\",\n"
+                    "    \"respondent_type\": \"potential_customer, competitor_user, churned_user, decision_maker veya individual_user\",\n"
+                    "    \"settlement_type\": \"kentsel, banliyö veya kırsal\",\n"
+                    "    \"context\": \"Kısa bağlam\",\n"
+                    "    \"goals\": [\"hedef 1\"],\n"
+                    "    \"objections\": [\"itiraz 1\"],\n"
+                    "    \"knowledge_boundary\": \"bilgi sınırı\",\n"
+                    "    \"bio\": \"kısa hikayesi\"\n"
+                    "  }\n"
+                    "]"
+                )
+                try:
+                    response_text = model.generate(system, prompt)
+                    # Extract JSON block
+                    json_start = response_text.find("[")
+                    json_end = response_text.rfind("]")
+                    if json_start != -1 and json_end != -1:
+                        parsed_list = json.loads(response_text[json_start:json_end+1])
+                        for item in parsed_list:
+                            new_id = f"p_{uuid.uuid4().hex[:8]}"
+                            st = item.get("stance", "Mainstream")
+                            traits_d = persona_traits(len(personas), st, item.get("price_sensitivity", 5), item.get("digital_confidence", 5))
+                            p = Persona(
+                                id=new_id,
+                                name=item.get("name", "İsimsiz"),
+                                age=item.get("age", 30),
+                                city=item.get("city", "İstanbul"),
+                                segment=item.get("segment", role.role),
+                                role_title=role.role,
+                                stance=st,
+                                price_sensitivity=item.get("price_sensitivity", 5),
+                                digital_confidence=item.get("digital_confidence", 5),
+                                context=item.get("context", ""),
+                                goals=item.get("goals", []),
+                                objections=item.get("objections", []),
+                                knowledge_boundary=item.get("knowledge_boundary", ""),
+                                bio=item.get("bio", ""),
+                                ses_group=item.get("ses_group", "C1"),
+                                respondent_type=item.get("respondent_type", "potential_customer"),
+                                settlement_type=item.get("settlement_type", "kentsel"),
+                                attributes=persona_attributes(item.get("segment", role.role), item.get("stance", "Mainstream"), item.get("price_sensitivity", 5), item.get("digital_confidence", 5)),
+                                traits=persona_traits(len(personas), item.get("stance", "Mainstream"), item.get("price_sensitivity", 5), item.get("digital_confidence", 5))
+                            )
+                            personas.append(p)
+                            # Save to pool
+                            save_persona_to_pool(asdict(p))
+                        continue # Skip fallback
+                except Exception as e:
+                    print("LLM Persona generation failed:", str(e))
+            
+            # Fallback to hardcoded if LLM fails or not provided
+            # Cohort-level stance dağılımı — DEFAULT_STANCE_COHORT'dan sırayla ata
+            index = len(personas)
+            fallback_stance = DEFAULT_STANCE_COHORT[index % len(DEFAULT_STANCE_COHORT)]
+            new_id = f"p_{uuid.uuid4().hex[:8]}"
+            fallback_traits = persona_traits(index, fallback_stance, 6, 7)
+            p = Persona(
+                id=new_id,
+                name=f"Kullanıcı {index}",
+                age=30 + (index % 15),
+                city="İstanbul",
+                segment=role.role,
+                role_title=role.role,
+                stance=fallback_stance,
+                price_sensitivity=6,
+                digital_confidence=7,
+                context=f"{market} pazarında {role.role} rolünü temsil eder.",
+                goals=["Ürünün faydasını anlamak"],
+                objections=["Değer önerisinin belirsizliği"],
+                knowledge_boundary="Kendi rolü hakkında konuşabilir.",
+                bio=f"{role.role} rolünde Türkiye pazarı katılımcısı.",
+                attributes=persona_attributes(role.role, fallback_stance, 6, 7),
+                traits=fallback_traits,
+                diffusion_stage=STANCE_PROFILE.get(fallback_stance, {}).get("tr_description", ""),
+                neo_facets=neo_facets_from_traits(fallback_traits, fallback_stance),
+            )
+            personas.append(p)
+            save_persona_to_pool(asdict(p))
+            
     return personas
 
 
@@ -492,9 +711,19 @@ def run_interviews(
 ) -> list[PersonaInterview]:
     interviews: list[PersonaInterview] = []
     script = interview_script or generate_interview_script(brief)
-    system = (
+    
+    # Load dynamic prompt from database if available
+    try:
+        config = get_system_config()
+        db_prompt = config.get("persona_interview_prompt")
+    except Exception:
+        logger.warning("system_config fetch failed, using default persona prompt", exc_info=True)
+        db_prompt = None
+    system = db_prompt if db_prompt else (
         "Tek bir izole Türk pazar araştırması personasını simüle ediyorsun. "
-        "Araştırmacıyı memnun etmeye çalışma. Profilinle çelişme. Emin değilsen belirsizliği söyle."
+        "Araştırmacıyı memnun etmeye çalışma. Profilinle çelişme. Emin değilsen belirsizliği söyle. "
+        "Kritik Kural: Kesinlikle 'asistan', 'yapay zeka', 'model' gibi kelimeleri kullanma, kendini bir yapay zeka asistanı olarak tanıtma. "
+        "Doğrudan canlandırdığın karakterin kendi ağzından, birinci tekil şahıs ('ben') olarak cevap ver."
     )
     for persona in personas:
         turns: list[InterviewTurn] = []
@@ -508,8 +737,13 @@ def run_interviews(
                 f"Hedef kullanıcılar: {', '.join(brief.target_users) or 'Belirtilmedi'}\n"
                 f"Persona: {persona.name}, {persona.age}, {persona.city}, {persona.segment}\n"
                 f"Duruş: {persona.stance}\n"
+                f"SES Grubu: {persona.ses_group} ({SES_PROFILES.get(persona.ses_group, {}).get('profile', '')})\n"
+                f"Katılımcı Tipi: {persona.respondent_type}\n"
+                f"Yerleşim: {persona.settlement_type}\n"
                 f"Fiyat hassasiyeti: {persona.price_sensitivity}/10\n"
                 f"Dijital özgüven: {persona.digital_confidence}/10\n"
+                f"Kullanım sıklığı: {persona.usage_frequency}\n"
+                f"Marka sadakati: {persona.brand_loyalty}/10\n"
                 f"Bağlam: {persona.context}\n"
                 f"Hedefler: {', '.join(persona.goals)}\n"
                 f"İtirazlar: {', '.join(persona.objections)}\n"
@@ -532,183 +766,106 @@ def run_interviews(
     return interviews
 
 
-def summarize_model_usage(interviews: list[PersonaInterview]) -> dict[str, int]:
-    usage: dict[str, int] = {}
-    for interview in interviews:
-        for turn in interview.turns:
-            model_id = turn.model_id or "unknown"
-            usage[model_id] = usage.get(model_id, 0) + 1
-    return usage
-
-
-def collect_quality_issues(interviews: list[PersonaInterview]) -> list[QualityIssue]:
-    issue_text = {
-        "meta_tone": "Cevapta asistan/meta tonu var.",
-        "visible_reasoning": "Cevapta görünür muhakeme bloğu var.",
-        "too_short": "Cevap karar çıkarmak için fazla kısa.",
-        "weak_skepticism": "Skeptik/bloklayıcı persona yeterince sert itiraz üretmedi.",
-        "weak_pricing_specificity": "Fiyat sorusunda TL, bütçe, abonelik veya ödeme modeli somutluğu zayıf.",
-        "weak_turkey_context": "Türkiye pazarı bağlamı zayıf.",
-    }
-    issues: list[QualityIssue] = []
-    for interview in interviews:
-        for turn in interview.turns:
-            for flag in turn.quality_flags:
-                issues.append(
-                    QualityIssue(
-                        persona_id=interview.persona.id,
-                        persona_name=interview.persona.name,
-                        question=turn.question,
-                        severity="fail" if flag in {"meta_tone", "visible_reasoning"} else "warning",
-                        issue=issue_text.get(flag, flag),
-                        recommendation="Bu cevabı yeniden üret veya raporda düşük güvenle kullan.",
-                    )
-                )
-    return issues
-
-
-def build_pain_point_matrix(interviews: list[PersonaInterview]) -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
-    for interview in interviews:
-        pain_answers = [turn.answer for turn in interview.turns if "pain_point" in turn.tags]
-        objection_answers = [turn.answer for turn in interview.turns if "objection" in turn.tags]
-        pricing_answers = [turn.answer for turn in interview.turns if "pricing" in turn.tags]
-        rows.append(
-            {
-                "persona": interview.persona.name,
-                "segment": interview.persona.segment,
-                "primary_pain": pain_answers[0] if pain_answers else "Belirlenmedi",
-                "main_objection": objection_answers[0] if objection_answers else "Belirlenmedi",
-                "pricing_signal": pricing_answers[0] if pricing_answers else "Belirlenmedi",
-            }
-        )
-    return rows
-
-
-def collect_evidence(interviews: list[PersonaInterview], tag: str, limit: int = 4) -> list[Evidence]:
-    evidence: list[Evidence] = []
-    for interview in interviews:
-        for turn in interview.turns:
-            if tag in turn.tags:
-                evidence.append(
-                    Evidence(
-                        persona_id=interview.persona.id,
-                        persona_name=interview.persona.name,
-                        stance=interview.persona.stance,
-                        quote=turn.answer,
-                        source_question=turn.question,
-                    )
-                )
-    return evidence[:limit]
-
-
-def synthesize_report(
+def run_interviews_stream(
     brief: ResearchBrief,
-    plan: ResearchPlan,
     personas: list[Persona],
-    interviews: list[PersonaInterview],
-) -> ResearchReport:
-    objection_evidence = collect_evidence(interviews, "objection")
-    pricing_evidence = collect_evidence(interviews, "pricing")
-    value_evidence = collect_evidence(interviews, "value")
-    pain_evidence = collect_evidence(interviews, "pain_point")
-
-    findings = [
-        Finding(
-            title="Güvenilirlik ana satın alma bariyeri",
-            category="objection",
-            summary=(
-                "Kullanıcılar sentetik araştırmanın hızını değerli bulabilir, ancak çıktının gerçek müşteri "
-                "davranışını ne kadar temsil ettiğini sorgular. Kanıt zinciri ve sınırlılık beyanı şart."
-            ),
-            confidence=0.72,
-            evidence=objection_evidence,
-            implication="Ürün raporlarında her bulgu persona alıntısına bağlanmalı ve kesinlik dili sınırlanmalı.",
-        ),
-        Finding(
-            title="En güçlü değer önerisi bütçe yakmadan ön test",
-            category="value",
-            summary=(
-                "Ajanslar, e-ticaret satıcıları ve ürün ekipleri için ana fayda; kampanya, fiyat veya ürün "
-                "mesajını canlı trafik veya geliştirme bütçesi harcamadan önce test etmek."
-            ),
-            confidence=0.70,
-            evidence=value_evidence or pain_evidence,
-            implication="Pazarlama mesajı 'gerçek araştırmanın yerine geçer' değil, 'karar öncesi hızlı ön filtre' olmalı.",
-        ),
-        Finding(
-            title="Türkiye pazarı için fiyat eşiği düşük tutulmalı",
-            category="pricing",
-            summary=(
-                "KOBİ ve pazaryeri satıcısı segmentinde abonelik direnci yüksek. İlk paket düşük giriş maliyetli "
-                "ve somut rapor çıktısı odaklı olmalı."
-            ),
-            confidence=0.68,
-            evidence=pricing_evidence,
-            implication="MVP satışında self-serve SaaS yerine rapor başı ürünleştirilmiş hizmet daha uygulanabilir.",
-        ),
-    ]
-
-    pricing = PricingInsight(
-        acceptable_range="İlk MVP için rapor başı hizmet modeli; self-serve abonelik daha sonra test edilmeli.",
-        resistance_points=[
-            "Aylık sabit SaaS gideri",
-            "Sentetik çıktıya güven sorunu",
-            "Raporun müşteriye sunulabilir olmaması",
-        ],
-        packaging_suggestion=(
-            "48 saatlik ürünleştirilmiş araştırma raporu, ardından düşük fiyatlı tekrar test paketi."
-        ),
-        evidence=pricing_evidence,
+    model: ResearchModel,
+    interview_script: list[InterviewQuestion] | None = None,
+    max_retries: int = 2,
+) -> Generator[tuple[str, Any], None, list[PersonaInterview]]:
+    interviews: list[PersonaInterview] = []
+    script = interview_script or generate_interview_script(brief)
+    
+    # Load dynamic prompt from database if available
+    try:
+        config = get_system_config()
+        db_prompt = config.get("persona_interview_prompt")
+    except Exception:
+        logger.warning("system_config fetch failed (stream), using default persona prompt", exc_info=True)
+        db_prompt = None
+    base_system = db_prompt if db_prompt else (
+        "Tek bir izole Türk pazar araştırması personasını simüle ediyorsun. "
+        "Araştırmacıyı memnun etmeye çalışma. Profilinle çelişme. Emin değilsen belirsizliği söyle. "
+        "Kritik Kural: Kesinlikle 'asistan', 'yapay zeka', 'model' gibi kelimeleri kullanma, kendini bir yapay zeka asistanı olarak tanıtma. "
+        "Doğrudan canlandırdığın karakterin kendi ağzından, birinci tekil şahıs ('ben') olarak cevap ver."
     )
+    
+    for persona in personas:
+        yield ("persona_start", {"persona": persona})
+        turns: list[InterviewTurn] = []
+        consistency_notes = [
+            f"Persona stance: {persona.stance}",
+            f"Bilgi sınırı: {persona.knowledge_boundary}",
+        ]
+        
+        for script_question in script:
+            yield ("question_start", {"persona": persona, "question": script_question})
+            
+            for attempt in range(max_retries + 1):
+                if attempt == 0:
+                    system = base_system
+                else:
+                    yield ("retry", {"persona": persona, "question": script_question, "attempt": attempt})
+                    system = base_system + "\nUYARI: Önceki cevabında asistan/yapay zeka olduğunu belli ettin veya çok jenerik/kısa konuştun. LÜTFEN ASLA ASİSTAN OLDUĞUNU BELLİ ETME, %100 gerçek bir insan gibi cevap ver."
 
-    recommendations = [
-        "İlk sürümü lokal operatör aracı olarak tasarla; eşzamanlılık yerine sıralı persona görüşmesi kullan.",
-        "E-ticaret araştırmalarında Trendyol odaklı model, B2B/SaaS araştırmalarında genel model route et.",
-        "Rapor çıktısını pain point, itiraz, fiyat hassasiyeti, mesajlaşma ve doğrulama adımlarına böl.",
-        "KVKK dilini kesin uyumluluk iddiası yerine veri yerelliği ve üçüncü taraf API maruziyetini azaltma olarak kur.",
-    ]
-    validation_next_steps = [
-        "3 gerçek ürün fikriyle pilot çalıştır ve bulguları kurucu/ürün sahibi geri bildirimiyle kıyasla.",
-        "Her raporda en az 5 persona alıntısı ve her kritik bulgu için kanıt zinciri zorunlu kıl.",
-        "Bir gerçek kullanıcı görüşmesiyle sentetik rapordaki en riskli varsayımı doğrula veya çürüt.",
-    ]
-    limitations = [
-        "Bu çıktı istatistiksel pazar araştırması değildir; yön gösterici hipotez üretir.",
-        "Sentetik personalar gerçek duygu, sosyal baskı ve satın alma davranışını birebir deneyimlemez.",
-        "Model ve veri kaynaklarının lisans, KVKK ve telif uygunluğu ticari kullanımdan önce ayrıca incelenmelidir.",
-    ]
-    quality_issues = collect_quality_issues(interviews)
-    executive_summary = [
-        "App-Q için en güçlü konumlandırma, canlı trafik veya geliştirme bütçesi harcanmadan önce hızlı ön test yapma vaadidir.",
-        "Satın alma bariyeri güvenilirliktir: raporun gerçek kullanıcı görüşmesi yerine sentetik hipotez ürettiği açıkça gösterilmelidir.",
-        "KOBİ ve pazaryeri segmentinde rapor başı hizmet modeli, erken aşamada aylık abonelikten daha düşük direnç üretir.",
-        "Raporun ticari değeri, her bulgunun persona alıntısı ve sınırlılık notuyla desteklenmesine bağlıdır.",
-    ]
-    action_items = [
-        "Satış teklifini '48 saatte karar öncesi risk raporu' olarak paketle.",
-        "Her müşteri raporunda bulgu başına en az iki persona kanıtı göster.",
-        "İlk fiyatı rapor başı hizmet olarak tut; aboneliği tekrar eden müşterilerde test et.",
-        "KVKK iddiasını abartma; yerel çalışma, veri minimizasyonu ve üçüncü taraf API kullanmama mesajını öne çıkar.",
-        "Kalite uyarısı alan cevapları müşteri raporunda kullanmadan önce yeniden üret.",
-    ]
+                prompt = (
+                    f"Araştırma brief'i: {brief.idea}\n"
+                    f"Hedef kullanıcılar: {', '.join(brief.target_users) or 'Belirtilmedi'}\n"
+                    f"Persona: {persona.name}, {persona.age}, {persona.city}, {persona.segment}\n"
+                    f"Duruş: {persona.stance}\n"
+                    f"Fiyat hassasiyeti: {persona.price_sensitivity}/10\n"
+                    f"Dijital özgüven: {persona.digital_confidence}/10\n"
+                    f"Kullanım sıklığı: {persona.usage_frequency}\n"
+                    f"Marka sadakati: {persona.brand_loyalty}/10\n"
+                    f"Bağlam: {persona.context}\n"
+                    f"Hedefler: {', '.join(persona.goals)}\n"
+                    f"İtirazlar: {', '.join(persona.objections)}\n"
+                    f"Bilgi sınırı: {persona.knowledge_boundary}\n"
+                    f"Soru etiketi: {script_question.label}\n"
+                    f"Soru: {script_question.question}\n"
+                    "Kısa, somut ve Türkiye pazarı gerçeklerine uygun cevap ver."
+                )
+                
+                full_answer = ""
+                if hasattr(model, "generate_stream"):
+                    for chunk in model.generate_stream(system, prompt):
+                        full_answer += chunk
+                        yield ("chunk", {"text": chunk})
+                else:
+                    full_answer = model.generate(system, prompt)
+                    yield ("chunk", {"text": full_answer})
+                
+                quality_flags = judge_answer_quality(persona, script_question.question, full_answer)
+                critical_failure = any(flag in {"meta_tone", "visible_reasoning"} for flag in quality_flags)
+                
+                if critical_failure:
+                    try:
+                        log_audit(brief.title[:50], persona.name, ", ".join(quality_flags), "Retried turn due to AI hallucination/meta-tone")
+                    except Exception:
+                        logger.warning(
+                            "audit log write failed for persona=%s flags=%s",
+                            persona.name, quality_flags, exc_info=True
+                        )
+                
+                if not critical_failure or attempt == max_retries:
+                    turn = InterviewTurn(
+                        question=script_question.question,
+                        answer=full_answer,
+                        tags=script_question.tags or classify_question(script_question.question),
+                        model_id=getattr(model, "last_model_id", None),
+                        quality_flags=quality_flags,
+                    )
+                    turns.append(turn)
+                    yield ("question_end", {"persona": persona, "question": script_question, "turn": turn})
+                    break
+                    
+        interview = PersonaInterview(persona=persona, turns=turns, consistency_notes=consistency_notes)
+        interviews.append(interview)
+        yield ("persona_end", {"persona": persona, "interview": interview})
+        
+    return interviews
 
-    return ResearchReport(
-        title=brief.title,
-        executive_summary=executive_summary,
-        plan=plan,
-        personas=personas,
-        interviews=interviews,
-        findings=findings,
-        pricing=pricing,
-        pain_point_matrix=build_pain_point_matrix(interviews),
-        action_items=action_items,
-        quality_issues=quality_issues,
-        recommendations=recommendations,
-        validation_next_steps=validation_next_steps,
-        limitations=limitations,
-        model_usage=summarize_model_usage(interviews),
-    )
+
 
 
 def run_research(
