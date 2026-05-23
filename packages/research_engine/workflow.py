@@ -200,27 +200,43 @@ DEFAULT_TRAIT_ORDER = ["Openness", "Conscientiousness", "Extraversion", "Agreeab
 
 
 def persona_traits(seed: int, stance: str, price_sensitivity: int, digital_confidence: int) -> dict[str, int]:
-    """Big Five domain skorlarını Rogers Diffusion stance profiliyle kalibre eder.
+    """Big Five domain skorlarini Rogers Diffusion stance profiliyle kalibre eder.
+
+    Agreeableness prensibi (duzeltildi):
+      base=60 + stance_modifier + kucuk_varyasyon(+/-6)
+      modifier buyuklugu (min 4, max 10) > max varyasyon (6) oldugu icin
+      Skeptic her zaman Mainstream'den dusuk Agreeableness puanina sahip olur.
+      Onceki formul: 72 - (seed*6 % 24) seed'e gore 0-22 aralik varyasyon yaratiyordu,
+      bu da Skeptic'i bazen Mainstream'den yuksek yapiyordu (bug).
+
     Kaynak: Rogers (2003), Bilal (2026) Grounded Simulation §4.3, NEO-PI-R (Costa & McCrae 1992)
     """
     profile = STANCE_PROFILE.get(stance, STANCE_PROFILE["Mainstream"])
-    # Temel hesaplama (deterministik, seed bazlı)
+    # Kucuk deterministik bireysel varyasyon (-6 ile +6 arasi)
+    var = (seed * 7 % 13) - 6
+
+    # Agreeableness: stance-ankore base (60) + modifier + kucuk varyasyon
+    # Skeptic: 60 + (-10) + var = 44-56  |  Mainstream: 60 + 0 + var = 54-66
+    # Yani Skeptic her zaman < Mainstream (overlap yok)
+    agreeableness = 60 + profile["agreeableness_mod"] + var
+
+    # Diger trait'ler: mevcut hesaplama korundu, modifier eklendi
     openness = min(92, max(35, digital_confidence * 9 + (seed * 3 % 12)))
     conscientiousness = 62 + (seed * 7 % 28)
     extraversion = 42 + (seed * 5 % 35)
-    agreeableness = 72 - (seed * 6 % 24)
     neuroticism = min(88, max(25, price_sensitivity * 7 + (seed * 4 % 18)))
-    # Rogers stance profili modiförleri uygula
+
     openness = min(100, max(1, openness + profile["openness_mod"]))
-    agreeableness = min(100, max(1, agreeableness + profile["agreeableness_mod"]))
     neuroticism = min(100, max(1, neuroticism + profile["neuroticism_mod"]))
+
     return {
-        "Openness": min(100, max(1, openness)),
+        "Openness":          min(100, max(1, openness)),
         "Conscientiousness": min(100, max(1, conscientiousness)),
-        "Extraversion": min(100, max(1, extraversion)),
-        "Agreeableness": min(100, max(1, agreeableness)),
-        "Neuroticism": min(100, max(1, neuroticism)),
+        "Extraversion":      min(100, max(1, extraversion)),
+        "Agreeableness":     min(100, max(1, agreeableness)),
+        "Neuroticism":       min(100, max(1, neuroticism)),
     }
+
 
 
 def neo_facets_from_traits(traits: dict[str, int], stance: str) -> dict[str, int]:
