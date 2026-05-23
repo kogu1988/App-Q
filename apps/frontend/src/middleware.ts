@@ -29,6 +29,6 @@ export function middleware(request: NextRequest) {
 export const config = {
   // API route'larını ve static dosyaları atla
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|og-image.png|robots.txt|sitemap.xml).*)",
+    "/((?!_next/static|_next/image|favicon.ico|og-image.svg|robots.txt|sitemap.xml).*)",
   ],
 };

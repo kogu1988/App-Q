@@ -22,9 +22,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/logo.ico", type: "image/x-icon" },
     ],
-    shortcut: "/logo.ico",
   },
   keywords: [
     "pazar araştırması yapay zeka",

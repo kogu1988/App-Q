@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-110 -60 220 120">
+	<defs>
+		<path id="a" d="M-100 0a125 125 0 0 1 200 0 125 125 0 0 1-200 0"/>
+	</defs>
+	<g fill="none" stroke="#003c33" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+		<use href="#a"/>
+		<use href="#a" transform="rotate(6)scale(.9245)"/>
+		<use href="#a" transform="rotate(-6)scale(.9245)"/>
+		<use href="#a" transform="rotate(12)scale(.8552)"/>
+		<use href="#a" transform="rotate(-12)scale(.8552)"/>
+		<use href="#a" transform="rotate(18)scale(.7915)"/>
+		<use href="#a" transform="rotate(-18)scale(.7915)"/>
+		<use href="#a" transform="rotate(24)scale(.7332)"/>
+		<use href="#a" transform="rotate(-24)scale(.7332)"/>
+		<use href="#a" transform="rotate(30)scale(.68)"/>
+		<use href="#a" transform="rotate(-30)scale(.68)"/>
+		<circle r="16"/>
+		<circle r="32"/>
+	</g>
+</svg>

@@ -38,18 +38,17 @@ function SidebarPlanWidget() {
   })();
 
   const PLAN_COLORS: Record<string, { bg: string; text: string }> = {
-    Free:       { bg: "bg-[#eeece7]",  text: "text-[#17171c]" },
-    Starter:    { bg: "bg-[#f1f5ff]",  text: "text-[#1863dc]" },
-    Pro:        { bg: "bg-[#edfce9]",  text: "text-[#003c33]" },
-    Enterprise: { bg: "bg-amber-100",  text: "text-amber-800" },
+    Free: { bg: "bg-[#eeece7]", text: "text-[#17171c]" },
+    Starter: { bg: "bg-[#f1f5ff]", text: "text-[#1863dc]" },
+    Pro: { bg: "bg-[#edfce9]", text: "text-[#003c33]" },
+    Enterprise: { bg: "bg-amber-100", text: "text-amber-800" },
   };
   const planColor = PLAN_COLORS[plan.plan_type] ?? PLAN_COLORS.Free;
   const showUpgrade = plan.plan_type === "Free" || plan.plan_type === "Starter";
 
   return (
-    <div className={`rounded-xl border p-3 space-y-2.5 transition-colors ${
-      isNearLimit ? "border-amber-300 bg-amber-50" : "border-border bg-background"
-    }`}>
+    <div className={`rounded-xl border p-3 space-y-2.5 transition-colors ${isNearLimit ? "border-amber-300 bg-amber-50" : "border-border bg-background"
+      }`}>
       {/* Plan badge + icon */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
@@ -68,17 +67,15 @@ function SidebarPlanWidget() {
             <span className="text-[11px] text-muted-foreground">
               Bu dönem kullanım
             </span>
-            <span className={`text-[11px] font-bold tabular-nums ${
-              isNearLimit ? "text-amber-600" : "text-[#212121]"
-            }`}>
+            <span className={`text-[11px] font-bold tabular-nums ${isNearLimit ? "text-amber-600" : "text-[#212121]"
+              }`}>
               {used} / {max}
             </span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                isNearLimit ? "bg-amber-500" : "bg-[#003c33]"
-              }`}
+              className={`h-full rounded-full transition-all duration-500 ${isNearLimit ? "bg-amber-500" : "bg-[#003c33]"
+                }`}
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -149,7 +146,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-sidebar">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.png" alt="Clarere" className="h-8 w-auto object-contain" />
+          <img src="/logo.svg" alt="Clarere" className="h-8 w-auto object-contain" />
           <span className="font-semibold tracking-tight text-lg">Clarere</span>
         </Link>
         <button
@@ -169,7 +166,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         {/* Logo */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="Clarere" className="h-8 w-auto object-contain" />
+            <img src="/logo.svg" alt="Clarere" className="h-8 w-auto object-contain" />
             <span className="font-semibold tracking-tight text-lg">Clarere</span>
           </Link>
           <button

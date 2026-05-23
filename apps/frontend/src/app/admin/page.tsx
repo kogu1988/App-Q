@@ -102,9 +102,9 @@ interface AgentSchemas {
 // ─── Plan Templates ──────────────────────────────────────────────────────────
 
 const PLAN_TEMPLATES: Record<string, { max_simulations: number; max_tokens: number }> = {
-  Free:       { max_simulations: 2,    max_tokens: 50_000 },
-  Starter:    { max_simulations: 10,   max_tokens: 200_000 },
-  Pro:        { max_simulations: 50,   max_tokens: 1_000_000 },
+  Free: { max_simulations: 2, max_tokens: 50_000 },
+  Starter: { max_simulations: 10, max_tokens: 200_000 },
+  Pro: { max_simulations: 50, max_tokens: 1_000_000 },
   Enterprise: { max_simulations: 9999, max_tokens: 50_000_000 },
 };
 
@@ -312,7 +312,7 @@ export default function AdminPage() {
         <header className="flex items-center justify-between border-b border-border pb-6">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2">
-              <img src="/logo.png" alt="Clarere" className="h-9 w-auto object-contain" />
+              <img src="/logo.svg" alt="Clarere" className="h-9 w-auto object-contain" />
               <span className="font-semibold text-base text-[#17171c]">Clarere</span>
             </Link>
             <div>
@@ -392,11 +392,10 @@ export default function AdminPage() {
                           key={name}
                           type="button"
                           onClick={() => applyTemplate(name)}
-                          className={`flex flex-col items-start px-3 py-2 rounded-lg border-2 transition-all text-left ${
-                            clientForm.plan_type === name
+                          className={`flex flex-col items-start px-3 py-2 rounded-lg border-2 transition-all text-left ${clientForm.plan_type === name
                               ? "border-[#17171c] bg-[#edfce9] "
                               : "border-border hover:border-[#17171c] dark:hover:border-[#17171c]"
-                          }`}
+                            }`}
                         >
                           <span className={`font-bold text-sm ${clientForm.plan_type === name ? "text-[#003c33] " : ""}`}>{name}</span>
                           <span className="text-[10px] text-muted-foreground">
@@ -668,9 +667,9 @@ export default function AdminPage() {
                             {p.ses_group ? (
                               <Badge variant="outline" className={
                                 p.ses_group === "AB" ? "border-amber-300 text-amber-700 dark:text-amber-400" :
-                                p.ses_group === "C1" ? "border-[#1863dc]/30 text-[#1863dc] " :
-                                p.ses_group === "C2" ? "border-[#d9d9dd] text-[#616161]" :
-                                "border-rose-300 text-rose-700 dark:text-rose-400"
+                                  p.ses_group === "C1" ? "border-[#1863dc]/30 text-[#1863dc] " :
+                                    p.ses_group === "C2" ? "border-[#d9d9dd] text-[#616161]" :
+                                      "border-rose-300 text-rose-700 dark:text-rose-400"
                               }>{p.ses_group}</Badge>
                             ) : <span className="text-muted-foreground text-xs">—</span>}
                           </TableCell>
@@ -907,15 +906,15 @@ export default function AdminPage() {
                   <CardContent>
                     <div className="flex flex-wrap items-center gap-2 text-sm font-mono">
                       {[
-                        { label: "Brief (Defne)",   color: "bg-[#edfce9] text-[#003c33]" },
-                        { label: "→",               color: "text-muted-foreground" },
-                        { label: "ResearchPlan",    color: "bg-[#f1f5ff] text-[#1863dc]" },
-                        { label: "→",               color: "text-muted-foreground" },
-                        { label: "Persona[]",       color: "bg-[#edfce9] text-[#003c33]" },
-                        { label: "→",               color: "text-muted-foreground" },
-                        { label: "Interview[]",     color: "bg-amber-100 text-amber-800" },
-                        { label: "→",               color: "text-muted-foreground" },
-                        { label: "ResearchReport",  color: "bg-rose-100 text-rose-800" },
+                        { label: "Brief (Defne)", color: "bg-[#edfce9] text-[#003c33]" },
+                        { label: "→", color: "text-muted-foreground" },
+                        { label: "ResearchPlan", color: "bg-[#f1f5ff] text-[#1863dc]" },
+                        { label: "→", color: "text-muted-foreground" },
+                        { label: "Persona[]", color: "bg-[#edfce9] text-[#003c33]" },
+                        { label: "→", color: "text-muted-foreground" },
+                        { label: "Interview[]", color: "bg-amber-100 text-amber-800" },
+                        { label: "→", color: "text-muted-foreground" },
+                        { label: "ResearchReport", color: "bg-rose-100 text-rose-800" },
                       ].map((s, i) => (
                         <span key={i} className={`px-2.5 py-1 rounded-lg font-semibold text-xs ${s.color}`}>{s.label}</span>
                       ))}
@@ -984,9 +983,8 @@ export default function AdminPage() {
                               {card.rows.map((row, ri) => (
                                 <tr key={ri} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                                   {row.filter((_, ci) => card.headers[ci]).map((cell, ci) => (
-                                    <td key={ci} className={`py-1.5 px-3 ${
-                                      ci === 0 ? "font-mono font-bold text-[#003c33] " : "text-muted-foreground"
-                                    } ${ci === 2 && cell === "Zorunlu" ? "text-red-600 dark:text-red-400 font-semibold" : ""}`}>
+                                    <td key={ci} className={`py-1.5 px-3 ${ci === 0 ? "font-mono font-bold text-[#003c33] " : "text-muted-foreground"
+                                      } ${ci === 2 && cell === "Zorunlu" ? "text-red-600 dark:text-red-400 font-semibold" : ""}`}>
                                       {cell}
                                     </td>
                                   ))}
@@ -1025,10 +1023,10 @@ export default function AdminPage() {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {Object.entries({
-                        default_market:         "Hedef Pazar",
-                        default_category:       "Varsayılan Kategori",
+                        default_market: "Hedef Pazar",
+                        default_category: "Varsayılan Kategori",
                         default_expected_price: "Varsayılan Fiyat Modeli",
-                        default_sales_channel:  "Varsayılan Satış Kanalı",
+                        default_sales_channel: "Varsayılan Satış Kanalı",
                         default_success_metric: "Varsayılan Başarı Kriteri",
                       }).map(([key, label]) => (
                         <div key={key} className="space-y-1.5">
