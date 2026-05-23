@@ -299,7 +299,7 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-3">
-          <Loader2 className="h-10 w-10 animate-spin text-indigo-600 mx-auto" />
+          <Loader2 className="h-10 w-10 animate-spin text-[#ff7759] mx-auto" />
           <p className="text-muted-foreground text-sm font-medium animate-pulse">Yönetici paneli yükleniyor...</p>
         </div>
       </div>
@@ -311,8 +311,9 @@ export default function AdminPage() {
       <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4">
         <header className="flex items-center justify-between border-b border-border pb-6">
           <div className="flex items-center gap-4">
-            <Link href="/" className="w-10 h-10 bg-primary text-primary-foreground flex items-center justify-center font-bold rounded-lg shadow-sm hover:opacity-90 transition-opacity">
-              Q
+            <Link href="/" className="flex items-center gap-2">
+              <img src="/logo.png" alt="Clarere" className="h-9 w-auto object-contain" />
+              <span className="font-semibold text-base text-[#17171c]">Clarere</span>
             </Link>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-primary">Clarere Yönetici Paneli</h1>
@@ -377,13 +378,13 @@ export default function AdminPage() {
 
             {/* Add Client Form */}
             {showClientForm && (
-              <Card className="border-indigo-200 dark:border-indigo-900/40 bg-indigo-50/30 dark:bg-indigo-950/10 animate-in fade-in slide-in-from-top-2 duration-200">
+              <Card className="border-[#d9d9dd]  bg-[#edfce9]/30  animate-in fade-in slide-in-from-top-2 duration-200">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base text-indigo-700 dark:text-indigo-300">Yeni Danışan Ekle</CardTitle>
+                  <CardTitle className="text-base text-[#003c33] dark:text-[#ff7759]/70">Yeni Danışan Ekle</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {/* Plan Template Quick-Select */}
-                  <div className="mb-4 p-3 bg-white dark:bg-slate-900 border border-border rounded-lg space-y-2">
+                  <div className="mb-4 p-3 bg-white  border border-border rounded-lg space-y-2">
                     <Label className="text-xs font-bold text-muted-foreground uppercase">Plan Şablonu Seç (Limitler Otomatik Dolar)</Label>
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(PLAN_TEMPLATES).map(([name, tpl]) => (
@@ -393,11 +394,11 @@ export default function AdminPage() {
                           onClick={() => applyTemplate(name)}
                           className={`flex flex-col items-start px-3 py-2 rounded-lg border-2 transition-all text-left ${
                             clientForm.plan_type === name
-                              ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
-                              : "border-border hover:border-indigo-300 dark:hover:border-indigo-700"
+                              ? "border-[#17171c] bg-[#edfce9] "
+                              : "border-border hover:border-[#17171c] dark:hover:border-[#17171c]"
                           }`}
                         >
-                          <span className={`font-bold text-sm ${clientForm.plan_type === name ? "text-indigo-700 dark:text-indigo-300" : ""}`}>{name}</span>
+                          <span className={`font-bold text-sm ${clientForm.plan_type === name ? "text-[#003c33] dark:text-[#ff7759]/70" : ""}`}>{name}</span>
                           <span className="text-[10px] text-muted-foreground">
                             {tpl.max_simulations >= 9999 ? "∞" : tpl.max_simulations} sim · {tpl.max_tokens >= 1_000_000 ? (tpl.max_tokens / 1_000_000).toFixed(0) + "M" : (tpl.max_tokens / 1_000).toFixed(0) + "K"} token
                           </span>
@@ -503,14 +504,14 @@ export default function AdminPage() {
                           </TableCell>
                           <TableCell>
                             {cli.status === "Aktif"
-                              ? <Badge className="bg-emerald-600 hover:bg-emerald-700 text-xs">Aktif</Badge>
+                              ? <Badge className="bg-[#003c33] hover:bg-[#003c33]/85 text-xs">Aktif</Badge>
                               : <Badge variant="secondary" className="text-xs">{cli.status}</Badge>}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex gap-1.5 justify-end">
                               {editingClient === cli.username ? (
                                 <>
-                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-emerald-600 hover:text-emerald-700" onClick={() => updateClient(cli.username)}>
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-emerald-600 hover:text-[#003c33]" onClick={() => updateClient(cli.username)}>
                                     <Check size={14} />
                                   </Button>
                                   <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground" onClick={() => setEditingClient(null)}>
@@ -585,7 +586,7 @@ export default function AdminPage() {
                   <div className="space-y-1.5">
                     <Label>PII Maskeleme (KVKK)</Label>
                     <div className="flex items-center gap-3 h-10">
-                      <Badge className={config.pii_active === "true" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-slate-500"}>
+                      <Badge className={config.pii_active === "true" ? "bg-[#003c33] hover:bg-[#003c33]/85" : "bg-[#f5f4f1]0"}>
                         {config.pii_active === "true" ? "Aktif" : "Pasif"}
                       </Badge>
                       <Button size="sm" variant="outline" onClick={() => saveConfig("pii_active", config.pii_active === "true" ? "false" : "true")}>
@@ -615,7 +616,7 @@ export default function AdminPage() {
                       id={`prompt-${key}`}
                       defaultValue={(config as Record<string, string>)[key] || ""}
                       rows={5}
-                      className="text-sm font-mono bg-slate-50 dark:bg-slate-900"
+                      className="text-sm font-mono bg-[#f5f4f1] "
                     />
                     <div className="flex justify-end">
                       <Button
@@ -667,8 +668,8 @@ export default function AdminPage() {
                             {p.ses_group ? (
                               <Badge variant="outline" className={
                                 p.ses_group === "AB" ? "border-amber-300 text-amber-700 dark:text-amber-400" :
-                                p.ses_group === "C1" ? "border-blue-300 text-blue-700 dark:text-blue-400" :
-                                p.ses_group === "C2" ? "border-slate-300 text-slate-600 dark:text-slate-400" :
+                                p.ses_group === "C1" ? "border-[#1863dc]/30 text-[#1863dc] " :
+                                p.ses_group === "C2" ? "border-[#d9d9dd] text-[#616161]" :
                                 "border-rose-300 text-rose-700 dark:text-rose-400"
                               }>{p.ses_group}</Badge>
                             ) : <span className="text-muted-foreground text-xs">—</span>}
@@ -713,9 +714,9 @@ export default function AdminPage() {
                 ) : (
                   <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
                     {questions.map(q => (
-                      <div key={q.id} className="p-4 border border-border rounded-xl hover:border-indigo-200 dark:hover:border-indigo-900/40 transition-colors space-y-2">
+                      <div key={q.id} className="p-4 border border-border rounded-xl hover:border-[#d9d9dd]  transition-colors space-y-2">
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-sm text-slate-800 dark:text-slate-200 font-medium leading-relaxed flex-1">{q.question}</p>
+                          <p className="text-sm text-[#212121]  font-medium leading-relaxed flex-1">{q.question}</p>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <Button
                               size="sm"
@@ -747,7 +748,7 @@ export default function AdminPage() {
                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                           {q.research_category && <Badge variant="outline" className="text-[10px]">{q.research_category}</Badge>}
                           {q.research_title && <span>"{q.research_title}"</span>}
-                          {!q.is_liked && <Badge variant="secondary" className="text-[10px] text-slate-500">Pasif (simülasyonda kullanılmıyor)</Badge>}
+                          {!q.is_liked && <Badge variant="secondary" className="text-[10px] text-[#93939f]">Pasif (simülasyonda kullanılmıyor)</Badge>}
                         </div>
 
                         {editingQuestion === q.id && (
@@ -768,7 +769,7 @@ export default function AdminPage() {
                           </div>
                         )}
                         {q.purpose_context && editingQuestion !== q.id && (
-                          <p className="text-xs text-indigo-600 dark:text-indigo-400 italic">Amaç: {q.purpose_context}</p>
+                          <p className="text-xs text-[#ff7759] dark:text-[#ff7759]/80 italic">Amaç: {q.purpose_context}</p>
                         )}
                       </div>
                     ))}
@@ -899,18 +900,18 @@ export default function AdminPage() {
             {schemas?.brief_schema && (
               <>
                 {/* ── Flow Diagram ── */}
-                <Card className="border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/20 dark:bg-indigo-950/10">
+                <Card className="border-[#d9d9dd]  bg-[#edfce9]/20 ">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-bold text-indigo-700 dark:text-indigo-300">Veri Akış Şeması</CardTitle>
+                    <CardTitle className="text-sm font-bold text-[#003c33] dark:text-[#ff7759]/70">Veri Akış Şeması</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap items-center gap-2 text-sm font-mono">
                       {[
-                        { label: "Brief (Defne)", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
+                        { label: "Brief (Defne)", color: "bg-[#edfce9] text-[#003c33]  dark:text-[#ff7759]/70" },
                         { label: "→", color: "text-muted-foreground" },
-                        { label: "ResearchPlan", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+                        { label: "ResearchPlan", color: "bg-[#f1f5ff] text-[#1863dc]0" },
                         { label: "→", color: "text-muted-foreground" },
-                        { label: "Persona[]", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
+                        { label: "Persona[]", color: "bg-emerald-100 text-[#003c33] dark:bg-emerald-900/40 dark:text-emerald-300" },
                         { label: "→", color: "text-muted-foreground" },
                         { label: "Interview[]", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
                         { label: "→", color: "text-muted-foreground" },
@@ -929,7 +930,7 @@ export default function AdminPage() {
                       title: "Brief Şeması",
                       desc: schemas.brief_schema?.description ?? "",
                       badge: "Defne → intake.py",
-                      badgeColor: "border-indigo-200 text-indigo-700 dark:border-indigo-800 dark:text-indigo-300",
+                      badgeColor: "border-[#d9d9dd] text-[#003c33]  dark:text-[#ff7759]/70",
                       rows: (schemas.brief_schema?.fields ?? []).map(f => [
                         f.key, f.type, f.required ? "Zorunlu" : "Opsiyonel", f.desc,
                       ]),
@@ -939,7 +940,7 @@ export default function AdminPage() {
                       title: "Persona Şeması",
                       desc: schemas.persona_schema?.description ?? "",
                       badge: "workflow.py → LLM",
-                      badgeColor: "border-emerald-200 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300",
+                      badgeColor: "border-[#003c33]/30 text-[#003c33] dark:border-emerald-800 dark:text-emerald-300",
                       rows: (schemas.persona_schema?.fields ?? []).map(f => ([f.key, f.type, "", f.desc])),
                       headers: ["Alan", "Tip", "", "Açıklama"],
                     },
@@ -984,7 +985,7 @@ export default function AdminPage() {
                                 <tr key={ri} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                                   {row.filter((_, ci) => card.headers[ci]).map((cell, ci) => (
                                     <td key={ci} className={`py-1.5 px-3 ${
-                                      ci === 0 ? "font-mono font-bold text-indigo-700 dark:text-indigo-300" : "text-muted-foreground"
+                                      ci === 0 ? "font-mono font-bold text-[#003c33] dark:text-[#ff7759]/70" : "text-muted-foreground"
                                     } ${ci === 2 && cell === "Zorunlu" ? "text-red-600 dark:text-red-400 font-semibold" : ""}`}>
                                       {cell}
                                     </td>
@@ -1008,7 +1009,7 @@ export default function AdminPage() {
                   <CardContent>
                     <div className="flex flex-wrap gap-1.5">
                       {(schemas.interview_schema?.prompt_variables ?? []).map(v => (
-                        <Badge key={v} variant="outline" className="text-[10px] font-mono bg-slate-50 dark:bg-slate-900">{v}</Badge>
+                        <Badge key={v} variant="outline" className="text-[10px] font-mono bg-[#f5f4f1] ">{v}</Badge>
                       ))}
 
                     </div>
@@ -1127,7 +1128,7 @@ export default function AdminPage() {
                           </Button>
                           <Button
                             size="sm"
-                            className="gap-1.5 bg-indigo-600 hover:bg-indigo-700"
+                            className="gap-1.5 bg-[#17171c] hover:bg-[#17171c]"
                             disabled={savingDefaults}
                             onClick={async () => {
                               setSavingDefaults(true);
@@ -1154,7 +1155,7 @@ export default function AdminPage() {
                         {schemas.default_interview_questions.map((q, qi) => (
                           <li key={qi} className="flex gap-2 text-xs">
                             <span className="font-mono text-muted-foreground shrink-0">{qi + 1}.</span>
-                            <span className="text-slate-700 dark:text-slate-300">{q}</span>
+                            <span className="text-[#212121] dark:text-[#93939f]">{q}</span>
                           </li>
                         ))}
                       </ol>
@@ -1186,7 +1187,7 @@ export default function AdminPage() {
                           <div className="px-4 pb-4 space-y-3 border-t border-border bg-muted/20">
                             <div className="mt-3">
                               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-1">Odak Alanları</div>
-                              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{pool.focus_areas}</p>
+                              <p className="text-xs text-[#616161] dark:text-[#93939f] leading-relaxed">{pool.focus_areas}</p>
                             </div>
                             <div>
                               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Soru Havuzu ({pool.questions.length})</div>
@@ -1194,7 +1195,7 @@ export default function AdminPage() {
                                 {pool.questions.map((q, qi) => (
                                   <li key={qi} className="flex gap-2 text-xs">
                                     <span className="font-mono text-muted-foreground shrink-0">{qi + 1}.</span>
-                                    <span className="text-slate-700 dark:text-slate-300">{q}</span>
+                                    <span className="text-[#212121] dark:text-[#93939f]">{q}</span>
                                   </li>
                                 ))}
                               </ol>

@@ -63,31 +63,31 @@ function BriefPreview({ brief, mode }: { brief: Brief; mode: "research" | "ab_te
   const pct = Math.round((filled / total) * 100);
 
   return (
-    <Card className="sticky top-6 shadow-sm border-indigo-100 dark:border-indigo-900/30">
+    <Card className="sticky top-6 shadow-sm border-[#d9d9dd] ">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
+        <CardTitle className="text-sm font-bold text-[#003c33] dark:text-[#ff7759]/70 flex items-center gap-2">
           <FileText size={14} />
           Canlı Brief Özeti
         </CardTitle>
         <div className="flex items-center gap-2 mt-1">
-          <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-[#eeece7]  rounded-full overflow-hidden">
             <div
-              className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+              className="h-full bg-[#003c33] rounded-full transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
-          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">{pct}%</span>
+          <span className="text-xs font-bold text-[#ff7759] dark:text-[#ff7759]/80 tabular-nums">{pct}%</span>
         </div>
       </CardHeader>
       <CardContent className="space-y-2.5">
         {fields.map(({ icon: Icon, label, value }) => (
-          <div key={label} className={`flex gap-2 p-2 rounded-lg transition-colors ${value ? "bg-indigo-50/50 dark:bg-indigo-950/20" : "opacity-40"}`}>
-            <Icon size={13} className={value ? "text-indigo-500 shrink-0 mt-0.5" : "text-slate-400 shrink-0 mt-0.5"} />
+          <div key={label} className={`flex gap-2 p-2 rounded-lg transition-colors ${value ? "bg-[#edfce9]/50 " : "opacity-40"}`}>
+            <Icon size={13} className={value ? "text-[#ff7759] shrink-0 mt-0.5" : "text-[#93939f] shrink-0 mt-0.5"} />
             <div className="min-w-0">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{label}</div>
               {value
-                ? <div className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed truncate">{value}</div>
-                : <div className="text-xs text-slate-400 italic">Henüz doldurulmadı</div>
+                ? <div className="text-xs text-[#212121] dark:text-[#93939f] font-medium leading-relaxed truncate">{value}</div>
+                : <div className="text-xs text-[#93939f] italic">Henüz doldurulmadı</div>
               }
             </div>
           </div>
@@ -221,19 +221,19 @@ export default function NewResearchWizard() {
             onClick={() => setResearchMode("research")}
             className={`flex flex-col gap-3 p-6 rounded-2xl border-2 transition-all text-left ${
               researchMode === "research"
-                ? "border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/20 shadow-md"
-                : "border-border hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm"
+                ? "border-[#17171c] bg-[#edfce9]/60  shadow-md"
+                : "border-border hover:border-[#17171c] dark:hover:border-[#17171c] hover:shadow-sm"
             }`}
           >
-            <div className={`p-2.5 rounded-xl w-fit ${researchMode === "research" ? "bg-indigo-100 dark:bg-indigo-900/40" : "bg-slate-100 dark:bg-slate-800"}`}>
-              <BarChart2 size={22} className={researchMode === "research" ? "text-indigo-600" : "text-muted-foreground"} />
+            <div className={`p-2.5 rounded-xl w-fit ${researchMode === "research" ? "bg-[#edfce9] " : "bg-[#eeece7] "}`}>
+              <BarChart2 size={22} className={researchMode === "research" ? "text-[#ff7759]" : "text-muted-foreground"} />
             </div>
             <div>
               <div className="font-bold text-base">Pazar Araştırması</div>
               <div className="text-sm text-muted-foreground mt-0.5">Ürün/hizmet fikri doğrulama, hedef kitle ve fiyat araştırması</div>
             </div>
             {researchMode === "research" && (
-              <Badge className="w-fit bg-indigo-600 hover:bg-indigo-700 text-xs">Seçildi</Badge>
+              <Badge className="w-fit bg-[#17171c] hover:bg-[#17171c] text-xs">Seçildi</Badge>
             )}
           </button>
 
@@ -253,8 +253,8 @@ export default function NewResearchWizard() {
               abTestLocked
                 ? "border-border opacity-60 cursor-not-allowed"
                 : researchMode === "ab_test"
-                ? "border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/20 shadow-md"
-                : "border-border hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm"
+                ? "border-[#17171c] bg-[#edfce9]/60  shadow-md"
+                : "border-border hover:border-[#17171c] dark:hover:border-[#17171c] hover:shadow-sm"
             }`}
           >
             {abTestLocked && (
@@ -262,15 +262,15 @@ export default function NewResearchWizard() {
                 <Lock size={9} /> Pro
               </span>
             )}
-            <div className={`p-2.5 rounded-xl w-fit ${researchMode === "ab_test" && !abTestLocked ? "bg-indigo-100 dark:bg-indigo-900/40" : "bg-slate-100 dark:bg-slate-800"}`}>
-              <FlaskConical size={22} className={researchMode === "ab_test" && !abTestLocked ? "text-indigo-600" : "text-muted-foreground"} />
+            <div className={`p-2.5 rounded-xl w-fit ${researchMode === "ab_test" && !abTestLocked ? "bg-[#edfce9] " : "bg-[#eeece7] "}`}>
+              <FlaskConical size={22} className={researchMode === "ab_test" && !abTestLocked ? "text-[#ff7759]" : "text-muted-foreground"} />
             </div>
             <div>
               <div className="font-bold text-base">A/B Test Simülasyonu</div>
               <div className="text-sm text-muted-foreground mt-0.5">İki farklı mesaj, fiyat veya özellik varyantını karşılaştır</div>
             </div>
             {researchMode === "ab_test" && !abTestLocked && (
-              <Badge className="w-fit bg-indigo-600 hover:bg-indigo-700 text-xs">Seçildi</Badge>
+              <Badge className="w-fit bg-[#17171c] hover:bg-[#17171c] text-xs">Seçildi</Badge>
             )}
           </button>
         </div>
@@ -279,7 +279,7 @@ export default function NewResearchWizard() {
           size="lg"
           disabled={researchMode === "ab_test" && abTestLocked}
           onClick={() => setModeConfirmed(true)}
-          className="w-full gap-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-semibold shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full gap-2 bg-[#17171c] hover:opacity-85 text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Defne ile Başla
           <ChevronRight size={18} />
@@ -305,7 +305,7 @@ export default function NewResearchWizard() {
         <div className="flex-1 flex flex-col min-h-0">
           <div className="mb-4">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs gap-1 border-indigo-200 dark:border-indigo-900/50">
+              <Badge variant="outline" className="text-xs gap-1 border-[#d9d9dd] ">
                 {researchMode === "ab_test" ? <FlaskConical size={11} /> : <BarChart2 size={11} />}
                 {researchMode === "ab_test" ? "A/B Test Modu" : "Pazar Araştırması"}
               </Badge>
@@ -319,23 +319,23 @@ export default function NewResearchWizard() {
 
           {/* Chat bubbles */}
           <Card className="flex flex-col flex-1 shadow-sm overflow-hidden" style={{ minHeight: "480px" }}>
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50/30 dark:bg-slate-950/10">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-[#f5f4f1]/30 ">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
                   {msg.role === "assistant" && (
-                    <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-indigo-200 dark:ring-indigo-800 shadow-sm mt-0.5">
+                    <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-[#d9d9dd] ring-[#003c33]/40 shadow-sm mt-0.5">
                       <Image src="/defne.png" alt="Defne" width={36} height={36} className="object-cover w-full h-full" />
                     </div>
                   )}
                   <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
                     msg.role === "assistant"
-                      ? "bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 rounded-tl-none"
-                      : "bg-gradient-to-br from-indigo-500 to-blue-600 text-white rounded-tr-none"
+                      ? "bg-white  border border-[#d9d9dd]/60  text-[#212121]  rounded-tl-none"
+                      : "bg-[#17171c] text-white rounded-tr-none"
                   }`}>
                     {msg.content}
                   </div>
                   {msg.role === "user" && (
-                    <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="h-8 w-8 rounded-full bg-[#d9d9dd]  text-[#616161] dark:text-[#93939f] flex items-center justify-center shrink-0 mt-0.5">
                       <User size={15} />
                     </div>
                   )}
@@ -343,11 +343,11 @@ export default function NewResearchWizard() {
               ))}
               {loading && (
                 <div className="flex gap-3 justify-start animate-in fade-in duration-200">
-                  <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-indigo-200 dark:ring-indigo-800 shadow-sm">
+                  <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-[#d9d9dd] ring-[#003c33]/40 shadow-sm">
                     <Image src="/defne.png" alt="Defne" width={36} height={36} className="object-cover w-full h-full" />
                   </div>
-                  <div className="px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
-                    <Loader2 size={14} className="animate-spin text-indigo-500" />
+                  <div className="px-4 py-3 bg-white  border border-[#d9d9dd]/60  rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
+                    <Loader2 size={14} className="animate-spin text-[#ff7759]" />
                     <span className="text-xs text-muted-foreground italic">Defne düşünüyor...</span>
                   </div>
                 </div>
@@ -356,17 +356,17 @@ export default function NewResearchWizard() {
             </div>
 
             {/* Input area */}
-            <div className="p-4 border-t border-border bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <div className="p-4 border-t border-border bg-white/90  backdrop-blur-sm">
               {isReady && (
-                <div className="mb-3 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-sm font-semibold">
+                <div className="mb-3 p-3 bg-[#edfce9]  border border-[#003c33]/30  rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-[#003c33] dark:text-[#edfce9] text-sm font-semibold">
                     <CheckCircle2 size={16} />
                     Brief hazır! Araştırmayı başlatabilirsiniz.
                   </div>
                   <Button
                     size="sm"
                     onClick={handleStartResearch}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold"
+                    className="bg-[#003c33] hover:bg-[#003c33]/85 text-white gap-2 font-semibold"
                   >
                     Araştırmayı Başlat
                     <ChevronRight size={14} />
@@ -375,7 +375,7 @@ export default function NewResearchWizard() {
               )}
               <div className="flex gap-2">
                 <textarea
-                  className="flex-1 resize-none rounded-xl border border-border bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-shadow min-h-[44px] max-h-[120px]"
+                  className="flex-1 resize-none rounded-xl border border-border bg-[#f5f4f1]  px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#17171c]/30 transition-shadow min-h-[44px] max-h-[120px]"
                   placeholder="Yanıtınızı yazın... (Enter ile gönder, Shift+Enter ile yeni satır)"
                   value={input}
                   onChange={e => setInput(e.target.value)}
@@ -386,7 +386,7 @@ export default function NewResearchWizard() {
                   onClick={sendMessage}
                   disabled={loading || !input.trim()}
                   size="sm"
-                  className="h-auto px-4 bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 self-end py-2.5 rounded-xl"
+                  className="h-auto px-4 bg-[#17171c] hover:bg-[#17171c] text-white gap-1.5 self-end py-2.5 rounded-xl"
                 >
                   {loading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                 </Button>

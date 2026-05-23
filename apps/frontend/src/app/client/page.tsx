@@ -40,9 +40,9 @@ function UsageWidget() {
   })();
 
   const planColors: Record<string, string> = {
-    Free:       "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-    Starter:    "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-    Pro:        "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+    Free:       "bg-[#eeece7] text-[#212121]  dark:text-[#93939f]",
+    Starter:    "bg-[#f1f5ff] text-[#1863dc]0",
+    Pro:        "bg-[#edfce9] text-[#003c33]  dark:text-[#ff7759]/70",
     Enterprise: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   };
 
@@ -68,7 +68,7 @@ function UsageWidget() {
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                isNearLimit ? "bg-amber-500" : "bg-indigo-500"
+                isNearLimit ? "bg-amber-500" : "bg-[#003c33]"
               }`}
               style={{ width: `${pct}%` }}
             />
