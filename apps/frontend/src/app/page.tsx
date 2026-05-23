@@ -62,17 +62,17 @@ const PLAN_META = [
 ];
 
 const FEATURES = [
-  { label: "Pazar Araştırması Modu",        plans: [true,  true,  true,  true ] },
-  { label: "A/B Test Modu",                 plans: [false, false, true,  true ] },
-  { label: "Gerçek Zamanlı Streaming",      plans: [false, true,  true,  true ] },
-  { label: "PDF Rapor",                     plans: [false, true,  true,  true ] },
-  { label: "Van Westendorp Analizi",        plans: [false, true,  true,  true ] },
-  { label: "B2B Persona Modu",              plans: [false, false, true,  true ] },
-  { label: "Adversarial Review",            plans: [false, false, true,  true ] },
-  { label: "Research Fidelity Index (RFI)", plans: [false, false, true,  true ] },
-  { label: "Özel Persona Havuzu",           plans: [false, false, false, true ] },
-  { label: "White-label",                   plans: [false, false, false, true ] },
-  { label: "Audit Log",                     plans: [false, false, false, true ] },
+  { label: "Pazar Araştırması Modu", plans: [true, true, true, true] },
+  { label: "A/B Test Modu", plans: [false, false, true, true] },
+  { label: "Gerçek Zamanlı Streaming", plans: [false, true, true, true] },
+  { label: "PDF Rapor", plans: [false, true, true, true] },
+  { label: "Van Westendorp Analizi", plans: [false, true, true, true] },
+  { label: "B2B Persona Modu", plans: [false, false, true, true] },
+  { label: "Adversarial Review", plans: [false, false, true, true] },
+  { label: "Research Fidelity Index (RFI)", plans: [false, false, true, true] },
+  { label: "Özel Persona Havuzu", plans: [false, false, false, true] },
+  { label: "White-label", plans: [false, false, false, true] },
+  { label: "Audit Log", plans: [false, false, false, true] },
 ];
 
 const FEATURE_HIGHLIGHTS = [
@@ -161,7 +161,7 @@ export default function HomePage() {
       <nav className="sticky top-0 z-50 border-b border-[#d9d9dd] bg-white/95 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Clarere logo" className="h-8 w-auto object-contain" />
+            <img src="/logo.svg" alt="Clarere logo" className="h-8 w-auto object-contain" />
             <span className="font-semibold text-base tracking-tight text-[#17171c]">Clarere</span>
           </div>
           <div className="flex items-center gap-6">
@@ -181,61 +181,94 @@ export default function HomePage() {
       </nav>
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      {/* Cohere-style: massive type over white canvas, centered, no split */}
-      <section className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
-        <Reveal>
-          <div className="inline-flex items-center gap-2 mb-8">
-            <span className="chip-coral">Grounded Simulation</span>
-            <span className="mono-label text-[#93939f]">Bilal, 2026</span>
-          </div>
-        </Reveal>
+      <section className="relative overflow-hidden">
+        {/* Full-bleed background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/bg_image_1.jpg')" }}
+          aria-hidden="true"
+        />
+        {/* Gradient overlay: dark bottom for text, fade top */}
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(to bottom, rgba(23,23,28,0.55) 0%, rgba(23,23,28,0.72) 50%, rgba(23,23,28,0.88) 100%)" }}
+          aria-hidden="true"
+        />
 
-        <Reveal delay={80}>
-          <h1 className="display-hero text-[#17171c] mb-6" style={{ maxWidth: "880px", margin: "0 auto 1.5rem" }}>
-            Gerçek mülakatlardan önce{" "}
-            <span style={{ color: "#ff7759" }}>sentetik panel</span> kur.
-          </h1>
-        </Reveal>
-
-        <Reveal delay={160}>
-          <p className="text-lg text-[#616161] max-w-2xl mx-auto leading-relaxed mb-10" style={{ fontWeight: 400 }}>
-            Rogers Diffusion + OCEAN psikometrisi + Adversarial Review ile
-            ürün fikirlerinizi AI destekli tüketici panelleriyle test edin.
-            Saatler içinde karar alınabilir içgörü.
-          </p>
-        </Reveal>
-
-        <Reveal delay={240}>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/client" className="btn-pill-primary text-sm">
-              Ücretsiz Başla <ArrowRight size={14} className="ml-2 inline" />
-            </Link>
-            <a href="#pricing" className="btn-text-link text-sm">
-              Planları Gör
-            </a>
-          </div>
-        </Reveal>
-
-        {/* Trust strip */}
-        <Reveal delay={320}>
-          <div className="mt-16 pt-8 border-t border-[#d9d9dd]">
-            <p className="mono-label text-[#93939f] mb-6">Platform hakkında</p>
-            <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 text-sm text-[#93939f]">
-              <span>RFI Skoru 0.815</span>
-              <span className="text-[#d9d9dd]">·</span>
-              <span>46 araştırma alanında test edildi</span>
-              <span className="text-[#d9d9dd]">·</span>
-              <span>%93 tema doğruluğu</span>
-              <span className="text-[#d9d9dd]">·</span>
-              <span>Türkiye odaklı TÜAD 2025 veri seti</span>
+        <div className="relative max-w-5xl mx-auto px-6 pt-24 pb-20 text-center">
+          <Reveal>
+            <div className="inline-flex items-center gap-2 mb-8">
+              <span className="chip-coral" style={{ borderColor: "#ff7759", color: "#ff7759" }}>Grounded Simulation</span>
+              <span className="mono-label" style={{ color: "rgba(237,252,233,0.65)" }}>Bilal, 2026</span>
             </div>
-          </div>
-        </Reveal>
+          </Reveal>
+
+          <Reveal delay={80}>
+            <h1 className="display-hero text-white mb-6" style={{ maxWidth: "880px", margin: "0 auto 1.5rem" }}>
+              Gerçek mülakatlardan önce{" "}
+              <span style={{ color: "#ff7759" }}>sentetik panel</span> kur.
+            </h1>
+          </Reveal>
+
+          <Reveal delay={160}>
+            <p className="text-lg max-w-2xl mx-auto leading-relaxed mb-10" style={{ color: "rgba(255,255,255,0.70)", fontWeight: 400 }}>
+              Rogers Diffusion + OCEAN psikometrisi + Adversarial Review ile
+              ürün fikirlerinizi AI destekli tüketici panelleriyle test edin.
+              Saatler içinde karar alınabilir içgörü.
+            </p>
+          </Reveal>
+
+          <Reveal delay={240}>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/client" className="btn-pill-primary text-sm" style={{ background: "#ff7759", color: "#17171c" }}>
+                Ücretsiz Başla <ArrowRight size={14} className="ml-2 inline" />
+              </Link>
+              <a href="#pricing" className="btn-text-link text-sm" style={{ color: "rgba(255,255,255,0.75)", textDecorationColor: "rgba(255,255,255,0.35)" }}>
+                Planları Gör
+              </a>
+            </div>
+          </Reveal>
+
+          {/* Trust strip */}
+          <Reveal delay={320}>
+            <div className="mt-16 pt-8" style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}>
+              <p className="mono-label mb-6" style={{ color: "rgba(237,252,233,0.50)" }}>Platform hakkında</p>
+              <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 text-sm" style={{ color: "rgba(255,255,255,0.50)" }}>
+                <span>RFI Skoru 0.815</span>
+                <span style={{ color: "rgba(255,255,255,0.20)" }}>·</span>
+                <span>46 araştırma alanında test edildi</span>
+                <span style={{ color: "rgba(255,255,255,0.20)" }}>·</span>
+                <span>%93 tema doğruluğu</span>
+                <span style={{ color: "rgba(255,255,255,0.20)" }}>·</span>
+                <span>Türkiye odaklı TÜAD 2025 veri seti</span>
+              </div>
+            </div>
+          </Reveal>
+        </div>
       </section>
 
-      {/* ── DARK FEATURE BAND — Cohere "dark-feature-band" ─────────────── */}
-      <section className="band-deep-green py-20 px-6">
-        <div className="max-w-6xl mx-auto">
+      {/* ── DARK FEATURE BAND ─────────────────────────────────────────── */}
+      <section className="relative overflow-hidden band-deep-green py-20 px-6">
+        {/* bg_image_2: right-side decorative */}
+        <div
+          className="absolute right-0 top-0 h-full w-1/2 bg-cover bg-center opacity-20 pointer-events-none"
+          style={{ backgroundImage: "url('/bg_image_2.jpg')" }}
+          aria-hidden="true"
+        />
+        {/* Right edge fade so image blends into background */}
+        <div
+          className="absolute right-0 top-0 h-full w-1/3 pointer-events-none"
+          style={{ background: "linear-gradient(to left, #003c33, transparent)" }}
+          aria-hidden="true"
+        />
+        {/* Left edge fade */}
+        <div
+          className="absolute left-0 top-0 h-full w-32 pointer-events-none"
+          style={{ background: "linear-gradient(to right, #003c33, transparent)" }}
+          aria-hidden="true"
+        />
+
+        <div className="relative max-w-6xl mx-auto">
           <Reveal>
             <p className="mono-label text-[#edfce9]/60 mb-4">Nasıl çalışır?</p>
             <h2 className="display-section text-white mb-3">
@@ -284,21 +317,20 @@ export default function HomePage() {
             const priceDisplay = isVariable
               ? "Özel"
               : showAnnual
-              ? `₺${annualPrice(monthlyPx!).toLocaleString("tr-TR")}`
-              : monthlyPx === 0
-              ? "₺0"
-              : `₺${monthlyPx!.toLocaleString("tr-TR")}`;
+                ? `₺${annualPrice(monthlyPx!).toLocaleString("tr-TR")}`
+                : monthlyPx === 0
+                  ? "₺0"
+                  : `₺${monthlyPx!.toLocaleString("tr-TR")}`;
 
             const periodDisplay = isVariable ? "" : showAnnual ? "/yıl" : "/ay";
 
             return (
               <Reveal key={plan.name} delay={idx * 60}>
                 <div
-                  className={`relative rounded-[8px] border p-6 flex flex-col gap-4 h-full transition-all duration-300 ${
-                    plan.highlight
+                  className={`relative rounded-[8px] border p-6 flex flex-col gap-4 h-full transition-all duration-300 ${plan.highlight
                       ? "border-[#17171c] bg-[#17171c] text-white shadow-xl"
                       : "border-[#d9d9dd] bg-white hover:border-[#17171c] hover:shadow-sm"
-                  }`}
+                    }`}
                 >
                   {plan.highlight && (
                     <div
@@ -317,27 +349,24 @@ export default function HomePage() {
                   {/* Billing toggle */}
                   {plan.hasBillingToggle && (
                     <div
-                      className={`flex items-center gap-0.5 p-0.5 self-start rounded-full border ${
-                        plan.highlight ? "border-white/20 bg-white/10" : "border-[#d9d9dd] bg-[#f5f4f1]"
-                      }`}
+                      className={`flex items-center gap-0.5 p-0.5 self-start rounded-full border ${plan.highlight ? "border-white/20 bg-white/10" : "border-[#d9d9dd] bg-[#f5f4f1]"
+                        }`}
                     >
                       <button
                         onClick={() => toggleBilling(plan.name)}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
-                          !isAnnual
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${!isAnnual
                             ? plan.highlight ? "bg-white text-[#17171c] shadow-sm" : "bg-white text-[#17171c] shadow-sm"
                             : plan.highlight ? "text-white/50" : "text-[#93939f]"
-                        }`}
+                          }`}
                       >
                         Aylık
                       </button>
                       <button
                         onClick={() => toggleBilling(plan.name)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
-                          isAnnual
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${isAnnual
                             ? plan.highlight ? "bg-white text-[#17171c] shadow-sm" : "bg-white text-[#17171c] shadow-sm"
                             : plan.highlight ? "text-white/50" : "text-[#93939f]"
-                        }`}
+                          }`}
                       >
                         Yıllık
                         <span className="text-[9px] font-bold bg-[#ff7759] text-white px-1 py-0.5 rounded-full leading-none">
@@ -374,11 +403,10 @@ export default function HomePage() {
 
                   <Link
                     href={plan.ctaHref}
-                    className={`text-center text-sm font-medium py-2.5 rounded-full transition-all ${
-                      plan.highlight
+                    className={`text-center text-sm font-medium py-2.5 rounded-full transition-all ${plan.highlight
                         ? "bg-white text-[#17171c] hover:bg-white/90"
                         : "bg-[#17171c] text-white hover:opacity-85 btn-pill-primary"
-                    }`}
+                      }`}
                   >
                     {plan.cta}
                   </Link>
@@ -502,7 +530,7 @@ export default function HomePage() {
       <footer className="border-t border-[#d9d9dd] bg-white py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Clarere" className="h-6 w-auto object-contain" />
+            <img src="/logo.svg" alt="Clarere" className="h-6 w-auto object-contain" />
             <span className="text-sm text-[#93939f]">Clarere © 2026</span>
           </div>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-[#93939f]">
