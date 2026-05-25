@@ -46,10 +46,18 @@ class ResearchInflowGateway:
         """Asenkron simülasyon kuyruğunu başlatır"""
         
         # 0. Aşama: Deterministik PII (Kişisel Veri) Maskeleme
-        from .privacy import LocalPIIScrubber
-        scrubber = LocalPIIScrubber()
-        sanitized_output = await scrubber.sanitize_input(brief)
-        safe_brief = sanitized_output.sanitized_text
+        from .privacy import LocalPIIScrubber, PrivacyFilterException
+        try:
+            scrubber = LocalPIIScrubber()
+            sanitized_output = await scrubber.sanitize_input(brief)
+            safe_brief = sanitized_output.sanitized_text
+        except PrivacyFilterException as e:
+            logger.error(f"PII Filter blocked simulation triage: {e}")
+            return {
+                "status": "failed",
+                "message": "Sistem geçici bir güvenlik filtrelemesi hatası aldı. Lütfen tekrar deneyiniz.",
+                "error_code": "PII_FILTER_FAILURE"
+            }
         
         question_hash = self.generate_question_hash(safe_brief, category, pricing)
         
@@ -123,42 +131,37 @@ def run_simulation_task(self, payload: dict):
                 for r in raw_roles if r.get("role")
             ]
         
-        # 2. Modeli Seç
-        model = get_model_provider() # Gerçek model sağlayıcısını kullan (Ollama)
-        
-        # 3. Araştırmayı Çalıştır (Asıl süreç)
-        report = run_research(brief, model, panel_roles=panel_roles_obj)
+        # 2. Araştırmayı Modüler LangGraph Üzerinden Başlat (Ajan 1 -> Ajan 2 -> Ajan 3)
+        from .graph import app_q_orchestrator
+        import asyncio
         
         study_id = str(uuid.uuid4())
+        initial_state = {
+            "research_id": study_id,
+            "raw_idea": payload.get("original_brief", ""),
+            "status": "pending",
+            "adversarial_loops_count": 0,
+            "max_adversarial_loops": 2
+        }
         
-        rfi_score = report.research_quality.get("rfi", 0.85) if report.research_quality else 0.85
+        # Invoke is async, so we use asyncio.run in the celery worker
+        final_state = asyncio.run(app_q_orchestrator.ainvoke(initial_state))
+        
+        if final_state.get("status") == "failed":
+            raise Exception(f"Super-Graph failed: {final_state.get('error_message')}")
+            
+        rfi_score = final_state.get("confidence_score", 0.75)
         metadata = {
             "id": study_id,
-            "title": report.title,
+            "title": "Araştırma Sonucu",
             "category": payload.get("category"),
             "has_report": True,
             "quality_score": int(rfi_score * 100),
             "quality_grade": "A" if rfi_score >= 0.8 else "B",
-            "quality_summary": "Simülasyon başarıyla tamamlandı."
+            "quality_summary": "Simülasyon başarıyla tamamlandı (Modüler Super-Graph)."
         }
         
-        def serialize_dataclass(obj):
-            if hasattr(obj, "__dataclass_fields__"):
-                return asdict(obj)
-            return obj
-            
-        def build_markdown(rep) -> str:
-            md = f"# {rep.title}\n\n## Yönetici Özeti\n"
-            for item in rep.executive_summary:
-                md += f"- {item}\n"
-            md += "\n## Önemli Bulgular\n"
-            for finding in rep.findings:
-                md += f"### {finding.title}\n{finding.summary}\n\n**Öneri:** {finding.implication}\n\n"
-            md += "## Aksiyon Adımları\n"
-            for action in rep.action_items:
-                md += f"- {action}\n"
-            return md
-
+        # Modüler mimariden gelen dictionary'i kaydediyoruz
         study_payload = {
             "brief": {
                 "content": payload.get("original_brief"),
@@ -166,16 +169,17 @@ def run_simulation_task(self, payload: dict):
                 "budget": "Belirtilmedi",
                 "context": payload.get("original_brief")
             },
-            "plan": serialize_dataclass(report.plan),
-            "personas": [serialize_dataclass(p) for p in report.personas],
-            "interviews": [serialize_dataclass(i) for i in report.interviews],
-            "report_markdown": build_markdown(report),
-            "ses_cross_tab": report.ses_cross_tab,
-            "respondent_type_summary": report.respondent_type_summary,
-            "brand_health": report.brand_health,
-            "channel_map": report.channel_map,
-            "research_quality": report.research_quality
+            "plan": final_state.get("objective_context"),
+            "personas": final_state.get("allocated_personas"),
+            "interviews": final_state.get("transcripts"),
+            "report_markdown": final_state.get("final_report"),
+            "ses_cross_tab": {},
+            "respondent_type_summary": {},
+            "brand_health": {},
+            "channel_map": {},
+            "research_quality": {"rfi": rfi_score}
         }
+
         
         save_study(metadata, study_payload)
         

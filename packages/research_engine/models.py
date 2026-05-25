@@ -277,10 +277,10 @@ class ResearchReport:
 
 
 class ResearchModel(Protocol):
-    def generate(self, system: str, prompt: str) -> str:
+    def generate(self, system: str, prompt: str, response_format: Literal["json"] | None = None) -> str:
         """Generate a response from the configured model provider."""
 
-    def generate_stream(self, system: str, prompt: str):
+    def generate_stream(self, system: str, prompt: str, response_format: Literal["json"] | None = None):
         """Generate a response as a stream of chunks."""
 
     def free_memory(self) -> None:

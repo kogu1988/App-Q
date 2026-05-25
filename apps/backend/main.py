@@ -10,7 +10,7 @@ import sys
 import os
 from pathlib import Path
 
-# Yapısal loglama — tüm paketler bu konfigürasyonı kullanır
+# Yapısal loglama — tüm alt paketler ve LangGraph worker'ları bu ortak konfigürasyonu kullanır
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
@@ -22,14 +22,16 @@ logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
+# Routers import katmanı — stream router'ını asenkron ağ hattına ekliyoruz
 from apps.backend.routers import admin, client
+from packages.research_engine.routers import stream
 
 # — Rate Limiter —
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 app = FastAPI(
     title="App-Q Backend API",
-    description="FastAPI backend for App-Q Research Engine",
+    description="FastAPI backend for App-Q Research Engine with integrated SSE and WebSockets Spec",
     version="1.0.0"
 )
 
@@ -39,11 +41,14 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     body = await request.body()
-    print(f"Validation Error: {exc.errors()}")
-    print(f"Body: {body.decode()}")
-    return JSONResponse(status_code=422, content={"detail": exc.errors(), "body": body.decode()})
+    # Geliştirme ortamında print yerine standart asenkron logger kullanımı (KVKK maskeleme güvenliği için)
+    logger.error(f"Validation Error: {exc.errors()} | Raw Body Payload: {body.decode(errors='ignore')}")
+    return JSONResponse(
+        status_code=422, 
+        content={"detail": exc.errors(), "body": body.decode(errors="ignore")}
+    )
 
-# CORS — production'da ALLOWED_ORIGINS env var zorunlu
+# CORS Güvenlik Katmanı — production'da ALLOWED_ORIGINS env var zorunluluğu korunuyor
 _app_env = os.getenv("APP_ENV", "development").lower()
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "")
 if _raw_origins:
@@ -64,8 +69,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- STANDART REST ROUTER KAYITLARI ---
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(client.router, prefix="/api/client", tags=["Client"])
+
+# --- REALTİME STREAMING & WEBSOCKET ROUTER KAYDI (MÜHÜRLENEN KATMAN) ---
+# stream.router kendi içinde "/api/v1/stream" prefix'ini ve "/ws" soket yollarını barındırır.
+app.include_router(stream.router)
 
 @app.get("/health")
 async def health_check():

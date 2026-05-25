@@ -41,18 +41,9 @@ def apply_input_reframing(brief: ResearchBrief, model: ResearchModel) -> dict[st
     )
 
     try:
-        response_text = model.generate(system=system_prompt, prompt=user_prompt)
-        
-        # Sadece JSON kısmını ayrıştır
-        json_start = response_text.find("{")
-        json_end = response_text.rfind("}")
-        
-        if json_start != -1 and json_end != -1:
-            json_str = response_text[json_start:json_end+1]
-            result = json.loads(json_str)
-            return result
-        else:
-            raise ValueError("Model geçerli bir JSON döndürmedi.")
+        response_text = model.generate(system=system_prompt, prompt=user_prompt, response_format="json")
+        result = json.loads(response_text)
+        return result
             
     except Exception as e:
         logger.error(f"Input reframing başarısız oldu: {e}")

@@ -67,8 +67,51 @@ def familiarization_node(state: SynthesisState):
 
 def initial_coding_node(state: SynthesisState):
     logger.info("Stage 2: Initial Coding started.")
+    transcripts = state.get("transcripts", [])
+    
+    from packages.research_engine.providers import get_model_provider
+    import uuid
+    import json
+    model = get_model_provider()
+    
     codes = []
     
+    system = """
+    Sen bir nitel araştırma uzmanısın (Braun & Clarke Aşama 2: Initial Coding).
+    Görevin: Verilen mülakat deşifresini okuyup, içindeki en önemli itiraz, ihtiyaç, fiyat bariyeri ve kullanım motivasyonlarını (atomic codes) çıkarmaktır.
+    Lütfen her bir kodu kısa ve öz (1-5 kelime) bir tema etiketiyle belirle.
+    Çıktını KESİNLİKLE sadece aşağıdaki JSON listesi formatında ver. Başka hiçbir açıklama ekleme.
+    
+    [
+        {
+            "quote": "Kullanıcının tam cümlesi (örn: Aylık ödeme yapmak yerine başta toplu öderim.)",
+            "theme_tag": "Kısa Kod (örn: Abonelik Direnci)"
+        }
+    ]
+    """
+    
+    for t_data in transcripts:
+        persona_id = t_data.get("persona_id", "unknown")
+        transcript_text = t_data.get("transcript", "")
+        if not transcript_text:
+            continue
+            
+        prompt = f"Deşifre:\n{transcript_text}"
+        try:
+            response = model.generate(system, prompt, response_format="json")
+            extracted = json.loads(response)
+            for item in extracted:
+                if "quote" in item and "theme_tag" in item:
+                    codes.append({
+                        "id": f"code_{uuid.uuid4().hex[:8]}",
+                        "persona_id": persona_id,
+                        "quote": item["quote"],
+                        "theme_tag": item["theme_tag"],
+                        "semantic_embedding": [0.0] * 384 # Placeholder for clustering logic
+                    })
+        except Exception as e:
+            logger.error(f"Coding extraction failed for persona {persona_id}: {e}")
+            
     updates = {"current_stage": 2, "atomic_codes": codes}
     state.update(updates)
     publish_state(state)

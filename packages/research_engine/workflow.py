@@ -626,41 +626,37 @@ def generate_personas_from_roles(brief: ResearchBrief, panel_roles: list[PanelRo
                     "]"
                 )
                 try:
-                    response_text = model.generate(system, prompt)
-                    # Extract JSON block
-                    json_start = response_text.find("[")
-                    json_end = response_text.rfind("]")
-                    if json_start != -1 and json_end != -1:
-                        parsed_list = json.loads(response_text[json_start:json_end+1])
-                        for item in parsed_list:
-                            new_id = f"p_{uuid.uuid4().hex[:8]}"
-                            st = item.get("stance", "Mainstream")
-                            traits_d = persona_traits(len(personas), st, item.get("price_sensitivity", 5), item.get("digital_confidence", 5))
-                            p = Persona(
-                                id=new_id,
-                                name=item.get("name", "İsimsiz"),
-                                age=item.get("age", 30),
-                                city=item.get("city", "İstanbul"),
-                                segment=item.get("segment", role.role),
-                                role_title=role.role,
-                                stance=st,
-                                price_sensitivity=item.get("price_sensitivity", 5),
-                                digital_confidence=item.get("digital_confidence", 5),
-                                context=item.get("context", ""),
-                                goals=item.get("goals", []),
-                                objections=item.get("objections", []),
-                                knowledge_boundary=item.get("knowledge_boundary", ""),
-                                bio=item.get("bio", ""),
-                                ses_group=item.get("ses_group", "C1"),
-                                respondent_type=item.get("respondent_type", "potential_customer"),
-                                settlement_type=item.get("settlement_type", "kentsel"),
-                                attributes=persona_attributes(item.get("segment", role.role), item.get("stance", "Mainstream"), item.get("price_sensitivity", 5), item.get("digital_confidence", 5)),
-                                traits=persona_traits(len(personas), item.get("stance", "Mainstream"), item.get("price_sensitivity", 5), item.get("digital_confidence", 5))
-                            )
-                            personas.append(p)
-                            # Save to pool
-                            save_persona_to_pool(asdict(p))
-                        continue # Skip fallback
+                    response_text = model.generate(system, prompt, response_format="json")
+                    parsed_list = json.loads(response_text)
+                    for item in parsed_list:
+                        new_id = f"p_{uuid.uuid4().hex[:8]}"
+                        st = item.get("stance", "Mainstream")
+                        traits_d = persona_traits(len(personas), st, item.get("price_sensitivity", 5), item.get("digital_confidence", 5))
+                        p = Persona(
+                            id=new_id,
+                            name=item.get("name", "İsimsiz"),
+                            age=item.get("age", 30),
+                            city=item.get("city", "İstanbul"),
+                            segment=item.get("segment", role.role),
+                            role_title=role.role,
+                            stance=st,
+                            price_sensitivity=item.get("price_sensitivity", 5),
+                            digital_confidence=item.get("digital_confidence", 5),
+                            context=item.get("context", ""),
+                            goals=item.get("goals", []),
+                            objections=item.get("objections", []),
+                            knowledge_boundary=item.get("knowledge_boundary", ""),
+                            bio=item.get("bio", ""),
+                            ses_group=item.get("ses_group", "C1"),
+                            respondent_type=item.get("respondent_type", "potential_customer"),
+                            settlement_type=item.get("settlement_type", "kentsel"),
+                            attributes=persona_attributes(item.get("segment", role.role), item.get("stance", "Mainstream"), item.get("price_sensitivity", 5), item.get("digital_confidence", 5)),
+                            traits=persona_traits(len(personas), item.get("stance", "Mainstream"), item.get("price_sensitivity", 5), item.get("digital_confidence", 5))
+                        )
+                        personas.append(p)
+                        # Save to pool
+                        save_persona_to_pool(asdict(p))
+                    continue # Skip fallback
                 except Exception as e:
                     print("LLM Persona generation failed:", str(e))
             
@@ -930,12 +926,5 @@ def run_interviews_stream(
 
 
 
-def run_research(
-    brief: ResearchBrief,
-    model: ResearchModel,
-    panel_roles: list[PanelRole] | None = None,
-) -> ResearchReport:
-    plan = build_research_plan(brief, panel_roles)
-    personas = generate_personas(brief, panel_roles)
-    interviews = run_interviews(brief, personas, model, plan.interview_script)
-    return synthesize_report(brief, plan, personas, interviews)
+# Legacy run_research function has been replaced by super_graph.py
+# which provides an orchestrated LangGraph approach with VRAM flushing.

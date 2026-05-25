@@ -14,6 +14,10 @@ class SanitizedOutput(BaseModel):
     sanitized_text: str
     context: AnonymizationContext
 
+class PrivacyFilterException(Exception):
+    """Raised when the PII scrubber (NER model) fails, to prevent data leak."""
+    pass
+
 # --- ADIM 2: Asenkron PII Temizleme Motoru ---
 class LocalPIIScrubber:
     def __init__(self):
@@ -81,9 +85,11 @@ class LocalPIIScrubber:
                 if response.status_code == 200:
                     final_text = response.json()["choices"][0]["message"]["content"].strip()
                     return SanitizedOutput(sanitized_text=final_text, context=context)
-            except Exception:
-                # Fallback: Model kilitlenirse sistemi durdurma, regex korumasıyla devam et
-                return SanitizedOutput(sanitized_text=partially_sanitized, context=context)
+                else:
+                    raise PrivacyFilterException(f"NER model returned status {response.status_code}")
+            except Exception as e:
+                # KVKK Standartı: Sessiz fallback yapılmaz, data leak önlenir.
+                raise PrivacyFilterException("Privacy filter failed during local LLM sanitization.") from e
 
 # Geriye uyumluluk için eski sınıfları tutalım
 class PrivacyMasker:

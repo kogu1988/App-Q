@@ -1,42 +1,144 @@
 version: '3.8'
 
 services:
+  # --- ASENKRON VERİ VE MESAJ KUYRUĞU KATMANI (VALKEY/REDIS) ---
   redis:
-    image: redis:7-alpine
+    image: redis:7.2-alpine
     container_name: appq-redis
+    command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    # 32 GB RAM istismarını önlemek için katı sınırlandırma
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1024M
+        reservations:
+          memory: 256M
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
+  # --- SEMANTİK VE VEKTÖREL VERİTABANI KATMANI (PGVECTOR) ---
   postgres:
     image: pgvector/pgvector:pg16
     container_name: appq-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-appq_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD env var zorunlu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD ortam değişkeni zorunlu}
       POSTGRES_DB: ${POSTGRES_DB:-appq_db}
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # HNSW Vektör indeksleme operasyonları için paylaşılan belleği genişletiyoruz
+    shm_size: 2gb
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4096M
+        reservations:
+          memory: 1024M
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  app-q:
+  # --- YEREL DİL MODELİ ÇIKARIM MOTORU (GPU DESTEKLİ OLLAMA) ---
+  ollama:
+    image: ollama/ollama:latest
+    container_name: appq-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      - OLLAMA_NUM_PARALLEL=1          # Eşzamanlı VRAM bölünmesini önlemek için çıkarımı teke indiriyoruz
+      - OLLAMA_MAX_LOADED_MODELS=1      # VRAM'de aynı anda sadece tek model barındırılır (Auto-Flush)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]       # RTX 4060 8GB VRAM doğrudan bu konteynere dedike edilir
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- MONOLİTİK FASTAPI AĞ API KATMANI ---
+  app-q-api:
     build:
       context: ./apps/backend
       dockerfile: Dockerfile
-    container_name: app-q
+    container_name: app-q-api
     ports:
       - "3000:3000"
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4096M
+    restart: unless-stopped
+
+  # --- ASENKRON WORKER VE LANGGRAPH ORKESTRASYON MOTORU (CELERY) ---
+  celery_worker:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: appq-celery-worker
+    # Concurrency=1: 8GB VRAM sınırında paralel ajan çıkarımlarının OOM yapmasını engeller
+    command: celery -A packages.research_engine.celery_app worker --loglevel=info --concurrency=1
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - VALKEY_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    # 20 çekirdekli CPU gücünü asenkron işlemlere tahsis ediyoruz
+    deploy:
+      resources:
+        limits:
+          cpus: '8.0'
+          memory: 8192M
+        reservations:
+          memory: 2048M
     restart: unless-stopped
 
 volumes:
   redis_data:
   postgres_data:
+  ollama_models: # Modellerin yerelde kalıcı saklanması için volum tanımlaması

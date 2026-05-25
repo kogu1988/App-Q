@@ -159,7 +159,7 @@ class MockResearchModel:
 
     last_model_id = "mock"
 
-    def generate(self, system: str, prompt: str) -> str:
+    def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
         prompt_lower = prompt.lower()
         if "fiyat hassasiyeti: 10/10" in prompt_lower or "ahmet" in prompt_lower:
             return (
@@ -191,7 +191,7 @@ class MockResearchModel:
             "test edilmesi gereken hipotezler olarak ele alınmalı."
         )
 
-    def generate_stream(self, system: str, prompt: str):
+    def generate_stream(self, system: str, prompt: str, response_format: str | None = None):
         answer = self.generate(system, prompt)
         words = answer.split(" ")
         for i, word in enumerate(words):
@@ -222,7 +222,7 @@ class OllamaResearchModel:
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = timeout_seconds
 
-    def generate(self, system: str, prompt: str) -> str:
+    def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
         self.last_model_id = self.model_id
         if "Defne" in system:
             system = f"{INTAKE_POLICY}\n\n{system}"
@@ -250,6 +250,9 @@ class OllamaResearchModel:
                 "num_predict": 8192,
             },
         }
+        
+        if response_format == "json":
+            payload["format"] = "json"
         request = urllib.request.Request(
             url=f"{self.base_url}/api/chat",
             data=json.dumps(payload).encode("utf-8"),
@@ -277,7 +280,7 @@ class OllamaResearchModel:
         
         return final_response
 
-    def generate_stream(self, system: str, prompt: str):
+    def generate_stream(self, system: str, prompt: str, response_format: str | None = None):
         self.last_model_id = self.model_id
         if "Defne" in system:
             system = f"{INTAKE_POLICY}\n\n{system}"
@@ -308,6 +311,9 @@ class OllamaResearchModel:
                 "num_predict": 8192,
             },
         }
+        
+        if response_format == "json":
+            payload["format"] = "json"
         request = urllib.request.Request(
             url=f"{self.base_url}/api/chat",
             data=json.dumps(payload).encode("utf-8"),
@@ -414,16 +420,16 @@ class OllamaRouterResearchModel:
         # 3. Persona Interview / Roleplay -> Actor (Trendyol-8B)
         return self.b2c_model_id, self.b2c_model
 
-    def generate(self, system: str, prompt: str) -> str:
+    def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
         model_id, model = self.choose_model(system, prompt)
-        answer = model.generate(system, prompt)
+        answer = model.generate(system, prompt, response_format=response_format)
         self.last_model_id = model_id
         return answer
 
-    def generate_stream(self, system: str, prompt: str):
+    def generate_stream(self, system: str, prompt: str, response_format: str | None = None):
         model_id, model = self.choose_model(system, prompt)
         self.last_model_id = model_id
-        for chunk in model.generate_stream(system, prompt):
+        for chunk in model.generate_stream(system, prompt, response_format=response_format):
             yield chunk
 
     def free_memory(self) -> None:
