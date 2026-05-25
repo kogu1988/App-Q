@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, Response, Query, Header, Request
 import logging
+from dataclasses import asdict
 from pydantic import BaseModel
 from typing import Optional, List, Any
 from fastapi.responses import StreamingResponse
 from packages.research_engine.workflow import build_research_plan, generate_personas, run_interviews_stream
 from packages.research_engine.analytics import synthesize_report
+from packages.research_engine.privacy import PrivacyMasker, PrivacyResearchModelWrapper
 from packages.research_engine.database import (
     list_studies, load_study_payload, save_study, get_personas_pool, save_persona_to_pool,
     archive_study, save_feedback, get_client_by_username,
@@ -51,6 +53,12 @@ def _require_feature(plan_type: str, feature: str) -> None:
             },
         )
 
+class StudioSimulationRequest(BaseModel):
+    brief: str
+    category: str
+    pricing: str
+    panel_roles: Optional[List[dict]] = []
+
 class IntakeChatRequest(BaseModel):
     current_brief: dict = {}
     chat_history: List[dict] = []
@@ -60,6 +68,7 @@ class IntakeChatRequest(BaseModel):
 
 class GeneratePersonasRequest(BaseModel):
     plan: dict
+    brief: dict = {}  # ResearchBrief verileri (optional, fallback ile)
 
 
 class SynthesizeRequest(BaseModel):
@@ -82,10 +91,23 @@ class BriefRequest(BaseModel):
     variant_b: str | None = None
     questions: list[str] = []
     discovery_channels: list[str] = []
+    respondent_types: list[str] = []
 
 class StudyPayload(BaseModel):
     metadata: dict
     payload: dict
+
+class PersonaSearch(BaseModel):
+    query: str
+
+class FollowUpRequest(BaseModel):
+    persona_id: str
+    question: str
+    age: int
+    city: str
+    segment: str
+    stance: str
+    price_sensitivity: int
 
 class PersonaCreate(BaseModel):
     name: str
@@ -228,25 +250,39 @@ async def get_study(study_id: str):
 async def download_study_pdf(study_id: str, x_username: str | None = Header(default=None)):
     plan_type, _ = _resolve_plan(x_username)
     _require_feature(plan_type, "pdf_export")
-    payload = load_study_payload(study_id, include_pdf=True)
-    pdf_data = payload.get("report_pdf")
-    if not pdf_data:
-        raise HTTPException(status_code=404, detail="PDF has not been generated for this study yet.")
-    
-    # Ensure memoryview/bytes conversion
-    if isinstance(pdf_data, memoryview):
-        pdf_data = pdf_data.tobytes()
-    elif not isinstance(pdf_data, bytes):
-        pdf_data = bytes(pdf_data)
+
+    payload = load_study_payload(study_id, include_pdf=False)
+
+    # Try report_markdown first, fall back to report_html
+    report_markdown = payload.get("report_markdown") or ""
+    title = payload.get("title") or payload.get("metadata", {}).get("title") or f"Rapor {study_id}"
+
+    if not report_markdown:
+        raise HTTPException(
+            status_code=404,
+            detail="Bu araştırma için rapor içeriği henüz mevcut değil."
+        )
+
+    # On-the-fly: Markdown → HTML → PDF (no DB write needed)
+    from packages.research_engine.pdf_generator import generate_pdf_from_markdown
+    pdf_bytes = generate_pdf_from_markdown(report_markdown, title=title, study_id=study_id)
+
+    if not pdf_bytes:
+        raise HTTPException(
+            status_code=500,
+            detail="PDF oluşturulurken bir hata oluştu. Lütfen tekrar deneyin."
+        )
 
     return Response(
-        content=pdf_data,
+        content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"attachment; filename=AppQ-Report-{study_id}.pdf",
-            "Access-Control-Expose-Headers": "Content-Disposition"
-        }
+            "Content-Disposition": f"attachment; filename=Clarere-Report-{study_id}.pdf",
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        },
     )
+
+
 
 @router.put("/studies/{study_id}/archive")
 async def archive_study_endpoint(study_id: str):
@@ -257,6 +293,100 @@ async def archive_study_endpoint(study_id: str):
 async def submit_feedback(data: FeedbackCreate):
     save_feedback(data.username, data.study_id, data.item_type, data.item_id, data.vote, data.comment)
     return {"status": "success"}
+
+@router.post("/studies/{study_id}/follow-up")
+async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str | None = Header(default=None)):
+    """Belirli bir personaya ek soru sormak için kullanılır."""
+    from packages.research_engine.database import get_study
+    from packages.research_engine.providers import get_model_provider
+    from packages.research_engine.plan_config import get_plan_config
+    import json
+    
+    # 1. Paket Limiti (Option A) Kontrolü
+    plan_type, _ = _resolve_plan(x_username)
+    plan_config = get_plan_config(plan_type)
+    max_follow_ups = plan_config.get("max_follow_ups", 0)
+    
+    study = get_study(study_id)
+    if not study or "payload" not in study:
+        raise HTTPException(status_code=404, detail="Araştırma bulunamadı.")
+        
+    payload_str = study["payload"]
+    if not payload_str:
+        raise HTTPException(status_code=404, detail="Araştırma verisi boş.")
+        
+    try:
+        payload = json.loads(payload_str)
+    except:
+        raise HTTPException(status_code=500, detail="Veri formatı geçersiz.")
+        
+    interviews = payload.get("interviews", [])
+    
+    # 2. Mevcut Follow-up sayısını say (Global Counter)
+    current_follow_ups = 0
+    for inv in interviews:
+        for t in inv.get("turns", []):
+            if "FOLLOW-UP" in t.get("tags", []):
+                current_follow_ups += 1
+                
+    if current_follow_ups >= max_follow_ups:
+        raise HTTPException(status_code=403, detail=f"Paket limitinize ulaştınız (Maksimum {max_follow_ups} takip sorusu). Lütfen paketinizi yükseltin.")
+
+    target_interview = None
+    target_idx = -1
+    
+    for i, inv in enumerate(interviews):
+        if inv.get("persona", {}).get("id") == data.persona_id:
+            target_interview = inv
+            target_idx = i
+            break
+            
+    if not target_interview:
+        raise HTTPException(status_code=404, detail="Persona mülakatı bulunamadı.")
+        
+    persona = target_interview["persona"]
+    turns = target_interview.get("turns", [])
+    
+    # Reconstruct conversation
+    messages = [
+        {"role": "system", "content": f"Sen bir simülasyon personasısın. Adın {persona.get('name')}. Yaşın {persona.get('age')}. "
+                                      f"Mesleğin {persona.get('role_title', 'Bilinmiyor')}. "
+                                      f"Geçmiş sohbetine sadık kal ve sana sorulan ek soruya doğal, role uygun kısa bir cevap ver."}
+    ]
+    
+    for turn in turns:
+        messages.append({"role": "user", "content": turn.get("question", "")})
+        messages.append({"role": "assistant", "content": turn.get("answer", "")})
+        
+    messages.append({"role": "user", "content": data.question})
+    
+    # Format for the prompt
+    history_text = "\n".join([f"{m['role']}: {m['content']}" for m in messages[-6:]])
+    prompt = f"Geçmiş:\n{history_text}\n\nYeni soru: {data.question}\nCevabın:"
+    
+    try:
+        model = get_model_provider()
+        response = model.generate(messages[0]["content"], prompt)
+        answer = response.text.strip()
+    except Exception as e:
+        logger.error(f"Follow up error: {e}")
+        raise HTTPException(status_code=500, detail="Cevap üretilemedi.")
+        
+    new_turn = {
+        "question": data.question,
+        "answer": answer,
+        "tags": ["FOLLOW-UP"]
+    }
+    
+    # Update payload
+    target_interview["turns"].append(new_turn)
+    payload["interviews"][target_idx] = target_interview
+    
+    # Save back
+    from packages.research_engine.database import save_study
+    save_study(study.get("metadata", {}), payload)
+    
+    return {"status": "success", "turn": new_turn}
 
 @router.post("/studies")
 async def create_or_update_study(data: StudyPayload):
@@ -318,28 +448,67 @@ async def create_plan(request: BriefRequest, x_username: str | None = Header(def
         variant_a=request.variant_a,
         variant_b=request.variant_b,
         discovery_channels=request.discovery_channels,
+        respondent_types=request.respondent_types,
     )
+    from packages.research_engine.reframing import apply_input_reframing
+    from packages.research_engine.providers import get_model_provider
+    from dataclasses import replace
+
     plan = build_research_plan(brief)
+    
+    # Reframing katmanı ile sübjektif girdileri nesnelleştir (Sycophancy Mitigation)
+    try:
+        model = get_model_provider()
+        reframed = apply_input_reframing(brief, model)
+        
+        new_objective = reframed.get("objective_product_context", plan.objective)
+        new_questions = reframed.get("primary_research_questions", plan.interview_questions)
+        
+        plan = replace(plan, objective=new_objective, interview_questions=new_questions)
+    except Exception as e:
+        print(f"Reframing katmanı başarısız: {e}")
+
     return plan
 
 @router.post("/personas/generate")
 async def generate_personas_from_plan(request: GeneratePersonasRequest, x_username: str | None = Header(default=None)):
     plan_type, _ = _resolve_plan(x_username)
-    from packages.research_engine.models import ResearchPlan
-    plan = ResearchPlan(**request.plan)
-    # Panel boyutunu plan limitine göre kırp
+    from packages.research_engine.models import ResearchBrief
+
+    # plan dict'ten sadece objective'yi al (ResearchPlan nested dataclass sorununu önler)
+    plan_dict = request.plan
+    plan_objective = plan_dict.get("objective") or ""
+
+    # ResearchBrief'i brief dict'ten kur (fallback: plan objective)
+    brief_data = request.brief
+    brief = ResearchBrief(
+        title=brief_data.get("title") or "Araştırma",
+        market=brief_data.get("market") or "Türkiye",
+        category=brief_data.get("category") or "Genel",
+        idea=brief_data.get("context") or brief_data.get("idea") or plan_objective or "",
+        target_users=brief_data.get("target_users") or [],
+        questions=brief_data.get("questions") or [],
+        competitors=brief_data.get("competitors") or [],
+        expected_price=brief_data.get("expected_price"),
+        sales_channel=brief_data.get("sales_channel"),
+        success_metric=brief_data.get("success_metric"),
+        respondent_types=brief_data.get("respondent_types") or [],
+        discovery_channels=brief_data.get("discovery_channels") or [],
+    )
+
     max_p = get_max_personas(plan_type)
-    if hasattr(plan, "panel_size") and plan.panel_size > max_p:
-        plan.panel_size = max_p
-    personas = generate_personas(plan)
+    personas = generate_personas(brief)
     personas = personas[:max_p]
-    return {"personas": [p.dict() for p in personas]}
+    from dataclasses import asdict
+    return {"personas": [asdict(p) for p in personas]}
+
 
 @router.post("/interviews/stream")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 async def stream_interviews(request: Request, body: dict, x_username: str | None = Header(default=None)):
     plan_dict = body.get("plan")
     personas_list = body.get("personas")
+    brief_dict = body.get("brief", {})
 
     if not plan_dict or not personas_list:
         raise HTTPException(status_code=400, detail="Missing plan or personas")
@@ -347,30 +516,74 @@ async def stream_interviews(request: Request, body: dict, x_username: str | None
     plan_type, _ = _resolve_plan(x_username)
     _require_feature(plan_type, "streaming")
 
-    from packages.research_engine.models import ResearchPlan, Persona
+    from packages.research_engine.models import ResearchPlan, Persona, ResearchBrief
     plan = ResearchPlan(**plan_dict)
     personas = [Persona(**p) for p in personas_list]
     personas = personas[:get_max_personas(plan_type)]
 
+    # Reconstruct brief for interview context
+    brief = ResearchBrief(
+        title=brief_dict.get("title", "Araştırma"),
+        market=brief_dict.get("market", "Türkiye"),
+        category=brief_dict.get("category", "Genel"),
+        idea=brief_dict.get("context") or brief_dict.get("idea", ""),
+        target_users=brief_dict.get("target_users", []),
+        questions=brief_dict.get("questions", []),
+        competitors=brief_dict.get("competitors", []),
+        expected_price=brief_dict.get("expected_price"),
+        sales_channel=brief_dict.get("sales_channel"),
+        success_metric=brief_dict.get("success_metric"),
+        variant_a=brief_dict.get("variant_a"),
+        variant_b=brief_dict.get("variant_b"),
+        respondent_types=brief_dict.get("respondent_types", []),
+        discovery_channels=brief_dict.get("discovery_channels", []),
+    )
+
+    # Wrap model with PrivacyMasker — masks PII + competitor brand names before LLM call
+    base_model = get_model_provider()
+    custom_keywords = brief_dict.get("competitors", [])  # mask competitor names
+    masker = PrivacyMasker(custom_keywords=custom_keywords)
+    model = PrivacyResearchModelWrapper(base_model, masker)
+
+    def _serialize(obj):
+        """Safely serialize dataclass or dict objects to JSON-compatible dict."""
+        if hasattr(obj, "__dataclass_fields__"):
+            return asdict(obj)
+        if hasattr(obj, "dict"):  # Pydantic fallback
+            return obj.dict()
+        if isinstance(obj, dict):
+            return {k: _serialize(v) for k, v in obj.items()}
+        return obj
+
     def event_generator():
-        for chunk in run_interviews_stream(plan, personas):
-            yield f"data: {json.dumps({'chunk': chunk})}\n\n"
-        # Stream tamamlandı — atomik kota artırma
-        if x_username:
-            try:
-                success, used, max_s = atomic_increment_simulation_count(x_username)
-                if not success:
-                    # Kota stream bitmeden doldu (par.el istek senaryosu)
-                    logger.warning(
-                        "Quota exceeded at increment for %s (used=%s max=%s)",
-                        x_username, used, max_s
+        collected_interviews = []
+        try:
+            for event_type, payload in run_interviews_stream(brief, personas, model, plan.interview_script):
+                payload_dict = _serialize(payload)
+
+                if event_type == "persona_end" and "interview" in payload_dict:
+                    collected_interviews.append(payload_dict["interview"])
+
+                yield f"data: {json.dumps({'type': event_type, 'payload': payload_dict}, ensure_ascii=False)}\n\n"
+
+            # Stream tamamlandı — atomik kota artırma
+            yield f"data: {json.dumps({'type': 'done', 'interviews': collected_interviews}, ensure_ascii=False)}\n\n"
+            if x_username:
+                try:
+                    success, used, max_s = atomic_increment_simulation_count(x_username)
+                    if not success:
+                        logger.warning(
+                            "Quota exceeded at increment for %s (used=%s max=%s)",
+                            x_username, used, max_s
+                        )
+                except Exception:
+                    logger.error(
+                        "Simulation count increment failed for %s",
+                        x_username,
+                        exc_info=True,
                     )
-            except Exception:
-                logger.error(
-                    "Simulation count increment failed for %s",
-                    x_username,
-                    exc_info=True,
-                )
+        finally:
+            model.free_memory()
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
     
@@ -382,18 +595,169 @@ async def synthesize(request: SynthesizeRequest, x_username: str | None = Header
     if request.brief.get("b2b_mode"):
         _require_feature(plan_type, "b2b_mode")
 
-    from packages.research_engine.models import PersonaInterview, ResearchPlan
-    p_interviews = [PersonaInterview(**i) for i in request.interviews]
+    from packages.research_engine.models import PersonaInterview, ResearchPlan, ResearchBrief, Persona
+
+    # brief → ResearchBrief
+    bd = request.brief
+    r_brief = ResearchBrief(
+        title=bd.get("title", "Araştırma"),
+        market=bd.get("market", "Türkiye"),
+        category=bd.get("category", "Genel"),
+        idea=bd.get("context") or bd.get("idea", ""),
+        target_users=bd.get("target_users") or [],
+        questions=bd.get("questions") or [],
+        competitors=bd.get("competitors") or [],
+        expected_price=bd.get("expected_price"),
+        sales_channel=bd.get("sales_channel"),
+        success_metric=bd.get("success_metric"),
+        variant_a=bd.get("variant_a"),
+        variant_b=bd.get("variant_b"),
+        respondent_types=bd.get("respondent_types") or [],
+        discovery_channels=bd.get("discovery_channels") or [],
+    )
+
     r_plan = ResearchPlan(**request.plan)
-    report = synthesize_report(p_interviews, r_plan)
-    return report.dict()
+    p_interviews = [PersonaInterview(**i) for i in request.interviews]
+
+    # personas listesi varsa ilet (van_westendorp ve brand_health için gerekli)
+    # SynthesizeRequest'e personas eklenmemişse boş liste ile devam et
+    personas_raw = getattr(request, "personas", []) or []
+    r_personas = [Persona(**p) for p in personas_raw] if personas_raw else [
+        iv.persona for iv in p_interviews
+    ]
+
+    report = synthesize_report(
+        brief=r_brief,
+        plan=r_plan,
+        personas=r_personas,
+        interviews=p_interviews,
+    )
+
+    from dataclasses import asdict
+    report_dict = asdict(report)
+
+    # research_quality her plan için hesaplanır; Pro+ kontrolü yok —
+    # frontend PlanGate ile gösterimi kısıtlıyor
+    return report_dict
+
+@router.post("/studio/simulate")
+@limiter.limit("20/minute")
+async def trigger_studio_simulation(request: Request, data: StudioSimulationRequest, x_username: str | None = Header(default=None)):
+    """
+    Research Studio: Tek turlu simülasyon başlatma endpoint'i.
+    Gateway üzerinden geçip doğrudan Celery kuyruğuna aktarır.
+    """
+    try:
+        from packages.research_engine.gateway import ResearchInflowGateway
+        from packages.research_engine.database import get_db
+        from packages.research_engine.plan_config import get_plan_config
+        
+        # get_db bağlamını gateway'e sunuyoruz
+        gateway = ResearchInflowGateway(db_session=get_db)
+        username = x_username or "anonymous"
+        
+        plan_type, _ = _resolve_plan(username)
+        plan_config = get_plan_config(plan_type)
+        max_loops = plan_config.get("max_adversarial_loops", 1)
+        
+        result = await gateway.trigger_simulation_triage(
+            username=username,
+            brief=data.brief,
+            category=data.category,
+            pricing=data.pricing,
+            panel_roles=data.panel_roles,
+            max_adversarial_loops=max_loops
+        )
+        return result
+    except Exception as e:
+        logger.error("studio_simulation error for user=%s", x_username, exc_info=True)
+        raise HTTPException(status_code=500, detail="Simülasyon kuyruğa alınırken hata oluştu.")
+
+@router.get("/studio/status/{task_id}")
+async def get_studio_simulation_status(task_id: str, x_username: str | None = Header(default=None)):
+    """
+    Celery task durumunu döner. Frontend polling için kullanılır.
+    """
+    from celery.result import AsyncResult
+    from packages.research_engine.celery_app import celery_app
+    
+    try:
+        task = AsyncResult(task_id, app=celery_app)
+        
+        response = {
+            "task_id": task_id,
+            "status": task.status,  # PENDING, STARTED, SUCCESS, FAILURE
+        }
+        
+        if task.status == "SUCCESS":
+            response["result"] = task.result
+        elif task.status == "FAILURE":
+            response["error"] = str(task.info)
+            
+        return response
+    except Exception as e:
+        logger.error(f"Error fetching task status {task_id}: {e}")
+        raise HTTPException(status_code=500, detail="Durum sorgulanamadı.")
+
+@router.post("/studio/match-personas")
+@limiter.limit("20/minute")
+async def match_personas(request: Request, data: dict, x_username: str | None = Header(default=None)):
+    """
+    Brief'e (veya idea'ya) uygun veritabanındaki hazır personaları eşleştirip önerir.
+    Kullanıcıya 'hangi persona grubundan kaç tane istersiniz' diye sormak için kullanılır.
+    """
+    try:
+        from packages.research_engine.database import get_personas_pool
+        from packages.research_engine.providers import get_model_provider
+        import json
+        import re
+        
+        all_personas = get_personas_pool()
+        if not all_personas:
+            return {"matched_roles": []}
+            
+        brief_text = json.dumps(data, ensure_ascii=False)
+        
+        # Basit LLM eşleştirmesi: Havuzdaki rolleri verip en uygun 5 tanesini seçtiriyoruz.
+        roles_context = "\n".join([f"- {p['role_title']}: {p['bio']}" for p in all_personas[:20]]) # İlk 20'yi alalım şimdilik
+        
+        system = "Sen bir pazar araştırma uzmanısın. Görevin, verilen proje fikrine en uygun hedef kitle profillerini (rolleri) listeden seçmektir."
+        prompt = (
+            f"Proje Fikri:\n{brief_text}\n\n"
+            f"Mevcut Persona Rolleri:\n{roles_context}\n\n"
+            "Yukarıdaki listeden bu proje için en uygun 4-5 rolü seç. SADECE aşağıdaki gibi JSON dizisi döndür, başka hiçbir metin ekleme:\n"
+            '[\n  {"role": "Rol Adı", "why": "Bu projeye neden uygun?"}\n]'
+        )
+        
+        model = get_model_provider()
+        response = model.generate(system, prompt)
+        text = response.text
+        
+        # JSON parse (fallback safety)
+        match = re.search(r'\[.*\]', text, re.DOTALL)
+        if match:
+            text = match.group(0)
+            
+        try:
+            matched = json.loads(text)
+        except:
+            # Fallback: ilk 3 personayı dön
+            matched = [{"role": p["role_title"], "why": "Sistem önerisi"} for p in all_personas[:3]]
+            
+        return {"matched_roles": matched}
+    except Exception as e:
+        logger.error(f"match-personas error: {e}")
+        # Fallback
+        all_personas = get_personas_pool()
+        matched = [{"role": p["role_title"], "why": "Sistem önerisi"} for p in all_personas[:3]] if all_personas else []
+        return {"matched_roles": matched}
 
 @router.post("/intake")
 @limiter.limit("20/minute")
 async def intake_chat(request: Request, data: IntakeChatRequest):
     """
-    Defne (araştırma sihirbazı ajanı) ile sohbet endpoint'i.
-    process_intake_chat() kullanarak brief'i adım adım doldurur.
+    (DEPRECATED) Eski çok turlu chat (Defne) sihirbazı.
+    Yerini /studio/simulate almıştır.
     """
     try:
         model = get_model_provider()
@@ -424,4 +788,94 @@ async def list_models():
         }
     except Exception as e:
         return {"available_models": [], "active_b2c": "", "active_b2b": "", "error": str(e)}
+
+@router.post("/ws/ticket")
+@limiter.limit("20/minute")
+async def generate_ws_ticket(request: Request, x_username: str | None = Header(default=None)):
+    """
+    Generates a 10-second single-use ticket for WebSocket authentication.
+    """
+    import redis
+    import os
+    import uuid
+    
+    VALKEY_URL = os.getenv("VALKEY_URL", "redis://localhost:6379/0")
+    ticket = str(uuid.uuid4())
+    username = x_username or "anonymous"
+    try:
+        r = redis.from_url(VALKEY_URL)
+        # Store ticket mapping to username, expire in 10 seconds
+        r.setex(f"ws_ticket:{ticket}", 10, username)
+        return {"ticket": ticket, "expires_in": 10}
+    except Exception as e:
+        logger.error(f"Failed to generate WS ticket: {e}")
+        raise HTTPException(status_code=500, detail="Bilet üretilemedi.")
+
+from fastapi import WebSocket, WebSocketDisconnect
+
+@router.websocket("/ws/synthesis/{research_id}")
+async def ws_synthesis_status(websocket: WebSocket, research_id: str, ticket: str = Query(...)):
+    """
+    Streams the thematic synthesis status and JSON payload to the client via Redis Pub/Sub.
+    """
+    import redis.asyncio as aioredis
+    import redis as sync_redis
+    import os
+    import asyncio
+    
+    VALKEY_URL = os.getenv("VALKEY_URL", "redis://localhost:6379/0")
+    
+    # Authenticate ticket
+    try:
+        r_sync = sync_redis.from_url(VALKEY_URL)
+        ticket_key = f"ws_ticket:{ticket}"
+        username = r_sync.get(ticket_key)
+        
+        if not username:
+            await websocket.close(code=1008, reason="Geçersiz veya süresi dolmuş bilet.")
+            return
+            
+        # Delete ticket so it's single use
+        r_sync.delete(ticket_key)
+    except Exception as e:
+        logger.error(f"Ticket auth error: {e}")
+        await websocket.close(code=1011, reason="Sunucu hatası.")
+        return
+
+    # Accept connection
+    await websocket.accept()
+    logger.info(f"WebSocket connected for synthesis {research_id}")
+    
+    r_async = None
+    pubsub = None
+    try:
+        r_async = aioredis.from_url(VALKEY_URL)
+        pubsub = r_async.pubsub()
+        channel = f"synthesis_status:{research_id}"
+        await pubsub.subscribe(channel)
+        
+        async for message in pubsub.listen():
+            if message["type"] == "message":
+                data_str = message["data"].decode("utf-8")
+                await websocket.send_text(data_str)
+                
+                # Close if completed or failed
+                try:
+                    payload = json.loads(data_str)
+                    if payload.get("status") in ("completed", "failed"):
+                        await asyncio.sleep(0.5)
+                        break
+                except:
+                    pass
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket disconnected for synthesis {research_id}")
+    except Exception as e:
+        logger.error(f"WebSocket error for synthesis {research_id}: {e}")
+    finally:
+        if pubsub:
+            await pubsub.unsubscribe()
+        try:
+            await websocket.close()
+        except:
+            pass
 
