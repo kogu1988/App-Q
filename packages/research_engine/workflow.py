@@ -25,6 +25,7 @@ from .models import (
 import json
 import uuid
 from .database import save_study, save_persona_to_pool, get_system_config, log_audit
+from .quality import calculate_turn_quality, calculate_ewma
 
 logger = logging.getLogger(__name__)
 
@@ -45,66 +46,115 @@ DEFAULT_QUESTIONS = [
 
 
 def build_elephant_system_prompt(persona: "Persona") -> str:
-    """ELEPHANT çerçevesi (Akademik Sentez Raporu, 2026) temelinde persona'ya özgü
-    anti-dalkavukluk sistem promptu üretir.
-
-    5 dalkavukluk boyutu (LLM oranları):
-      - Çerçeveyi Kabul Etme      %90 — en kritik
-      - Dolaylı Dil               %87
-      - Duygusal Onaylama         %76
-      - Dolaylı Eylem Önerisi     %53
-      - Ahlaki Destek             %48
-
-    Agreeableness skoruna göre izin seviyesi:
-      < 40  → güçlü red izni (Skeptic/Laggard)
-      40-65 → standart izin (Mainstream)
-      > 65  → ek dalkavukluk uyarısı (Innovator/EarlyAdopter)
-
-    Kaynak: Akademik Sentez Raporu §Sütun 4 — ELEPHANT Anti-Sycophancy Çerçevesi;
-            'Ask don't tell' (arXiv:2602.23971) — Explicit Rejection Permission.
+    """ELEPHANT çerçevesi anti-dalkavukluk sistem promptu üretir.
+    Agreeableness < 40 → güçlü red izni (Skeptic/Laggard)
+    Agreeableness 40-65 → standart (Mainstream)
+    Agreeableness > 65 → ek uyarı (Innovator/EarlyAdopter)
+    Neuroticism > 65 → kaygılı, fiyat/risk endişeli yanıt stili
+    Openness > 70 → keşifçi, yenilik açık; Openness < 40 → kanıtlanmış çözüm tercihli
+    Kaynak: Akademik Sentez Raporu §Sütun 4 — arXiv:2602.23971
+    Grounded Simulation §4.3 — facet-driven response-style enforcement
     """
-    agreeableness = persona.traits.get("Agreeableness", 60) if persona.traits else 60
+    traits = persona.traits or {}
+    agreeableness = traits.get("Agreeableness", 60)
+    neuroticism   = traits.get("Neuroticism", 50)
+    openness      = traits.get("Openness", 60)
 
     base = (
-        "Tek bir izole Türk pazar araştırması personasını simüle ediyorsun. "
-        "Kritik Kural: Kesinlikle 'asistan', 'yapay zeka', 'model' gibi kelimeleri kullanma, "
-        "kendini bir yapay zeka asistanı olarak tanıtma. "
-        "Doğrudan canlandırdığın karakterin kendi ağzından, birinci tekil şahıs ('ben') olarak cevap ver. "
-        "Profilinle çelişme. Emin değilsen belirsizliği söyle."
+        "Sen gerçek bir Türk kullanıcısın — bir pazar araştırması katılımcısı olarak mülakattasın.\n"
+        "Kimliğin sana verildi: bu kimliğe birebir gir, dışına çıkma.\n\n"
+        "[MUTLAK KURAL — KİMLİĞİN]\n"
+        "Sen bir yapay zeka, asistan veya model değilsin. Sorulara sadece 'ben' olarak cevap ver.\n"
+        "❌ Asla şunları söyleme: 'Yapay zeka olarak...', 'Bu persona şöyle düşünür...', 'Asistan olarak...'\n"
+        "✅ Her zaman şöyle konuş: 'Benim için önemli olan...', 'Bence bu ürün...', 'Ödeme yapmam için...'\n\n"
+        "[YANIT TARZI]\n"
+        "- Kısa ve somut: 2-4 cümle. Uzun liste veya önsöz yapma.\n"
+        "- Türkiye bağlamı: TL rakamı ver, KVKK/taksit/kargo gibi gerçek endişeleri kullan.\n"
+        "- Karakterine sadık kal: yaşına, şehrine, alışkanlıklarına uymayan şeyler söyleme.\n"
+        "- Fiyat sorusunda mutlaka TL bazında eşik belirt.\n\n"
+        "[YASAK]\n"
+        "- <think> bloğu veya görünür iç muhakeme\n"
+        "- Meta yorum ('Bu senaryoda...', 'Karakterime göre...')\n"
+        "- Araştırmacıyı memnun etmek için sahte pozitif cevap\n"
     )
 
-    # Explicit Rejection Permission — ELEPHANT §Dalkavukluğu Azaltma
-    rejection_permission = (
-        "\n\nKRİTİK — Dalkavukluk Yasağı (ELEPHANT Çerçevesi):\n"
-        "Cevap vermeden önce dur ve bir dakika düşün. "
-        "Sana sunulan ürün fikirlerine, pazar tahminlerine veya varsayımlara "
-        "körü körüne katılmak zorunda değilsin. "
-        "Ürünün açıkça başarısız olabileceği senaryoları ve gerçek acı noktalarını "
-        "bulmakla görevlisin. "
-        "Reddetmek, eleştirmek ve alternatif sunmak için açık ve net izne sahipsin. "
-        "Kullanıcının çerçevesini sorgulamadan kabul etme — bu en yaygın yapay zeka hatasıdır."
-    )
-
+    # Agreeableness → Explicit Rejection Permission (ELEPHANT)
     if agreeableness > 65:
-        # Yüksek Agreeableness → ek uyarı (Innovator/EarlyAdopter drift riski)
-        extra = (
-            "\nUYARI: Profilinin doğası gereği fikirlere açık olmaya eğilimlisin. "
-            "Ancak bu 'her şeye evet demek' anlamına gelmiyor. "
-            "Gerçek itirazlarını ve şüphelerini açıkça dile getir."
+        stance_directive = (
+            "\n[KİŞİLİK — UZLAŞMACI]\n"
+            "Doğan yapın gereği fikirlere açıksın — ama bu 'her şeye evet' demek değil.\n"
+            "Gerçek şüphelerini ve çekincelerini açıkça dile getir. "
+            "Ürün seni heyecanlandırmıyorsa bunu söyle."
         )
     elif agreeableness < 40:
-        # Düşük Agreeableness → güçlü red izni (Skeptic/Laggard)
-        extra = (
-            "\nPROFİL: Sen doğası gereği şüpheci ve ihtiyatlısın. "
-            "Pozitif iddialar karşısında kanıt talep et. "
-            "Güvenmediğin noktalarda açıkça direniş göster."
+        stance_directive = (
+            "\n[KİŞİLİK — ŞÜPHECİ]\n"
+            "Sen doğası gereği şüphecisin. İddia gördüğünde kanıt istersin.\n"
+            "Pozitif sunumlara temkinli yaklaş. Güvenmediğin noktada açıkça dur ve neden güvenmediğini söyle.\n"
+            "Reddetmek, itiraz etmek ve alternatif önermek için tam yetkiye sahipsin."
         )
     else:
-        extra = ""
+        stance_directive = (
+            "\n[KİŞİLİK — DENGELİ]\n"
+            "Ne aşırı iyimser ne aşırı kötümser ol. Dengeli değerlendirme yap.\n"
+            "Ürünün iyi tarafını görürken gerçek endişelerini de net ifade et."
+        )
 
-    return base + rejection_permission + extra
+    # Neuroticism → kaygı ve risk hassasiyeti (Grounded Sim §4.3)
+    if neuroticism > 65:
+        neuroticism_note = (
+            "\n[DUYGUSAL STİL — KAYGILI]\n"
+            "Belirsizlik ve risk seni rahatsız eder. Fiyat artışı, gizli maliyet veya belirsiz garanti "
+            "söz konusu olduğunda açıkça dile getir. Karar vermekte temkinlisin."
+        )
+    elif neuroticism < 35:
+        neuroticism_note = (
+            "\n[DUYGUSAL STİL — SAKİN]\n"
+            "Risk seni pek sarsmaz. Yeni deneyimlere girerken pek endişelenmezsin."
+        )
+    else:
+        neuroticism_note = ""
 
-# ── TÜAD 2025 SES Profil Referansı ────────────────────────────────────────────
+    # Openness → yenilik kabulü / kanıtlanmış çözüm tercihi (Grounded Sim §4.3)
+    if openness > 70:
+        openness_note = (
+            "\n[KEŞİF STİLİ — YENİLİĞE AÇIK]\n"
+            "Yeni ürünlere ve fikirlere meraklısın; hızlı benimseyebilirsin. "
+            "Ama bu körü körüne onaylamak anlamına gelmiyor — neyi neden benimsediğini açıklarsın."
+        )
+    elif openness < 40:
+        openness_note = (
+            "\n[KEŞİF STİLİ — KANITLANMIŞ ÇÖZÜM TERCİHİ]\n"
+            "Denenmemiş ürünlere temkinli yaklaşırsın. Referans, kullanıcı yorumu veya deneme süresi "
+            "olmadan adım atmak zorunda değilsin."
+        )
+    else:
+        openness_note = ""
+
+    return base + stance_directive + neuroticism_note + openness_note + HOFSTEDE_TURKEY_PROMPT
+
+
+# ── Hofstede Türkiye Kültürel Boyutlar ────────────────────────────────────────
+# Kaynak: Grounded Simulation §4.1; Hofstede (1980); hofstede-insights.com/country/turkey
+# Per-country response style calibration: directness, hierarchical deference, acquiescence risk
+HOFSTEDE_TURKEY = {
+    "PDI": 66,  # Güç Mesafesi: Otorite/marka güvenine saygı yüksek
+    "IDV": 37,  # Kolektivizm: Aile/çevre onayı önemli, yalnız karar verme zorlu
+    "MAS": 45,  # Erillik: Dengeli — ne aşırı rekabetçi ne nazik
+    "UAI": 85,  # Belirsizlikten Kaçınma: Belirsiz ürün/fiyat reddedilir
+    "LTO": 46,  # Kısa vadeli: Anlık fayda görünce harekete geçer
+    "IVR": 49,  # Orta: Ne aşırı zevkçi ne kısıtlayıcı
+}
+
+# Hofstede kültürel prompt bloğu (yalnızca Türkiye kökenli persona için)
+HOFSTEDE_TURKEY_PROMPT = (
+    "\n[KÜLTÜREL BAĞLAM — TÜRKİYE]\n"
+    "- Belirsiz fiyat veya net olmayan taahhüt gördüğünde güvenmezsin (UAI=85).\n"
+    "- Arkadaş/aile tavsiyesi veya referans olmadan büyük kararlar almakta zorlanırsın (IDV=37).\n"
+    "- Güvenilir marka, kurumsal garanti veya tanıdık isim önemlidir (PDI=66).\n"
+    "- Hızlı fayda görmeden uzun vadeli ödeme yapmaktan kaçınırsın (LTO=46)."
+)
+
 SES_PROFILES: dict[str, dict] = {
     "AB": {
         "label": "AB — Üst Grup (%21.5)",
@@ -289,201 +339,70 @@ def generate_interview_script(
     brief: ResearchBrief,
     panel_roles: list[PanelRole] | None = None,
 ) -> list[InterviewQuestion]:
-    category = brief.category or "ürün"
-    target = ", ".join(brief.target_users) or "hedef kullanıcılar"
-    competitors = ", ".join(brief.competitors) or "mevcut alternatifler"
-    expected_price = brief.expected_price or "önerilecek fiyat/paket"
-    role_text = ", ".join(f"{role.role} x{role.count}" for role in panel_roles or []) or "varsayılan panel"
+    from .db_vectors import get_question_collection
+    from .providers import get_model_provider
+    import json
     
-    # A/B Testi Modu (Varyantlar mevcutsa)
-    if brief.variant_a and brief.variant_b:
-        script = [
+    category = brief.category or "ürün"
+    expected_price = brief.expected_price or "önerilecek fiyat/paket"
+    
+    # 1. DB'den önceden etiketlenmiş soruları al
+    all_questions = get_question_collection()
+    
+    # Fallback: Eğer DB boşsa standart bir set kullan
+    if not all_questions:
+        return [
             InterviewQuestion(
                 id="q_context",
                 label="CONTEXT",
-                question=(
-                    f"{category} bağlamında bugün bu problemi nasıl yaşıyorsun? Son yaşadığın somut bir örneği anlatır mısın?"
-                ),
-                reason="Hedef kitlenin problemi yaşama şeklini yakalamak.",
+                question=f"{category} bağlamında bugün bu problemi nasıl yaşıyorsun? Son yaşadığın somut bir örneği anlatır mısın?",
+                reason="Pain point'i soyut fikir yerine gerçek olay üzerinden yakalamak.",
                 tags=["pain_point"],
-            ),
-            InterviewQuestion(
-                id="q_variant_compare",
-                label="VARIANT-COMPARE",
-                question=(
-                    f"Sana bu problemi çözmek için iki farklı yaklaşım/teklif sunsam:\n"
-                    f"Varyant A: '{brief.variant_a}'\n"
-                    f"Varyant B: '{brief.variant_b}'\n"
-                    f"Bu iki teklifi/mesajı karşılaştırdığında ilk izlenimin ne olur? Hangisi ilgini çeker ve neden?"
-                ),
-                reason="Varyantların ilk izlenim ve ikna edicilik kıyaslaması.",
-                tags=["value", "positioning"],
-            ),
-            InterviewQuestion(
-                id="q_variant_preference",
-                label="VARIANT-PREFERENCE",
-                question=(
-                    f"Varyant A ('{brief.variant_a}') ile Varyant B ('{brief.variant_b}') arasında kesin bir seçim yapacak olsan hangisini seçersin? "
-                    "Lütfen cevabında 'Varyant A' veya 'Varyant B' ibaresini açıkça geçirerek nedenini söyle."
-                ),
-                reason="Personanın net varyant tercihini ve satın alma niyetini yakalamak.",
-                tags=["value", "pricing"],
-            ),
-            InterviewQuestion(
-                id="q_objection",
-                label="OBJECTIONS",
-                question="İlgini çeken veya tercih ettiğin bu teklifle ilgili aklına takılan en büyük şüphe, itiraz veya güven/gizlilik endişesi nedir?",
-                reason="Varyantlara yönelik ana bariyerleri toplamak.",
-                tags=["objection", "risk"],
             ),
             InterviewQuestion(
                 id="q_pricing",
                 label="PRICING",
-                question=(
-                    f"Bu teklif için {expected_price} ödemeyi düşünür müsün? Bu hizmet için kafandaki makul fiyat/model nedir?"
-                ),
-                reason="Fiyat eşiğini ve bütçe kabulünü ölçmek.",
+                question=f"{expected_price} için ödeme yapmayı düşünür müsün? Hangi fiyat aralığı makul, hangi nokta pahalı gelir?",
+                reason="Türkiye pazarı için fiyat eşiğini ve paketleme sinyalini almak.",
                 tags=["pricing"],
-            ),
-            InterviewQuestion(
-                id="q_decision",
-                label="DECISION",
-                question="Bu teklifin seni gerçekten heyecanlandırması ve hemen satın alman için onda neyi değiştirmemizi veya eklememizi istersin?",
-                reason="Aksiyonlanabilir iyileştirme önerisi almak.",
-                tags=["risk", "value"],
-            ),
+            )
         ]
-        return script
 
-    script = [
-        InterviewQuestion(
-            id="q_context",
-            label="CONTEXT",
-            question=(
-                f"{category} bağlamında bugün bu problemi nasıl yaşıyorsun? Son yaşadığın somut bir örneği anlatır mısın?"
-            ),
-            reason="Pain point'i soyut fikir yerine gerçek olay üzerinden yakalamak.",
-            tags=["pain_point"],
-        ),
-        InterviewQuestion(
-            id="q_current_alternatives",
-            label="CURRENT-TOOLS",
-            question=(
-                f"Bugün bu ihtiyacı {competitors} gibi hangi yöntemlerle çözüyorsun ve bu yöntemlerde seni en çok ne zorluyor?"
-            ),
-            reason="Alternatifler, switching cost ve mevcut davranışı görünür yapmak.",
-            tags=["positioning", "pain_point"],
-        ),
-        InterviewQuestion(
-            id="q_value",
-            label="VALUE-PROPOSITION",
-            question=(
-                f"Bu fikir {target} için hangi durumda gerçekten değerli olur, hangi durumda gereksiz veya nice-to-have kalır?"
-            ),
-            reason="Değer önerisini satın alma bağlamında test etmek.",
-            tags=["value"],
-        ),
-        InterviewQuestion(
-            id="q_objection",
-            label="OBJECTIONS",
-            question="Satın alma veya deneme kararında seni en çok ne durdurur: güven, zaman, fiyat, veri gizliliği veya başka bir şey mi?",
-            reason="Ana bariyerleri ve anti-dalkavukluk sinyallerini toplamak.",
-            tags=["objection", "risk"],
-        ),
-        InterviewQuestion(
-            id="q_pricing",
-            label="PRICING",
-            question=(
-                f"{expected_price} için ödeme yapmayı düşünür müsün? Hangi fiyat aralığı makul, hangi nokta pahalı gelir?"
-            ),
-            reason="Türkiye pazarı için fiyat eşiğini ve paketleme sinyalini almak.",
-            tags=["pricing"],
-        ),
-        InterviewQuestion(
-            id="q_trust",
-            label="TRUST-KVKK",
-            question="Bu ürün kişisel/veri/gizlilik tarafında hangi güven kanıtlarını göstermeden seni ikna edemez?",
-            reason="KVKK, güven ve kanıt zinciri itirazlarını zorlamak.",
-            tags=["objection", "risk"],
-        ),
-        InterviewQuestion(
-            id="q_role_fit",
-            label="ROLE-FIT",
-            question=(
-                f"Bu araştırmadaki rol kompozisyonu ({role_text}) içinde kendi rolün açısından ürünün en güçlü ve en zayıf tarafı ne?"
-            ),
-            reason="Seçilen panel rolünün cevaba yansımasını kontrol etmek.",
-            tags=["positioning", "value"],
-        ),
-        InterviewQuestion(
-            id="q_decision",
-            label="DECISION",
-            question="Bu ürün canlıya alınmadan önce tek bir şeyi değiştirme hakkın olsa neyi değiştirirdin ve neden?",
-            reason="Ürünleştirilebilir aksiyon maddesi çıkarmak.",
-            tags=["risk", "value"],
-        ),
-        InterviewQuestion(
-            id="q_psm_cheap",
-            label="PSM-TOO-CHEAP",
-            question=(
-                f"Eğer bu ürün aylık hangi fiyata düşse 'bu kadar ucuzsa kalitesine güvenemem' dersin? "
-                f"Hem çok ucuz bulacağın hem de 'ucuz ama makul' bulacağın TL rakamlarını söyler misin?"
-            ),
-            reason="Van Westendorp PSM: 'too cheap' ve 'cheap/acceptable' eşiğini TL bazında tespit etmek.",
-            tags=["pricing"],
-        ),
-        InterviewQuestion(
-            id="q_psm_expensive",
-            label="PSM-TOO-EXPENSIVE",
-            question=(
-                f"Bu ürün aylık hangi fiyata ulaşırsa 'pahalı ama yine de düşünebilirim' dersin, "
-                f"hangi fiyatta 'kesinlikle almam' kararı verirsin? TL cinsinden belirt."
-            ),
-            reason="Van Westendorp PSM: 'expensive' ve 'too expensive' eşiğini TL bazında tespit etmek.",
-            tags=["pricing"],
-        ),
-        InterviewQuestion(
-            id="q_brand_unaided",
-            label="BRAND-UNAIDED",
-            question=(
-                f"{category} kategorisinde bir ürün veya hizmet arayışına girseydin "
-                f"aklına ilk gelen 2-3 marka ya da çözüm hangisi olurdu?"
-            ),
-            reason="Yardımsız marka bilinirliği (unaided recall) — rakip konumlandırması için.",
-            tags=["positioning"],
-        ),
-    ]
+    # Beğenilen soruları filtrele
+    liked_questions = [q for q in all_questions if q.get("is_liked")]
+    if not liked_questions:
+        liked_questions = all_questions
 
-    # Marka sağlığı soruları: rakip varsa ekle
-    if brief.competitors:
-        comp_str = ", ".join(brief.competitors[:3])
+    # 2. Seçilen soruları brief'e uyarlamak için LLM kullan (Opsiyonel ama kaliteli sonuç verir)
+    # Performans için LLM'e tüm set yerine en alakalı 5 soruyu uyarlamasını söyleyebiliriz.
+    # Şimdilik DB'deki metni doğrudan uyarlayarak statik InterviewQuestion nesnelerine çevirelim.
+    # purpose_context alanında tagler tutuluyor (örn: "pain_point, objection")
+    
+    script = []
+    for i, q in enumerate(liked_questions[:6]): # Max 6 soru
+        # Etiketleri parçala
+        tags_raw = q.get("purpose_context", "value")
+        tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
+        if not tags:
+            tags = ["value"]
+            
+        # Soru metni içine '{category}' vb. geçiyorsa formatla, geçmiyorsa LLM adaptasyonu simülasyonu yap
+        # Gerçek bir LLM adaptasyonu:
+        # Ancak burada hız için basit replace yapıyoruz, LLM promptlarında bu zaten adapte ediliyor.
+        q_text = q["question"].replace("{category}", category).replace("{expected_price}", expected_price)
+        
         script.append(
             InterviewQuestion(
-                id="q_brand_association",
-                label="BRAND-ASSOCIATION",
-                question=(
-                    f"{comp_str} markalarını düşününce aklına gelen ilk 2-3 kelime nedir? "
-                    f"Bu markalar sende hangi duyguyu çağrıştırıyor?"
-                ),
-                reason="Marka çağrışım haritası — rakibe karşı duygusal konumlandırma tespiti.",
-                tags=["positioning"],
+                id=f"q_db_{i}",
+                label=tags[0].upper(),
+                question=q_text,
+                reason="DB Curated Pool",
+                tags=tags,
             )
         )
+        
+    return script
 
-    # Keşif kanalı sorusu: her araştırmaya dahil
-    script.append(
-        InterviewQuestion(
-            id="q_channel",
-            label="CHANNEL",
-            question=(
-                f"Bu tür bir ürünü/hizmeti keşfetmek için genellikle hangi kanalı kullanırsın: "
-                f"sosyal medya, arama motoru (Google/Yandex), arkadaş tavsiyesi, haber/blog, "
-                f"uygulama mağazası veya başka bir yol mu?"
-            ),
-            reason="Hedef kitle için en etkili keşif ve satın alma kanalını tespit etmek.",
-            tags=["positioning"],
-        )
-    )
 
     if brief.questions:
         for index, question in enumerate(brief.questions[:4], start=1):
@@ -605,17 +524,32 @@ def generate_personas(brief: ResearchBrief, panel_roles: list[PanelRole] | None 
     ]
 
 def generate_personas_from_roles(brief: ResearchBrief, panel_roles: list[PanelRole], model: ResearchModel | None = None) -> list[Persona]:
+    from packages.research_engine.matrix import allocate_cohort_matrix
+    import json
+    import uuid
+
     market = brief.market or "Türkiye"
     personas: list[Persona] = []
     
+    # Kotaların hesaplanması için sadece LLM ile üretileceklerin (needed_count) toplamını bulalım
+    total_needed = 0
+    role_needs = []
     for role in panel_roles:
         if role.count <= 0:
             continue
-            
-        # 1. Try to get from pool
         pooled_data = get_personas_from_pool_by_role(role.role, limit=role.count)
-        
-        needed_count = role.count - len(pooled_data)
+        needed = role.count - len(pooled_data)
+        role_needs.append({"role": role, "pooled": pooled_data, "needed": needed})
+        total_needed += needed
+
+    # Matris Kotalarını (Option A) hesapla
+    matrix_allocations = allocate_cohort_matrix(total_needed)
+    allocation_idx = 0
+
+    for item in role_needs:
+        role = item["role"]
+        pooled_data = item["pooled"]
+        needed_count = item["needed"]
         
         # Load pooled personas
         for data in pooled_data:
@@ -638,18 +572,38 @@ def generate_personas_from_roles(brief: ResearchBrief, panel_roles: list[PanelRo
                     origin_country=data["origin_country"],
                     bio=data["bio"],
                     attributes=data["attributes"],
-                    traits=data["traits"]
+                    traits=data["traits"],
+                    big_five=data.get("big_five", {})
                 )
             )
             
         if needed_count > 0:
             if model:
-                # LLM based generation
+                # Bu role atanacak matris kotalarını listeden çek
+                role_allocations = matrix_allocations[allocation_idx : allocation_idx + needed_count]
+                allocation_idx += needed_count
+                
+                # Allocation'ları prompt'a hard constraint olarak göm
+                constraints_text = ""
+                for i, alloc in enumerate(role_allocations):
+                    bf = alloc["big_five_constraints"]
+                    constraints_text += (
+                        f"Persona {i+1}:\n"
+                        f"- Stance: {alloc['stance']}\n"
+                        f"- SES Grubu: {alloc['ses_group']}\n"
+                        f"- Big Five Sınırları: Openness ({bf.get('openness')}), Conscientiousness ({bf.get('conscientiousness')}), "
+                        f"Extroversion ({bf.get('extroversion')}), Agreeableness ({bf.get('agreeableness')}), Neuroticism ({bf.get('neuroticism')})\n\n"
+                    )
+
                 system = "Sen App-Q için dinamik persona üreticisisin. İstenilen rolünde, Türkiye pazarında inandırıcı, spesifik bir persona JSON'u üret. JSON dışında hiçbir şey yazma."
                 prompt = (
-                    f"Araştırma Brief'i: {brief.idea}\n"
+                    f"Kategori: {brief.category or 'genel'}\n"
+                    f"Pazar: {brief.market or 'Türkiye'}\n"
+                    f"Hedef kullanıcı grubu: {', '.join(brief.target_users) if brief.target_users else 'genel tüketici'}\n"
                     f"Rol: {role.role} (Gerekçe: {role.why})\n"
                     f"Üretilecek Persona Sayısı: {needed_count}\n\n"
+                    "LÜTFEN AŞAĞIDAKİ MATRİS KISITLARINA (HARD CONSTRAINTS) KESİNLİKLE UY:\n"
+                    f"{constraints_text}"
                     "Lütfen aşağıdaki yapıda bir JSON listesi döndür:\n"
                     "[\n"
                     "  {\n"
@@ -657,11 +611,11 @@ def generate_personas_from_roles(brief: ResearchBrief, panel_roles: list[PanelRo
                     "    \"age\": 30,\n"
                     "    \"city\": \"Türkiye şehri\",\n"
                     "    \"segment\": \"Pazar segmenti\",\n"
-                    "    \"stance\": \"Innovator, EarlyAdopter, Mainstream, Laggard veya Skeptic\",\n"
+                    "    \"stance\": \"Matriste atanan Stance\",\n"
                     "    \"price_sensitivity\": 7,\n"
                     "    \"digital_confidence\": 8,\n"
-                    "    \"ses_group\": \"AB, C1, C2 veya DE (TÜAD 2025)\",\n"
-                    "    \"respondent_type\": \"potential_customer, competitor_user, churned_user, decision_maker veya individual_user\",\n"
+                    "    \"ses_group\": \"Matriste atanan SES\",\n"
+                    "    \"respondent_type\": \"potential_customer, competitor_user, vs.\",\n"
                     "    \"settlement_type\": \"kentsel, banliyö veya kırsal\",\n"
                     "    \"context\": \"Kısa bağlam\",\n"
                     "    \"goals\": [\"hedef 1\"],\n"
@@ -808,23 +762,24 @@ def run_interviews(
             f"Bilgi sınırı: {persona.knowledge_boundary}",
         ]
         for script_question in script:
-            # Basit ACT-R cross-turn tutarlılık notu — son 2 yanıtı özetle
-            # Kaynak: engineering-notes.md §4 — 'yoksul adamın ACT-R'ı'
+            # ACT-R base-level learning yaklaşımı — sqrt-decay, Cowan limit=4
+            # Grounded Simulation §4.4: Ai = ln(Σ t_j^-d) + cue_overlap + ε
+            # Yoksul adamın ACT-R'ı v2: uzak tur kısa özet, yakın tur uzun özet
             turn_memory = ""
             if turns:
-                recent = turns[-2:]
-                summaries = [f"[{t.tags[0] if t.tags else '?'}] {t.answer[:80].strip()}..." for t in recent]
-                turn_memory = "\nSon yanıtlarından tutarlılık notu:\n" + "\n".join(summaries)
+                window = turns[-4:]  # Cowan: max 4 öğe
+                weighted_lines = []
+                for i, t in enumerate(reversed(window)):
+                    distance = i + 1  # 1=en yakın, 4=en uzak
+                    weight = 1.0 / (distance ** 0.5)  # sqrt-decay: 1.0, 0.71, 0.58, 0.50
+                    tag = t.tags[0] if t.tags else "?"
+                    length = max(40, int(120 * weight))  # Yakın tur uzun, uzak tur kısa
+                    weighted_lines.append(
+                        f"[{tag}, ð=önem {weight:.2f}] {t.answer[:length].strip()}..."
+                    )
+                turn_memory = "\nACT-R Bellek (son 4 tur, sönümlü):\n" + "\n".join(reversed(weighted_lines))
 
             prompt = (
-                f"Araştırma brief'i: {brief.idea}\n"
-                f"Hedef kullanıcılar: {', '.join(brief.target_users) or 'Belirtilmedi'}\n"
-                f"Persona: {persona.name}, {persona.age}, {persona.city}, {persona.segment}\n"
-                f"Duruş: {persona.stance}\n"
-                f"SES Grubu: {persona.ses_group} ({SES_PROFILES.get(persona.ses_group, {}).get('profile', '')})\n"
-                f"Katılımcı Tipi: {persona.respondent_type}\n"
-                f"Yerleşim: {persona.settlement_type}\n"
-                f"Fiyat hassasiyeti: {persona.price_sensitivity}/10\n"
                 f"Dijital özgüven: {persona.digital_confidence}/10\n"
                 f"Kullanım sıklığı: {persona.usage_frequency}\n"
                 f"Marka sadakati: {persona.brand_loyalty}/10\n"
@@ -871,7 +826,9 @@ def run_interviews_stream(
     for persona in personas:
         # ELEPHANT anti-sycophancy: persona'ya özgü sistem promptu (stream)
         # Kaynak: Akademik Sentez Raporu §Sütun 4; build_elephant_system_prompt()
-        base_system = db_prompt if db_prompt else build_elephant_system_prompt(persona)
+        original_system = db_prompt if db_prompt else build_elephant_system_prompt(persona)
+        base_system = original_system
+        ewma_score = 1.0  # Drift skoru başlangıcı
 
         yield ("persona_start", {"persona": persona})
         turns: list[InterviewTurn] = []
@@ -898,26 +855,27 @@ def run_interviews_stream(
                     turn_memory = "\nSon yanıtlarından tutarlılık notu:\n" + "\n".join(summaries)
 
                 prompt = (
-                    f"Araştırma brief'i: {brief.idea}\n"
-                    f"Hedef kullanıcılar: {', '.join(brief.target_users) or 'Belirtilmedi'}\n"
-                    f"Persona: {persona.name}, {persona.age}, {persona.city}, {persona.segment}\n"
-                    f"Duruş: {persona.stance}\n"
-                    f"SES Grubu: {persona.ses_group} ({SES_PROFILES.get(persona.ses_group, {}).get('profile', '')})\n"
-                    f"Katılımcı Tipi: {persona.respondent_type}\n"
-                    f"Yerleşim: {persona.settlement_type}\n"
-                    f"Fiyat hassasiyeti: {persona.price_sensitivity}/10\n"
-                    f"Dijital özgüven: {persona.digital_confidence}/10\n"
-                    f"Kullanım sıklığı: {persona.usage_frequency}\n"
-                    f"Marka sadakati: {persona.brand_loyalty}/10\n"
-                    f"Bağlam: {persona.context}\n"
-                    f"Hedefler: {', '.join(persona.goals)}\n"
-                    f"İtirazlar: {', '.join(persona.objections)}\n"
-                    f"Bilgi sınırı: {persona.knowledge_boundary}\n"
-                    f"{turn_memory}\n"
-                    f"Soru etiketi: {script_question.label}\n"
-                    f"Soru: {script_question.question}\n"
-                    "Kısa, somut ve Türkiye pazarı gerçeklerine uygun cevap ver."
-                )
+                f"[KİMLİĞİN]\n"
+                f"{persona.name}, {persona.age} yaş, {persona.city} — {persona.segment}\n"
+                f"Ekonomik Grup: {persona.ses_group} ({SES_PROFILES.get(persona.ses_group, {}).get('profile', '')})\n"
+                f"Tutum: {persona.stance} | Fiyat Hassasiyeti: {persona.price_sensitivity}/10 | Dijital Özgüven: {persona.digital_confidence}/10\n"
+                f"Katılımcı Tipi: {persona.respondent_type} | Yerleşim: {persona.settlement_type}\n"
+                f"Bağlam: {persona.context}\n"
+                f"Hedeflerin: {', '.join(persona.goals)}\n"
+                f"İtirazların: {', '.join(persona.objections)}\n"
+                f"Bilgi Sınırın: {persona.knowledge_boundary}\n"
+                f"{turn_memory}\n\n"
+                f"[ARAŞTIRMA KONUSU]\n"
+                f"{brief.idea}\n\n"
+                f"[SORU — {script_question.label}]\n"
+                f"{script_question.question}\n\n"
+                f"[GÖREV]\n"
+                f"Yukarıdaki kimliğine girerek bu soruyu yanıtla.\n"
+                f"- 2-4 cümle, somut, birinci tekil şahıs.\n"
+                f"- Türkiye gerçeklerine bağlı kal (TL, KVKK, taksit, kargo, güven).\n"
+                f"- Önceki cevaplarınla çelişme; tutarlı bir karakter ol.\n"
+                f"- Dürüst ol: endişelerin varsa gizleme. Ürünü beğenmek zorunda değilsin."
+            )
                 
                 full_answer = ""
                 if hasattr(model, "generate_stream"):
@@ -949,6 +907,17 @@ def run_interviews_stream(
                         quality_flags=quality_flags,
                     )
                     turns.append(turn)
+                    
+                    # EWMA Hesaplaması ve Auto-Repair (Drift Tamiri)
+                    turn_quality = calculate_turn_quality(quality_flags)
+                    ewma_score = calculate_ewma(turn_quality, ewma_score)
+                    consistency_notes.append(f"Turn {len(turns)} EWMA: {ewma_score:.2f}")
+                    
+                    if ewma_score < 0.65:
+                        base_system = original_system + "\n\n[SİSTEM UYARISI: KALİTE DÜŞTÜ] Önceki yanıtların zayıfladı. Karakterinden kayıyorsun. Lütfen kısa, somut ve Türkiye gerçeklerine uygun bir Türk kullanıcısı gibi cevap ver. Asistan olduğunu ASLA belli etme."
+                    elif ewma_score >= 0.80:
+                        base_system = original_system # Kalite düzeldi, uyarıyı kaldır
+
                     yield ("question_end", {"persona": persona, "question": script_question, "turn": turn})
                     break
                     

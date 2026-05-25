@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import { toast } from "sonner";
 import {
@@ -26,6 +25,8 @@ const PLANS = [
     features: [
       "2 araştırma / ay",
       "3 persona",
+      "Adversarial Review",
+      "RFI Skoru",
       "Temel rapor",
     ],
     locked: [
@@ -46,6 +47,8 @@ const PLANS = [
     features: [
       "10 araştırma / ay",
       "5 persona",
+      "Adversarial Review",
+      "RFI Skoru",
       "PDF rapor export",
       "Gerçek zamanlı stream",
       "SES cross-tab tablosu",
@@ -68,10 +71,9 @@ const PLANS = [
       "7 persona",
       "A/B Test simülasyonu",
       "B2B persona modu",
-      "Adversarial Review",
-      "Research Fidelity Index",
       "Marka Sağlığı analizi",
       "PDF export & SES cross-tab",
+      "7/24 Öncelikli destek",
     ],
     locked: [],
   },
@@ -80,7 +82,6 @@ const PLANS = [
 // ─── Upgrade Page ─────────────────────────────────────────────────────────────
 
 export default function UpgradePage() {
-  const router = useRouter();
   const { plan, loading } = useClientPlan();
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
   const [selected, setSelected] = useState<string | null>(null);
@@ -107,7 +108,7 @@ export default function UpgradePage() {
       return;
     }
     try {
-      const res = await fetch("http://localhost:8000/api/client/upgrade-plan", {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/client/upgrade-plan", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -140,13 +141,13 @@ export default function UpgradePage() {
         <div className="h-16 w-16 rounded-full bg-[#edfce9] flex items-center justify-center mb-6 shadow-sm">
           <Check size={32} className="text-[#003c33]" />
         </div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-[#17171c] mb-2">
+        <h2 className="text-2xl font-extrabold tracking-tight text-[#17171c] mb-2">
           Plan Güncellendi!
-        </h1>
+        </h2>
         <p className="text-muted-foreground mb-2">
           <span className="font-semibold text-[#003c33]">{selected}</span> planına geçildi.
         </p>
-        <p className="text-sm text-muted-foreground">Dashboard'a yönlendiriliyorsunuz...</p>
+        <p className="text-sm text-muted-foreground">Dashboard&apos;a yönlendiriliyorsunuz...</p>
       </div>
     );
   }
@@ -167,7 +168,7 @@ export default function UpgradePage() {
           <ArrowLeft size={15} /> Geri dön
         </button>
 
-        <h1 className="text-2xl font-extrabold tracking-tight mb-1">Planı Onayla</h1>
+        <h2 className="text-2xl font-extrabold tracking-tight mb-1">Planı Onayla</h2>
         <p className="text-muted-foreground text-sm mb-8">
           {currentPlan} → <span className="font-semibold text-[#003c33]">{selectedPlan.name}</span>
         </p>
@@ -260,7 +261,7 @@ export default function UpgradePage() {
           href="/client"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
-          <ArrowLeft size={15} /> Dashboard'a dön
+          <ArrowLeft size={15} /> Dashboard&apos;a dön
         </Link>
 
         <div className="mb-8">

@@ -123,7 +123,7 @@ export default function NewResearchWizard() {
   const abTestLocked = !plan.features.ab_test;
 
   const [researchMode, setResearchMode] = useState<"research" | "ab_test">("research");
-  const [modeConfirmed, setModeConfirmed] = useState(false);
+  const [stage, setStage] = useState<"mode" | "chat" | "personas" | "simulating">("mode");
 
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -133,6 +133,10 @@ export default function NewResearchWizard() {
   const [isReady, setIsReady] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Persona Stage State
+  const [matchedRoles, setMatchedRoles] = useState<{role: string, why: string, count: number}[]>([]);
+  const [isMatching, setIsMatching] = useState(false);
+
   // Scroll to bottom on new message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -140,12 +144,12 @@ export default function NewResearchWizard() {
 
   // Kick off with Defne's greeting after mode is confirmed
   useEffect(() => {
-    if (!modeConfirmed) return;
+    if (stage !== "chat") return;
     const greeting = researchMode === "ab_test"
       ? "Merhaba! Ben Defne. A/B test simülasyonu için buradayım. Hangi iki varyantı karşılaştırmak istiyorsunuz? Önce ürün/hizmet fikrinizi kısaca anlatın."
       : "Merhaba! Ben Defne — kıdemli pazar araştırması mimarınız. Ürün veya hizmet fikrinizi anlatın. Adım adım ihtiyacınız olan tüm araştırma verisini birlikte çıkaralım.";
     setMessages([{ role: "assistant", content: greeting }]);
-  }, [modeConfirmed, researchMode]);
+  }, [stage, researchMode]);
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -197,53 +201,73 @@ export default function NewResearchWizard() {
     }
   };
 
-  const handleStartResearch = async () => {
+  const handleProceedToPersonas = async () => {
     if (!brief.idea && !brief.title) {
       toast.error("Brief henüz tamamlanmadı.");
       return;
     }
+    
+    setIsMatching(true);
+    setStage("personas"); // Transition to Persona stage with loading state
+    
     const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
     try {
-      const res = await fetch("http://localhost:8000/api/client/plan", {
+      const res = await fetch("http://localhost:8000/api/client/studio/match-personas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(username ? { "X-Username": username } : {}),
+        },
+        body: JSON.stringify(brief),
+      });
+      
+      if (!res.ok) throw new Error("Persona eşleştirme hatası");
+      const data = await res.json();
+      
+      const roles = (data.matched_roles || []).map((r: any) => ({
+        role: r.role,
+        why: r.why,
+        count: 2 // Default 2 persons per role
+      }));
+      setMatchedRoles(roles);
+    } catch (err) {
+      toast.error("Persona havuzundan eşleştirme yapılamadı. Lütfen tekrar deneyin.");
+      setStage("chat"); // Revert if failed
+    } finally {
+      setIsMatching(false);
+    }
+  };
+
+  const handleStartSimulation = async () => {
+    setStage("simulating");
+    const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
+    try {
+      const res = await fetch("http://localhost:8000/api/client/studio/simulate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(username ? { "X-Username": username } : {}),
         },
         body: JSON.stringify({
+          brief: brief.idea || brief.title || "",
           category: brief.category || (researchMode === "ab_test" ? "A/B Test" : "Genel"),
-          title: brief.title || "Araştırma",
-          context: brief.idea || "",
-          brand: "Clarere",
-          budget: "Standart",
-          target_users: brief.target_users || [],
-          competitors: brief.competitors || [],
-          expected_price: brief.expected_price || null,
-          sales_channel: brief.sales_channel || null,
-          success_metric: brief.success_metric || null,
-          variant_a: brief.variant_a || null,
-          variant_b: brief.variant_b || null,
-          questions: brief.questions || [],
+          pricing: brief.expected_price || "Bilinmiyor",
+          panel_roles: matchedRoles.map(r => ({ role: r.role, why: r.why, count: r.count }))
         }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.detail || `Sunucu hatası: ${res.status}`);
+        throw new Error(`Sunucu hatası: ${res.status}`);
       }
-      toast.success("Araştırma planı oluşturuldu! Yönlendiriliyorsunuz...");
+      toast.success("Araştırma simülasyonu başlatıldı! Yönlendiriliyorsunuz...");
       router.push("/client");
     } catch (err) {
-      const isNetwork = err instanceof TypeError;
-      toast.error(
-        isNetwork
-          ? "Araştırma motoru şu an ulaşılamıyor. Sayfayı yenileyin veya birkaç saniye bekleyip tekrar deneyin."
-          : err instanceof Error ? err.message : "Bir hata oluştu."
-      );
+      toast.error("Araştırma motoru ulaşılamıyor.");
+      setStage("personas");
     }
   };
 
   // ── STEP 0: Mode Selection ──────────────────────────────────────────────────
-  if (!modeConfirmed) {
+  if (stage === "mode") {
     return (
       <div className="p-4 sm:p-8 max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div>
@@ -314,7 +338,7 @@ export default function NewResearchWizard() {
         <Button
           size="lg"
           disabled={researchMode === "ab_test" && abTestLocked}
-          onClick={() => setModeConfirmed(true)}
+          onClick={() => setStage("chat")}
           className="w-full gap-2 bg-[#17171c] hover:opacity-85 text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Defne ile Başla
@@ -327,6 +351,111 @@ export default function NewResearchWizard() {
             <Link href="/client/upgrade" className="text-accent underline underline-offset-2 font-medium">Pro planında</Link>
             {" "}kullanılabilir.
           </p>
+        )}
+      </div>
+    );
+  }
+
+  // ── STEP 2: Persona Selection ───────────────────────────────────────────────
+  if (stage === "personas" || stage === "simulating") {
+    return (
+      <div className="p-4 sm:p-8 max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Hedef Kitle Seçimi</h1>
+          <p className="text-muted-foreground mt-1">Briefinize uygun veritabanı personaları eşleştirildi. Kaç kişi ile görüşmek istediğinizi seçin.</p>
+        </div>
+
+        {isMatching ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+            <Loader2 size={32} className="animate-spin text-[#ff7759]" />
+            <div className="text-[#003c33] font-medium animate-pulse">Persona havuzundan eşleştirmeler yapılıyor...</div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border border-[#d9d9dd] shadow-sm overflow-hidden">
+              <div className="p-4 bg-[#f5f4f1] border-b border-[#d9d9dd]">
+                <h3 className="font-bold text-[#003c33] flex items-center gap-2">
+                  <Users size={18} />
+                  Önerilen Persona Grupları
+                </h3>
+              </div>
+              <div className="p-4 space-y-4">
+                {matchedRoles.length === 0 ? (
+                  <div className="text-sm text-muted-foreground italic text-center py-4">
+                    Uygun persona bulunamadı. Lütfen daha detaylı bir brief girin.
+                  </div>
+                ) : (
+                  matchedRoles.map((role, idx) => (
+                    <div key={idx} className="flex flex-col sm:flex-row gap-4 items-start sm:items-center p-4 rounded-xl border border-[#d9d9dd] bg-[#faf9f7] hover:border-[#17171c] transition-colors">
+                      <div className="flex-1">
+                        <div className="font-bold text-[#212121]">{role.role}</div>
+                        <div className="text-sm text-muted-foreground mt-1">{role.why}</div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 bg-white p-1 rounded-lg border border-[#d9d9dd]">
+                        <button
+                          type="button"
+                          className="w-8 h-8 flex items-center justify-center rounded bg-[#f5f4f1] text-[#212121] hover:bg-[#17171c] hover:text-white transition-colors disabled:opacity-50"
+                          disabled={role.count <= 0 || stage === "simulating"}
+                          onClick={() => {
+                            const newRoles = [...matchedRoles];
+                            newRoles[idx].count = Math.max(0, role.count - 1);
+                            setMatchedRoles(newRoles);
+                          }}
+                        >
+                          -
+                        </button>
+                        <span className="w-6 text-center font-bold tabular-nums">{role.count}</span>
+                        <button
+                          type="button"
+                          className="w-8 h-8 flex items-center justify-center rounded bg-[#f5f4f1] text-[#212121] hover:bg-[#17171c] hover:text-white transition-colors disabled:opacity-50"
+                          disabled={role.count >= 10 || stage === "simulating"}
+                          onClick={() => {
+                            const newRoles = [...matchedRoles];
+                            newRoles[idx].count = Math.min(10, role.count + 1);
+                            setMatchedRoles(newRoles);
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4 border-t border-border">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => setStage("chat")}
+                disabled={stage === "simulating"}
+                className="px-6 border-[#d9d9dd] text-[#616161]"
+              >
+                Geri Dön
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                onClick={handleStartSimulation}
+                disabled={stage === "simulating" || matchedRoles.every(r => r.count === 0)}
+                className="flex-1 gap-2 bg-[#17171c] hover:bg-[#17171c]/90 text-white font-bold"
+              >
+                {stage === "simulating" ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Simülasyon Başlatılıyor...
+                  </>
+                ) : (
+                  <>
+                    Simülasyonu Başlat
+                    <ChevronRight size={18} />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -345,7 +474,7 @@ export default function NewResearchWizard() {
                 {researchMode === "ab_test" ? <FlaskConical size={11} /> : <BarChart2 size={11} />}
                 {researchMode === "ab_test" ? "A/B Test Modu" : "Pazar Araştırması"}
               </Badge>
-              <button onClick={() => setModeConfirmed(false)} className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2">
+              <button onClick={() => setStage("mode")} className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2">
                 Modu değiştir
               </button>
             </div>
@@ -394,17 +523,17 @@ export default function NewResearchWizard() {
             {/* Input area */}
             <div className="shrink-0 p-4 border-t border-border bg-white/90  backdrop-blur-sm">
               {isReady && (
-                <div className="mb-3 p-3 bg-[#edfce9]  border border-[#003c33]/30  rounded-xl flex items-center justify-between gap-3">
+                <div className="mb-3 p-3 bg-[#edfce9] border border-[#003c33]/30 rounded-xl flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-[#003c33] text-sm font-semibold">
                     <CheckCircle2 size={16} />
-                    Brief hazır! Araştırmayı başlatabilirsiniz.
+                    Brief hazır! Sonraki adıma geçebilirsiniz.
                   </div>
                   <Button
                     size="sm"
-                    onClick={handleStartResearch}
+                    onClick={handleProceedToPersonas}
                     className="bg-[#003c33] hover:bg-[#003c33]/85 text-white gap-2 font-semibold"
                   >
-                    Araştırmayı Başlat
+                    Devam Et
                     <ChevronRight size={14} />
                   </Button>
                 </div>

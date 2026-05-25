@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Logo from "@/components/logo";
 
 export const metadata: Metadata = {
   title: "Gizlilik Politikası & KVKK Aydınlatma Metni — Clarere",
   description:
-    "Clarere'nun kişisel verileri nasıl işlediğini, KVKK kapsamındaki haklarınızı ve veri güvenliği uygulamalarımızı öğrenin.",
+    "Clarere&apos;nun kişisel verileri nasıl işlediğini, KVKK kapsamındaki haklarınızı ve veri güvenliği uygulamalarımızı öğrenin.",
   robots: { index: true, follow: true },
 };
 
@@ -15,7 +16,7 @@ export default function PrivacyPage() {
       <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <img src="/logo.svg" alt="Clarere" className="h-8 w-auto object-contain" />
+            <Logo size={32} strokeColor="#17171c" />
             <span className="font-bold text-lg tracking-tight">Clarere</span>
           </Link>
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -38,8 +39,8 @@ export default function PrivacyPage() {
           <h2 className="text-xl font-bold">1. Veri Sorumlusu</h2>
           <p className="text-muted-foreground leading-relaxed">
             Bu aydınlatma metni, <strong className="text-foreground">Clarere</strong> platformunu işleten veri sorumlusu tarafından
-            6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") madde 10 uyarınca hazırlanmıştır.
-            Platform, Türkiye'deki kullanıcılara yapay zeka destekli sentetik pazar araştırması hizmetleri sunmaktadır.
+            6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;) madde 10 uyarınca hazırlanmıştır.
+            Platform, Türkiye&apos;deki kullanıcılara yapay zeka destekli sentetik pazar araştırması hizmetleri sunmaktadır.
           </p>
         </section>
 
@@ -67,10 +68,10 @@ export default function PrivacyPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold">3. Kişisel Verilerin İşlenme Amaçları</h2>
           <p className="text-muted-foreground leading-relaxed">
-            Kişisel verileriniz aşağıdaki amaçlarla, KVKK'nın 5. ve 6. maddelerinde belirtilen hukuki sebeplere dayanılarak işlenmektedir:
+            Kişisel verileriniz aşağıdaki amaçlarla, KVKK&apos;nın 5. ve 6. maddelerinde belirtilen hukuki sebeplere dayanılarak işlenmektedir:
           </p>
           <ul className="space-y-1 text-muted-foreground pl-4">
-            <li>• Hizmetin sunulması ve araştırma workflow'unun yürütülmesi</li>
+            <li>• Hizmetin sunulması ve araştırma workflow&apos;unun yürütülmesi</li>
             <li>• Abonelik ve plan limiti yönetimi</li>
             <li>• Kullanıcı doğrulama ve güvenlik</li>
             <li>• Hizmet kalitesinin iyileştirilmesi (anonim istatistikler)</li>
@@ -84,13 +85,13 @@ export default function PrivacyPage() {
           <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-2">
             <p className="text-foreground font-semibold">Önemli: Sentetik Persona Verileri</p>
             <p className="text-muted-foreground leading-relaxed">
-              Clarere'nun ürettiği sentetik personalar ve mülakat yanıtları, gerçek kişilere ait veriler değildir.
+              Clarere&apos;nun ürettiği sentetik personalar ve mülakat yanıtları, gerçek kişilere ait veriler değildir.
               Bu veriler, yapay zeka modelleri tarafından istatistiksel örüntüler kullanılarak üretilmiş
               kurgusal içeriklerdir. Hiçbir sentetik persona gerçek bir bireyi temsil etmez veya ona atıfta bulunmaz.
             </p>
           </div>
           <p className="text-muted-foreground leading-relaxed">
-            Araştırma brief'lerinizde gerçek kişilerin isim, iletişim bilgisi veya kimlik bilgilerini
+            Araştırma brief&apos;lerinizde gerçek kişilerin isim, iletişim bilgisi veya kimlik bilgilerini
             paylaşmamanızı tavsiye ederiz. PII (Kişisel Tanımlayıcı Bilgi) maskeleme özelliği aktif olduğunda
             sistem bu tür verileri otomatik olarak filtreler.
           </p>
@@ -132,7 +133,7 @@ export default function PrivacyPage() {
           <ul className="space-y-1 text-muted-foreground pl-4">
             <li>• HTTPS/TLS ile şifrelenmiş veri iletimi</li>
             <li>• Veritabanı erişim kontrolü ve bağlantı havuzu güvenliği</li>
-            <li>• Admin API'ye gizli anahtar (secret key) koruması</li>
+            <li>• Admin API&apos;ye gizli anahtar (secret key) koruması</li>
             <li>• Rate limiting ile kaba kuvvet saldırılarına karşı koruma</li>
             <li>• Düzenli güvenlik denetimleri</li>
           </ul>
@@ -154,7 +155,7 @@ export default function PrivacyPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold">8. KVKK Kapsamındaki Haklarınız</h2>
           <p className="text-muted-foreground leading-relaxed">
-            KVKK'nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:
+            KVKK&apos;nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
@@ -163,7 +164,7 @@ export default function PrivacyPage() {
               { hak: "Düzeltme hakkı", desc: "Yanlış/eksik verilerin düzeltilmesini isteme" },
               { hak: "Silme hakkı", desc: "Belirli koşullarda verilerinizin silinmesini talep etme" },
               { hak: "İtiraz hakkı", desc: "Otomatik işleme dayalı kararlara itiraz etme" },
-              { hak: "Şikâyet hakkı", desc: "KVKK İhlali için KVK Kurulu'na başvurma" },
+              { hak: "Şikâyet hakkı", desc: "KVKK İhlali için KVK Kurulu&apos;na başvurma" },
             ].map(({ hak, desc }) => (
               <div key={hak} className="p-3 rounded-lg border border-border space-y-1">
                 <p className="font-semibold text-sm text-foreground">{hak}</p>
@@ -203,7 +204,7 @@ export default function PrivacyPage() {
       <footer className="border-t border-border py-8 mt-16">
         <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Clarere" className="h-6 w-auto object-contain" />
+            <Logo size={24} strokeColor="#93939f" />
             <span>Clarere © 2026</span>
           </div>
           <div className="flex gap-6">

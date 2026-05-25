@@ -19,7 +19,7 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "Clarere — Yapay Zeka Destekli Sentetik Pazar Araştırması",
   description:
-    "Gerçek mülakata gerek kalmadan AI destekli sentetik panellerle ürün fikirlerinizi test edin. Rogers Diffusion + Van Westendorp + OCEAN metodolojisiyle saatler içinde içgörü.",
+    "Gerçek kullanıcıya ihtiyaç duymadan, gerçek içgörüler elde edin. Clarere, sentetik personalarla anında kullanıcı mülakatı ve A/B testi yapmanızı sağlar.",
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Clarere — Yapay Zeka Destekli Sentetik Pazar Araştırması",
     description:
-      "Gerçek mülakata gerek kalmadan AI destekli sentetik panellerle ürün fikirlerinizi test edin.",
+      "Gerçek kullanıcıya ihtiyaç duymadan, gerçek içgörüler elde edin. Clarere, sentetik personalarla anında kullanıcı mülakatı ve A/B testi yapmanızı sağlar.",
     type: "website",
     locale: "tr_TR",
     siteName: "Clarere",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Clarere — Sentetik Pazar Araştırması",
     description:
-      "Rogers Diffusion + OCEAN + Van Westendorp ile AI destekli tüketici panel simülasyonu.",
+      "Gerçek kullanıcıya ihtiyaç duymadan, gerçek içgörüler elde edin. Clarere, sentetik personalarla anında kullanıcı mülakatı ve A/B testi yapmanızı sağlar.",
     images: ["https://clarere.com/og-image.svg"],
   },
   robots: {

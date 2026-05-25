@@ -36,9 +36,26 @@ export default function ClientDashboard() {
 
   return (
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>
+      {/* ── PRESET SHARP CARBON GLOW CARD ────────────────────────────────────── */}
+      <div className="bg-[#17171c] text-white p-6 sm:p-8 rounded-[2px] border border-white/10 relative overflow-hidden shadow-lg">
+        {/* Decorative subtle ambient orange glow */}
+        <div className="absolute right-0 top-0 w-64 h-64 bg-[#ff7759]/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="space-y-2">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+              Karanlıkta kalmış her fikir, sorulmamış bir soruyla başlar.
+            </h2>
+            <p className="text-white/60 text-sm sm:text-base max-w-2xl leading-relaxed">
+              Bugün o soruları sormaya başlayın. Karşınızdaki kişi sentetik olabilir. Ama cevapları fazlasıyla gerçek.
+            </p>
+          </div>
+          <Link href="/client/new" className="shrink-0">
+            <Button className="bg-[#ff7759] hover:bg-[#ff7759]/90 text-[#17171c] font-semibold rounded-[2px] px-6 py-5 text-sm transition-all duration-300 transform hover:scale-[1.02]">
+              Yeni Araştırma Başlat
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card>

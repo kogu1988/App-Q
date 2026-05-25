@@ -193,7 +193,7 @@
   --secondary-foreground:    #17171c;
   --muted:                   #f5f4f1;
   --muted-foreground:        #93939f;
-  --accent:                  #ff7759;   /* coral — Cohere editorial accent, NO purple */
+  --accent:                  #ff7759;   /* coral — Cohere editorial accent */
   --accent-foreground:       #17171c;
   --destructive:             #b30000;
   --border:                  #d9d9dd;
@@ -388,8 +388,8 @@
   /* Scroll reveal */
   .reveal {
     opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
+    transform: translateY(16px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .reveal.visible {
     opacity: 1;
@@ -398,4 +398,83 @@
   @media (prefers-reduced-motion: reduce) {
     .reveal { opacity: 1; transform: none; transition: none; }
   }
+}
+
+/* ── CLARERE LOGO ANIMATION (SVG Artista) ────────────────────────────────── */
+svg.logo-animated .svg-elem-1 {
+  stroke-dashoffset: 2365.79052734375px;
+  stroke-dasharray: 2365.79052734375px;
+  -webkit-transition: stroke-dashoffset 1s cubic-bezier(0.47, 0, 0.745, 0.715) 0s;
+          transition: stroke-dashoffset 1s cubic-bezier(0.47, 0, 0.745, 0.715) 0s;
+}
+
+svg.logo-animated.active .svg-elem-1 {
+  stroke-dashoffset: 0;
+}
+
+svg.logo-animated .svg-elem-2 {
+  stroke-dashoffset: 755.9822368615503px;
+  stroke-dasharray: 755.9822368615503px;
+  -webkit-transition: stroke-dashoffset 1s cubic-bezier(0.47, 0, 0.745, 0.715) 0.12s;
+          transition: stroke-dashoffset 1s cubic-bezier(0.47, 0, 0.745, 0.715) 0.12s;
+}
+
+svg.logo-animated.active .svg-elem-2 {
+  stroke-dashoffset: 0;
+}
+
+svg.logo-animated .svg-elem-3 {
+  stroke-dashoffset: 504.6548245743669px;
+  stroke-dasharray: 504.6548245743669px;
+  -webkit-transition: stroke-dashoffset 1s cubic-bezier(0.47, 0, 0.745, 0.715) 0.24s;
+          transition: stroke-dashoffset 1s cubic-bezier(0.47, 0, 0.745, 0.715) 0.24s;
+}
+
+svg.logo-animated.active .svg-elem-3 {
+  stroke-dashoffset: 0;
+}
+
+/* ── DEFNE AGENT ANIMATION (SVG Artista) ─────────────────────────────────── */
+svg.agent-animated .svg-elem-1 {
+  stroke-dashoffset: 178.96920776367188px;
+  stroke-dasharray: 178.96920776367188px;
+  -webkit-transition: stroke-dashoffset 1s linear 0s;
+          transition: stroke-dashoffset 1s linear 0s;
+}
+
+svg.agent-animated.active .svg-elem-1 {
+  stroke-dashoffset: 0;
+}
+
+svg.agent-animated .svg-elem-2 {
+  stroke-dashoffset: 473.23889803846896px;
+  stroke-dasharray: 473.23889803846896px;
+  -webkit-transition: stroke-dashoffset 1s linear 0.12s;
+          transition: stroke-dashoffset 1s linear 0.12s;
+}
+
+svg.agent-animated.active .svg-elem-2 {
+  stroke-dashoffset: 0;
+}
+
+svg.agent-animated .svg-elem-3 {
+  stroke-dashoffset: 89.96459430051421px;
+  stroke-dasharray: 89.96459430051421px;
+  -webkit-transition: stroke-dashoffset 1s linear 0.24s;
+          transition: stroke-dashoffset 1s linear 0.24s;
+}
+
+svg.agent-animated.active .svg-elem-3 {
+  stroke-dashoffset: 0;
+}
+
+svg.agent-animated .svg-elem-4 {
+  stroke-dashoffset: 27.132741228718345px;
+  stroke-dasharray: 27.132741228718345px;
+  -webkit-transition: stroke-dashoffset 1s linear 0.36s;
+          transition: stroke-dashoffset 1s linear 0.36s;
+}
+
+svg.agent-animated.active .svg-elem-4 {
+  stroke-dashoffset: 0;
 }

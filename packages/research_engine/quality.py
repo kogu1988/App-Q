@@ -115,12 +115,98 @@ def detect_bias_flags(interviews: list[dict]) -> dict[str, list[str]]:
     return results
 
 
-def enrich_report_json(report_json: dict) -> dict:
-    """Enriches a report dict with quality and performance metrics."""
+def calculate_turn_quality(flags: list[str]) -> float:
+    """Tek bir turun kalitesini (0.0 - 1.0 arası) bayraklara göre hesaplar."""
+    score = 1.0
+    for flag in flags:
+        if flag in {"meta_tone", "visible_reasoning"}:
+            score -= 0.5
+        elif flag in {"too_short", "weak_skepticism"}:
+            score -= 0.3
+        else:
+            score -= 0.2
+    return max(0.0, score)
+
+
+def calculate_ewma(current_score: float, previous_ewma: float, alpha: float = 0.3) -> float:
+    """Exponentially Weighted Moving Average (EWMA) hesaplar."""
+    return alpha * current_score + (1 - alpha) * previous_ewma
+
+
+def enrich_report_json(
+    report_json: dict,
+    model: object | None = None,
+    plan_type: str = "Free",
+) -> dict:
+    """Enriches a report dict with quality, performance and fidelity metrics.
+    Adversarial review (Grounded Sim §4.5 Phase 6) only runs for Pro+ plans with a model.
+    """
     enriched = dict(report_json)
     enriched["research_quality"] = compute_research_quality(enriched)
     enriched["model_performance"] = compute_model_performance(enriched)
+    enriched["research_fidelity"] = compute_rfi(enriched)  # Grounded Sim §6.4 — RFI
+
+    # Adversarial review: plan limiti olmaksızın tüm araştırmalarda çalışır (Grounded Sim §4.5)
+    if model is not None:
+        enriched["adversarial_review"] = adversarial_review(enriched, model)
+    else:
+        enriched["adversarial_review"] = {"reviewed": False, "reason": "model eksik"}
+
     return enriched
+
+
+def adversarial_review(report_dict: dict, model: object) -> dict:
+    """Grounded Simulation §4.5 Aşama 6: Adversarial Review.
+
+    Üretilen raporu 3 boyutta eleştirel olarak inceler:
+    1. BIAS CHECK    — Herhangi bir stance sistematik olarak kayirılıyor mu?
+    2. EVIDENCE CHAIN — Bulgular yeterli kanıta dayanmış mı?
+    3. DOUBLE-SIM    — Yapay persona → yapay analiz döngüsünden hangi bulgular şüpheli?
+
+    Kaynak: Bilal (2026) Grounded Simulation §4.5
+    """
+    system = (
+        "Sen uzman bir UX araştırma metodoloji kritikisisin. "
+        "Sana bir sentetik araştırma raporunun özeti verilecek. "
+        "Raporu 3 boyutta eleştirel olarak incele:\n"
+        "1. BIAS CHECK: Herhangi bir stance (Innovator, Skeptic vb.) bulgularda sistemik olarak fazla/az temsil ediliyor mu?\n"
+        "2. EVIDENCE CHAIN: Bulgular yeterli sayıda, çeşitli stance'lardan kanıta dayanmış mı, yoksa iddia düzeyinde mi kalıyor?\n"
+        "3. DOUBLE-SIM: Yapay persona → yapay analiz döngüsünden kaynaklanabilecek, şüpheli veya aşırı güvenilir görünen bulgu var mı?\n"
+        "Her boyut için kısa, net, Turkçe özet ver. JSON formatında dön."
+    )
+    findings_summary = [
+        {
+            "title": f.get("title", ""),
+            "category": f.get("category", ""),
+            "evidence_count": len(f.get("evidence", [])),
+            "confidence": f.get("confidence", 0.5),
+        }
+        for f in report_dict.get("findings", [])[:10]  # Max 10 bulgu gönder
+    ]
+    stances_present = list({
+        ev.get("stance", "")
+        for f in report_dict.get("findings", [])
+        for ev in f.get("evidence", [])
+        if ev.get("stance")
+    })
+    prompt = (
+        f"Bulgular ({len(findings_summary)} adet): {findings_summary}\n"
+        f"Temsil edilen stance'lar: {stances_present}\n\n"
+        "Adversarial inceleme yap. JSON formatında: "
+        '{{"bias_check": "...", "evidence_chain": "...", "double_sim_warning": "...", "overall_confidence": "high/medium/low"}}'
+    )
+    try:
+        response = model.generate(system, prompt)  # type: ignore[attr-defined]
+        # JSON parse denemesi
+        import json as _json
+        start = response.find("{")
+        end = response.rfind("}")
+        if start != -1 and end != -1:
+            parsed = _json.loads(response[start:end + 1])
+            return {"reviewed": True, **parsed}
+        return {"reviewed": True, "raw": response}
+    except Exception as exc:
+        return {"reviewed": False, "error": str(exc)}
 
 
 def compute_research_quality(report_json: dict) -> dict:

@@ -18,11 +18,14 @@ import {
   CheckCircle2,
   Archive,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  ListTodo
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { PlanGate } from "@/components/plan-gate";
 import { useClientPlan } from "@/hooks/use-client-plan";
@@ -45,6 +48,13 @@ interface Persona {
   ses_group?: string;
   respondent_type?: string;
   settlement_type?: string;
+  big_five?: {
+    openness: number;
+    conscientiousness: number;
+    extroversion: number;
+    agreeableness: number;
+    neuroticism: number;
+  };
 }
 
 interface InterviewTurn {
@@ -153,7 +163,7 @@ interface StudyDetail {
 function ChannelBarChart({ data }: { data: NonNullable<StudyDetail["channel_map"]> }) {
   if (!data.length) return null;
   const maxCount = Math.max(...data.map(d => d.count));
-  const COLORS = ["#6366f1","#8b5cf6","#0ea5e9","#22c55e","#f97316","#ec4899","#f59e0b"];
+  const COLORS = ["#6366f1","#14b8a6","#0ea5e9","#22c55e","#f97316","#ec4899","#f59e0b"];
   return (
     <div className="space-y-2.5">
       {data.map((row, i) => (
@@ -232,7 +242,7 @@ function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendorp"]> }
 
   const markers = [
     { x: data.pmc, label: "PMC", color: "#6366f1" },
-    { x: data.opp, label: "OPP", color: "#7c3aed" },
+    { x: data.opp, label: "OPP", color: "#0d9488" },
     { x: data.ipp, label: "IPP", color: "#0ea5e9" },
     { x: data.pme, label: "PME", color: "#ec4899" },
   ];
@@ -326,8 +336,12 @@ export default function StudyDetailPage() {
   const [selectedPersonaIdx, setSelectedPersonaIdx] = useState<number>(0);
   const [archiving, setArchiving] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
-  // Map of turnIdx votes: { "personaIdx-turnIdx": 1 | -1 }
-  const [votes, setVotes] = useState<Record<string, number>>({});
+  // Map of turn votes: { "personaIdx-turnIdx": { vote: 1|-1, comment?: string } }
+  const [votes, setVotes] = useState<Record<string, { vote: number; comment: string }>>({});
+  // Track which turn has the comment box open
+  const [pendingComment, setPendingComment] = useState<{ key: string; vote: number; text: string } | null>(null);
+  const [followUpText, setFollowUpText] = useState("");
+  const [sendingFollowUp, setSendingFollowUp] = useState(false);
   const { plan: clientPlan } = useClientPlan();
 
   useEffect(() => {
@@ -336,7 +350,7 @@ export default function StudyDetailPage() {
     const fetchStudy = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://localhost:8000/api/client/studies/${studyId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/client/studies/${studyId}`);
         if (!res.ok) {
           if (res.status === 404) {
             throw new Error("Araştırma bulunamadı.");
@@ -364,7 +378,7 @@ export default function StudyDetailPage() {
     if (!confirm("Bu araştırmayı arşivlemek istediğinize emin misiniz? Arşivlenen araştırmalar listede görünmez.")) return;
     setArchiving(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/client/studies/${studyId}/archive`, { method: "PUT" });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/client/studies/${studyId}/archive`, { method: "PUT" });
       if (!res.ok) throw new Error();
       setIsArchived(true);
       toast.success("Araştırma arşivlendi.");
@@ -375,27 +389,66 @@ export default function StudyDetailPage() {
     }
   };
 
-  const handleFeedback = async (personaIdx: number, turnIdx: number, vote: number) => {
+  const handleFeedback = (personaIdx: number, turnIdx: number, vote: number) => {
     const key = `${personaIdx}-${turnIdx}`;
-    if (votes[key] === vote) return; // already voted
-    const personaName = study?.interviews?.[personaIdx]?.persona?.name || "unknown";
+    if (votes[key]?.vote === vote) return; // already voted same
+    // Open inline comment box
+    setPendingComment({ key, vote, text: "" });
+  };
+
+  const submitFeedback = async (key: string, vote: number, comment: string) => {
+    const [pIdx, tIdx] = key.split("-").map(Number);
+    const personaName = study?.interviews?.[pIdx]?.persona?.name || "unknown";
     try {
-      await fetch("http://localhost:8000/api/client/feedback", {
+      await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/client/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: "anonymous",
           study_id: studyId,
           item_type: "interview_turn",
-          item_id: `${personaName}-turn-${turnIdx}`,
+          item_id: `${personaName}-turn-${tIdx}`,
           vote,
-          comment: ""
+          comment: comment.trim()
         })
       });
-      setVotes(prev => ({ ...prev, [key]: vote }));
+      setVotes(prev => ({ ...prev, [key]: { vote, comment: comment.trim() } }));
+      setPendingComment(null);
       toast.success(vote === 1 ? "Olumlu oy verildi." : "Olumsuz oy verildi.");
     } catch {
       toast.error("Oy gönderilemedi.");
+    }
+  };
+
+  const handleFollowUp = async (personaId: string) => {
+    if (!followUpText.trim()) return;
+    setSendingFollowUp(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/client/studies/${studyId}/follow-up`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ persona_id: personaId, question: followUpText })
+      });
+      if (!res.ok) throw new Error("API hatası");
+      const data = await res.json();
+      
+      // Update local state to show the new turn immediately
+      setStudy(prev => {
+        if (!prev) return prev;
+        const newInterviews = [...(prev.interviews || [])];
+        const idx = newInterviews.findIndex(i => i.persona.id === personaId);
+        if (idx !== -1) {
+          newInterviews[idx].turns.push(data.turn);
+        }
+        return { ...prev, interviews: newInterviews };
+      });
+      
+      setFollowUpText("");
+      toast.success("Soru soruldu!");
+    } catch (err) {
+      toast.error("Soru sorulurken bir hata oluştu.");
+    } finally {
+      setSendingFollowUp(false);
     }
   };
 
@@ -430,7 +483,7 @@ export default function StudyDetailPage() {
       // Blockquotes / Warnings
       if (line.startsWith("> ")) {
         return (
-          <div key={idx} className="border-l-4 border-indigo-500 pl-4 py-2 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-r-md text-slate-700 italic my-4">
+          <div key={idx} className="border-l-4 border-[#1863dc] pl-4 py-2 bg-[#f1f5ff]/40 dark:bg-[#071829]/20 rounded-r-md text-slate-700 italic my-4">
             {line.replace("> ", "")}
           </div>
         );
@@ -462,7 +515,7 @@ export default function StudyDetailPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+        <Loader2 className="h-10 w-10 animate-spin text-[#1863dc]" />
         <p className="text-muted-foreground text-sm font-medium">Veriler yükleniyor, lütfen bekleyin...</p>
       </div>
     );
@@ -479,7 +532,7 @@ export default function StudyDetailPage() {
           <p className="text-muted-foreground text-sm">{error || "Geçersiz araştırma kaydı."}</p>
         </div>
         <Button onClick={() => router.push("/client")} className="w-full">
-          Dashboard'a Dön
+          Dashboard&apos;a Dön
         </Button>
       </div>
     );
@@ -524,16 +577,44 @@ export default function StudyDetailPage() {
 
           <div className="flex flex-wrap items-center gap-3">
             {isCompleted && (
-              <a 
-                href={`http://localhost:8000/api/client/studies/${studyId}/pdf`}
-                download
-                className="w-full sm:w-auto"
+              <Button 
+                className="w-full sm:w-auto btn-pill-primary gap-2"
+                onClick={async () => {
+                  const username = localStorage.getItem("appq_username");
+                  try {
+                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/client/studies/${studyId}/pdf`, {
+                      headers: username ? { "X-Username": username } : {}
+                    });
+                    if (!res.ok) {
+                      const errData = await res.json().catch(() => ({}));
+                      if (errData?.detail?.code === "PLAN_GATE" || errData?.detail?.includes("plan")) {
+                        toast.error(
+                          <div className="flex flex-col gap-1.5">
+                            <span className="font-semibold text-[13px]">Bu özellik üst paket gerektirir.</span>
+                            <span className="text-xs opacity-90">{errData?.detail?.message || "PDF çıktısı almak için planınızı yükseltmelisiniz."}</span>
+                            <Link href="/client/upgrade" className="text-xs underline font-bold mt-1">Hemen Yükselt</Link>
+                          </div>
+                        );
+                        return;
+                      }
+                      throw new Error(errData?.detail || "Rapor indirilemedi.");
+                    }
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `AppQ-Rapor-${studyId}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                  } catch (e) {
+                    toast.error("İndirme işlemi başarısız oldu.");
+                  }
+                }}
               >
-                <Button className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-medium gap-2">
-                  <Download size={16} />
-                  PDF Raporu İndir
-                </Button>
-              </a>
+                <Download size={16} />
+                PDF Raporu İndir
+              </Button>
             )}
             {!isArchived ? (
               <Button 
@@ -557,12 +638,12 @@ export default function StudyDetailPage() {
       </div>
 
       {/* 🔮 Interactive Tabs Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 bg-slate-100/80 /60 p-1.5 rounded-xl border border-border">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 bg-slate-100/80 /60 p-1.5 rounded-xl border border-border">
         <button 
           onClick={() => setActiveTab("summary")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "summary" 
-              ? "bg-white text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 /50" 
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
               : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
           }`}
         >
@@ -574,7 +655,7 @@ export default function StudyDetailPage() {
           onClick={() => setActiveTab("personas")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "personas" 
-              ? "bg-white text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 /50" 
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
               : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
           }`}
         >
@@ -583,10 +664,22 @@ export default function StudyDetailPage() {
         </button>
 
         <button 
+          onClick={() => setActiveTab("script")}
+          className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
+            activeTab === "script" 
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
+              : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
+          }`}
+        >
+          <ListTodo size={16} />
+          Senaryo
+        </button>
+
+        <button 
           onClick={() => setActiveTab("interviews")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "interviews" 
-              ? "bg-white text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 /50" 
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
               : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
           }`}
         >
@@ -598,7 +691,7 @@ export default function StudyDetailPage() {
           onClick={() => setActiveTab("report")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "report" 
-              ? "bg-white text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 /50" 
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
               : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
           }`}
         >
@@ -616,9 +709,9 @@ export default function StudyDetailPage() {
             <div className="lg:col-span-2 space-y-6">
               <Card className="shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-lg">
+                  <CardTitle className="flex items-center gap-2 text-[#1863dc] dark:text-[#4c6ee6] text-lg">
                     <Compass size={20} />
-                    Araştırma Brief'i ve Bağlam
+                    Araştırma Brief&apos;i ve Bağlam
                   </CardTitle>
                   <CardDescription>Başlangıçta tanımlanan araştırma problemi.</CardDescription>
                 </CardHeader>
@@ -663,8 +756,8 @@ export default function StudyDetailPage() {
                         <span className="text-xs font-semibold text-muted-foreground uppercase block">Test Edilen Varsayımlar (Assumptions)</span>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {plan.assumptions.map((ass: string, i: number) => (
-                            <div key={i} className="flex gap-2 p-3 bg-indigo-50/20 dark:bg-indigo-950/10 border border-indigo-100/50 dark:border-indigo-900/20 rounded-lg text-sm">
-                              <span className="font-bold text-indigo-600 dark:text-indigo-400">#{i + 1}</span>
+                            <div key={i} className="flex gap-2 p-3 bg-[#f1f5ff]/30 dark:bg-[#071829]/10 border border-[#e5e7eb]/50 dark:border-[rgba(24,99,220,0.1)] rounded-lg text-sm">
+                              <span className="font-bold text-[#1863dc] dark:text-[#4c6ee6]">#{i + 1}</span>
                               <span className="text-slate-700 ">{ass}</span>
                             </div>
                           ))}
@@ -749,7 +842,13 @@ export default function StudyDetailPage() {
 
               {/* RFI Card — Adversarial Review + Research Fidelity Index (Pro+) */}
               <PlanGate currentPlan={clientPlan.plan_type} requiredPlan="Pro" featureName="Araştırma Bütünlüğü (RFI)">
-              {study?.research_quality && (study.research_quality.warning_count !== undefined || study.research_quality.rfi !== undefined) && (
+              {study?.research_quality && (
+                study.research_quality.warning_count !== undefined ||
+                study.research_quality.rfi !== undefined ||
+                (study.research_quality.flags && study.research_quality.flags.length >= 0) ||
+                study.research_quality.summary !== undefined ||
+                (study.research_quality.phases_passed && study.research_quality.phases_passed.length >= 0)
+              ) && (
                 (() => {
                   const rq = study.research_quality!;
                   const rfi = rq.rfi ?? null;
@@ -859,25 +958,6 @@ export default function StudyDetailPage() {
                 })()
               )}
               </PlanGate>
-
-              {plan?.interview_questions && plan.interview_questions.length > 0 && (
-                <Card className="shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-base font-bold">Mülakat Soru Şablonu ({plan.interview_questions.length})</CardTitle>
-                    <CardDescription>Personaların yanıtladığı ana sorular.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-0 max-h-[300px] overflow-y-auto">
-                    <div className="divide-y divide-border/60">
-                      {plan.interview_questions.map((q: string, i: number) => (
-                        <div key={i} className="flex gap-3 p-3.5 text-xs text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
-                          <HelpCircle size={14} className="text-indigo-500 shrink-0 mt-0.5" />
-                          <span className="leading-relaxed">{q}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
             </div>
           </div>
         )}
@@ -897,18 +977,18 @@ export default function StudyDetailPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {personas.map((persona: Persona, index: number) => (
-                  <Card key={persona.id || index} className="shadow-sm border hover:border-indigo-200 dark:hover:border-indigo-900/50 hover:shadow-md transition-all duration-300 group flex flex-col justify-between overflow-hidden">
+                  <Card key={persona.id || index} className="shadow-sm border hover:border-[#e5e7eb] dark:hover:border-[rgba(24,99,220,0.35)]/50 hover:shadow-md transition-all duration-300 group flex flex-col justify-between overflow-hidden">
                     <div>
                       <div className="p-6 bg-slate-50/50 /30 border-b border-border/50 flex justify-between items-start gap-2">
                         <div className="space-y-0.5">
-                          <h3 className="font-bold text-lg text-slate-950 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          <h3 className="font-bold text-lg text-slate-950 dark:text-white group-hover:text-[#1863dc] dark:group-hover:text-[#4c6ee6] transition-colors">
                             {persona.name}
                           </h3>
                           <p className="text-xs text-muted-foreground font-semibold">
                             {persona.role_title || "Sentetik Tüketici"} • {persona.age} Yaşında
                           </p>
                         </div>
-                        <Badge className="bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400 hover:bg-indigo-50 border border-indigo-100 dark:border-indigo-900/40 text-xs">
+                        <Badge className="bg-[#f1f5ff] text-[#1863dc] dark:bg-[#071829]/20 dark:text-[#4c6ee6] hover:bg-[#f1f5ff] border border-[#e5e7eb] dark:border-[rgba(24,99,220,0.15)] text-xs">
                           {persona.segment}
                         </Badge>
                       </div>
@@ -917,37 +997,64 @@ export default function StudyDetailPage() {
                         <div className="space-y-1.5">
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Biyografi & Karakteristik</span>
                           <p className="text-slate-600 text-xs leading-relaxed italic line-clamp-3">
-                            "{persona.bio || persona.context}"
+                            &quot;{persona.bio || persona.context}&quot;
                           </p>
                         </div>
 
                         {/* Slider indicators */}
-                        <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-[10px] font-semibold">
-                              <span className="text-muted-foreground">Fiyat Hassasiyeti</span>
-                              <span className="text-slate-800 ">{persona.price_sensitivity}/5</span>
+                        <div className="space-y-3 border-t border-border pt-4">
+                          {persona.big_five ? (
+                            <>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Büyük Beşli (Big Five)</span>
+                              {[
+                                { label: "Açıklık (Openness)", value: persona.big_five.openness, color: "bg-purple-500" },
+                                { label: "Sorumluluk (Conscientiousness)", value: persona.big_five.conscientiousness, color: "bg-blue-500" },
+                                { label: "Dışadönüklük (Extroversion)", value: persona.big_five.extroversion, color: "bg-orange-500" },
+                                { label: "Uyumluluk (Agreeableness)", value: persona.big_five.agreeableness, color: "bg-teal-500" },
+                                { label: "Duygusal Denge (Neuroticism)", value: persona.big_five.neuroticism, color: "bg-rose-500" },
+                              ].map(trait => (
+                                <div key={trait.label} className="space-y-1">
+                                  <div className="flex justify-between text-[10px] font-semibold">
+                                    <span className="text-muted-foreground">{trait.label}</span>
+                                    <span className="text-slate-800 ">{trait.value}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full ${trait.color} rounded-full`} 
+                                      style={{ width: `${trait.value}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-[10px] font-semibold">
+                                  <span className="text-muted-foreground">Fiyat Hassasiyeti</span>
+                                  <span className="text-slate-800 ">{persona.price_sensitivity}/5</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-[#f1f5ff]0 rounded-full" 
+                                    style={{ width: `${(persona.price_sensitivity / 5) * 100}%` }}
+                                  />
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-[10px] font-semibold">
+                                  <span className="text-muted-foreground">Dijital Güven</span>
+                                  <span className="text-slate-800 ">{persona.digital_confidence}/5</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-blue-500 rounded-full" 
+                                    style={{ width: `${(persona.digital_confidence / 5) * 100}%` }}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-indigo-500 rounded-full" 
-                                style={{ width: `${(persona.price_sensitivity / 5) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-[10px] font-semibold">
-                              <span className="text-muted-foreground">Dijital Güven</span>
-                              <span className="text-slate-800 ">{persona.digital_confidence}/5</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-blue-500 rounded-full" 
-                                style={{ width: `${(persona.digital_confidence / 5) * 100}%` }}
-                              />
-                            </div>
-                          </div>
+                          )}
                         </div>
 
                         {/* Stance + SES details */}
@@ -969,7 +1076,7 @@ export default function StudyDetailPage() {
                                 }`}>SES {persona.ses_group}</span>
                               )}
                               {persona.respondent_type && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 border border-indigo-200 text-indigo-700 dark:bg-indigo-950/20 dark:border-indigo-800 dark:text-indigo-400">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#f1f5ff] border border-[#e5e7eb] text-[#1863dc] dark:bg-[#071829]/20 dark:border-[#1863dc]/60 dark:text-[#4c6ee6]">
                                   {({
                                     potential_customer: "Potansiyel",
                                     competitor_user: "Rakip",
@@ -988,13 +1095,13 @@ export default function StudyDetailPage() {
                           )}
                         </div>
                       </CardContent>
-                    </div>
+</div>
 
                     <div className="px-6 pb-6 pt-0 flex justify-end border-t border-border/40 mt-auto">
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-semibold gap-1.5 p-0 hover:bg-transparent"
+                        className="text-xs text-[#1863dc] dark:text-[#4c6ee6] hover:text-[#1863dc] dark:hover:text-[#4c6ee6] font-semibold gap-1.5 p-0 hover:bg-transparent"
                         onClick={() => {
                           // Find index in interviews list
                           const intIdx = interviews.findIndex((i: PersonaInterview) => i.persona?.name === persona.name);
@@ -1015,7 +1122,7 @@ export default function StudyDetailPage() {
 
             {/* SES x Stance Cross-Tab */}
             {study?.ses_cross_tab && study.ses_cross_tab.length > 0 && (
-              <Card className="shadow-sm border-indigo-100 dark:border-indigo-900/30">
+              <Card className="shadow-sm border-[#e5e7eb] dark:border-[rgba(24,99,220,0.15)]">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">SES × Duruş Çapraz Tablosu</CardTitle>
                   <CardDescription>TÜAD 2025 sosyo-ekonomik gruplara göre pazar yaklaşımı dağılımı.</CardDescription>
@@ -1052,7 +1159,7 @@ export default function StudyDetailPage() {
                                 <td key={s} className="text-center py-2 px-2">
                                   {count > 0 ? (
                                     <span className={`inline-flex w-7 h-7 rounded-full text-xs font-bold items-center justify-center ${
-                                      count === max ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 "
+                                      count === max ? "bg-[#1863dc] text-white" : "bg-slate-100 text-slate-600 "
                                     }`}>{count}</span>
                                   ) : <span className="text-muted-foreground">—</span>}
                                 </td>
@@ -1079,7 +1186,7 @@ export default function StudyDetailPage() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {study.respondent_type_summary.map(rt => (
-                      <div key={rt.respondent_type} className="p-4 border border-border rounded-xl space-y-2 hover:border-indigo-200 dark:hover:border-indigo-900/40 transition-colors">
+                      <div key={rt.respondent_type} className="p-4 border border-border rounded-xl space-y-2 hover:border-[#e5e7eb] dark:hover:border-[rgba(24,99,220,0.35)]/40 transition-colors">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-sm text-slate-800 dark:text-slate-100">{rt.label}</span>
                           <Badge variant="secondary" className="text-xs">{rt.count} kişi</Badge>
@@ -1119,122 +1226,133 @@ export default function StudyDetailPage() {
                 Bu araştırmaya ait mülakat kaydı bulunamadı.
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-                
-                {/* Side menu - Persona Selection */}
-                <div className="lg:col-span-1 space-y-2 max-h-[500px] overflow-y-auto pr-1">
-                  {interviews.map((item: PersonaInterview, idx: number) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedPersonaIdx(idx)}
-                      className={`w-full text-left p-3.5 rounded-xl border transition-all duration-300 flex items-center justify-between gap-2 ${
-                        selectedPersonaIdx === idx 
-                          ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-900/60 text-indigo-950 dark:text-indigo-200 shadow-sm" 
-                          : "bg-card hover:bg-slate-50 dark:hover:bg-slate-900 border-border text-slate-800 "
-                      }`}
-                    >
-                      <div className="space-y-1">
-                        <span className="font-bold text-sm block">
-                          {item.persona?.name || "Bilinmeyen Persona"}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground font-semibold block uppercase">
-                          {item.persona?.segment || "Sentetik Tüketici"} • {item.persona?.stance || "Görüş Bildirmemiş"}
-                        </span>
-                      </div>
-                      <Badge variant="outline" className="shrink-0 text-[10px]">
-                        {item.turns?.length || 0} Tur
-                      </Badge>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Dialogues Chat Canvas */}
-                <div className="lg:col-span-3">
-                  <Card className="shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-                    <div className="p-4 bg-slate-50 border-b border-border/80 flex items-center justify-between gap-3">
-                      <div>
-                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">
-                          Mülakat Katılımcısı: {interviews[selectedPersonaIdx]?.persona?.name}
-                        </h4>
-                        <p className="text-xs text-muted-foreground">
-                          {interviews[selectedPersonaIdx]?.persona?.role_title || "Sentetik Persona"} • {interviews[selectedPersonaIdx]?.persona?.age} Yaş • {interviews[selectedPersonaIdx]?.persona?.city}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="bg-white font-semibold text-xs text-slate-700 ">
-                        {interviews[selectedPersonaIdx]?.persona?.stance} Profil
-                      </Badge>
-                    </div>
-
-                    <div className="p-6 space-y-6 max-h-[500px] overflow-y-auto bg-slate-50/30 dark:bg-slate-950/10">
-                      {interviews[selectedPersonaIdx]?.turns?.map((turn: InterviewTurn, turnIdx: number) => (
-                        <div key={turnIdx} className="space-y-4">
-                          
-                          {/* AI Interviewer Bubble */}
-                          <div className="flex gap-3 max-w-[85%] animate-in slide-in-from-left-4 duration-200">
-                            <div className="h-8 w-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs shrink-0 select-none">
-                              Q
-                            </div>
-                            <div className="p-3.5 bg-white border border-slate-200/60 /60 rounded-2xl rounded-tl-none shadow-sm text-sm text-slate-800 leading-relaxed">
-                              {turn.question}
-                            </div>
-                          </div>
-
-                          {/* Persona Bubble + Feedback */}
-                          <div className="flex gap-3 max-w-[90%] ml-auto justify-end animate-in slide-in-from-right-4 duration-200">
-                            <div className="space-y-1.5">
-                              <div className="p-3.5 bg-gradient-to-br from-indigo-500 to-blue-600 dark:from-indigo-600 dark:to-blue-700 text-white rounded-2xl rounded-tr-none shadow-sm text-sm leading-relaxed">
-                                {turn.answer}
-                              </div>
-                              {/* Feedback voting row */}
-                              <div className="flex gap-1 justify-end">
-                                <button
-                                  onClick={() => handleFeedback(selectedPersonaIdx, turnIdx, 1)}
-                                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                                    votes[`${selectedPersonaIdx}-${turnIdx}`] === 1
-                                      ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
-                                      : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-emerald-600"
-                                  }`}
-                                >
-                                  <ThumbsUp size={12} />
-                                  İyi
-                                </button>
-                                <button
-                                  onClick={() => handleFeedback(selectedPersonaIdx, turnIdx, -1)}
-                                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                                    votes[`${selectedPersonaIdx}-${turnIdx}`] === -1
-                                      ? "bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400"
-                                      : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-red-500"
-                                  }`}
-                                >
-                                  <ThumbsDown size={12} />
-                                  Yetersiz
-                                </button>
-                              </div>
-                            </div>
-                            <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 border border-indigo-200/50 dark:border-indigo-900/40 flex items-center justify-center font-bold text-xs shrink-0 select-none mt-0.5">
-                              {interviews[selectedPersonaIdx]?.persona?.name.charAt(0) || "P"}
-                            </div>
-                          </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {interviews.map((item: PersonaInterview, idx: number) => (
+                  <Card key={idx} className="shadow-sm border hover:border-[#e5e7eb] dark:hover:border-[rgba(24,99,220,0.35)]/50 hover:shadow-md transition-all duration-300">
+                    <CardHeader className="p-5 pb-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-base">{item.persona?.name}</CardTitle>
+                          <CardDescription className="text-xs">{item.persona?.role_title || "Sentetik Tüketici"} • {item.persona?.age} Yaş</CardDescription>
                         </div>
-                      ))}
-                    </div>
-
-                    {/* Consistency insights if available */}
-                    {interviews[selectedPersonaIdx]?.consistency_notes && interviews[selectedPersonaIdx].consistency_notes!.length > 0 && (
-                      <div className="p-4 bg-amber-500/5 border-t border-amber-500/10 text-xs text-amber-800 dark:text-amber-400 space-y-1">
-                        <span className="font-bold block text-amber-900 ">Tutarlılık Değerlendirmesi:</span>
-                        <ul className="list-disc pl-4 space-y-0.5">
-                          {interviews[selectedPersonaIdx].consistency_notes!.map((note: string, noteIdx: number) => (
-                            <li key={noteIdx}>{note}</li>
-                          ))}
-                        </ul>
+                        <Badge variant="outline" className="text-[10px] bg-slate-50 dark:bg-slate-900">{item.turns?.length} Soru</Badge>
                       </div>
-                    )}
+                    </CardHeader>
+                    <CardContent className="p-5 pt-0 space-y-4">
+                      <div className="text-xs text-muted-foreground flex items-center justify-between">
+                        <span>Durum:</span>
+                        <Badge className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400">Mülakat Tamamlandı</Badge>
+                      </div>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="w-full text-xs font-semibold gap-2 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900">
+                            <MessageSquare size={14} />
+                            Transcript Görüntüle
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+                          <DialogHeader className="p-6 pb-4 border-b border-border/80 bg-slate-50 dark:bg-slate-900/50">
+                            <DialogTitle>Mülakat Transkripti: {item.persona?.name}</DialogTitle>
+                            <DialogDescription>
+                              {item.persona?.role_title} • {item.persona?.age} Yaş • {item.persona?.city} • {item.persona?.stance} Profil
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30 dark:bg-slate-950/10">
+                            {item.turns?.map((turn: InterviewTurn, turnIdx: number) => (
+                              <div key={turnIdx} className="space-y-4">
+                                {/* AI Interviewer Bubble */}
+                                <div className="flex gap-3 max-w-[85%]">
+                                  <div className="h-8 w-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs shrink-0 select-none">
+                                    Q
+                                  </div>
+                                  <div className="p-3.5 bg-white dark:bg-[#1c1c21] border border-slate-200/60 dark:border-slate-800 rounded-2xl rounded-tl-none shadow-sm text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
+                                    {turn.question}
+                                  </div>
+                                </div>
+                                {/* Persona Bubble */}
+                                <div className="flex gap-3 max-w-[90%] ml-auto justify-end">
+                                  <div className="p-3.5 bg-primary dark:bg-[#2c2c33] text-white rounded-2xl rounded-tr-none shadow-sm text-sm leading-relaxed">
+                                    {turn.answer}
+                                  </div>
+                                  <div className="h-8 w-8 rounded-full bg-[#f1f5ff] dark:bg-[#071829] text-[#1863dc] dark:text-[#4c6ee6] border border-[#e5e7eb]/50 dark:border-[rgba(24,99,220,0.15)] flex items-center justify-center font-bold text-xs shrink-0 select-none">
+                                    {item.persona?.name.charAt(0) || "P"}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <DialogFooter className="p-4 border-t border-border bg-white dark:bg-[#0c0c0f] flex flex-col gap-3 sm:justify-start">
+                            <div className="flex gap-2 w-full">
+                              <Textarea 
+                                placeholder={`${item.persona?.name} isimli personaya ekstra bir soru sorun...`}
+                                className="min-h-[60px] resize-none text-sm"
+                                value={followUpText}
+                                onChange={(e) => setFollowUpText(e.target.value)}
+                                disabled={sendingFollowUp}
+                              />
+                              <Button 
+                                onClick={() => handleFollowUp(item.persona.id)} 
+                                disabled={sendingFollowUp || !followUpText.trim()}
+                                className="h-auto px-6 font-semibold"
+                              >
+                                {sendingFollowUp ? <Loader2 className="animate-spin w-4 h-4" /> : "Sor"}
+                              </Button>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground text-center">Follow-up özelliği ile personayı daha derinlemesine analiz edebilirsiniz.</span>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </CardContent>
                   </Card>
-                </div>
-
+                ))}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* ==================== Tab: Script ==================== */}
+        {activeTab === "script" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Mülakat Senaryosu</h2>
+              <p className="text-muted-foreground text-sm">Yapay zeka moderatörünün personalara yönelttiği ana sorular.</p>
+            </div>
+
+            {(!plan?.interview_questions || plan.interview_questions.length === 0) ? (
+              <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-xl">
+                Bu araştırmaya ait senaryo kaydı bulunamadı.
+              </div>
+            ) : (
+              <Card className="shadow-sm border-[#e5e7eb] dark:border-[rgba(24,99,220,0.15)] overflow-hidden">
+                <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base">Mülakat Akışı</CardTitle>
+                      <CardDescription>Toplam {plan.interview_questions.length} soru kalıbı kullanıldı.</CardDescription>
+                    </div>
+                    <Badge variant="outline" className="bg-white dark:bg-slate-950">
+                      Salt Okunur (Read-Only)
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border/60">
+                    {plan.interview_questions.map((q: string, i: number) => (
+                      <div key={i} className="flex gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+                        <div className="h-6 w-6 rounded-full bg-[#f1f5ff] dark:bg-[#071829] text-[#1863dc] dark:text-[#4c6ee6] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                          {i + 1}
+                        </div>
+                        <div className="space-y-2 flex-1">
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-relaxed">{q}</p>
+                          <div className="flex gap-2">
+                            <Badge variant="secondary" className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500">Açık Uçlu Soru</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
         )}
@@ -1256,18 +1374,18 @@ export default function StudyDetailPage() {
                 {/* Van Westendorp PSM Card (Starter+) */}
                 <PlanGate currentPlan={clientPlan.plan_type} requiredPlan="Starter" featureName="Van Westendorp Fiyat Analizi">
                 {study?.van_westendorp && (
-                  <Card className="shadow-sm border-indigo-100 dark:border-indigo-900/30 overflow-hidden">
-                    <CardHeader className="pb-3 bg-gradient-to-r from-indigo-50/60 to-transparent dark:from-indigo-950/20">
+                  <Card className="shadow-sm border-[#e5e7eb] dark:border-[rgba(24,99,220,0.15)] overflow-hidden">
+                    <CardHeader className="pb-3 bg-[#f1f5ff]/60 dark:bg-[#071829]/20">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <CardTitle className="text-base text-indigo-700 dark:text-indigo-400">
+                          <CardTitle className="text-base text-[#1863dc] dark:text-[#4c6ee6]">
                             Van Westendorp Fiyat Hassasiyet Ölçeri (PSM)
                           </CardTitle>
                           <CardDescription className="mt-0.5">
                             Sentetik mülakat yanıtlarından çıkarılan kabul edilebilir fiyat aralığı.
                           </CardDescription>
                         </div>
-                        <Badge className="bg-indigo-600 text-white text-xs shrink-0">
+                        <Badge className="bg-[#1863dc] text-white text-xs shrink-0">
                           {study.van_westendorp.currency}
                         </Badge>
                       </div>
@@ -1276,8 +1394,8 @@ export default function StudyDetailPage() {
                       {/* Key metrics */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {[
-                          { label: "PMC", sublabel: "Alt Kabul Sınırı", value: study.van_westendorp.pmc, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900/30" },
-                          { label: "OPP", sublabel: "Optimal Fiyat", value: study.van_westendorp.opp, color: "text-violet-700 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-950/20 border-violet-100 dark:border-violet-900/30" },
+                          { label: "PMC", sublabel: "Alt Kabul Sınırı", value: study.van_westendorp.pmc, color: "text-[#1863dc] dark:text-[#4c6ee6]", bg: "bg-[#f1f5ff] dark:bg-[#071829]/20 border-[#e5e7eb] dark:border-[rgba(24,99,220,0.15)]" },
+                          { label: "OPP", sublabel: "Optimal Fiyat", value: study.van_westendorp.opp, color: "text-teal-700 dark:text-teal-400", bg: "bg-teal-50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/30" },
                           { label: "IPP", sublabel: "Beklenti Noktası", value: study.van_westendorp.ipp, color: "text-sky-600 dark:text-sky-400", bg: "bg-sky-50 dark:bg-sky-950/20 border-sky-100 dark:border-sky-900/30" },
                           { label: "PME", sublabel: "Üst Kabul Sınırı", value: study.van_westendorp.pme, color: "text-pink-600 dark:text-pink-400", bg: "bg-pink-50 dark:bg-pink-950/20 border-pink-100 dark:border-pink-900/30" },
                         ].map(m => (
@@ -1292,10 +1410,10 @@ export default function StudyDetailPage() {
                       </div>
 
                       {/* Acceptable range banner */}
-                      <div className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl text-sm">
-                        <div className="w-3 h-3 rounded-sm bg-indigo-200 dark:bg-indigo-800 shrink-0" />
+                      <div className="flex items-center gap-3 p-3 bg-[#f1f5ff] dark:bg-[#071829]/20 border border-[#e5e7eb] dark:border-[rgba(24,99,220,0.15)] rounded-xl text-sm">
+                        <div className="w-3 h-3 rounded-sm bg-[#e5e7eb] dark:bg-[rgba(24,99,220,0.25)] shrink-0" />
                         <span className="text-muted-foreground">Kabul edilebilir fiyat aralığı:</span>
-                        <span className="font-bold text-indigo-700 dark:text-indigo-400">
+                        <span className="font-bold text-[#1863dc] dark:text-[#4c6ee6]">
                           {study.van_westendorp.acceptable_range[0].toLocaleString("tr-TR")} ₺
                           {" — "}
                           {study.van_westendorp.acceptable_range[1].toLocaleString("tr-TR")} ₺

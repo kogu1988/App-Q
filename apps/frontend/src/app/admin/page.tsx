@@ -17,8 +17,154 @@ import {
   Plus, Save, Loader2, Pencil, Check, X, Code, ChevronDown, ChevronRight,
   BarChart3, Cpu, Zap, Database
 } from "lucide-react";
+import Logo from "@/components/logo";
+
+// ─── Feedback Table with Filters (E2) ───────────────────────────────────────
+
+function FeedbackTable({ feedbacks }: { feedbacks: Array<{
+  id: number; username?: string; study_id?: string; item_type?: string;
+  vote: number; comment?: string; created_at?: string;
+}> }) {
+  const [voteFilter, setVoteFilter] = useState<"all" | "like" | "dislike">("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+
+  const itemTypes = ["all", ...Array.from(new Set(feedbacks.map(f => f.item_type || "genel")))];
+
+  const filtered = feedbacks.filter(f => {
+    const voteOk = voteFilter === "all" || (voteFilter === "like" ? f.vote === 1 : f.vote === -1);
+    const typeOk = typeFilter === "all" || (f.item_type || "genel") === typeFilter;
+    return voteOk && typeOk;
+  });
+
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <CardTitle className="text-base">
+              Kullanıcı Geri Bildirimleri{" "}
+              <span className="text-muted-foreground font-normal text-sm">
+                ({filtered.length} / {feedbacks.length} kayıt)
+              </span>
+            </CardTitle>
+            <CardDescription className="text-xs mt-0.5">
+              Araştırma mülakat yanıtlarına verilen oylar ve yorumlar.
+            </CardDescription>
+          </div>
+
+          {/* Filtreler */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Oy Yönü Toggle */}
+            <div className="flex rounded-lg border border-border overflow-hidden text-xs font-semibold">
+              {(["all", "like", "dislike"] as const).map(v => (
+                <button
+                  key={v}
+                  onClick={() => setVoteFilter(v)}
+                  className={`px-3 py-1.5 transition-colors ${
+                    voteFilter === v
+                      ? v === "like"
+                        ? "bg-emerald-600 text-white"
+                        : v === "dislike"
+                        ? "bg-red-500 text-white"
+                        : "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900"
+                      : "bg-card text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  {v === "all" ? "Tümü" : v === "like" ? "👍 Beğeni" : "👎 Beğenmedi"}
+                </button>
+              ))}
+            </div>
+
+            {/* Tür Filtresi */}
+            {itemTypes.length > 2 && (
+              <select
+                value={typeFilter}
+                onChange={e => setTypeFilter(e.target.value)}
+                className="text-xs border border-border rounded-lg px-2.5 py-1.5 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-[#4c6ee6] cursor-pointer"
+              >
+                {itemTypes.map(t => (
+                  <option key={t} value={t}>
+                    {t === "all" ? "Tüm Türler" : t}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-0">
+        {filtered.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground border-t border-border text-sm">
+            {feedbacks.length === 0 ? "Henüz geri bildirim bulunmuyor." : "Seçili filtreye uygun kayıt yok."}
+          </div>
+        ) : (
+          <div className="overflow-x-auto w-full">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-[11px] uppercase tracking-wide">Tarih</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wide">Kullanıcı</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wide">Araştırma</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wide">Tür</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wide">Oy</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wide">Yorum</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map(fb => {
+                  const hasComment = fb.comment && fb.comment.trim().length > 0;
+                  return (
+                    <TableRow
+                      key={fb.id}
+                      className={hasComment ? "bg-amber-50/40 dark:bg-amber-950/10 hover:bg-amber-50/80 dark:hover:bg-amber-950/20" : undefined}
+                    >
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {fb.created_at ? new Date(fb.created_at).toLocaleString("tr-TR") : "—"}
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">{fb.username || "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono">
+                        {fb.study_id ? fb.study_id.slice(0, 10) + "…" : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px] font-semibold">
+                          {fb.item_type || "genel"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {fb.vote === 1 ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                            👍 Beğendi
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-red-500 dark:text-red-400 font-bold text-sm">
+                            👎 Beğenmedi
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-xs">
+                        {hasComment ? (
+                          <span className="inline-block text-xs bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40 rounded-md px-2 py-0.5 max-w-[200px] truncate" title={fb.comment}>
+                            {fb.comment}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 // ─── Type Definitions ────────────────────────────────────────────────────────
+
 
 interface AdminConfig {
   b2c_model?: string;
@@ -92,7 +238,7 @@ interface MetricsData {
   clients: { username: string; plan_type: string; tokens_used: number; max_tokens: number; total_simulations: number; max_simulations: number; period_simulations: number }[];
   study_stats: { total: number; avg_quality: number; with_report: number; archived: number; error_count: number };
   categories: { category: string; count: number }[];
-  models: { b2c: string; b2b: string };
+  models: { b2c: string; b2b: string; orchestrator: string };
 }
 
 interface SchemaField { key: string; type: string; required?: boolean; desc: string; }
@@ -177,12 +323,12 @@ export default function AdminPage() {
 
   const fetchAll = useCallback(() => {
     Promise.all([
-      fetch("http://localhost:8000/api/admin/config").then(r => r.json()),
-      fetch("http://localhost:8000/api/admin/clients").then(r => r.json()),
-      fetch("http://localhost:8000/api/admin/personas").then(r => r.json()),
-      fetch("http://localhost:8000/api/admin/audit_logs").then(r => r.json()),
-      fetch("http://localhost:8000/api/admin/questions").then(r => r.json()),
-      fetch("http://localhost:8000/api/admin/feedbacks").then(r => r.json()),
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/config").then(r => r.json()),
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/clients").then(r => r.json()),
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/personas").then(r => r.json()),
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/audit_logs").then(r => r.json()),
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/questions").then(r => r.json()),
+      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/feedbacks").then(r => r.json()),
     ]).then(([conf, cli, pers, lg, qs, fbs]) => {
       setConfig(conf);
       setClients(Array.isArray(cli) ? cli : []);
@@ -203,7 +349,7 @@ export default function AdminPage() {
   const saveConfig = async (key: string, value: string) => {
     setSavingConfig(key);
     try {
-      const res = await fetch("http://localhost:8000/api/admin/config", {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key, value })
@@ -221,7 +367,7 @@ export default function AdminPage() {
   const createClient = async () => {
     setSavingClient(true);
     try {
-      const res = await fetch("http://localhost:8000/api/admin/clients", {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(clientForm)
@@ -240,7 +386,7 @@ export default function AdminPage() {
 
   const updateClient = async (username: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/admin/clients/${username}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/admin/clients/${username}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -265,7 +411,7 @@ export default function AdminPage() {
   const deleteClient = async (username: string) => {
     if (!confirm(`"${username}" danışanını silmek istediğinize emin misiniz?`)) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/admin/clients/${username}`, { method: "DELETE" });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/admin/clients/${username}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       toast.success("Danışan silindi.");
       fetchAll();
@@ -277,7 +423,7 @@ export default function AdminPage() {
   // ── Question Management ─────────────────────────────────────────────────────
   const toggleLike = async (id: number, current: boolean) => {
     try {
-      await fetch(`http://localhost:8000/api/admin/questions/${id}/like?is_liked=${!current}`, { method: "PUT" });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/admin/questions/${id}/like?is_liked=${!current}`, { method: "PUT" });
       setQuestions(prev => prev.map(q => q.id === id ? { ...q, is_liked: !current } : q));
       toast.success("Beğeni güncellendi.");
     } catch {
@@ -287,7 +433,7 @@ export default function AdminPage() {
 
   const savePurpose = async (id: number) => {
     try {
-      await fetch(`http://localhost:8000/api/admin/questions/${id}/purpose?purpose=${encodeURIComponent(editPurpose)}`, { method: "PUT" });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/admin/questions/${id}/purpose?purpose=${encodeURIComponent(editPurpose)}`, { method: "PUT" });
       setQuestions(prev => prev.map(q => q.id === id ? { ...q, purpose_context: editPurpose } : q));
       setEditingQuestion(null);
       toast.success("Amaç güncellendi.");
@@ -299,7 +445,7 @@ export default function AdminPage() {
   const deleteQuestion = async (id: number) => {
     if (!confirm("Bu soruyu koleksiyondan silmek istediğinize emin misiniz?")) return;
     try {
-      await fetch(`http://localhost:8000/api/admin/questions/${id}`, { method: "DELETE" });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/admin/questions/${id}`, { method: "DELETE" });
       setQuestions(prev => prev.filter(q => q.id !== id));
       toast.success("Soru silindi.");
     } catch {
@@ -324,7 +470,7 @@ export default function AdminPage() {
         <header className="flex items-center justify-between border-b border-border pb-6">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2">
-              <img src="/logo.svg" alt="Clarere" className="h-9 w-auto object-contain" />
+              <Logo size={36} strokeColor="#17171c" />
               <span className="font-semibold text-base text-[#17171c]">Clarere</span>
             </Link>
             <div>
@@ -334,59 +480,61 @@ export default function AdminPage() {
           </div>
         </header>
 
-        <Tabs defaultValue="clients" className="w-full">
-          <TabsList className="grid w-full grid-cols-8 bg-muted p-1 rounded-lg">
-            <TabsTrigger value="clients" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <Users size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Danışanlar</span>
+        <Tabs defaultValue="clients" orientation="vertical" className="flex flex-col md:flex-row gap-6 w-full">
+          <TabsList className="flex flex-col h-auto w-full md:w-64 bg-muted p-2 rounded-lg gap-2 justify-start items-stretch">
+            <TabsTrigger value="clients" className="justify-start px-4 py-2.5 w-full">
+              <Users size={16} className="mr-3" />
+              <span>Danışanlar</span>
             </TabsTrigger>
-            <TabsTrigger value="config" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <Settings size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Yapılandırma</span>
+            <TabsTrigger value="config" className="justify-start px-4 py-2.5 w-full">
+              <Settings size={16} className="mr-3" />
+              <span>Yapılandırma</span>
             </TabsTrigger>
-            <TabsTrigger value="personas" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <ListOrdered size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Personalar</span>
+            <TabsTrigger value="personas" className="justify-start px-4 py-2.5 w-full">
+              <ListOrdered size={16} className="mr-3" />
+              <span>Personalar</span>
             </TabsTrigger>
-            <TabsTrigger value="questions" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <MessageSquare size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Soru Koleksiyonu</span>
+            <TabsTrigger value="questions" className="justify-start px-4 py-2.5 w-full">
+              <MessageSquare size={16} className="mr-3" />
+              <span>Soru Koleksiyonu</span>
             </TabsTrigger>
-            <TabsTrigger value="feedbacks" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <Heart size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Geri Bildirimler</span>
+            <TabsTrigger value="feedbacks" className="justify-start px-4 py-2.5 w-full">
+              <Heart size={16} className="mr-3" />
+              <span>Geri Bildirimler</span>
             </TabsTrigger>
-            <TabsTrigger value="logs" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <Activity size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Denetim Kayıtları</span>
+            <TabsTrigger value="logs" className="justify-start px-4 py-2.5 w-full">
+              <Activity size={16} className="mr-3" />
+              <span>Denetim Kayıtları</span>
             </TabsTrigger>
-            <TabsTrigger value="schemas" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md" onClick={() => {
+            <TabsTrigger value="schemas" className="justify-start px-4 py-2.5 w-full" onClick={() => {
               if (!schemas) {
                 setSchemasLoading(true);
-                fetch("http://localhost:8000/api/admin/schemas")
+                fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/schemas")
                   .then(r => r.json())
                   .then(d => { setSchemas(d); setBriefDefaults(d.brief_schema.defaults); setDraftQuestions(d.default_interview_questions); })
                   .catch(() => toast.error("Şemalar yüklenemedi."))
                   .finally(() => setSchemasLoading(false));
               }
             }}>
-              <Code size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Ajan Şablonları</span>
+              <Code size={16} className="mr-3" />
+              <span>Ajan Şablonları</span>
             </TabsTrigger>
-            <TabsTrigger value="metrics" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md" onClick={() => {
+            <TabsTrigger value="metrics" className="justify-start px-4 py-2.5 w-full" onClick={() => {
               if (!metrics && !metricsLoading) {
                 setMetricsLoading(true);
-                fetch("http://localhost:8000/api/admin/metrics")
+                fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/metrics")
                   .then(r => r.json())
                   .then(d => setMetrics(d))
                   .catch(() => toast.error("Metrikler yüklenemedi."))
                   .finally(() => setMetricsLoading(false));
               }
             }}>
-              <BarChart3 size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Metrikler</span>
+              <BarChart3 size={16} className="mr-3" />
+              <span>Metrikler</span>
             </TabsTrigger>
           </TabsList>
+          
+          <div className="flex-1 w-full min-w-0">
 
           {/* ══════════════ TAB: CLIENTS ══════════════ */}
           <TabsContent value="clients" className="mt-6 space-y-4">
@@ -628,21 +776,21 @@ export default function AdminPage() {
                 <CardTitle className="text-base">Sistem Prompt Editörleri</CardTitle>
                 <CardDescription>Araştırma sihirbazı, persona mülakat ve sentez raporu için LLM system promptları.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
                   { key: "wizard_prompt", label: "Araştırma Sihirbazı Promptu (Defne)" },
                   { key: "persona_interview_prompt", label: "Persona Mülakat Promptu" },
                   { key: "synthesis_prompt", label: "Sentez Raporu Promptu" },
                 ].map(({ key, label }) => (
-                  <div key={key} className="space-y-2">
+                  <div key={key} className="flex flex-col space-y-2 border border-border/50 rounded-lg p-4 bg-muted/20">
                     <Label className="font-semibold">{label}</Label>
                     <Textarea
                       id={`prompt-${key}`}
                       defaultValue={(config as Record<string, string>)[key] || ""}
-                      rows={5}
-                      className="text-sm font-mono bg-[#f5f4f1] "
+                      rows={8}
+                      className="text-sm font-mono bg-[#f5f4f1] flex-1 resize-none"
                     />
-                    <div className="flex justify-end">
+                    <div className="flex justify-end pt-2">
                       <Button
                         size="sm"
                         disabled={savingConfig === key}
@@ -650,7 +798,7 @@ export default function AdminPage() {
                           const el = document.getElementById(`prompt-${key}`) as HTMLTextAreaElement;
                           if (el) saveConfig(key, el.value);
                         }}
-                        className="gap-2 bg-[#ff7759] text-white hover:bg-[#ff7759]/90"
+                        className="gap-2 bg-[#ff7759] text-[#edfce9] hover:bg-[#ff7759]/90 w-full"
                       >
                         {savingConfig === key ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                         Promptu Kaydet
@@ -771,7 +919,7 @@ export default function AdminPage() {
 
                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                           {q.research_category && <Badge variant="outline" className="text-[10px]">{q.research_category}</Badge>}
-                          {q.research_title && <span>"{q.research_title}"</span>}
+                          {q.research_title && <span>&quot;{q.research_title}&quot;</span>}
                           {!q.is_liked && <Badge variant="secondary" className="text-[10px] text-[#93939f]">Pasif (simülasyonda kullanılmıyor)</Badge>}
                         </div>
 
@@ -804,58 +952,82 @@ export default function AdminPage() {
           </TabsContent>
 
           {/* ══════════════ TAB: FEEDBACKS ══════════════ */}
-          <TabsContent value="feedbacks" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Kullanıcı Geri Bildirimleri <span className="text-muted-foreground font-normal text-sm">({feedbacks.length} kayıt)</span></CardTitle>
-                <CardDescription>Araştırma sonuçlarına verilen mülakatçı oyları ve yorumlar.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {feedbacks.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg">
-                    Henüz geri bildirim bulunmuyor.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto w-full">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tarih</TableHead>
-                          <TableHead>Kullanıcı</TableHead>
-                          <TableHead>Araştırma ID</TableHead>
-                          <TableHead>Tür</TableHead>
-                          <TableHead>Oy</TableHead>
-                          <TableHead>Yorum</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {feedbacks.map(fb => (
-                          <TableRow key={fb.id}>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {fb.created_at ? new Date(fb.created_at).toLocaleString("tr-TR") : "-"}
-                            </TableCell>
-                            <TableCell className="font-medium text-sm">{fb.username || "-"}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground font-mono">
-                              {fb.study_id ? fb.study_id.slice(0, 12) + "..." : "-"}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="text-[10px]">{fb.item_type || "genel"}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              {fb.vote === 1
-                                ? <span className="text-emerald-600 font-bold flex items-center gap-1"><Heart size={14} fill="currentColor" /> Beğendi</span>
-                                : <span className="text-red-500 font-bold flex items-center gap-1"><HeartOff size={14} /> Beğenmedi</span>}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{fb.comment || "—"}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <TabsContent value="feedbacks" className="mt-6 space-y-6">
+
+            {/* ── Aggregate Özet Kartları ── */}
+            {(() => {
+              const total = feedbacks.length;
+              const likes = feedbacks.filter(f => f.vote === 1).length;
+              const dislikes = feedbacks.filter(f => f.vote === -1).length;
+              const withComment = feedbacks.filter(f => f.comment && f.comment.trim().length > 0).length;
+              const likeRate = total > 0 ? Math.round((likes / total) * 100) : 0;
+              const commentRate = total > 0 ? Math.round((withComment / total) * 100) : 0;
+
+              // En çok değerlendirilen item_type
+              const typeCounts: Record<string, number> = {};
+              feedbacks.forEach(f => {
+                const t = f.item_type || "genel";
+                typeCounts[t] = (typeCounts[t] || 0) + 1;
+              });
+              const topType = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
+
+              return (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Toplam */}
+                  <Card className="border-l-4 border-l-slate-400 shadow-sm">
+                    <CardContent className="pt-5 pb-4">
+                      <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-wide">Toplam Kayıt</p>
+                      <p className="text-4xl font-black text-slate-900 dark:text-white mt-1">{total}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        <span className="text-emerald-600 font-semibold">{likes} beğeni</span>
+                        {" · "}
+                        <span className="text-red-500 font-semibold">{dislikes} beğenmedi</span>
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Beğeni Oranı */}
+                  <Card className={`border-l-4 shadow-sm ${likeRate >= 70 ? "border-l-emerald-500" : likeRate >= 40 ? "border-l-amber-500" : "border-l-red-500"}`}>
+                    <CardContent className="pt-5 pb-4">
+                      <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-wide">Beğeni Oranı</p>
+                      <p className={`text-4xl font-black mt-1 ${likeRate >= 70 ? "text-emerald-600 dark:text-emerald-400" : likeRate >= 40 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}`}>
+                        %{likeRate}
+                      </p>
+                      {/* Mini bar */}
+                      <div className="mt-2 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${likeRate >= 70 ? "bg-emerald-500" : likeRate >= 40 ? "bg-amber-500" : "bg-red-500"}`}
+                          style={{ width: `${likeRate}%` }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Yorum Oranı */}
+                  <Card className="border-l-4 border-l-sky-400 shadow-sm">
+                    <CardContent className="pt-5 pb-4">
+                      <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-wide">Yorum İçeren</p>
+                      <p className="text-4xl font-black text-sky-600 dark:text-sky-400 mt-1">%{commentRate}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{withComment} kayıtta yorum var</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* En Çok Değerlendirilen Tür */}
+                  <Card className="border-l-4 border-l-indigo-400 shadow-sm">
+                    <CardContent className="pt-5 pb-4">
+                      <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-wide">En Çok Değerlendirilen</p>
+                      <p className="text-lg font-black text-[#1863dc] dark:text-[#4c6ee6] mt-1 truncate">{topType}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{typeCounts[topType] ?? 0} kayıt</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()}
+
+            {/* ── Detay Tablo + Filtreler ── */}
+            <FeedbackTable feedbacks={feedbacks} />
           </TabsContent>
+
 
           {/* ══════════════ TAB: AUDIT LOGS ══════════════ */}
           <TabsContent value="logs" className="mt-6">
@@ -1043,7 +1215,7 @@ export default function AdminPage() {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-bold">Brief Varsayılan Değerleri</CardTitle>
-                    <CardDescription>Yeni araştırma oluşturulduğunda Defne'ye iletilecek varsayılan brief değerleri.</CardDescription>
+                    <CardDescription>Yeni araştırma oluşturulduğunda Defne&apos;ye iletilecek varsayılan brief değerleri.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1073,7 +1245,7 @@ export default function AdminPage() {
                                 if (!el) return;
                                 setSavingDefaults(true);
                                 try {
-                                  await fetch("http://localhost:8000/api/admin/schemas/brief-defaults", {
+                                  await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/schemas/brief-defaults", {
                                     method: "PUT",
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({ [key]: el.value }),
@@ -1098,7 +1270,7 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle className="text-sm font-bold">Varsayılan Mülakat Soruları</CardTitle>
-                        <CardDescription className="mt-0.5">workflow.py DEFAULT_QUESTIONS — system_config'den override edilebilir.</CardDescription>
+                        <CardDescription className="mt-0.5">workflow.py DEFAULT_QUESTIONS — system_config&apos;den override edilebilir.</CardDescription>
                       </div>
                       <Button
                         size="sm"
@@ -1156,7 +1328,7 @@ export default function AdminPage() {
                             onClick={async () => {
                               setSavingDefaults(true);
                               try {
-                                await fetch("http://localhost:8000/api/admin/schemas/interview-questions", {
+                                await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/admin/schemas/interview-questions", {
                                   method: "PUT",
                                   headers: { "Content-Type": "application/json" },
                                   body: JSON.stringify({ questions: draftQuestions.filter(Boolean) }),
@@ -1190,7 +1362,7 @@ export default function AdminPage() {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-bold">Kavram Havuzları (Concept Pools)</CardTitle>
-                    <CardDescription>intake.py → CONCEPT_POOLS — Defne'nin ürün tipine göre seçtiği soru &amp; rol havuzları.</CardDescription>
+                    <CardDescription>intake.py → CONCEPT_POOLS — Defne&apos;nin ürün tipine göre seçtiği soru &amp; rol havuzları.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {Object.entries(schemas.concept_pools).map(([name, pool]) => (
@@ -1302,10 +1474,11 @@ export default function AdminPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="grid sm:grid-cols-3 gap-3">
                       {[
-                        { label: "B2C Modeli (Tüketici)", value: metrics.models.b2c, color: "text-[#003c33]", bg: "bg-[#edfce9]" },
-                        { label: "B2B Modeli (Kurumsal)", value: metrics.models.b2b, color: "text-[#1863dc]", bg: "bg-[#f1f5ff]" },
+                        { label: "Orkestratör (Kızıgan e4b)", value: metrics.models.orchestrator, color: "text-[#ff7759]", bg: "bg-orange-50" },
+                        { label: "Aktör (Trendyol-7B)", value: metrics.models.b2c, color: "text-[#003c33]", bg: "bg-[#edfce9]" },
+                        { label: "Analist (Asure-12B)", value: metrics.models.b2b, color: "text-[#1863dc]", bg: "bg-[#f1f5ff]" },
                       ].map(m => (
                         <div key={m.label} className={`rounded-lg px-4 py-3 ${m.bg}`}>
                           <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-0.5">{m.label}</div>
@@ -1450,6 +1623,7 @@ export default function AdminPage() {
               </>
             )}
           </TabsContent>
+          </div>
         </Tabs>
       </div>
     </div>

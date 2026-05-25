@@ -129,6 +129,19 @@ def init_db() -> None:
         
         cur.execute(
             """
+            CREATE TABLE IF NOT EXISTS interview_responses (
+                hash TEXT PRIMARY KEY,
+                username TEXT,
+                persona_id TEXT,
+                question TEXT,
+                json_data TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+            """
+        )
+
+        cur.execute(
+            """
             CREATE TABLE IF NOT EXISTS personas_pool (
                 id TEXT PRIMARY KEY,
                 name TEXT,
@@ -163,6 +176,10 @@ def init_db() -> None:
             cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS company_size TEXT;")
             cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS b2b_company_type TEXT;")
             cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS b2b_decision_maker BOOLEAN DEFAULT FALSE;")
+            # Anchor Panel Migrations
+            cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS big_five_vector vector(5);")
+            cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS innovation_stance TEXT;")
+            cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT FALSE;")
         except Exception as e:
             print(f"[DB] Migration warning for personas_pool: {e}")
 
@@ -195,6 +212,7 @@ def init_db() -> None:
         )
         # Performans indeksleri — sorgu pattern'lerine göre
         try:
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_interview_responses_user ON interview_responses(username);")
             # studies: liste sayfası sık sık updated_at DESC sıralar
             cur.execute("CREATE INDEX IF NOT EXISTS idx_studies_updated_at ON studies(updated_at DESC);")
             # studies: archived=FALSE filtresi için partial index
@@ -340,6 +358,22 @@ def init_db() -> None:
         except Exception as e:
             logger.warning("Migration 002-timestamp-types atlandı: %s", e)
 
+        # — Curated Questions İndeksleri (migration 003) —
+        # curated_questions tablosundaki aramaları ve filtrelemeleri hızlandırır.
+        try:
+            cur.execute(
+                "SELECT version FROM schema_migrations WHERE version = '003-curated-questions-indexes'"
+            )
+            if not cur.fetchone():
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_curated_questions_study_id ON curated_questions(study_id);")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_curated_questions_liked ON curated_questions(is_liked) WHERE is_liked = TRUE;")
+                cur.execute(
+                    "INSERT INTO schema_migrations (version) VALUES ('003-curated-questions-indexes')"
+                )
+                logger.info("Migration 003-curated-questions-indexes uygulandı")
+        except Exception as e:
+            logger.warning("Migration 003-curated-questions-indexes atlandı: %s", e)
+
         # Production'da bu kayıtlar X-Username backdoor riski oluşturur
         _app_env = os.getenv("APP_ENV", "development").lower()
         if _app_env != "production":
@@ -363,7 +397,7 @@ def init_db() -> None:
         
         # Default system config
         cur.execute("INSERT INTO system_config (key, value) VALUES ('b2c_model', 'Trendyol LLM (app-q-trendyol)') ON CONFLICT (key) DO NOTHING")
-        cur.execute("INSERT INTO system_config (key, value) VALUES ('b2b_model', 'Llama-3 (app-q-kizagan-e4b)') ON CONFLICT (key) DO NOTHING")
+        cur.execute("INSERT INTO system_config (key, value) VALUES ('b2b_model', 'Trendyol Asure 12B (app-q-asure)') ON CONFLICT (key) DO NOTHING")
         cur.execute("INSERT INTO system_config (key, value) VALUES ('pii_active', 'true') ON CONFLICT (key) DO NOTHING")
         cur.execute("INSERT INTO system_config (key, value) VALUES ('pii_terms', 'Trendyol, Hepsiburada, Amazon') ON CONFLICT (key) DO NOTHING")
         
