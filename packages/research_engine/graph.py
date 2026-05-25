@@ -9,6 +9,7 @@ from packages.research_engine.nodes.synthesis import (
     generating_and_reviewing_themes_node,
     adversarial_quality_audit_node
 )
+from langgraph.checkpoint.memory import MemorySaver
 
 logger = logging.getLogger(__name__)
 
@@ -53,4 +54,7 @@ workflow.add_conditional_edges(
     }
 )
 
-app_q_orchestrator = workflow.compile()
+# Phase 2: Hata Toleransı ve LLMOps (Stabilite)
+# MemorySaver ile Checkpointing (State Persistence) eklendi
+memory_saver = MemorySaver()
+app_q_orchestrator = workflow.compile(checkpointer=memory_saver)

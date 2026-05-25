@@ -10,6 +10,18 @@ import threading
 from .models import ResearchModel
 from .caching import check_semantic_cache, save_to_semantic_cache
 
+# B2B Enterprise Tracing: Langfuse Integration
+try:
+    from langfuse.decorators import observe
+    LANGFUSE_ENABLED = True
+except ImportError:
+    LANGFUSE_ENABLED = False
+    # Dummy decorator if langfuse is not installed
+    def observe(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+
 # VRAM koruması için global kilit. 
 # Aynı anda sadece 1 LLM isteği işlenir (OOM prevention).
 OLLAMA_LOCK = threading.Semaphore(1)
@@ -222,6 +234,7 @@ class OllamaResearchModel:
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = timeout_seconds
 
+    @observe(as_type="generation")
     def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
         self.last_model_id = self.model_id
         if "Defne" in system:
@@ -280,6 +293,7 @@ class OllamaResearchModel:
         
         return final_response
 
+    @observe(as_type="generation")
     def generate_stream(self, system: str, prompt: str, response_format: str | None = None):
         self.last_model_id = self.model_id
         if "Defne" in system:
@@ -372,6 +386,128 @@ class OllamaResearchModel:
                     pass
         except Exception:
             pass
+
+
+class VLLMResearchModel:
+    """Enterprise Inference adapter using vLLM's OpenAI-compatible API."""
+
+    def __init__(
+        self,
+        model_id: str,
+        base_url: str = "http://127.0.0.1:8000/v1",
+        api_key: str = "EMPTY",
+    ) -> None:
+        self.model_id = model_id
+        self.last_model_id = model_id
+        self.base_url = base_url.rstrip("/")
+        self.api_key = api_key
+        try:
+            if LANGFUSE_ENABLED:
+                from langfuse.openai import OpenAI
+                self.client = OpenAI(api_key=api_key, base_url=self.base_url)
+            else:
+                from openai import OpenAI
+                self.client = OpenAI(api_key=api_key, base_url=self.base_url)
+        except ImportError:
+            self.client = None
+            import logging
+            logging.getLogger(__name__).warning("openai package not found, VLLM adapter will fail.")
+
+    @observe(as_type="generation")
+    def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
+        self.last_model_id = self.model_id
+        if "Defne" in system:
+            system = f"{INTAKE_POLICY}\\n\\n{system}"
+        else:
+            system = f"{APP_Q_GENERATION_POLICY}\\n\\n{system}"
+            
+        if "Defne" not in system:
+            cached_response = check_semantic_cache(prompt, system)
+            if cached_response:
+                return cached_response
+                
+        if not self.client:
+            raise ModelProviderError("OpenAI client not initialized. Install openai package.")
+            
+        kwargs = {}
+        if response_format == "json":
+            kwargs["response_format"] = {"type": "json_object"}
+            
+        response = self.client.chat.completions.create(
+            model=self.model_id,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=8192,
+            **kwargs
+        )
+        content = response.choices[0].message.content or ""
+        final_response = strip_visible_reasoning(content)
+        
+        if "Defne" not in system:
+            save_to_semantic_cache(prompt, final_response, system)
+            
+        return final_response
+
+    @observe(as_type="generation")
+    def generate_stream(self, system: str, prompt: str, response_format: str | None = None):
+        self.last_model_id = self.model_id
+        if "Defne" in system:
+            system = f"{INTAKE_POLICY}\\n\\n{system}"
+        else:
+            system = f"{APP_Q_GENERATION_POLICY}\\n\\n{system}"
+            
+        if "Defne" not in system:
+            cached_response = check_semantic_cache(prompt, system)
+            if cached_response:
+                words = cached_response.split(" ")
+                for i, word in enumerate(words):
+                    yield word + (" " if i < len(words) - 1 else "")
+                return
+                
+        if not self.client:
+            raise ModelProviderError("OpenAI client not initialized.")
+            
+        kwargs = {}
+        if response_format == "json":
+            kwargs["response_format"] = {"type": "json_object"}
+            
+        response = self.client.chat.completions.create(
+            model=self.model_id,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=8192,
+            stream=True,
+            **kwargs
+        )
+        
+        full_response = []
+        inside_think = False
+        for chunk in response:
+            content = chunk.choices[0].delta.content
+            if content:
+                if "<think>" in content:
+                    inside_think = True
+                    content = content.split("<think>")[0]
+                elif "</think>" in content:
+                    inside_think = False
+                    content = content.split("</think>")[-1]
+                    
+                if not inside_think and content:
+                    full_response.append(content)
+                    yield content
+                    
+        final_text = "".join(full_response).strip()
+        if final_text and "Defne" not in system:
+            save_to_semantic_cache(prompt, final_text, system)
+
+    def free_memory(self) -> None:
+        pass
 
 
 class OllamaRouterResearchModel:
@@ -471,6 +607,10 @@ def get_model_provider(provider: str | None = None) -> ResearchModel:
         base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
         timeout = int(os.getenv("APP_MODEL_TIMEOUT_SECONDS", "120"))
         return OllamaResearchModel(model_id=model_id, base_url=base_url, timeout_seconds=timeout)
+    if selected_provider == "vllm":
+        model_id = config.get("b2c_model") or os.getenv("APP_MODEL_ID", "Qwen/Qwen2.5-3B-Instruct")
+        base_url = os.getenv("VLLM_BASE_URL", "http://127.0.0.1:8000/v1")
+        return VLLMResearchModel(model_id=model_id, base_url=base_url)
     if selected_provider == "ollama-router":
         base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
         timeout = int(os.getenv("APP_MODEL_TIMEOUT_SECONDS", "120"))

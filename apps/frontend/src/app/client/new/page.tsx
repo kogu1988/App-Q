@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -161,7 +161,7 @@ export default function NewResearchWizard() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/client/intake", {
+      const res = await fetch("http://localhost:3000/api/client/intake", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -212,7 +212,7 @@ export default function NewResearchWizard() {
     
     const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
     try {
-      const res = await fetch("http://localhost:8000/api/client/studio/match-personas", {
+      const res = await fetch("http://localhost:3000/api/client/studio/match-personas", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -242,7 +242,7 @@ export default function NewResearchWizard() {
     setStage("simulating");
     const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
     try {
-      const res = await fetch("http://localhost:8000/api/client/studio/simulate", {
+      const res = await fetch("http://localhost:3000/api/client/studio/simulate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -5,6 +5,7 @@ from packages.research_engine.privacy import LocalPIIScrubber
 from packages.research_engine.matrix import allocate_cohort_matrix
 from packages.research_engine.providers import get_model_provider
 from packages.research_engine.utils import safe_extract_json, publish_live_status
+from packages.research_engine.search import search_retriever
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +37,19 @@ async def async_intake_and_reframing_node(state: GlobalResearchState) -> Dict[st
         # MODEL ÇÖKERSE YASAL RİSK ALMA, SİSTEMİ DURDUR (FAIL-FAST)
         raise PrivacyFilterException(f"Lokal NER Güvenlik Modeli yanıt vermiyor. KVKK ihlal riski nedeniyle süreç iptal edildi: {ex}")
     
+    # Web Arama ile Pazar Analizi (Phase 3 SearXNG Entegrasyonu)
+    try:
+        search_query = f"{sanitized_text[:50]} pazarı, güncel fiyatlar ve rakipler"
+        raw_results = search_retriever.search(query=search_query, limit=3)
+        search_context = "\n".join([f"- {r['title']}: {r['content'][:150]}" for r in raw_results]) if raw_results else "Canlı arama sonucu bulunamadı."
+    except Exception as e:
+        logger.warning(f"Arama motoru entegrasyon hatası (SearXNG): {e}")
+        search_context = "Arama yapılamadı."
+
     # 2. Input Reframing Katmanı (Trendyol-7B-Chat Çağrısı)
     model = get_model_provider("app-q-trendyol") # Yerel e-ticaret/dil uzmanı model
     system_prompt = "Sen UK AISI standartlarında bir Girdi Yeniden Çerçeveleme (Input Reframing) modelisin. Girdiyi analiz edip JSON formatında 'objective_product_context' ve 'primary_research_questions' alanlarını döndür."
-    user_prompt = f"Brief Fikri: \"{sanitized_text}\"\nMetni tüm öznel başarı inançlarından arındırıp nesnelleştir."
+    user_prompt = f"Brief Fikri: \"{sanitized_text}\"\n\nCanlı Pazar Verisi (Web Search):\n{search_context}\n\nMetni tüm öznel başarı inançlarından arındırıp, canlı pazar verisini de dikkate alarak nesnelleştir."
     
     response = model.generate(system=system_prompt, prompt=user_prompt)
     try:

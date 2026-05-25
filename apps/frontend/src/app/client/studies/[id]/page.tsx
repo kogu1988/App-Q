@@ -24,7 +24,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { PlanGate } from "@/components/plan-gate";
@@ -332,7 +332,7 @@ export default function StudyDetailPage() {
   const [study, setStudy] = useState<StudyDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"summary" | "personas" | "interviews" | "report">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "personas" | "script" | "interviews" | "report">("summary");
   const [selectedPersonaIdx, setSelectedPersonaIdx] = useState<number>(0);
   const [archiving, setArchiving] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
@@ -350,7 +350,7 @@ export default function StudyDetailPage() {
     const fetchStudy = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/client/studies/${studyId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/client/studies/${studyId}`);
         if (!res.ok) {
           if (res.status === 404) {
             throw new Error("Araştırma bulunamadı.");
@@ -378,7 +378,7 @@ export default function StudyDetailPage() {
     if (!confirm("Bu araştırmayı arşivlemek istediğinize emin misiniz? Arşivlenen araştırmalar listede görünmez.")) return;
     setArchiving(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/client/studies/${studyId}/archive`, { method: "PUT" });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/client/studies/${studyId}/archive`, { method: "PUT" });
       if (!res.ok) throw new Error();
       setIsArchived(true);
       toast.success("Araştırma arşivlendi.");
@@ -400,7 +400,7 @@ export default function StudyDetailPage() {
     const [pIdx, tIdx] = key.split("-").map(Number);
     const personaName = study?.interviews?.[pIdx]?.persona?.name || "unknown";
     try {
-      await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/client/feedback", {
+      await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/client/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -424,7 +424,7 @@ export default function StudyDetailPage() {
     if (!followUpText.trim()) return;
     setSendingFollowUp(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/client/studies/${studyId}/follow-up`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/client/studies/${studyId}/follow-up`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ persona_id: personaId, question: followUpText })
@@ -582,7 +582,7 @@ export default function StudyDetailPage() {
                 onClick={async () => {
                   const username = localStorage.getItem("appq_username");
                   try {
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/client/studies/${studyId}/pdf`, {
+                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/client/studies/${studyId}/pdf`, {
                       headers: username ? { "X-Username": username } : {}
                     });
                     if (!res.ok) {
@@ -1244,12 +1244,12 @@ export default function StudyDetailPage() {
                         <Badge className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400">Mülakat Tamamlandı</Badge>
                       </div>
                       <Dialog>
-                        <DialogTrigger asChild>
+                        <DialogTrigger render={
                           <Button variant="outline" className="w-full text-xs font-semibold gap-2 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900">
                             <MessageSquare size={14} />
                             Transcript Görüntüle
                           </Button>
-                        </DialogTrigger>
+                        } />
                         <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
                           <DialogHeader className="p-6 pb-4 border-b border-border/80 bg-slate-50 dark:bg-slate-900/50">
                             <DialogTitle>Mülakat Transkripti: {item.persona?.name}</DialogTitle>

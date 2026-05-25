@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +26,7 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     const username = localStorage.getItem("appq_username") || "";
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
     const headers: Record<string, string> = username ? { "X-Username": username } : {};
     fetch(`${apiBase}/api/client/studies`, { headers })
       .then((r) => (r.ok ? r.json() : []))

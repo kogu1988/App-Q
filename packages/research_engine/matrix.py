@@ -17,6 +17,21 @@ P_SES = {
     "DE": 0.236,
 }
 
+# TÜİK 2024 Yaş Dağılımı (Yetişkin İnternet Kullanıcıları)
+P_AGE = {
+    "18-24": 0.15,
+    "25-34": 0.30,
+    "35-44": 0.25,
+    "45-54": 0.20,
+    "55+": 0.10,
+}
+
+# TÜİK Cinsiyet Dağılımı
+P_GENDER = {
+    "Kadın": 0.50,
+    "Erkek": 0.50,
+}
+
 def calculate_joint_probability_matrix() -> dict[tuple[str, str], float]:
     """
     Rogers x SES birleşik olasılık matrisini (M_Cohort) hesaplar.
@@ -71,6 +86,32 @@ def allocate_cohort_matrix(N: int) -> list[dict]:
                 "big_five_constraints": big_five_constraints
             })
             
+    # 4. Aşama: Bağımsız Demografik Stratifikasyon (Yaş ve Cinsiyet)
+    # TUIK kotalarına göre listeyi boyayacağız (deterministik round-robin/largest remainder)
+    age_allocations = {k: math.floor(v * N) for k, v in P_AGE.items()}
+    age_remainders = {k: (v * N) - math.floor(v * N) for k, v in P_AGE.items()}
+    age_remaining = N - sum(age_allocations.values())
+    for k, _ in sorted(age_remainders.items(), key=lambda x: x[1], reverse=True)[:age_remaining]:
+        age_allocations[k] += 1
+        
+    gender_allocations = {k: math.floor(v * N) for k, v in P_GENDER.items()}
+    gender_remainders = {k: (v * N) - math.floor(v * N) for k, v in P_GENDER.items()}
+    gender_remaining = N - sum(gender_allocations.values())
+    for k, _ in sorted(gender_remainders.items(), key=lambda x: x[1], reverse=True)[:gender_remaining]:
+        gender_allocations[k] += 1
+
+    # Apply to assigned_personas list
+    age_pool = [age for age, count in age_allocations.items() for _ in range(count)]
+    gender_pool = [gen for gen, count in gender_allocations.items() for _ in range(count)]
+    
+    # Sort them to distribute evenly
+    age_pool.sort()
+    gender_pool.sort(reverse=True) # Mix it up
+    
+    for i, p in enumerate(assigned_personas):
+        p["age_group"] = age_pool[i] if i < len(age_pool) else "25-34"
+        p["gender"] = gender_pool[i] if i < len(gender_pool) else "Kadın"
+        
     return assigned_personas
 
 def calculate_big_five_constraints(stance: str, ses: str) -> dict[str, str]:

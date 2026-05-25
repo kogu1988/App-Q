@@ -11,8 +11,9 @@ def save_persona_to_pool(persona_dict: dict, embedding: list[float] = None) -> N
                 id, name, age, city, segment, stance, price_sensitivity, digital_confidence, 
                 context, goals, objections, knowledge_boundary, country_code, origin_country, 
                 role_title, bio, attributes, traits, created_at, embedding,
-                created_by, is_global, b2b_role, industry, company_size, b2b_company_type, b2b_decision_maker
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                created_by, is_global, b2b_role, industry, company_size, b2b_company_type, b2b_decision_maker,
+                ses_group, respondent_type, settlement_type
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO NOTHING
             """,
             (
@@ -42,7 +43,10 @@ def save_persona_to_pool(persona_dict: dict, embedding: list[float] = None) -> N
                 persona_dict.get("industry"),
                 persona_dict.get("company_size"),
                 persona_dict.get("b2b_company_type"),
-                persona_dict.get("b2b_decision_maker", False)
+                persona_dict.get("b2b_decision_maker", False),
+                persona_dict.get("ses_group", "C1"),
+                persona_dict.get("respondent_type", "potential_customer"),
+                persona_dict.get("settlement_type", "kentsel")
             )
         )
 
@@ -132,6 +136,11 @@ def get_personas_pool() -> list[dict]:
     with get_db() as (conn, cur):
         cur.execute("SELECT * FROM personas_pool")
         return [dict(row) for row in cur.fetchall()]
+
+def delete_persona_from_pool(persona_id: str) -> bool:
+    with get_db() as (conn, cur):
+        cur.execute("DELETE FROM personas_pool WHERE id = %s", (persona_id,))
+        return cur.rowcount > 0
 
 def add_to_question_collection(question: str, study_id: str, research_title: str, research_category: str, purpose_context: str, is_liked: int = 1, embedding: list[float] = None) -> None:
     with get_db() as (conn, cur):

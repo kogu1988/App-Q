@@ -25,6 +25,7 @@ sys.path.insert(0, str(ROOT))
 # Routers import katmanı — stream router'ını asenkron ağ hattına ekliyoruz
 from apps.backend.routers import admin, client
 from packages.research_engine.routers import stream
+from packages.research_engine.database import current_tenant_var
 
 # — Rate Limiter —
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
@@ -68,6 +69,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def tenant_isolation_middleware(request: Request, call_next):
+    """
+    Tüm request'lerde X-Username header'ını yakalayıp contextvars içine atar.
+    Bu sayede database.py içindeki get_db() çağrıldığında RLS (Row-Level Security)
+    için gerekli olan tenant bilgisi veritabanına aktarılır.
+    """
+    username = request.headers.get("x-username")
+    if username:
+        current_tenant_var.set(username)
+    else:
+        current_tenant_var.set(None)
+    response = await call_next(request)
+    return response
 
 # --- STANDART REST ROUTER KAYITLARI ---
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])

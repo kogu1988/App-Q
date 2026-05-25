@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { Toaster } from "@/components/ui/sonner";
@@ -15,7 +15,7 @@ function SidebarStudiesWidget() {
 
   useEffect(() => {
     const username = localStorage.getItem("appq_username") || "";
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
     const headers: Record<string, string> = username ? { "X-Username": username } : {};
     fetch(`${apiBase}/api/client/studies`, { headers })
       .then((r) => (r.ok ? r.json() : []))

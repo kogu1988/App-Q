@@ -1,23 +1,18 @@
-version: '3.8'
-
 services:
-  # --- ASENKRON VERİ VE MESAJ KUYRUĞU KATMANI (VALKEY/REDIS) ---
+  # --- ASENKRON VERİ VE MESAJ KUYRUĞU KATMANI (REDIS) ---
   redis:
     image: redis:7.2-alpine
     container_name: appq-redis
     command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
+      - "4006:6379"
     volumes:
       - redis_data:/data
-    # 32 GB RAM istismarını önlemek için katı sınırlandırma
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: '1.0'
           memory: 1024M
-        reservations:
-          memory: 256M
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -31,21 +26,18 @@ services:
     container_name: appq-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-appq_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD ortam değişkeni zorunlu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD ortam degiskeni zorunlu}
       POSTGRES_DB: ${POSTGRES_DB:-appq_db}
     ports:
-      - "5433:5432"
+      - "4005:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # HNSW Vektör indeksleme operasyonları için paylaşılan belleği genişletiyoruz
-    shm_size: 2gb
+    shm_size: 512mb
     deploy:
       resources:
         limits:
-          cpus: '4.0'
-          memory: 4096M
-        reservations:
-          memory: 1024M
+          cpus: '2.0'
+          memory: 2048M
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -53,51 +45,71 @@ services:
       timeout: 5s
       retries: 5
 
-  # --- YEREL DİL MODELİ ÇIKARIM MOTORU (GPU DESTEKLİ OLLAMA) ---
-  ollama:
-    image: ollama/ollama:latest
-    container_name: appq-ollama
+  # --- META ARAMA MOTORU (SEARXNG) ---
+  searxng:
+    image: searxng/searxng:latest
+    container_name: appq-searxng
     ports:
-      - "11434:11434"
+      - "4003:8080"
     volumes:
-      - ollama_models:/root/.ollama
+      - searxng_data:/etc/searxng
     environment:
-      - OLLAMA_NUM_PARALLEL=1          # Eşzamanlı VRAM bölünmesini önlemek için çıkarımı teke indiriyoruz
-      - OLLAMA_MAX_LOADED_MODELS=1      # VRAM'de aynı anda sadece tek model barındırılır (Auto-Flush)
+      - SEARXNG_BASE_URL=http://localhost:4003/
     deploy:
       resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]       # RTX 4060 8GB VRAM doğrudan bu konteynere dedike edilir
+        limits:
+          cpus: '1.0'
+          memory: 512M
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # --- MONOLİTİK FASTAPI AĞ API KATMANI ---
   app-q-api:
     build:
-      context: ./apps/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/backend/Dockerfile
     container_name: app-q-api
     ports:
-      - "3000:3000"
+      - "4000:3000"
+    env_file:
+      - .env
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - OLLAMA_BASE_URL=http://ollama:11434
+      - VLLM_BASE_URL=http://appq-vllm:8000/v1
     depends_on:
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
-      ollama:
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 2048M
+    restart: unless-stopped
+
+  # --- ASENKRON WORKER (CELERY) ---
+  celery_worker:
+    build:
+      context: .
+      dockerfile: ./apps/backend/Dockerfile
+    container_name: appq-celery-worker
+    command: celery -A packages.research_engine.celery_app worker --loglevel=info --concurrency=1
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - VLLM_BASE_URL=http://appq-vllm:8000/v1
+      - VALKEY_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     deploy:
       resources:
@@ -106,39 +118,54 @@ services:
           memory: 4096M
     restart: unless-stopped
 
-  # --- ASENKRON WORKER VE LANGGRAPH ORKESTRASYON MOTORU (CELERY) ---
-  celery_worker:
-    build:
-      context: ./apps/backend
-      dockerfile: Dockerfile
-    container_name: appq-celery-worker
-    # Concurrency=1: 8GB VRAM sınırında paralel ajan çıkarımlarının OOM yapmasını engeller
-    command: celery -A packages.research_engine.celery_app worker --loglevel=info --concurrency=1
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - VALKEY_URL=redis://redis:6379/0
+  # --- YEREL DİL MODELİ (vLLM) --- optional profile ile baslatilir ---
+  vllm:
+    profiles: ["optional"]
+    image: vllm/vllm-openai:latest
+    container_name: appq-vllm
+    ports:
+      - "4004:8000"
+    volumes:
+      - vllm_models:/root/.cache/huggingface
+    command: --model Qwen/Qwen2.5-3B-Instruct --dtype bfloat16 --max-model-len 2048 --gpu-memory-utilization 0.65 --max-num-seqs 4
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          cpus: '4.0'
+          memory: 8192M
+    restart: "no"
+
+  # --- GOZLEMLENEBILIRLİK (LANGFUSE) --- optional profile ile baslatilir ---
+  langfuse-server:
+    profiles: ["optional"]
+    image: langfuse/langfuse:2
+    container_name: appq-langfuse
     depends_on:
-      redis:
-        condition: service_healthy
       postgres:
         condition: service_healthy
-      ollama:
+      redis:
         condition: service_healthy
-    # 20 çekirdekli CPU gücünü asenkron işlemlere tahsis ediyoruz
+    ports:
+      - "4002:3000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-appq_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-appq_db}?schema=langfuse
+      - NEXTAUTH_URL=http://localhost:4002
+      - NEXTAUTH_SECRET=appq_super_secret_langfuse
+      - SALT=appq_salt_for_langfuse
     deploy:
       resources:
         limits:
-          cpus: '8.0'
-          memory: 8192M
-        reservations:
-          memory: 2048M
-    restart: unless-stopped
+          cpus: '2.0'
+          memory: 1024M
+    restart: "no"
 
 volumes:
   redis_data:
   postgres_data:
-  ollama_models: # Modellerin yerelde kalıcı saklanması için volum tanımlaması
+  vllm_models:
+  searxng_data:

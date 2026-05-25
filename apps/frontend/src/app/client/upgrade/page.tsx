@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useClientPlan } from "@/hooks/use-client-plan";
@@ -108,7 +108,7 @@ export default function UpgradePage() {
       return;
     }
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/client/upgrade-plan", {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/client/upgrade-plan", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

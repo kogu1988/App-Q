@@ -49,6 +49,18 @@ class ConfigUpdate(BaseModel):
 class DefaultQuestionsUpdate(BaseModel):
     questions: List[str]
 
+class GeneratePersonaRequest(BaseModel):
+    role_title: str
+    count: int
+    category: Optional[str] = "genel"
+    market: Optional[str] = "Türkiye"
+    target_users: Optional[str] = "genel tüketici"
+    why: Optional[str] = "Hedef kitle temsilcisi"
+    save_to_pool: Optional[bool] = True
+
+class BulkAddPersonasRequest(BaseModel):
+    personas: List[dict]
+
 @router.get("/clients")
 async def list_clients():
     return get_clients()
@@ -96,6 +108,72 @@ async def list_audit_logs():
 @router.get("/personas")
 async def list_personas():
     return get_personas_pool()
+
+@router.post("/personas/generate")
+async def generate_personas_endpoint(req: GeneratePersonaRequest):
+    from packages.research_engine.persona_generator import generate_and_save_personas
+    from packages.research_engine.providers import get_model_provider
+    
+    config = get_system_config()
+    model_name = config.get("orchestrator_model", "mock")
+    model = get_model_provider(model_name)
+    
+    personas = generate_and_save_personas(
+        role_title=req.role_title,
+        count=req.count,
+        model=model,
+        category=req.category,
+        market=req.market,
+        target_users=req.target_users,
+        why=req.why,
+        save_to_pool=req.save_to_pool
+    )
+    
+    return {
+        "status": "success", 
+        "generated_count": len(personas),
+        "personas": [p.model_dump() for p in personas]
+    }
+
+@router.post("/personas/bulk-add")
+async def bulk_add_personas(req: BulkAddPersonasRequest):
+    from packages.research_engine.database import save_persona_to_pool
+    from packages.research_engine.caching import get_embedding
+    import uuid
+    
+    saved_count = 0
+    for p_dict in req.personas:
+        # Generate new ID if not present or keep existing draft ID
+        if "id" not in p_dict or not p_dict["id"]:
+            p_dict["id"] = f"p_{uuid.uuid4().hex[:8]}"
+            
+        role_title = p_dict.get("role_title", p_dict.get("segment", ""))
+        embedding = get_embedding(role_title)
+        save_persona_to_pool(p_dict, embedding=embedding)
+        saved_count += 1
+        
+    return {"status": "success", "saved_count": saved_count}
+
+@router.delete("/personas/{persona_id}")
+async def delete_persona(persona_id: str):
+    from packages.research_engine.database import delete_persona_from_pool, get_personas_pool
+    personas = get_personas_pool()
+    target = None
+    for p in personas:
+        if p.get("id") == persona_id:
+            target = p
+            break
+            
+    if not target:
+        raise HTTPException(status_code=404, detail="Persona bulunamadı")
+        
+    if target.get("is_locked"):
+        raise HTTPException(status_code=400, detail="Bu persona aktif veya tamamlanmış bir araştırmada yer aldığı için silinemez.")
+        
+    success = delete_persona_from_pool(persona_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Silme işlemi gerçekleştirilemedi")
+    return {"status": "success", "message": "Persona başarıyla silindi"}
 
 @router.get("/questions")
 async def list_questions():

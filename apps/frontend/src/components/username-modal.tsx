@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -19,7 +19,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
   const searchParams = useSearchParams();
   const planParam = searchParams.get("plan");
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
   const planLabel: Record<string, string> = {
     starter: "Starter",

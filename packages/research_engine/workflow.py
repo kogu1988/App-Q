@@ -578,116 +578,74 @@ def generate_personas_from_roles(brief: ResearchBrief, panel_roles: list[PanelRo
             )
             
         if needed_count > 0:
-            if model:
-                # Bu role atanacak matris kotalarını listeden çek
-                role_allocations = matrix_allocations[allocation_idx : allocation_idx + needed_count]
-                allocation_idx += needed_count
-                
-                # Allocation'ları prompt'a hard constraint olarak göm
-                constraints_text = ""
-                for i, alloc in enumerate(role_allocations):
-                    bf = alloc["big_five_constraints"]
-                    constraints_text += (
-                        f"Persona {i+1}:\n"
-                        f"- Stance: {alloc['stance']}\n"
-                        f"- SES Grubu: {alloc['ses_group']}\n"
-                        f"- Big Five Sınırları: Openness ({bf.get('openness')}), Conscientiousness ({bf.get('conscientiousness')}), "
-                        f"Extroversion ({bf.get('extroversion')}), Agreeableness ({bf.get('agreeableness')}), Neuroticism ({bf.get('neuroticism')})\n\n"
-                    )
-
-                system = "Sen App-Q için dinamik persona üreticisisin. İstenilen rolünde, Türkiye pazarında inandırıcı, spesifik bir persona JSON'u üret. JSON dışında hiçbir şey yazma."
-                prompt = (
-                    f"Kategori: {brief.category or 'genel'}\n"
-                    f"Pazar: {brief.market or 'Türkiye'}\n"
-                    f"Hedef kullanıcı grubu: {', '.join(brief.target_users) if brief.target_users else 'genel tüketici'}\n"
-                    f"Rol: {role.role} (Gerekçe: {role.why})\n"
-                    f"Üretilecek Persona Sayısı: {needed_count}\n\n"
-                    "LÜTFEN AŞAĞIDAKİ MATRİS KISITLARINA (HARD CONSTRAINTS) KESİNLİKLE UY:\n"
-                    f"{constraints_text}"
-                    "Lütfen aşağıdaki yapıda bir JSON listesi döndür:\n"
-                    "[\n"
-                    "  {\n"
-                    "    \"name\": \"Türkçe isim\",\n"
-                    "    \"age\": 30,\n"
-                    "    \"city\": \"Türkiye şehri\",\n"
-                    "    \"segment\": \"Pazar segmenti\",\n"
-                    "    \"stance\": \"Matriste atanan Stance\",\n"
-                    "    \"price_sensitivity\": 7,\n"
-                    "    \"digital_confidence\": 8,\n"
-                    "    \"ses_group\": \"Matriste atanan SES\",\n"
-                    "    \"respondent_type\": \"potential_customer, competitor_user, vs.\",\n"
-                    "    \"settlement_type\": \"kentsel, banliyö veya kırsal\",\n"
-                    "    \"context\": \"Kısa bağlam\",\n"
-                    "    \"goals\": [\"hedef 1\"],\n"
-                    "    \"objections\": [\"itiraz 1\"],\n"
-                    "    \"knowledge_boundary\": \"bilgi sınırı\",\n"
-                    "    \"bio\": \"kısa hikayesi\"\n"
-                    "  }\n"
-                    "]"
-                )
-                try:
-                    response_text = model.generate(system, prompt, response_format="json")
-                    parsed_list = json.loads(response_text)
-                    for item in parsed_list:
-                        new_id = f"p_{uuid.uuid4().hex[:8]}"
-                        st = item.get("stance", "Mainstream")
-                        traits_d = persona_traits(len(personas), st, item.get("price_sensitivity", 5), item.get("digital_confidence", 5))
-                        p = Persona(
-                            id=new_id,
-                            name=item.get("name", "İsimsiz"),
-                            age=item.get("age", 30),
-                            city=item.get("city", "İstanbul"),
-                            segment=item.get("segment", role.role),
-                            role_title=role.role,
-                            stance=st,
-                            price_sensitivity=item.get("price_sensitivity", 5),
-                            digital_confidence=item.get("digital_confidence", 5),
-                            context=item.get("context", ""),
-                            goals=item.get("goals", []),
-                            objections=item.get("objections", []),
-                            knowledge_boundary=item.get("knowledge_boundary", ""),
-                            bio=item.get("bio", ""),
-                            ses_group=item.get("ses_group", "C1"),
-                            respondent_type=item.get("respondent_type", "potential_customer"),
-                            settlement_type=item.get("settlement_type", "kentsel"),
-                            attributes=persona_attributes(item.get("segment", role.role), item.get("stance", "Mainstream"), item.get("price_sensitivity", 5), item.get("digital_confidence", 5)),
-                            traits=persona_traits(len(personas), item.get("stance", "Mainstream"), item.get("price_sensitivity", 5), item.get("digital_confidence", 5))
-                        )
-                        personas.append(p)
-                        # Save to pool
-                        save_persona_to_pool(asdict(p))
-                    continue # Skip fallback
-                except Exception as e:
-                    print("LLM Persona generation failed:", str(e))
+            # Fallback 1: Similarity Search via pgvector
+            from packages.research_engine.caching import get_embedding
+            from packages.research_engine.database import get_similar_personas
             
-            # Fallback to hardcoded if LLM fails or not provided
-            # Cohort-level stance dağılımı — DEFAULT_STANCE_COHORT'dan sırayla ata
-            index = len(personas)
-            fallback_stance = DEFAULT_STANCE_COHORT[index % len(DEFAULT_STANCE_COHORT)]
-            new_id = f"p_{uuid.uuid4().hex[:8]}"
-            fallback_traits = persona_traits(index, fallback_stance, 6, 7)
-            p = Persona(
-                id=new_id,
-                name=f"Kullanıcı {index}",
-                age=30 + (index % 15),
-                city="İstanbul",
-                segment=role.role,
-                role_title=role.role,
-                stance=fallback_stance,
-                price_sensitivity=6,
-                digital_confidence=7,
-                context=f"{market} pazarında {role.role} rolünü temsil eder.",
-                goals=["Ürünün faydasını anlamak"],
-                objections=["Değer önerisinin belirsizliği"],
-                knowledge_boundary="Kendi rolü hakkında konuşabilir.",
-                bio=f"{role.role} rolünde Türkiye pazarı katılımcısı.",
-                attributes=persona_attributes(role.role, fallback_stance, 6, 7),
-                traits=fallback_traits,
-                diffusion_stage=STANCE_PROFILE.get(fallback_stance, {}).get("tr_description", ""),
-                neo_facets=neo_facets_from_traits(fallback_traits, fallback_stance),
-            )
-            personas.append(p)
-            save_persona_to_pool(asdict(p))
+            embedding = get_embedding(role.role)
+            if embedding:
+                # We need exactly `needed_count` more personas
+                # Get more than needed to filter out already loaded ones
+                similar_personas_dicts = get_similar_personas(embedding, limit=needed_count * 2)
+                loaded_ids = {p.id for p in personas}
+                
+                for s_data in similar_personas_dicts:
+                    if needed_count <= 0:
+                        break
+                    if s_data["id"] not in loaded_ids:
+                        personas.append(
+                            Persona(
+                                id=s_data["id"],
+                                name=s_data["name"],
+                                age=s_data["age"],
+                                city=s_data["city"],
+                                segment=s_data["segment"],
+                                role_title=s_data["role_title"],
+                                stance=s_data["stance"],
+                                price_sensitivity=s_data["price_sensitivity"],
+                                digital_confidence=s_data["digital_confidence"],
+                                context=s_data["context"],
+                                goals=s_data["goals"],
+                                objections=s_data["objections"],
+                                knowledge_boundary=s_data["knowledge_boundary"],
+                                country_code=s_data["country_code"],
+                                origin_country=s_data["origin_country"],
+                                bio=s_data["bio"],
+                                attributes=s_data["attributes"],
+                                traits=s_data["traits"],
+                                big_five=s_data.get("big_five", {})
+                            )
+                        )
+                        needed_count -= 1
+            
+            # Fallback 2: Hardcoded fallback if pool is completely empty or similarity fails
+            while needed_count > 0:
+                index = len(personas)
+                fallback_stance = DEFAULT_STANCE_COHORT[index % len(DEFAULT_STANCE_COHORT)]
+                new_id = f"p_{uuid.uuid4().hex[:8]}"
+                fallback_traits = persona_traits(index, fallback_stance, 6, 7)
+                p = Persona(
+                    id=new_id,
+                    name=f"Kullanıcı {index}",
+                    age=30 + (index % 15),
+                    city="İstanbul",
+                    segment=role.role,
+                    role_title=role.role,
+                    stance=fallback_stance,
+                    price_sensitivity=6,
+                    digital_confidence=7,
+                    context=f"{market} pazarında {role.role} rolünü temsil eder.",
+                    goals=["Ürünün faydasını anlamak"],
+                    objections=["Değer önerisinin belirsizliği"],
+                    knowledge_boundary="Kendi rolü hakkında konuşabilir.",
+                    bio=f"{role.role} rolünde Türkiye pazarı katılımcısı.",
+                    attributes=persona_attributes(role.role, fallback_stance, 6, 7),
+                    traits=fallback_traits,
+                    diffusion_stage=STANCE_PROFILE.get(fallback_stance, {}).get("tr_description", ""),
+                    neo_facets=neo_facets_from_traits(fallback_traits, fallback_stance),
+                )
+                personas.append(p)
+                needed_count -= 1
             
     return personas
 

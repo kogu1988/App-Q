@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+﻿import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, FlaskConical, Target, AlertTriangle, Lightbulb, XCircle } from "lucide-react";
 import Logo from "@/components/logo";
