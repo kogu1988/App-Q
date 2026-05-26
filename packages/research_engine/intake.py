@@ -456,46 +456,8 @@ def check_guardrails(text: str, model: Any) -> tuple[bool, str]:
         '{"is_safe": true/false, "reason": "İhlal varsa sebebi, yoksa boş bırak"}'
     )
     try:
-        # response_format=json destekleniyorsa
         response = model.generate(system_prompt, f"İncelenecek Metin:\n{text}")
         response_text = response.text.strip()
-        if "```json" in response_text:
-            response_text = response_text.split("```json")[1].split("```")[0].strip()
-<<<<<<< HEAD
-        elif "```" in response_text:
-            response_text = response_text.split("```")[1].strip()
-            
-        # Hata payını azaltmak için sadece ilk { ve son } arasındaki asıl JSON'ı çek
-        import re
-        match = re.search(r'\{.*\}', response_text, re.DOTALL)
-        if match:
-            response_text = match.group(0)
-            
-        # Model yanıtlarındaki olası Python veri yapısı formatlarını (None, True, False)
-        # standart JSON formatına (null, true, false) dönüştürerek hataya karşı dayanıklı hale getir
-        response_text = re.sub(r':\s*None\b', ': null', response_text)
-        response_text = re.sub(r':\s*True\b', ': true', response_text)
-        response_text = re.sub(r':\s*False\b', ': false', response_text)
-            
-        result = json.loads(response_text)
-
-        # Varsayılan yapıyı koruma
-        if "updated_brief" not in result:
-            result["updated_brief"] = current_brief
-        if "assistant_reply" not in result:
-            result["assistant_reply"] = "Anladım. Başka eklemek istediğin bir şey var mı?"
-
-        # Reframe notu varsa asistan yanıtına ekle (şeffaf mod)
-        if reframe_notice:
-            result["assistant_reply"] = result["assistant_reply"] + reframe_notice
-
-        return result
-    except Exception as e:
-        print(f"Intake parsing error: {e}\nRaw Response: {response_text}")
-        return {
-            "updated_brief": current_brief,
-            "assistant_reply": "Kusura bakmayın, bir anlığına dikkatim dağıldı ve yanıtı tamamlayamadım. Lütfen son söylediğinizi tekrarlar mısınız veya devam edebilir miyiz?"
-=======
         
         data = json.loads(response_text)
         return data.get("is_safe", True), data.get("reason", "")
@@ -520,7 +482,6 @@ def process_intake_chat(current_brief: Dict[str, Any], chat_history: List[Dict[s
             "updated_brief": current_brief,
             "assistant_reply": f"Üzgünüm, paylaştığınız içerik güvenlik politikalarımıza uymuyor ({reason}). Lütfen sadece pazar araştırması ve iş fikirleri çerçevesinde kalalım.",
             "is_complete": False
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
         }
         
     # 1. Update history with user's message

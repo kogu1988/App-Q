@@ -279,7 +279,7 @@ const PLAN_TEMPLATES: Record<string, { max_simulations: number; max_tokens: numb
 const PREDEFINED_PACKAGES = [
   {
     name: "Teknoloji Meraklısı Gençler",
-    description: "Genç, dijital okuryazarlığı yüksek, yenilikçi 3 adet persona.",
+    description: "Genç, dijital okuryazarlığı yüksek, yenilikçi 5 adet persona.",
     personas: [
       {
         name: "Can Yılmaz", age: 24, city: "İstanbul", segment: "Yazılımcı",
@@ -310,12 +310,32 @@ const PREDEFINED_PACKAGES = [
         objections: ["Öğrenci indiriminin olmaması", "Uzun taahhüt süreleri"],
         knowledge_boundary: "Genel teknoloji bilgisi",
         bio: "Ege Üniversitesi Bilgisayar Mühendisliği öğrencisi. Kısıtlı bütçeyle en yüksek verimi almaya çalışır."
+      },
+      {
+        name: "Ece Korkmaz", age: 25, city: "Eskişehir", segment: "Dijital Pazarlamacı",
+        stance: "EarlyAdopter", price_sensitivity: 5, digital_confidence: 9,
+        ses_group: "AB", respondent_type: "potential_customer", settlement_type: "kentsel",
+        context: "Trendleri hızla takip eder, sosyal medyada etkilidir.",
+        goals: ["Yeni araçlarla fark yaratmak"],
+        objections: ["Eski teknoloji kullanılması"],
+        knowledge_boundary: "Pazarlama teknolojileri",
+        bio: "Dijital trendleri belirleyen genç profesyonel."
+      },
+      {
+        name: "Berk Aydın", age: 21, city: "Antalya", segment: "Gamer",
+        stance: "Innovator", price_sensitivity: 7, digital_confidence: 9,
+        ses_group: "C1", respondent_type: "potential_customer", settlement_type: "kentsel",
+        context: "Oyun donanımları ve yazılımları konusunda uzman.",
+        goals: ["En yüksek performansı elde etmek"],
+        objections: ["Fiyat/performans oranının düşük olması"],
+        knowledge_boundary: "Donanım ve yazılım",
+        bio: "Profesyonel e-spor oyuncusu ve Twitch yayıncısı."
       }
     ]
   },
   {
     name: "KOBİ ve Geleneksel Esnaf",
-    description: "Dijitalleşmeye çalışan, maliyet odaklı, geleneksel 2 adet persona.",
+    description: "Dijitalleşmeye çalışan, maliyet odaklı, geleneksel 5 adet persona.",
     personas: [
       {
         name: "Mustafa Şahin", age: 48, city: "Bursa", segment: "Esnaf",
@@ -336,12 +356,42 @@ const PREDEFINED_PACKAGES = [
         objections: ["Karmaşık entegrasyonlar", "Ekstra gizli komisyonlar"],
         knowledge_boundary: "Orta düzey bilgisayar ve e-ticaret paneli bilgisi",
         bio: "Ev dekorasyonu üzerine butik mağaza sahibi. Sosyal medyadan gelen siparişleri yönetmekte zorlanıyor."
+      },
+      {
+        name: "Ahmet Yılmaz", age: 55, city: "Gaziantep", segment: "İmalatçı",
+        stance: "Laggard", price_sensitivity: 9, digital_confidence: 3,
+        ses_group: "C2", respondent_type: "competitor_user", settlement_type: "sanayi",
+        context: "Babadan kalma yöntemlerle çalışıyor.",
+        goals: ["Giderleri kısmak"],
+        objections: ["Teknolojinin işini zorlaştıracağı inancı"],
+        knowledge_boundary: "Çok kısıtlı dijital bilgi",
+        bio: "Küçük bir imalathane sahibi, değişime dirençli."
+      },
+      {
+        name: "Fatma Çelik", age: 45, city: "Kayseri", segment: "Toptancı",
+        stance: "Mainstream", price_sensitivity: 6, digital_confidence: 5,
+        ses_group: "C1", respondent_type: "potential_customer", settlement_type: "kentsel",
+        context: "Rakipleri dijitale geçtiği için o da geçmek istiyor.",
+        goals: ["Rekabette geri kalmamak"],
+        objections: ["Başlangıç maliyetleri"],
+        knowledge_boundary: "Temel bilgisayar kullanımı",
+        bio: "Bölgesel toptancı, işini büyütme arayışında."
+      },
+      {
+        name: "Mehmet Öz", age: 52, city: "Denizli", segment: "Restoran Sahibi",
+        stance: "Skeptic", price_sensitivity: 7, digital_confidence: 4,
+        ses_group: "C1", respondent_type: "competitor_user", settlement_type: "kentsel",
+        context: "Paket servis uygulamalarına yüksek komisyon ödüyor.",
+        goals: ["Kendi sipariş altyapısını kurmak"],
+        objections: ["Teknik destek bulamama korkusu"],
+        knowledge_boundary: "Sadece sipariş tabletleri",
+        bio: "Yerel bir restoran zincirinin kurucusu."
       }
     ]
   },
   {
     name: "Premium B2B Karar Vericiler",
-    description: "Kurumsal yöneticiler, verimlilik ve ROI odaklı 2 adet üst segment B2B persona.",
+    description: "Kurumsal yöneticiler, verimlilik ve ROI odaklı 5 adet üst segment B2B persona.",
     personas: [
       {
         name: "Zeynep Akar", age: 42, city: "İstanbul", segment: "C-Level Yönetici",
@@ -362,6 +412,36 @@ const PREDEFINED_PACKAGES = [
         objections: ["Verilerin doğruluğu ve sapma payı", "Karmaşık raporlama ekranları"],
         knowledge_boundary: "Pazarlama teknolojileri ve veri analitiği uzmanı",
         bio: "Hızlı tüketim sektöründe 15 yıllık pazarlama direktörü. Reklam bütçelerinin etkinliğini ölçmek en büyük önceliği."
+      },
+      {
+        name: "Elif Soysal", age: 38, city: "Ankara", segment: "İK Direktörü",
+        stance: "EarlyAdopter", price_sensitivity: 4, digital_confidence: 8,
+        ses_group: "AB", respondent_type: "decision_maker", settlement_type: "kentsel",
+        context: "Personel bağlılığını artırmaya odaklı.",
+        goals: ["Çalışan deneyimini iyileştirmek"],
+        objections: ["Çalışanların yeni sistemi benimsememesi"],
+        knowledge_boundary: "İK yazılımları",
+        bio: "Global bir firmada İK süreçlerini dijitalleştiriyor."
+      },
+      {
+        name: "Murat Güven", age: 45, city: "İzmir", segment: "Finans Direktörü",
+        stance: "Blocker", price_sensitivity: 2, digital_confidence: 8,
+        ses_group: "AB", respondent_type: "decision_maker", settlement_type: "kentsel",
+        context: "Riske kapalı, maliyet-fayda analizi yapar.",
+        goals: ["Maliyet kontrolü sağlamak"],
+        objections: ["Gizli maliyetler ve esneklik eksikliği"],
+        knowledge_boundary: "Finansal modelleme araçları",
+        bio: "Büyük bir üretim şirketinde CFO."
+      },
+      {
+        name: "Selin Aslan", age: 35, city: "İstanbul", segment: "Operasyon Müdürü",
+        stance: "Pragmatist", price_sensitivity: 4, digital_confidence: 9,
+        ses_group: "AB", respondent_type: "decision_maker", settlement_type: "kentsel",
+        context: "Süreçlerin sorunsuz işlemesinden sorumlu.",
+        goals: ["Operasyonel verimliliği maksimize etmek"],
+        objections: ["Sistemin yavaş çalışması"],
+        knowledge_boundary: "Süreç yönetimi ve ERP",
+        bio: "E-ticaret lojistiği konusunda uzman yönetici."
       }
     ]
   }
@@ -440,6 +520,8 @@ export default function AdminPage() {
   const [savingConfig, setSavingConfig] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
+  const [poolPage, setPoolPage] = useState(1);
+  const [packageCounts, setPackageCounts] = useState<Record<string, number>>({});
 
   // Persona Generation State
   const [generatingPersonas, setGeneratingPersonas] = useState(false);
@@ -461,7 +543,7 @@ export default function AdminPage() {
     }
     setGeneratingPersonas(true);
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/personas/generate", {
+      const res = await fetch("/api/admin/personas/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(genForm)
@@ -481,7 +563,7 @@ export default function AdminPage() {
   const handleBulkAddPackage = async (packageName: string, packagePersonas: Array<any>) => {
     setAddingBulk(packageName);
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/personas/bulk-add", {
+      const res = await fetch("/api/admin/personas/bulk-add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ personas: packagePersonas })
@@ -505,7 +587,7 @@ export default function AdminPage() {
     }
     setDeletingPersona(personaId);
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + `/api/admin/personas/${personaId}`, {
+      const res = await fetch(`/api/admin/personas/${personaId}`, {
         method: "DELETE"
       });
       if (!res.ok) {
@@ -559,12 +641,12 @@ export default function AdminPage() {
 
   const fetchAll = useCallback(() => {
     Promise.all([
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/config").then(r => r.json()),
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/clients").then(r => r.json()),
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/personas").then(r => r.json()),
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/audit_logs").then(r => r.json()),
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/questions").then(r => r.json()),
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/feedbacks").then(r => r.json()),
+      fetch("/api/admin/config").then(r => r.json()),
+      fetch("/api/admin/clients").then(r => r.json()),
+      fetch("/api/admin/personas").then(r => r.json()),
+      fetch("/api/admin/audit_logs").then(r => r.json()),
+      fetch("/api/admin/questions").then(r => r.json()),
+      fetch("/api/admin/feedbacks").then(r => r.json()),
     ]).then(([conf, cli, pers, lg, qs, fbs]) => {
       setConfig(conf);
       setClients(Array.isArray(cli) ? cli : []);
@@ -573,8 +655,9 @@ export default function AdminPage() {
       setQuestions(Array.isArray(qs) ? qs : []);
       setFeedbacks(Array.isArray(fbs) ? fbs : []);
       setLoading(false);
-    }).catch(() => {
-      toast.error("Veriler yüklenirken hata oluştu.");
+    }).catch((err) => {
+      console.error("FetchAll Error:", err);
+      toast.error(`Veriler yüklenirken hata oluştu: ${err.message || err}`);
       setLoading(false);
     });
   }, []);
@@ -585,7 +668,7 @@ export default function AdminPage() {
   const saveConfig = async (key: string, value: string) => {
     setSavingConfig(key);
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/config", {
+      const res = await fetch("/api/admin/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key, value })
@@ -603,7 +686,7 @@ export default function AdminPage() {
   const createClient = async () => {
     setSavingClient(true);
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/clients", {
+      const res = await fetch("/api/admin/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(clientForm)
@@ -622,7 +705,7 @@ export default function AdminPage() {
 
   const updateClient = async (username: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/admin/clients/${username}`, {
+      const res = await fetch(`/api/admin/clients/${username}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -647,7 +730,7 @@ export default function AdminPage() {
   const deleteClient = async (username: string) => {
     if (!confirm(`"${username}" danışanını silmek istediğinize emin misiniz?`)) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/admin/clients/${username}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/clients/${username}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       toast.success("Danışan silindi.");
       fetchAll();
@@ -659,7 +742,7 @@ export default function AdminPage() {
   // ── Question Management ─────────────────────────────────────────────────────
   const toggleLike = async (id: number, current: boolean) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/admin/questions/${id}/like?is_liked=${!current}`, { method: "PUT" });
+      await fetch(`/api/admin/questions/${id}/like?is_liked=${!current}`, { method: "PUT" });
       setQuestions(prev => prev.map(q => q.id === id ? { ...q, is_liked: !current } : q));
       toast.success("Beğeni güncellendi.");
     } catch {
@@ -669,7 +752,7 @@ export default function AdminPage() {
 
   const savePurpose = async (id: number) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/admin/questions/${id}/purpose?purpose=${encodeURIComponent(editPurpose)}`, { method: "PUT" });
+      await fetch(`/api/admin/questions/${id}/purpose?purpose=${encodeURIComponent(editPurpose)}`, { method: "PUT" });
       setQuestions(prev => prev.map(q => q.id === id ? { ...q, purpose_context: editPurpose } : q));
       setEditingQuestion(null);
       toast.success("Amaç güncellendi.");
@@ -681,7 +764,7 @@ export default function AdminPage() {
   const deleteQuestion = async (id: number) => {
     if (!confirm("Bu soruyu koleksiyondan silmek istediğinize emin misiniz?")) return;
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/admin/questions/${id}`, { method: "DELETE" });
+      await fetch(`/api/admin/questions/${id}`, { method: "DELETE" });
       setQuestions(prev => prev.filter(q => q.id !== id));
       toast.success("Soru silindi.");
     } catch {
@@ -745,7 +828,7 @@ export default function AdminPage() {
             <TabsTrigger value="schemas" className="justify-start px-4 py-2.5 w-full" onClick={() => {
               if (!schemas) {
                 setSchemasLoading(true);
-                fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/schemas")
+                fetch("/api/admin/schemas")
                   .then(r => r.json())
                   .then(d => { setSchemas(d); setBriefDefaults(d.brief_schema.defaults); setDraftQuestions(d.default_interview_questions); })
                   .catch(() => toast.error("Şemalar yüklenemedi."))
@@ -758,7 +841,7 @@ export default function AdminPage() {
             <TabsTrigger value="metrics" className="justify-start px-4 py-2.5 w-full" onClick={() => {
               if (!metrics && !metricsLoading) {
                 setMetricsLoading(true);
-                fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/metrics")
+                fetch("/api/admin/metrics")
                   .then(r => r.json())
                   .then(d => setMetrics(d))
                   .catch(() => toast.error("Metrikler yüklenemedi."))
@@ -1048,10 +1131,10 @@ export default function AdminPage() {
 
           {/* ══════════════ TAB: PERSONAS ══════════════ */}
           <TabsContent value="personas" className="mt-6 space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="flex flex-col gap-6">
               
-              {/* Left Column: Generator & Packages */}
-              <div className="lg:col-span-1 space-y-6">
+              {/* Top: Generator & Packages (Persona Paneli) */}
+              <div className="space-y-6 w-full">
                 
                 {/* Compact Persona Creation & Ekleme Panel */}
                 <Card className="border-[#d9d9dd] shadow-sm">
@@ -1151,30 +1234,48 @@ export default function AdminPage() {
 
                       {/* Ready Packages Tab */}
                       <TabsContent value="packages" className="space-y-2 mt-0">
-                        {PREDEFINED_PACKAGES.map(pkg => (
+                        {PREDEFINED_PACKAGES.map(pkg => {
+                          const count = packageCounts[pkg.name] || 1;
+                          return (
                           <div key={pkg.name} className="p-2 border border-border rounded-lg bg-muted/10 flex items-center justify-between gap-3 text-left">
                             <div className="min-w-0 flex-1">
                               <h4 className="font-bold text-[11px] text-primary truncate">{pkg.name}</h4>
                               <p className="text-[9px] text-muted-foreground truncate max-w-[160px]">{pkg.description}</p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <Badge variant="outline" className="text-[9px] font-semibold bg-[#edfce9] text-[#003c33] border-[#d9d9dd] py-0.5 px-1.5">{pkg.personas.length} P</Badge>
+                              <div className="flex items-center bg-white border border-border rounded-md overflow-hidden">
+                                <button
+                                  type="button"
+                                  disabled={count <= 1 || addingBulk !== null}
+                                  onClick={() => setPackageCounts(prev => ({ ...prev, [pkg.name]: count - 1 }))}
+                                  className="w-6 h-6 flex items-center justify-center text-xs hover:bg-slate-100 disabled:opacity-50"
+                                >-</button>
+                                <span className="w-4 text-center text-[10px] font-bold">{count}</span>
+                                <button
+                                  type="button"
+                                  disabled={count >= 5 || addingBulk !== null}
+                                  onClick={() => setPackageCounts(prev => ({ ...prev, [pkg.name]: count + 1 }))}
+                                  className="w-6 h-6 flex items-center justify-center text-xs hover:bg-slate-100 disabled:opacity-50"
+                                >+</button>
+                              </div>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 disabled={addingBulk !== null}
-                                onClick={() => handleBulkAddPackage(pkg.name, pkg.personas)}
+                                onClick={() => handleBulkAddPackage(pkg.name, pkg.personas.slice(0, count))}
                                 className="h-7 text-[10px] font-semibold px-2 hover:bg-slate-100"
                               >
                                 {addingBulk === pkg.name ? (
                                   <Loader2 size={10} className="animate-spin" />
                                 ) : (
-                                  <Plus size={10} />
+                                  <>
+                                    <Plus size={10} className="mr-1" /> Ekle
+                                  </>
                                 )}
                               </Button>
                             </div>
                           </div>
-                        ))}
+                        )})}
                       </TabsContent>
                       
                     </CardContent>
@@ -1183,8 +1284,8 @@ export default function AdminPage() {
 
               </div>
 
-              {/* Right Column: Persona Pool List */}
-              <div className="lg:col-span-2">
+              {/* Bottom: Persona Pool List (Sentetik Tüketici Havuzu) */}
+              <div className="w-full">
                 <Card className="border-[#d9d9dd] shadow-sm h-full">
                   <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
@@ -1207,7 +1308,7 @@ export default function AdminPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {personas.map(p => (
+                          {personas.slice((poolPage - 1) * 5, poolPage * 5).map(p => (
                             <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
                               <TableCell className="font-medium text-sm">{p.name}, {p.age}</TableCell>
                               <TableCell className="text-muted-foreground text-xs">{p.city}</TableCell>
@@ -1421,6 +1522,28 @@ export default function AdminPage() {
                         </TableBody>
                       </Table>
                     </div>
+                    {personas.length > 5 && (
+                      <div className="flex items-center justify-between mt-4 border-t border-border pt-4">
+                        <span className="text-xs text-muted-foreground">Toplam {personas.length} persona</span>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            disabled={poolPage === 1}
+                            onClick={() => setPoolPage(p => p - 1)}
+                            className="h-8 text-xs"
+                          >Önceki</Button>
+                          <span className="text-xs font-medium">Sayfa {poolPage} / {Math.ceil(personas.length / 5)}</span>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            disabled={poolPage >= Math.ceil(personas.length / 5)}
+                            onClick={() => setPoolPage(p => p + 1)}
+                            className="h-8 text-xs"
+                          >Sonraki</Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -1805,7 +1928,7 @@ export default function AdminPage() {
                                 if (!el) return;
                                 setSavingDefaults(true);
                                 try {
-                                  await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/schemas/brief-defaults", {
+                                  await fetch("/api/admin/schemas/brief-defaults", {
                                     method: "PUT",
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({ [key]: el.value }),
@@ -1888,7 +2011,7 @@ export default function AdminPage() {
                             onClick={async () => {
                               setSavingDefaults(true);
                               try {
-                                await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/admin/schemas/interview-questions", {
+                                await fetch("/api/admin/schemas/interview-questions", {
                                   method: "PUT",
                                   headers: { "Content-Type": "application/json" },
                                   body: JSON.stringify({ questions: draftQuestions.filter(Boolean) }),

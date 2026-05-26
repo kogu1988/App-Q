@@ -344,57 +344,6 @@ export default function StudyDetailPage() {
   const [sendingFollowUp, setSendingFollowUp] = useState(false);
   const { plan: clientPlan } = useClientPlan();
 
-  const [followUpQuestion, setFollowUpQuestion] = useState("");
-  const [sendingFollowUp, setSendingFollowUp] = useState(false);
-
-  const handleSendFollowUp = async () => {
-    if (!followUpQuestion.trim() || !study) return;
-    const persona = study.interviews?.[selectedPersonaIdx]?.persona;
-    if (!persona) return;
-
-    setSendingFollowUp(true);
-    const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
-
-    try {
-      const res = await fetch(`http://localhost:8000/api/client/studies/${studyId}/follow-up`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(username ? { "X-Username": username } : {}),
-        },
-        body: JSON.stringify({
-          persona_id: persona.id,
-          question: followUpQuestion.trim(),
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.detail || "Takip sorusu gönderilemedi.");
-      }
-
-      const data = await res.json();
-      const newTurn = data.turn;
-
-      // Update local study state
-      setStudy(prev => {
-        if (!prev || !prev.interviews) return prev;
-        const updatedInterviews = [...prev.interviews];
-        const targetInv = { ...updatedInterviews[selectedPersonaIdx] };
-        targetInv.turns = [...(targetInv.turns || []), newTurn];
-        updatedInterviews[selectedPersonaIdx] = targetInv;
-        return { ...prev, interviews: updatedInterviews };
-      });
-
-      setFollowUpQuestion("");
-      toast.success("Cevap başarıyla simüle edildi.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Bir hata oluştu.");
-    } finally {
-      setSendingFollowUp(false);
-    }
-  };
-
   useEffect(() => {
     if (!studyId) return;
 
@@ -474,10 +423,14 @@ export default function StudyDetailPage() {
   const handleFollowUp = async (personaId: string) => {
     if (!followUpText.trim()) return;
     setSendingFollowUp(true);
+    const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/client/studies/${studyId}/follow-up`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(username ? { "X-Username": username } : {}),
+        },
         body: JSON.stringify({ persona_id: personaId, question: followUpText })
       });
       if (!res.ok) throw new Error("API hatası");
@@ -1285,99 +1238,7 @@ export default function StudyDetailPage() {
                         <div>
                           <CardTitle className="text-base">{item.persona?.name}</CardTitle>
                           <CardDescription className="text-xs">{item.persona?.role_title || "Sentetik Tüketici"} • {item.persona?.age} Yaş</CardDescription>
-                        </div>
-<<<<<<< HEAD
-                      ))}
-                    </div>
-
-                    {/* Follow-up Question Input Section */}
-                    {(() => {
-                      const followUpCount = (() => {
-                        let count = 0;
-                        study?.interviews?.forEach(inv => {
-                          inv.turns?.forEach(t => {
-                            if (t.tags?.includes("FOLLOW-UP")) {
-                              count++;
-                            }
-                          });
-                        });
-                        return count;
-                      })();
-
-                      const planType = clientPlan.plan_type;
-                      const isFree = planType === "Free";
-                      const isLimited = planType === "Starter" || planType === "Flex";
-                      const isLimitReached = isLimited && followUpCount >= 3;
-
-                      let inputPlaceholder = "Persona'ya takip sorusu sorun (örn. Neden bu fiyatı yüksek buldunuz?)...";
-                      let isDisabled = sendingFollowUp;
-                      let badgeText = "";
-                      let badgeColor = "bg-slate-100 text-slate-600";
-
-                      if (isFree) {
-                        inputPlaceholder = "Free planda takip sorusu sorulamaz. Lütfen planınızı yükseltin.";
-                        isDisabled = true;
-                        badgeText = "Takip Sorusu Kilitli (Free)";
-                        badgeColor = "bg-red-50 text-red-700 border-red-200";
-                      } else if (isLimitReached) {
-                        inputPlaceholder = "Maksimum takip sorusu limitine (3/3) ulaştınız. Lütfen planınızı yükseltin.";
-                        isDisabled = true;
-                        badgeText = "Limit Doldu (3/3)";
-                        badgeColor = "bg-amber-100 text-amber-800 border-amber-300";
-                      } else if (isLimited) {
-                        badgeText = `Takip Sorusu Limiti: ${followUpCount}/3`;
-                        badgeColor = "bg-indigo-50 text-indigo-700 border-indigo-200";
-                      } else {
-                        badgeText = "Sınırsız Takip Sorusu";
-                        badgeColor = "bg-emerald-50 text-emerald-700 border-emerald-200";
-                      }
-
-                      return (
-                        <div className="p-4 bg-slate-50 border-t border-border space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase text-slate-400">Persona ile Etkileşim (Probing)</span>
-                            <Badge variant="outline" className={`text-[10px] font-semibold ${badgeColor}`}>
-                              {badgeText}
-                            </Badge>
-                          </div>
-                          
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={followUpQuestion}
-                              onChange={(e) => setFollowUpQuestion(e.target.value)}
-                              disabled={isDisabled}
-                              placeholder={inputPlaceholder}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSendFollowUp();
-                              }}
-                              className="flex-1 px-4 py-2 text-xs rounded-xl border border-[#d9d9dd] bg-white focus:outline-none focus:ring-1 focus:ring-[#17171c] disabled:opacity-60 disabled:cursor-not-allowed"
-                            />
-                            <Button
-                              onClick={handleSendFollowUp}
-                              disabled={isDisabled || !followUpQuestion.trim()}
-                              size="sm"
-                              className="bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl px-4 text-xs h-auto"
-                            >
-                              {sendingFollowUp ? <Loader2 size={12} className="animate-spin" /> : "Sor"}
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Consistency insights if available */}
-                    {interviews[selectedPersonaIdx]?.consistency_notes && interviews[selectedPersonaIdx].consistency_notes!.length > 0 && (
-                      <div className="p-4 bg-amber-500/5 border-t border-amber-500/10 text-xs text-amber-800 dark:text-amber-400 space-y-1">
-                        <span className="font-bold block text-amber-900 ">Tutarlılık Değerlendirmesi:</span>
-                        <ul className="list-disc pl-4 space-y-0.5">
-                          {interviews[selectedPersonaIdx].consistency_notes!.map((note: string, noteIdx: number) => (
-                            <li key={noteIdx}>{note}</li>
-                          ))}
-                        </ul>
-=======
                         <Badge variant="outline" className="text-[10px] bg-slate-50 dark:bg-slate-900">{item.turns?.length} Soru</Badge>
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
                       </div>
                     </CardHeader>
                     <CardContent className="p-5 pt-0 space-y-4">
@@ -1424,22 +1285,74 @@ export default function StudyDetailPage() {
                             ))}
                           </div>
                           <DialogFooter className="p-4 border-t border-border bg-white dark:bg-[#0c0c0f] flex flex-col gap-3 sm:justify-start">
-                            <div className="flex gap-2 w-full">
-                              <Textarea 
-                                placeholder={`${item.persona?.name} isimli personaya ekstra bir soru sorun...`}
-                                className="min-h-[60px] resize-none text-sm"
-                                value={followUpText}
-                                onChange={(e) => setFollowUpText(e.target.value)}
-                                disabled={sendingFollowUp}
-                              />
-                              <Button 
-                                onClick={() => handleFollowUp(item.persona.id)} 
-                                disabled={sendingFollowUp || !followUpText.trim()}
-                                className="h-auto px-6 font-semibold"
-                              >
-                                {sendingFollowUp ? <Loader2 className="animate-spin w-4 h-4" /> : "Sor"}
-                              </Button>
-                            </div>
+                            {(() => {
+                              const followUpCount = (() => {
+                                let count = 0;
+                                study?.interviews?.forEach(inv => {
+                                  inv.turns?.forEach(t => {
+                                    if (t.tags?.includes("FOLLOW-UP")) {
+                                      count++;
+                                    }
+                                  });
+                                });
+                                return count;
+                              })();
+
+                              const planType = clientPlan?.plan_type || "Free";
+                              const isFree = planType === "Free";
+                              const isLimited = planType === "Starter" || planType === "Flex";
+                              const isLimitReached = isLimited && followUpCount >= 3;
+
+                              let inputPlaceholder = `${item.persona?.name} isimli personaya ekstra bir soru sorun...`;
+                              let isDisabled = sendingFollowUp;
+                              let badgeText = "";
+                              let badgeColor = "bg-slate-100 text-slate-600";
+
+                              if (isFree) {
+                                inputPlaceholder = "Free planda takip sorusu sorulamaz. Lütfen planınızı yükseltin.";
+                                isDisabled = true;
+                                badgeText = "Takip Sorusu Kilitli (Free)";
+                                badgeColor = "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400";
+                              } else if (isLimitReached) {
+                                inputPlaceholder = "Maksimum takip sorusu limitine (3/3) ulaştınız. Lütfen planınızı yükseltin.";
+                                isDisabled = true;
+                                badgeText = "Limit Doldu (3/3)";
+                                badgeColor = "bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-400";
+                              } else if (isLimited) {
+                                badgeText = `Takip Sorusu Limiti: ${followUpCount}/3`;
+                                badgeColor = "bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-950/20 dark:border-indigo-900/40 dark:text-indigo-400";
+                              } else {
+                                badgeText = "Sınırsız Takip Sorusu";
+                                badgeColor = "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-400";
+                              }
+
+                              return (
+                                <div className="w-full space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold uppercase text-slate-400">Persona ile Etkileşim (Probing)</span>
+                                    <Badge variant="outline" className={`text-[10px] font-semibold ${badgeColor}`}>
+                                      {badgeText}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex gap-2 w-full">
+                                    <Textarea 
+                                      placeholder={inputPlaceholder}
+                                      className="min-h-[60px] resize-none text-sm flex-1"
+                                      value={followUpText}
+                                      onChange={(e) => setFollowUpText(e.target.value)}
+                                      disabled={isDisabled}
+                                    />
+                                    <Button 
+                                      onClick={() => handleFollowUp(item.persona.id)} 
+                                      disabled={isDisabled || !followUpText.trim()}
+                                      className="h-auto px-6 font-semibold"
+                                    >
+                                      {sendingFollowUp ? <Loader2 className="animate-spin w-4 h-4" /> : "Sor"}
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                             <span className="text-[10px] text-muted-foreground text-center">Follow-up özelliği ile personayı daha derinlemesine analiz edebilirsiniz.</span>
                           </DialogFooter>
                         </DialogContent>

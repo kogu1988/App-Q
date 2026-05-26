@@ -65,7 +65,7 @@ else:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
-    allow_credentials=True,
+    allow_credentials=_app_env != "development",  # Cannot be True if origins is ['*']
     allow_methods=["*"],
     allow_headers=["*"],
 )

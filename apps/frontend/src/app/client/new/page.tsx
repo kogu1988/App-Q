@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -277,23 +277,8 @@ export default function NewResearchWizard() {
         body: JSON.stringify({
           brief: brief.idea || brief.title || "",
           category: brief.category || (researchMode === "ab_test" ? "A/B Test" : "Genel"),
-<<<<<<< HEAD
-          title: brief.title || "Araştırma",
-          context: brief.idea || "",
-          brand: "Clarere",
-          budget: "Standart",
-          target_users: brief.target_users || [],
-          competitors: brief.competitors || [],
-          expected_price: brief.expected_price || null,
-          sales_channel: brief.sales_channel || null,
-          success_metric: brief.success_metric || null,
-          variant_a: brief.variant_a || null,
-          variant_b: brief.variant_b || null,
-          questions: plan?.plan_type === "Free" ? [] : (brief.questions || []),
-=======
           pricing: brief.expected_price || "Bilinmiyor",
           panel_roles: matchedRoles.map(r => ({ role: r.role, why: r.why, count: r.count }))
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
         }),
       });
       if (!res.ok) {

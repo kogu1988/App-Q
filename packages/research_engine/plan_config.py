@@ -26,11 +26,8 @@ PLAN_CONFIG: dict[str, dict] = {
         "max_simulations": 2,
         "max_tokens": 100_000,
         "max_follow_ups": 0,
-<<<<<<< HEAD
         "max_talk_to_research": 0,
-=======
         "max_adversarial_loops": 1,
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
         "ab_test": False,
         "b2b_mode": False,
         "streaming": False,
@@ -45,29 +42,19 @@ PLAN_CONFIG: dict[str, dict] = {
         "multi_user": False,
         "white_label": False,
     },
-<<<<<<< HEAD
     "Flex": {
         "max_personas": 10,
         "max_simulations": 3,
         "max_tokens": 200_000,
         "max_follow_ups": 3,
         "max_talk_to_research": 9999,
-        "ab_test": True,
-=======
-    "Starter": {
-        "max_personas": 5,
-        "max_simulations": 10,
-        "max_tokens": 500_000,
-        "max_follow_ups": 15,
         "max_adversarial_loops": 2,
-        "ab_test": False,
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
+        "ab_test": True,
         "b2b_mode": False,
         "streaming": True,
         "pdf_export": True,
         "adversarial": True,
         "rfi": True,
-<<<<<<< HEAD
         "brand_health": False,
         "ses_crosstab": True,
         "custom_personas": False,
@@ -82,14 +69,13 @@ PLAN_CONFIG: dict[str, dict] = {
         "max_tokens": 500_000,
         "max_follow_ups": 3,
         "max_talk_to_research": 2,
+        "max_adversarial_loops": 2,
         "ab_test": True,
         "b2b_mode": False,
         "streaming": True,
         "pdf_export": True,
         "adversarial": True,
         "rfi": True,
-=======
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
         "brand_health": False,
         "ses_crosstab": True,
         "custom_personas": False,
@@ -103,11 +89,8 @@ PLAN_CONFIG: dict[str, dict] = {
         "max_simulations": 9999,  # unlimited
         "max_tokens": 9_999_999,  # unlimited
         "max_follow_ups": 9999,
-<<<<<<< HEAD
         "max_talk_to_research": 9999,
-=======
         "max_adversarial_loops": 3,
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
         "ab_test": True,
         "b2b_mode": True,
         "streaming": True,
@@ -127,11 +110,8 @@ PLAN_CONFIG: dict[str, dict] = {
         "max_simulations": 9999,
         "max_tokens": 9_999_999,
         "max_follow_ups": 9999,
-<<<<<<< HEAD
         "max_talk_to_research": 9999,
-=======
         "max_adversarial_loops": 3,
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
         "ab_test": True,
         "b2b_mode": True,
         "streaming": True,
@@ -155,11 +135,8 @@ FEATURE_MIN_PLAN: dict[str, str] = {
     "ses_crosstab":      "Flex",
     "ab_test":           "Flex",
     "b2b_mode":          "Pro",
-<<<<<<< HEAD
     "adversarial":       "Free",
     "rfi":               "Free",
-=======
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
     "brand_health":      "Pro",
     "custom_personas":   "Enterprise",
     "fine_tuning_export":"Enterprise",

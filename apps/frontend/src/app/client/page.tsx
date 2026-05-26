@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,13 +38,15 @@ export default function ClientDashboard() {
 
   return (
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4">
-<<<<<<< HEAD
       {clientPlan.trial_expired && (
         <div className="p-5 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-3 shadow-sm animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-2">
             <span className="text-base">⚠️</span>
             <p className="text-sm font-black text-amber-900">Trial Expired (Deneme Süreniz Doldu)</p>
           </div>
+          <p className="text-xs text-amber-800 leading-relaxed max-w-3xl">
+            Every plan comes with a 3-day free trial and 2 free researches — no credit card required. You get access to the platform so you can run real research and see the output before committing.
+          </p>
           <p className="text-xs text-amber-800 leading-relaxed max-w-3xl">
             After 3 days or 2 researches (whichever comes first), you’ll be asked to choose a plan. Your research reports and data stay accessible for 30 days — after that, access is limited. Pick a plan to keep everything unlocked.
           </p>
@@ -61,7 +63,8 @@ export default function ClientDashboard() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>
-=======
+      </div>
+
       {/* ── PRESET SHARP CARBON GLOW CARD ────────────────────────────────────── */}
       <div className="bg-[#17171c] text-white p-6 sm:p-8 rounded-[2px] border border-white/10 relative overflow-hidden shadow-lg">
         {/* Decorative subtle ambient orange glow */}
@@ -82,7 +85,6 @@ export default function ClientDashboard() {
             </Button>
           </Link>
         </div>
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
       </div>
 
       <Card>

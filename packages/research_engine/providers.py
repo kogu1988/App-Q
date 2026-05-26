@@ -417,25 +417,15 @@ class VLLMResearchModel:
     def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
         self.last_model_id = self.model_id
         if "Defne" in system:
-            system = f"{INTAKE_POLICY}\\n\\n{system}"
+            system = f"{INTAKE_POLICY}\n\n{system}"
         else:
-            system = f"{APP_Q_GENERATION_POLICY}\\n\\n{system}"
+            system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
             
         if "Defne" not in system:
             cached_response = check_semantic_cache(prompt, system)
             if cached_response:
                 return cached_response
                 
-<<<<<<< HEAD
-                # 3. Save full streamed response to cache (Skip for Defne)
-                final_text = "".join(full_response).strip()
-                if final_text and "Defne" not in system:
-                    save_to_semantic_cache(prompt, final_text, system)
-        except (TimeoutError, urllib.error.URLError) as exc:
-            raise ModelProviderError(
-                "Ollama yanıt vermedi. Ollama'nın çalıştığından ve modelin yüklü olduğundan emin olun."
-            ) from exc
-=======
         if not self.client:
             raise ModelProviderError("OpenAI client not initialized. Install openai package.")
             
@@ -465,9 +455,9 @@ class VLLMResearchModel:
     def generate_stream(self, system: str, prompt: str, response_format: str | None = None):
         self.last_model_id = self.model_id
         if "Defne" in system:
-            system = f"{INTAKE_POLICY}\\n\\n{system}"
+            system = f"{INTAKE_POLICY}\n\n{system}"
         else:
-            system = f"{APP_Q_GENERATION_POLICY}\\n\\n{system}"
+            system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
             
         if "Defne" not in system:
             cached_response = check_semantic_cache(prompt, system)
@@ -518,7 +508,6 @@ class VLLMResearchModel:
 
     def free_memory(self) -> None:
         pass
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
 
 
 class OllamaRouterResearchModel:
@@ -567,15 +556,6 @@ class OllamaRouterResearchModel:
         # 3. Persona Interview / Roleplay -> Actor (Trendyol-8B)
         return self.b2c_model_id, self.b2c_model
 
-<<<<<<< HEAD
-    def generate(self, system: str, prompt: str) -> str:
-        model_id, model = self.choose_model(system, prompt)
-        answer = model.generate(system, prompt)
-        self.last_model_id = model_id
-        return answer
-
-    def generate_stream(self, system: str, prompt: str):
-=======
     def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
         model_id, model = self.choose_model(system, prompt)
         answer = model.generate(system, prompt, response_format=response_format)
@@ -583,7 +563,6 @@ class OllamaRouterResearchModel:
         return answer
 
     def generate_stream(self, system: str, prompt: str, response_format: str | None = None):
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
         model_id, model = self.choose_model(system, prompt)
         self.last_model_id = model_id
         for chunk in model.generate_stream(system, prompt, response_format=response_format):

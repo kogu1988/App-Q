@@ -1,13 +1,7 @@
-<<<<<<< HEAD
 import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, FlaskConical, Target, AlertTriangle, Lightbulb, XCircle } from "lucide-react";
-=======
-﻿import { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft, CheckCircle2, FlaskConical, Target, AlertTriangle, Lightbulb, XCircle } from "lucide-react";
 import Logo from "@/components/logo";
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
 
 export const metadata: Metadata = {
   title: "Kullanım Kılavuzu | Clarere",
@@ -21,11 +15,7 @@ export default function GuidePage() {
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-border px-6 h-14 flex items-center justify-between">
         <div className="max-w-4xl mx-auto w-full flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-<<<<<<< HEAD
-            <img src="/logo.svg" alt="Clarere logo" className="h-6 w-auto object-contain" />
-=======
             <Logo size={24} strokeColor="#17171c" />
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
             <span className="font-semibold text-[#17171c] tracking-tight">Clarere</span>
           </Link>
           <Link href="/" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -43,11 +33,7 @@ export default function GuidePage() {
             Clarere Kullanım Kılavuzu
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
-<<<<<<< HEAD
-            Ürün fikirlerinizi koda veya üretime dökmeden önce nasıl test edebileceğinizi, sistemin sınırlarını ve Araştırma Mimarı "Defne" ile nasıl konuşmanız gerektiğini öğrenin.
-=======
             Ürün fikirlerinizi koda veya üretime dökmeden önce nasıl test edebileceğinizi, sistemin sınırlarını ve Araştırma Mimarı &quot;Defne&quot; ile nasıl konuşmanız gerektiğini öğrenin.
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
           </p>
         </div>
 
@@ -74,11 +60,7 @@ export default function GuidePage() {
               <div className="mt-6 p-4 bg-[#f5f4f1] rounded-xl border border-border flex gap-3 items-start">
                 <Lightbulb size={20} className="text-[#ff7759] shrink-0 mt-0.5" />
                 <p className="m-0 text-sm">
-<<<<<<< HEAD
-                  <strong>En İyi Kullanım Senaryosu:</strong> Aklınızda yeni bir ürün fikri var ancak insanların buna para verip vermeyeceğinden emin değilsiniz. Koda veya üretime dökmeden önce Clarere'de fikrinizi çarpıştırın ve hipotezlerinizi doğrulayın.
-=======
                   <strong>En İyi Kullanım Senaryosu:</strong> Aklınızda yeni bir ürün fikri var ancak insanların buna para verip vermeyeceğinden emin değilsiniz. Koda veya üretime dökmeden önce Clarere&apos;de fikrinizi çarpıştırın ve hipotezlerinizi doğrulayın.
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
                 </p>
               </div>
             </div>
@@ -125,11 +107,7 @@ export default function GuidePage() {
               <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                 <FlaskConical size={20} />
               </div>
-<<<<<<< HEAD
-              <h2 className="text-2xl font-bold text-[#17171c]">Araştırma Mimarı "Defne" ile İletişim</h2>
-=======
               <h2 className="text-2xl font-bold text-[#17171c]">Araştırma Mimarı &quot;Defne&quot; ile İletişim</h2>
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
             </div>
             <div className="prose prose-stone max-w-none text-muted-foreground leading-relaxed">
               <p>
@@ -138,37 +116,21 @@ export default function GuidePage() {
               
               <div className="mt-6 space-y-6">
                 <div>
-<<<<<<< HEAD
-                  <h4 className="text-foreground font-semibold">Defne'ye Nasıl Bilgi Verilmeli?</h4>
-                  <ul className="mt-2 space-y-1">
-                    <li><strong>Dürüst Olun:</strong> Fikrinizin zayıf yönlerini saklamayın. <em>"Bu kısmı nasıl yapacağımı henüz bilmiyorum"</em> demekten çekinmeyin.</li>
-                    <li><strong>Hedef Kitleyi Daraltın:</strong> Hedef kitleniz "Herkes" olamaz. <br/>
-                      <span className="text-red-500 mr-2 text-sm">❌</span> <em>"Kedisi olanlar"</em> <br/>
-                      <span className="text-emerald-600 mr-2 text-sm">✅</span> <em>"Büyükşehirlerde yaşayan, çalışan ve evcil hayvan sağlığına para harcayan 30-45 yaş bireyler."</em>
-=======
                   <h4 className="text-foreground font-semibold">Defne&apos;ye Nasıl Bilgi Verilmeli?</h4>
                   <ul className="mt-2 space-y-1">
                     <li><strong>Dürüst Olun:</strong> Fikrinizin zayıf yönlerini saklamayın. <em>&quot;Bu kısmı nasıl yapacağımı henüz bilmiyorum&quot;</em> demekten çekinmeyin.</li>
                     <li><strong>Hedef Kitleyi Daraltın:</strong> Hedef kitleniz &quot;Herkes&quot; olamaz. <br/>
                       <span className="text-red-500 mr-2 text-sm">❌</span> <em>&quot;Kedisi olanlar&quot;</em> <br/>
                       <span className="text-emerald-600 mr-2 text-sm">✅</span> <em>&quot;Büyükşehirlerde yaşayan, çalışan ve evcil hayvan sağlığına para harcayan 30-45 yaş bireyler.&quot;</em>
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
                     </li>
                   </ul>
                 </div>
                 
                 <div>
-<<<<<<< HEAD
-                  <h4 className="text-foreground font-semibold">Defne'nin Sorularına Nasıl Cevap Verilmeli?</h4>
-                  <ul className="mt-2 space-y-1">
-                    <li><strong>Savunmacı Olmayın:</strong> Defne sizi zorluyorsa amacı fikrinizi çürütmek değil, pazardaki zorluklara hazırlamaktır.</li>
-                    <li><strong>"Sen Ne Önerirsin?" Taktiği:</strong> Cevabı bilmiyorsanız, <em>"Emin değilim, sen ne tür bir özellik önerirdin?"</em> diyerek onun analitik zekasını kullanın.</li>
-=======
                   <h4 className="text-foreground font-semibold">Defne&apos;nin Sorularına Nasıl Cevap Verilmeli?</h4>
                   <ul className="mt-2 space-y-1">
                     <li><strong>Savunmacı Olmayın:</strong> Defne sizi zorluyorsa amacı fikrinizi çürütmek değil, pazardaki zorluklara hazırlamaktır.</li>
                     <li><strong>&quot;Sen Ne Önerirsin?&quot; Taktiği:</strong> Cevabı bilmiyorsanız, <em>&quot;Emin değilim, sen ne tür bir özellik önerirdin?&quot;</em> diyerek onun analitik zekasını kullanın.</li>
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
                   </ul>
                 </div>
               </div>
@@ -179,21 +141,6 @@ export default function GuidePage() {
                 <div className="space-y-4">
                   <div className="flex gap-3">
                     <span className="font-bold text-foreground w-16 shrink-0">Siz:</span>
-<<<<<<< HEAD
-                    <span className="text-muted-foreground">"Evcil hayvanların aşılarını takip eden bir uygulama fikrim var."</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <span className="font-bold text-[#ff7759] w-16 shrink-0">Defne:</span>
-                    <span className="text-muted-foreground">"Peki potansiyel kullanıcılar şu an bu ihtiyacı nasıl karşılıyor? Sizin farkınız ne olacak?"</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <span className="font-bold text-red-500 w-16 shrink-0">Kötü Yanıt:</span>
-                    <span className="text-muted-foreground">"Şu an kağıda yazıyorlar. Bizimki dijital, herkes indirecek." <br/><em className="text-xs opacity-70">(Sığ bir cevap, Defne'yi tatmin etmez.)</em></span>
-                  </div>
-                  <div className="flex gap-3">
-                    <span className="font-bold text-emerald-600 w-16 shrink-0">İyi Yanıt:</span>
-                    <span className="text-muted-foreground">"Şu an veterinerin verdiği karneleri kullanıyorlar ama kaybediyorlar. Farkımız mama bittiğinde otomatik sipariş veren bir entegrasyon olması. Ancak fiyat modelinden emin değilim, sence nasıl olmalı?" <br/><em className="text-xs opacity-70">(Detaylı, zayıf noktayı itiraf eden harika bir cevap.)</em></span>
-=======
                     <span className="text-muted-foreground">&quot;Evcil hayvanların aşılarını takip eden bir uygulama fikrim var.&quot;</span>
                   </div>
                   <div className="flex gap-3">
@@ -207,7 +154,6 @@ export default function GuidePage() {
                   <div className="flex gap-3">
                     <span className="font-bold text-emerald-600 w-16 shrink-0">İyi Yanıt:</span>
                     <span className="text-muted-foreground">&quot;Şu an veterinerin verdiği karneleri kullanıyorlar ama kaybediyorlar. Farkımız mama bittiğinde otomatik sipariş veren bir entegrasyon olması. Ancak fiyat modelinden emin değilim, sence nasıl olmalı?&quot; <br/><em className="text-xs opacity-70">(Detaylı, zayıf noktayı itiraf eden harika bir cevap.)</em></span>
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
                   </div>
                 </div>
               </div>

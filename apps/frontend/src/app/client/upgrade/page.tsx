@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useClientPlan } from "@/hooks/use-client-plan";
@@ -23,18 +23,11 @@ const PLANS = [
     color: "border-[#d9d9dd]",
     badge: null,
     features: [
-<<<<<<< HEAD
       "3 günlük ücretsiz deneme",
       "Toplam 2 adet araştırma hakkı",
       "İstediğiniz kadar persona (maks 10)",
       "Persona sohbetlerini izleme",
-=======
-      "2 araştırma / ay",
-      "3 persona",
-      "Adversarial Review",
-      "RFI Skoru",
-      "Temel rapor",
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
+      "Temel Rapor (Adversarial Review & RFI Skoru)",
     ],
     locked: [
       "Araştırma raporları (Paywall/Blur)",
@@ -72,23 +65,15 @@ const PLANS = [
     color: "border-[#003c33]",
     badge: "En Popüler",
     features: [
-<<<<<<< HEAD
       "Ayda 10 araştırma hakkı",
-      "A/B Test ve Kullanıcı mülakatları",
+      "Maks 10 persona",
+      "A/B Test simülasyonları dahil",
       "Mülakat taslağı iyileştirme",
-      "Araştırma başına 3 takip sorusu",
+      "Araştırma başına 3 takip sorusu (probing)",
       "Araştırma başına 2 'Araştırmayla Konuş'",
-      "Kurumsal rapor ve paylaşım",
+      "PDF rapor export & SES cross-tab tablosu",
+      "Gerçek zamanlı stream & RFI Skoru",
       "3 günlük ücretsiz deneme",
-=======
-      "10 araştırma / ay",
-      "5 persona",
-      "Adversarial Review",
-      "RFI Skoru",
-      "PDF rapor export",
-      "Gerçek zamanlı stream",
-      "SES cross-tab tablosu",
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
     ],
     locked: [
       "White-label (Markasız raporlar)",
@@ -111,7 +96,6 @@ const PLANS = [
       "White-label (Markasız/Özel logolu) raporlar",
       "B2B persona modu",
       "Marka Sağlığı analizi",
-<<<<<<< HEAD
       "3 günlük ücretsiz deneme",
     ],
     locked: [],
@@ -130,10 +114,8 @@ const PLANS = [
       "Çok kullanıcılı organizasyon & audit log",
       "Özel entegrasyonlar ve API erişimi",
       "Atanmış müşteri başarı temsilcisi",
-=======
       "PDF export & SES cross-tab",
       "7/24 Öncelikli destek",
->>>>>>> c2e56332200a78c21e940108bc5898a678c72903
     ],
     locked: [],
   },
