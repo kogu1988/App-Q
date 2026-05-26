@@ -15,10 +15,25 @@ import {
   Settings, Users, Activity, ListOrdered,
   MessageSquare, Heart, HeartOff, Trash2,
   Plus, Save, Loader2, Pencil, Check, X, Code, ChevronDown, ChevronRight,
-  BarChart3, Cpu, Zap, Database, ThumbsUp, ThumbsDown, Eye
+  BarChart3, Cpu, Zap, Database, ThumbsUp, ThumbsDown, Eye, Info
 } from "lucide-react";
 import Logo from "@/components/logo";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+
+function InfoTooltip({ text }: { text: string }) {
+  return (
+    <div className="relative group inline-flex items-center ml-1.5 align-middle">
+      <div className="flex items-center justify-center w-4 h-4 rounded-full bg-[#eeece7] text-[#616161] text-[12px] cursor-help font-medium hover:bg-[#d9d9dd] transition-colors">
+        ?
+      </div>
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 px-3 py-2 bg-[#17171c] border border-[#212121] text-white text-[12px] rounded-[8px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] pointer-events-none font-normal normal-case leading-relaxed text-center">
+        {text}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-[#17171c]" />
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-[#212121] -z-10 mt-[1px]" />
+      </div>
+    </div>
+  );
+}
 
 // ─── Feedback Table with Filters (E2) ───────────────────────────────────────
 
@@ -1160,7 +1175,10 @@ export default function AdminPage() {
                       {/* AI Generator Tab */}
                       <TabsContent value="ai" className="space-y-3 mt-0">
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Rol Başlığı / Segment</Label>
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">
+                            Rol Başlığı / Segment
+                            <InfoTooltip text="Üretilecek personanın ana kimliği (Örn: Ev Hanımı, Yazılımcı, Emekli). Havuzda 'Rol / Segment' olarak görünür." />
+                          </Label>
                           <Input
                             value={genForm.role_title}
                             onChange={e => setGenForm(f => ({ ...f, role_title: e.target.value }))}
@@ -1171,7 +1189,10 @@ export default function AdminPage() {
                         
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase">Kategori</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase">
+                              Kategori
+                              <InfoTooltip text="Personanın ilgi veya uzmanlık alanı (Örn: E-ticaret, Bankacılık). Hedefli araştırmalarda filtreleme sağlar." />
+                            </Label>
                             <Input
                               value={genForm.category}
                               onChange={e => setGenForm(f => ({ ...f, category: e.target.value }))}
@@ -1180,7 +1201,10 @@ export default function AdminPage() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase">Hedef Tüketici Tanımı</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase">
+                              Hedef Tüketici Tanımı
+                              <InfoTooltip text="Personanın markayla olan ilişkisi. Havuzdaki 'Katılımcı Tipi'ni belirler (Örn: Potansiyel Müşteri, Rakip Kullanıcı)." />
+                            </Label>
                             <Input
                               value={genForm.target_users}
                               onChange={e => setGenForm(f => ({ ...f, target_users: e.target.value }))}
@@ -1192,7 +1216,10 @@ export default function AdminPage() {
 
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase">Miktar (1-10)</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase">
+                              Miktar (1-10)
+                              <InfoTooltip text="Bu profile uygun tek seferde üretilecek ve havuza eklenecek farklı varyasyonlardaki persona sayısı." />
+                            </Label>
                             <select
                               value={genForm.count}
                               onChange={e => setGenForm(f => ({ ...f, count: +e.target.value }))}
@@ -1204,7 +1231,10 @@ export default function AdminPage() {
                             </select>
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase">Hedef Pazar</Label>
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase">
+                              Hedef Pazar
+                              <InfoTooltip text="Personanın yaşadığı coğrafya veya ülke. Havuzdaki 'Lokasyon' bilgisini doğrudan etkiler (Örn: Türkiye, Global)." />
+                            </Label>
                             <Input
                               value={genForm.market}
                               onChange={e => setGenForm(f => ({ ...f, market: e.target.value }))}
@@ -1285,7 +1315,33 @@ export default function AdminPage() {
               </div>
 
               {/* Bottom: Persona Pool List (Sentetik Tüketici Havuzu) */}
-              <div className="w-full">
+              <div className="w-full space-y-6">
+
+                {/* Mapping Explanation Banner */}
+                <div className="bg-[#edfce9]/40 border border-[#003c33]/20 rounded-lg p-4 text-sm text-[#003c33] animate-in fade-in slide-in-from-bottom-2">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-[#003c33] shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-bold mb-1.5">Üretim Parametreleri Havuza Nasıl Yansır?</h4>
+                      <p className="text-xs text-[#003c33]/80 mb-2.5">Persona üretirken veya paket eklerken girdiğiniz bilgiler, havuzdaki kullanıcıların detaylarını doğrudan şekillendirir:</p>
+                      <ul className="text-xs space-y-2 text-[#003c33]/80 list-disc pl-4">
+                        <li>
+                          <strong className="font-semibold text-[#003c33]">Rol Başlığı / Segment:</strong> Havuzdaki <strong className="font-semibold text-[#003c33]">Rol / Segment</strong> sütununu oluşturur. Personanın temel sosyokültürel veya mesleki kimliğidir.
+                        </li>
+                        <li>
+                          <strong className="font-semibold text-[#003c33]">Kategori:</strong> Personanın ilgi veya uzmanlık alanıdır, ana tabloda görünmese de simülasyonlarda ve hedefli filtrelemelerde kullanılır.
+                        </li>
+                        <li>
+                          <strong className="font-semibold text-[#003c33]">Hedef Tüketici Tanımı:</strong> Havuzdaki <strong className="font-semibold text-[#003c33]">Katılımcı Tipi</strong>ni (Örn: Potansiyel Müşteri, Kaybedilmiş Kullanıcı, Rakip Kullanıcı) doğrudan belirler.
+                        </li>
+                        <li>
+                          <strong className="font-semibold text-[#003c33]">Hedef Pazar:</strong> Havuzdaki <strong className="font-semibold text-[#003c33]">Lokasyon</strong> (şehir) bilgisini oluşturur. Coğrafi ve kültürel bağlamı şekillendirir.
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
                 <Card className="border-[#d9d9dd] shadow-sm h-full">
                   <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
@@ -1298,12 +1354,12 @@ export default function AdminPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>İsim & Yaş</TableHead>
-                            <TableHead>Lokasyon</TableHead>
-                            <TableHead>Rol / Segment</TableHead>
-                            <TableHead>SES</TableHead>
-                            <TableHead>Katılımcı Tipi</TableHead>
-                            <TableHead>Tür</TableHead>
+                            <TableHead>İsim & Yaş <InfoTooltip text="Yapay zeka tarafından üretilen benzersiz isim ve yaş." /></TableHead>
+                            <TableHead>Lokasyon <InfoTooltip text="Personanın ikamet ettiği şehir. Persona üretirken girilen 'Hedef Pazar'a göre şekillenir." /></TableHead>
+                            <TableHead>Rol / Segment <InfoTooltip text="Personanın sosyokültürel veya mesleki kimliği. Üretimdeki 'Rol Başlığı'ndan gelir." /></TableHead>
+                            <TableHead>SES <InfoTooltip text="Sosyoekonomik Statü (A, B, C1, C2, vs). Personanın alım gücünü ve sosyal sınıfını ifade eder." /></TableHead>
+                            <TableHead>Katılımcı Tipi <InfoTooltip text="Tüketicinin pozisyonu. Üretimdeki 'Hedef Tüketici Tanımı'na göre (Örn: Potansiyel, Rakip Kullanıcı) belirlenir." /></TableHead>
+                            <TableHead>Tür <InfoTooltip text="Global (tüm kullanıcılara açık) veya Özel (sadece belirli bir danışana ait) olduğunu belirtir." /></TableHead>
                             <TableHead className="text-right">Aksiyonlar</TableHead>
                           </TableRow>
                         </TableHeader>
