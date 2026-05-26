@@ -1,11 +1,53 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { Toaster } from "@/components/ui/sonner";
 import { useState, useEffect, Suspense } from "react";
-import { Menu, X, LogOut, User, Zap, ArrowUpRight } from "lucide-react";
+import { Menu, X, LogOut, User, Zap, ArrowUpRight, FileText } from "lucide-react";
 import { UsernameModal } from "@/components/username-modal";
 import { useClientPlan } from "@/hooks/use-client-plan";
+import Logo from "@/components/logo";
+
+// ── Sidebar Studies Widget ───────────────────────────────────────────────────
+
+function SidebarStudiesWidget() {
+  const [studies, setStudies] = useState<any[]>([]);
+
+  useEffect(() => {
+    const username = localStorage.getItem("appq_username") || "";
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+    const headers: Record<string, string> = username ? { "X-Username": username } : {};
+    fetch(`${apiBase}/api/client/studies`, { headers })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        // En son 5 araştırmayı gösterelim
+        setStudies(data.slice(0, 5));
+      })
+      .catch(() => {});
+  }, []);
+
+  if (studies.length === 0) return null;
+
+  return (
+    <div className="pt-4 mt-2 border-t border-border/50">
+      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-3">
+        Son Araştırmalar
+      </h4>
+      <div className="flex flex-col gap-0.5">
+        {studies.map(study => (
+          <Link 
+            key={study.id} 
+            href={`/client/studies/${study.id}`}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-[12px] font-medium transition-colors group"
+          >
+            <FileText size={13} className="shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
+            <span className="truncate">{study.title || "İsimsiz Proje"}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ── Sidebar Plan Widget ──────────────────────────────────────────────────────
 
@@ -119,11 +161,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const username = localStorage.getItem("appq_username");
-    if (!username) {
-      setShowModal(true);
-    } else {
-      setCurrentUsername(username);
-    }
+    const timer = setTimeout(() => {
+      if (!username) {
+        setShowModal(true);
+      } else {
+        setCurrentUsername(username);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   function handleLogout() {
@@ -146,7 +191,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-sidebar">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.svg" alt="Clarere" className="h-8 w-auto object-contain" />
+          <Logo size={32} strokeColor="#17171c" />
           <span className="font-semibold tracking-tight text-lg">Clarere</span>
         </Link>
         <button
@@ -166,7 +211,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         {/* Logo */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Clarere" className="h-8 w-auto object-contain" />
+            <Logo size={32} strokeColor="#17171c" />
             <span className="font-semibold tracking-tight text-lg">Clarere</span>
           </Link>
           <button
@@ -194,6 +239,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           >
             Yeni Araştırma
           </Link>
+          
+          <SidebarStudiesWidget />
         </nav>
 
         {/* Bottom: Plan widget + user */}

@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Logo from "@/components/logo";
 
 interface UsernameModalProps {
   onComplete: (username: string) => void;
@@ -18,7 +19,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
   const searchParams = useSearchParams();
   const planParam = searchParams.get("plan");
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
   const planLabel: Record<string, string> = {
     starter: "Starter",
@@ -69,7 +70,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
       <div className="w-full max-w-sm mx-4 rounded-2xl border border-border bg-card shadow-2xl p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <img src="/logo.svg" alt="Clarere" className="h-9 w-auto object-contain" />
+          <Logo size={36} strokeColor="#17171c" />
           <span className="font-bold text-lg tracking-tight">Clarere</span>
         </div>
 

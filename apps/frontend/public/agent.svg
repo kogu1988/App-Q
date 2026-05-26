@@ -1,8 +1,13 @@
+<<<<<<< HEAD
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-100 -100 200 200">
+=======
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-100 -100 200 200" width="200" height="200">
+>>>>>>> c2e56332200a78c21e940108bc5898a678c72903
 	<defs>
 		<style>
 			@keyframes pulse-anim{0%,to{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
 		</style>
+<<<<<<< HEAD
 		<path id="leaf" d="M0-40c22 25 22 55 0 80-22-25-22-55 0-80"/>
 	</defs>
 	<circle r="100" fill="#071829"/>
@@ -35,3 +40,33 @@
 		<circle r="7" fill="#ff7759" style="animation:pulse-anim 2.5s infinite ease-in-out"/>
 	</g>
 </svg>
+=======
+		<path id="leaf" d="M0-40c22 25 22 55 0 80-22-25-22-55 0-80" class="svg-elem-1"></path>
+	</defs>
+	<circle r="75" fill="none" stroke="#000000" stroke-width="5" class="svg-elem-2"></circle>
+	<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+		<g stroke="#1863dc" stroke-width="5" opacity=".4">
+			<use href="#leaf" transform="matrix(.8 0 0 .8 0 -24)"></use>
+			<use href="#leaf" transform="rotate(45 28.97 12)scale(.8)"></use>
+			<use href="#leaf" transform="matrix(0 .8 -.8 0 24 0)"></use>
+			<use href="#leaf" transform="rotate(135 4.97 12)scale(.8)"></use>
+			<use href="#leaf" transform="matrix(-.8 0 0 -.8 0 24)"></use>
+			<use href="#leaf" transform="rotate(225 -4.97 12)scale(.8)"></use>
+			<use href="#leaf" transform="matrix(0 -.8 .8 0 -24 0)"></use>
+			<use href="#leaf" transform="rotate(-45 -28.97 12)scale(.8)"></use>
+		</g>
+		<g stroke="#fff" stroke-width="1.5" opacity=".9">
+			<use href="#leaf" transform="rotate(22.5 30.164 6)scale(.55)"></use>
+			<use href="#leaf" transform="rotate(67.5 8.98 6)scale(.55)"></use>
+			<use href="#leaf" transform="rotate(112.5 4.01 6)scale(.55)"></use>
+			<use href="#leaf" transform="rotate(157.5 1.193 6)scale(.55)"></use>
+			<use href="#leaf" transform="rotate(202.5 -1.193 6)scale(.55)"></use>
+			<use href="#leaf" transform="rotate(247.5 -4.01 6)scale(.55)"></use>
+			<use href="#leaf" transform="rotate(-67.5 -8.98 6)scale(.55)"></use>
+			<use href="#leaf" transform="rotate(-22.5 -30.164 6)scale(.55)"></use>
+		</g>
+		<circle r="14" stroke="#003c33" stroke-width="3" class="svg-elem-3"></circle>
+		<circle r="4" fill="#fff" class="svg-elem-4"></circle>
+	</g>
+</svg>
+>>>>>>> c2e56332200a78c21e940108bc5898a678c72903

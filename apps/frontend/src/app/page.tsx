@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, X, BarChart2, FlaskConical, ShieldCheck, Zap, Brain, FileText, ArrowRight } from "lucide-react";
+import Logo from "@/components/logo";
 
 // ── Pricing config ──────────────────────────────────────────────────────────
 
@@ -48,7 +50,7 @@ const PLAN_META = [
     ctaHref: "/client?plan=pro",
     highlight: true,
     hasBillingToggle: true,
-    limits: ["Sınırsız araştırma", "7 persona", "A/B Test", "Adversarial Review", "RFI Skoru"],
+    limits: ["Sınırsız araştırma", "7 persona", "A/B Test", "B2B Persona Modu", "Marka Sağlığı Analizi"],
   },
   {
     name: "Enterprise",
@@ -68,8 +70,9 @@ const FEATURES = [
   { label: "PDF Rapor", plans: [false, true, true, true] },
   { label: "Van Westendorp Analizi", plans: [false, true, true, true] },
   { label: "B2B Persona Modu", plans: [false, false, true, true] },
-  { label: "Adversarial Review", plans: [false, false, true, true] },
-  { label: "Research Fidelity Index (RFI)", plans: [false, false, true, true] },
+  { label: "Adversarial Review", plans: [true, true, true, true] },
+  { label: "Research Fidelity Index (RFI)", plans: [true, true, true, true] },
+  { label: "Marka Sağlığı Analizi", plans: [false, false, true, true] },
   { label: "Özel Persona Havuzu", plans: [false, false, false, true] },
   { label: "White-label", plans: [false, false, false, true] },
   { label: "Audit Log", plans: [false, false, false, true] },
@@ -159,22 +162,29 @@ export default function HomePage() {
   const toggleBilling = (name: string) =>
     setCardBilling((prev) => ({ ...prev, [name]: prev[name] === "annual" ? "monthly" : "annual" }));
   const scrolled = useScrolled();
+  const router = useRouter();
+  const navigateTo = (href: string) => { router.push(href); };
 
   return (
-    <div className="min-h-screen text-[#212121]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+    <div className="min-h-screen text-[#212121] antialiased" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
 
       <nav
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        className="fixed left-0 right-0 z-50 transition-all duration-300 mx-auto px-4 sm:px-6"
         style={{
-          background: scrolled ? "rgba(255,255,255,0.90)" : "transparent",
-          backdropFilter: scrolled ? "blur(14px) saturate(1.6)" : "none",
-          WebkitBackdropFilter: scrolled ? "blur(14px) saturate(1.6)" : "none",
-          borderBottom: scrolled ? "1px solid rgba(217,217,221,0.8)" : "1px solid transparent",
+          top: scrolled ? "1rem" : "0",
+          maxWidth: scrolled ? "72rem" : "100%",
+          background: scrolled ? "rgba(255, 255, 255, 0.85)" : "transparent",
+          backdropFilter: "blur(14px) saturate(1.6)",
+          WebkitBackdropFilter: "blur(14px) saturate(1.6)",
+          border: scrolled ? "1px solid rgba(217, 217, 221, 0.7)" : "1px solid transparent",
+          borderBottom: scrolled ? "1px solid rgba(217, 217, 221, 0.7)" : "1px solid transparent",
+          borderRadius: scrolled ? "9999px" : "0px",
+          boxShadow: scrolled ? "0 10px 30px -10px rgba(0, 0, 0, 0.08)" : "none",
         }}
       >
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Clarere logo" className="h-8 w-auto object-contain" />
+            <Logo size={32} strokeColor={scrolled ? "#17171c" : "#ffffff"} />
             <span
               className="font-semibold text-base tracking-tight transition-colors duration-300"
               style={{ color: scrolled ? "#17171c" : "#ffffff" }}
@@ -183,30 +193,36 @@ export default function HomePage() {
             </span>
           </div>
           <div className="flex items-center gap-6">
-            <a
-              href="#pricing"
-              className="text-sm transition-colors duration-300 hidden sm:block hover:opacity-100"
+            <span
+              onClick={() => navigateTo("/#pricing")}
+              className="text-sm transition-colors duration-300 hidden sm:block hover:opacity-100 relative group py-1 cursor-pointer"
               style={{ color: scrolled ? "#93939f" : "rgba(255,255,255,0.72)" }}
+              role="link"
             >
               Fiyatlandırma
-            </a>
-            <a
-              href="#faq"
-              className="text-sm transition-colors duration-300 hidden sm:block hover:opacity-100"
+              <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#ff7759] transition-all duration-300 group-hover:w-full" />
+            </span>
+            <span
+              onClick={() => navigateTo("/#faq")}
+              className="text-sm transition-colors duration-300 hidden sm:block hover:opacity-100 relative group py-1 cursor-pointer"
               style={{ color: scrolled ? "#93939f" : "rgba(255,255,255,0.72)" }}
+              role="link"
             >
               SSS
-            </a>
-            <Link
-              href="/admin"
-              className="text-sm transition-colors duration-300 hidden md:block hover:opacity-100"
+              <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#ff7759] transition-all duration-300 group-hover:w-full" />
+            </span>
+            <span
+              onClick={() => navigateTo("/admin")}
+              className="text-sm transition-colors duration-300 hidden md:block hover:opacity-100 relative group py-1 cursor-pointer"
               style={{ color: scrolled ? "#93939f" : "rgba(255,255,255,0.72)" }}
+              role="link"
             >
               Yönetim
-            </Link>
+              <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#ff7759] transition-all duration-300 group-hover:w-full" />
+            </span>
             <Link
               href="/client"
-              className="btn-pill-primary text-sm transition-all duration-300"
+              className="btn-pill-primary text-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu md:hover:scale-[1.02] md:active:scale-[0.98]"
               style={scrolled
                 ? { background: "#17171c", color: "#ffffff", border: "none" }
                 : { background: "rgba(255,255,255,0.14)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.35)", backdropFilter: "blur(6px)" }
@@ -234,7 +250,7 @@ export default function HomePage() {
           aria-hidden="true"
         />
 
-        <div className="relative max-w-5xl mx-auto px-6 pt-28 pb-20 text-center">
+        <div className="relative max-w-5xl mx-auto px-6 pt-36 pb-20 text-center">
           <Reveal>
             <h1 className="display-hero text-white mb-6" style={{ maxWidth: "880px", margin: "0 auto 1.5rem" }}>
               Gerçek mülakatlardan önce{" "}
@@ -243,20 +259,42 @@ export default function HomePage() {
           </Reveal>
 
           <Reveal delay={160}>
-            <p className="text-lg max-w-2xl mx-auto leading-relaxed mb-10" style={{ color: "rgba(255,255,255,0.70)", fontWeight: 400 }}>
-              Rogers Diffusion + OCEAN psikometrisi + Adversarial Review ile
-              ürün fikirlerinizi AI destekli tüketici panelleriyle test edin.
-              Saatler içinde karar alınabilir içgörü.
+            <p className="text-lg max-w-2xl mx-auto leading-relaxed mb-6" style={{ color: "rgba(255,255,255,0.70)", fontWeight: 400 }}>
+              Gerçek kullanıcıya ihtiyaç duymadan, gerçek içgörüler elde edin. Clarere, sentetik personalarla anında kullanıcı mülakatı ve A/B testi yapmanızı sağlar.
             </p>
+            {/* Methodology Badges */}
+            <div className="flex flex-wrap justify-center gap-2 mb-8 max-w-lg mx-auto">
+              <span className="px-3 py-1 rounded-[2px] text-[10px] sm:text-xs font-semibold border border-white/10 text-white/80 bg-white/5 uppercase tracking-wider" style={{ fontFamily: "var(--font-mono, monospace)" }}>
+                Rogers Diffusion
+              </span>
+              <span className="px-3 py-1 rounded-[2px] text-[10px] sm:text-xs font-semibold border border-white/10 text-white/80 bg-white/5 uppercase tracking-wider" style={{ fontFamily: "var(--font-mono, monospace)" }}>
+                OCEAN Psikometrisi
+              </span>
+              <span className="px-3 py-1 rounded-[2px] text-[10px] sm:text-xs font-semibold border border-white/10 text-white/80 bg-white/5 uppercase tracking-wider" style={{ fontFamily: "var(--font-mono, monospace)" }}>
+                A/B Test Simülasyonu
+              </span>
+              <span className="px-3 py-1 rounded-[2px] text-[10px] sm:text-xs font-semibold border border-white/10 text-white/80 bg-white/5 uppercase tracking-wider" style={{ fontFamily: "var(--font-mono, monospace)" }}>
+                Adversarial Review
+              </span>
+            </div>
           </Reveal>
 
           <Reveal delay={240}>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/client" className="btn-pill-primary text-sm" style={{ background: "#ff7759", color: "#17171c" }}>
-                Ücretsiz Başla <ArrowRight size={14} className="ml-2 inline" />
+              <Link
+                href="/client"
+                className="btn-pill-primary text-sm group transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu md:hover:scale-[1.02] md:active:scale-[0.98]"
+                style={{ background: "#ff7759", color: "#17171c" }}
+              >
+                Ücretsiz Başla <ArrowRight size={14} className="ml-2 inline transition-transform duration-300 md:group-hover:translate-x-1" />
               </Link>
-              <a href="#pricing" className="btn-text-link text-sm" style={{ color: "rgba(255,255,255,0.75)", textDecorationColor: "rgba(255,255,255,0.35)" }}>
+              <a
+                href="#pricing"
+                className="btn-text-link text-sm relative group py-1"
+                style={{ color: "rgba(255,255,255,0.75)", textDecoration: "none" }}
+              >
                 Planları Gör
+                <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#ff7759] transition-all duration-300 group-hover:w-full" />
               </a>
             </div>
           </Reveal>
@@ -276,6 +314,68 @@ export default function HomePage() {
               </div>
             </div>
           </Reveal>
+        </div>
+      </section>
+
+      {/* ── MANIFESTO / BRAND STORY SECTION (ASIMETRIK SOL-SABIT AKIŞ) ───────── */}
+      <section className="bg-white py-24 px-6 border-b border-[#d9d9dd] relative">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 md:gap-16">
+          
+          {/* Left sticky column */}
+          <div className="md:w-5/12 md:sticky md:top-28 self-start space-y-4">
+            <p className="mono-label text-[#ff7759] uppercase tracking-wider text-xs">Manifesto</p>
+            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-[#17171c] leading-tight" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+              Fikrinizin parlaması için gereken berraklık.
+            </h2>
+            <div className="w-12 h-1 bg-[#ff7759] mt-6" />
+          </div>
+          
+          {/* Right scrolling narrative column */}
+          <div className="md:w-7/12 space-y-12">
+            
+            <Reveal>
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-[#17171c] tracking-tight">Sislerin Ötesinde Bir Fikir</h3>
+                <p className="text-[#616161] text-base leading-relaxed">
+                  Her büyük ürün, bir sisin içinde başlar. Zihninizdeki fikir parlaktır ama onu başkalarının gözünden görmeye çalıştığınız anda şekiller bulanıklaşır. Mülakatlar, anketler, A/B testleri… Hepsi sizi netliğe götürmesi gerekirken sürecin kendisi yeni bir gürültü yaratır.
+                </p>
+              </div>
+            </Reveal>
+
+            <Reveal delay={60}>
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-[#17171c] tracking-tight">Clarere: Berraklaşmak</h3>
+                <p className="text-[#616161] text-base leading-relaxed">
+                  Clarere işte tam burada devreye girer. Latince <em className="text-[#ff7759] not-italic font-semibold">“parlamak, berraklaşmak”</em> anlamından gelen ismimiz, vaadimizin ta kendisidir. Gerçek kullanıcıların karmaşasına, lojistiğine ve belirsizliğine takılmadan, yapay zekânın ürettiği sentetik personalarla fikrinizin üzerindeki sisi dağıtmanızı sağlarız.
+                </p>
+              </div>
+            </Reveal>
+
+            <Reveal delay={120}>
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-[#17171c] tracking-tight">Canlı ve Düşünen Profiller</h3>
+                <p className="text-[#616161] text-base leading-relaxed">
+                  Artık sorularınız havada asılı kalmaz. Karşınızda konuşan, düşünen, itiraz eden, heyecanlanan insan profilleri vardır. Onlar zihninizin karanlık köşelerine ışık tutar; siz fark etmediğiniz ihtiyaçları, duymadığınız itirazları onlardan duyarsınız.
+                </p>
+              </div>
+            </Reveal>
+
+            <Reveal delay={180}>
+              <div className="pt-6 border-t border-[#d9d9dd] space-y-4">
+                <p className="text-lg font-bold text-[#17171c]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+                  İlk sentetik kullanıcınızla tanışmaya hazır mısınız?
+                </p>
+                <Link
+                  href="/client"
+                  className="inline-flex items-center gap-2 btn-pill-primary text-sm shrink-0 group transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu md:hover:scale-[1.02] md:active:scale-[0.98]"
+                  style={{ background: "#17171c", color: "#ffffff" }}
+                >
+                  Hemen Tanışın <ArrowRight size={14} className="transition-transform duration-300 md:group-hover:translate-x-1" />
+                </Link>
+              </div>
+            </Reveal>
+            
+          </div>
         </div>
       </section>
 
@@ -306,20 +406,20 @@ export default function HomePage() {
             <h2 className="display-section text-white mb-3">
               6 adımda AI araştırma
             </h2>
-            <p className="text-lg text-white/60 mb-12 max-w-xl">Defne'den sentez raporuna — bilimsel altyapı ile desteklenen tam araştırma akışı.</p>
+            <p className="text-lg text-white/60 mb-12 max-w-xl">Defne&apos;den sentez raporuna — bilimsel altyapı ile desteklenen tam araştırma akışı.</p>
           </Reveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
             {FEATURE_HIGHLIGHTS.map(({ icon: Icon, title, desc }, i) => (
               <Reveal key={title} delay={i * 60} className="h-full">
                 <div
-                  className="h-full p-6 rounded-[8px] border border-white/10 hover:border-white/25 transition-all duration-300 flex flex-col"
+                  className="h-full p-6 rounded-[8px] border border-white/10 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu flex flex-col group md:hover:border-[#ff7759]/40 md:hover:scale-[1.01] md:hover:bg-white/[0.06]"
                   style={{ background: "rgba(255,255,255,0.04)" }}
                 >
-                  <div className="w-9 h-9 rounded-[4px] flex items-center justify-center mb-4 shrink-0" style={{ background: "#ff7759" }}>
+                  <div className="w-9 h-9 rounded-[4px] flex items-center justify-center mb-4 shrink-0 transition-transform duration-300 md:group-hover:scale-110" style={{ background: "#ff7759" }}>
                     <Icon size={18} color="#fff" />
                   </div>
-                  <h3 className="text-white font-semibold text-base mb-2 shrink-0">{title}</h3>
+                  <h3 className="text-white font-semibold text-base mb-2 shrink-0 transition-colors duration-300 md:group-hover:text-[#ff7759]">{title}</h3>
                   <p className="text-white/55 text-sm leading-relaxed flex-1">{desc}</p>
                 </div>
               </Reveal>
@@ -360,9 +460,9 @@ export default function HomePage() {
             return (
               <Reveal key={plan.name} delay={idx * 60}>
                 <div
-                  className={`relative rounded-[8px] border p-6 flex flex-col gap-4 h-full transition-all duration-300 ${plan.highlight
-                      ? "border-[#17171c] bg-[#17171c] text-white shadow-xl"
-                      : "border-[#d9d9dd] bg-white hover:border-[#17171c] hover:shadow-sm"
+                  className={`relative rounded-[8px] border p-6 flex flex-col gap-4 h-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu ${plan.highlight
+                      ? "border-[#17171c] bg-[#17171c] text-white shadow-xl md:hover:border-[#ff7759] md:hover:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)] md:hover:scale-[1.01]"
+                      : "border-[#d9d9dd] bg-white md:hover:border-[#ff7759]/50 md:hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.08)] md:hover:scale-[1.01]"
                     }`}
                 >
                   {plan.highlight && (
@@ -414,11 +514,17 @@ export default function HomePage() {
                       <span className="text-3xl font-bold tracking-tight" style={{ letterSpacing: "-0.03em" }}>{priceDisplay}</span>
                       <span className={`text-sm mb-0.5 ${plan.highlight ? "text-white/50" : "text-[#93939f]"}`}>{periodDisplay}</span>
                     </div>
-                    {showAnnual && monthlyPx && (
-                      <p className="text-xs mt-1" style={{ color: plan.highlight ? "#edfce9" : "#003c33" }}>
-                        Aylık ₺{monthlyEquivalent(monthlyPx).toLocaleString("tr-TR")} — 1 ay bedava
-                      </p>
-                    )}
+                    <p
+                      className={`text-xs mt-1 transition-opacity duration-300 ${
+                        showAnnual && monthlyPx ? "opacity-100" : "opacity-0 pointer-events-none select-none"
+                      }`}
+                      style={{ color: plan.highlight ? "#edfce9" : "#003c33" }}
+                    >
+                      {monthlyPx 
+                        ? `Aylık ₺${monthlyEquivalent(monthlyPx).toLocaleString("tr-TR")} — 1 ay bedava` 
+                        : "Aylık ₺0 — 1 ay bedava"
+                      }
+                    </p>
                   </div>
 
                   <ul className="space-y-1.5 flex-1">
@@ -436,7 +542,7 @@ export default function HomePage() {
 
                   <Link
                     href={plan.ctaHref}
-                    className={`text-center text-sm font-medium py-2.5 rounded-full transition-all ${plan.highlight
+                    className={`text-center text-sm font-medium py-2.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu md:hover:scale-[1.02] md:active:scale-[0.98] ${plan.highlight
                         ? "bg-white text-[#17171c] hover:bg-white/90"
                         : "bg-[#17171c] text-white hover:opacity-85 btn-pill-primary"
                       }`}
@@ -552,9 +658,9 @@ export default function HomePage() {
             </p>
             <Link
               href="/client"
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white text-[#17171c] font-medium text-sm hover:bg-white/90 transition-all"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white text-[#17171c] font-medium text-sm hover:bg-white/90 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu group md:hover:scale-[1.02] md:active:scale-[0.98]"
             >
-              Ücretsiz Başla <ArrowRight size={14} />
+              Ücretsiz Başla <ArrowRight size={14} className="transition-transform duration-300 md:group-hover:translate-x-1" />
             </Link>
           </Reveal>
         </div>
@@ -564,15 +670,15 @@ export default function HomePage() {
       <footer className="border-t border-[#d9d9dd] bg-white py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Clarere" className="h-6 w-auto object-contain" />
+            <Logo size={24} strokeColor="#93939f" />
             <span className="text-sm text-[#93939f]">Clarere © 2026</span>
           </div>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-[#93939f]">
-            <Link href="/guide" className="hover:text-[#212121] transition-colors">Kullanım Kılavuzu</Link>
-            <Link href="/#faq" className="hover:text-[#212121] transition-colors">SSS</Link>
-            <Link href="/#pricing" className="hover:text-[#212121] transition-colors">Fiyatlandırma</Link>
-            <Link href="/privacy" className="hover:text-[#212121] transition-colors">Gizlilik</Link>
-            <Link href="/terms" className="hover:text-[#212121] transition-colors">Kullanım Koşulları</Link>
+            <span onClick={() => navigateTo("/guide")} className="hover:text-[#212121] transition-colors cursor-pointer" role="link">Kullanım Kılavuzu</span>
+            <span onClick={() => navigateTo("/#faq")} className="hover:text-[#212121] transition-colors cursor-pointer" role="link">SSS</span>
+            <span onClick={() => navigateTo("/#pricing")} className="hover:text-[#212121] transition-colors cursor-pointer" role="link">Fiyatlandırma</span>
+            <span onClick={() => navigateTo("/privacy")} className="hover:text-[#212121] transition-colors cursor-pointer" role="link">Gizlilik</span>
+            <span onClick={() => navigateTo("/terms")} className="hover:text-[#212121] transition-colors cursor-pointer" role="link">Kullanım Koşulları</span>
           </div>
         </div>
       </footer>

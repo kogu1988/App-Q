@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
+import Logo from "@/components/logo";
 
 export const metadata: Metadata = {
   title: "Kullanım Koşulları — Clarere",
@@ -15,7 +16,7 @@ export default function TermsPage() {
       <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <img src="/logo.svg" alt="Clarere" className="h-8 w-auto object-contain" />
+            <Logo size={32} strokeColor="#17171c" />
             <span className="font-bold text-lg tracking-tight">Clarere</span>
           </Link>
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -38,7 +39,7 @@ export default function TermsPage() {
           <h2 className="text-xl font-bold">1. Taraflar ve Kapsam</h2>
           <p className="text-muted-foreground leading-relaxed">
             Bu kullanım koşulları, <strong className="text-foreground">Clarere</strong> platformu
-            ("Platform") ile platformu kullanan bireysel veya kurumsal kullanıcılar ("Kullanıcı")
+            (&quot;Platform&quot;) ile platformu kullanan bireysel veya kurumsal kullanıcılar (&quot;Kullanıcı&quot;)
             arasındaki hukuki ilişkiyi düzenlemektedir. Platforma erişerek veya herhangi bir
             özelliğini kullanarak bu koşulları kabul etmiş sayılırsınız.
           </p>
@@ -48,7 +49,7 @@ export default function TermsPage() {
           <h2 className="text-xl font-bold">2. Hizmetin Tanımı</h2>
           <p className="text-muted-foreground leading-relaxed">
             Clarere, <strong className="text-foreground">yapay zeka destekli sentetik pazar araştırması</strong> platformudur.
-            Platform; araştırma brief'i alımı, sentetik persona oluşturma, mülakat simülasyonu ve
+            Platform; araştırma brief&apos;i alımı, sentetik persona oluşturma, mülakat simülasyonu ve
             rapor sentezi hizmetleri sunar.
           </p>
           <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-2">
@@ -89,7 +90,7 @@ export default function TermsPage() {
           <ul className="space-y-2 text-muted-foreground">
             {[
               "Platformu yalnızca meşru araştırma ve iş geliştirme amaçlarıyla kullanmak",
-              "Araştırma brief'lerine gerçek kişilere ait kimlik, iletişim veya hassas kişisel veriler girmemek",
+              "Araştırma brief&apos;lerine gerçek kişilere ait kimlik, iletişim veya hassas kişisel veriler girmemek",
               "Platform çıktılarını kesinleşmiş gerçekler veya istatistiksel kanıt olarak sunmamak",
               "Belirlenen simülasyon ve token limitlerini aşmamak",
               "Sistemin güvenliğini, bütünlüğünü veya performansını tehlikeye atacak işlemler yapmamak",
@@ -143,8 +144,8 @@ export default function TermsPage() {
             <div className="p-4 rounded-xl border border-border bg-muted/20">
               <p className="font-semibold text-foreground mb-2">Tescilli Teknoloji ve Ticari Sır</p>
               <p className="leading-relaxed text-sm">
-                Clarere'nun çalışma algoritması — persona oluşturma motoru, mülakat simülasyon
-                katmanı, sentez pipeline'ı, anti-sycophancy mekanizması ve Research Fidelity
+                Clarere&apos;nun çalışma algoritması — persona oluşturma motoru, mülakat simülasyon
+                katmanı, sentez pipeline&apos;ı, anti-sycophancy mekanizması ve Research Fidelity
                 Index (RFI) puanlama sistemi dahil olmak üzere tüm bileşenleri — platform
                 sahibinin <strong className="text-foreground">ticari sırrını ve tescilli
                   teknolojisini</strong> oluşturmaktadır. Bu bileşenler Türkiye Cumhuriyeti
@@ -183,7 +184,7 @@ export default function TermsPage() {
 
             <p className="leading-relaxed">
               <strong className="text-foreground">Kullanıcı içeriği:</strong> Kullanıcının
-              platforma yüklediği araştırma brief'leri ve oluşturulan raporlar kullanıcıya aittir.
+              platforma yüklediği araştırma brief&apos;leri ve oluşturulan raporlar kullanıcıya aittir.
               Clarere bu içerikleri üçüncü taraflarla paylaşmaz; yalnızca hizmet iyileştirmesi
               için anonim istatistiksel veriler kullanabilir.
             </p>
@@ -266,7 +267,7 @@ export default function TermsPage() {
       <footer className="border-t border-border py-8 mt-16">
         <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Clarere" className="h-6 w-auto object-contain" />
+            <Logo size={24} strokeColor="#93939f" />
             <span>Clarere © 2026</span>
           </div>
           <div className="flex gap-6">

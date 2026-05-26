@@ -172,6 +172,7 @@ class Persona:
     # Rogers Diffusion — grounded stance metadatası
     diffusion_stage: str = ""           # Stance'ın Türkçe kısa açıklaması (STANCE_PROFILE'dan)
     neo_facets: dict[str, int] = field(default_factory=dict)  # NEO-PI-R facet skorları (0-100)
+    big_five: dict[str, int] = field(default_factory=dict)  # Big Five (Openness, Conscientiousness, Extroversion, Agreeableness, Neuroticism)
 
 
 @dataclass(frozen=True)
@@ -276,8 +277,11 @@ class ResearchReport:
 
 
 class ResearchModel(Protocol):
-    def generate(self, system: str, prompt: str) -> str:
+    def generate(self, system: str, prompt: str, response_format: Literal["json"] | None = None) -> str:
         """Generate a response from the configured model provider."""
 
-    def generate_stream(self, system: str, prompt: str):
+    def generate_stream(self, system: str, prompt: str, response_format: Literal["json"] | None = None):
         """Generate a response as a stream of chunks."""
+
+    def free_memory(self) -> None:
+        """Free VRAM/memory after task completion."""

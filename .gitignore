@@ -31,3 +31,4 @@ models/*
 !models/ollama/
 !models/ollama/*.Modelfile
 *.log
+scratch/

@@ -11,6 +11,10 @@ from psycopg2 import pool as pg_pool
 from psycopg2.extras import RealDictCursor
 from pgvector.psycopg2 import register_vector
 from contextlib import contextmanager
+import contextvars
+
+# Global ContextVar for Multi-Tenancy (B2B Isolation)
+current_tenant_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("current_tenant", default=None)
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +69,10 @@ def get_db(register_pgvector=True):
             pass  # extension might not be created yet
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # Set Local RLS Session Variable for B2B Isolation
+            tenant_id = current_tenant_var.get()
+            if tenant_id:
+                cur.execute("SELECT set_config('appq.current_tenant', %s, true)", (tenant_id,))
             yield conn, cur
         conn.commit()
     except Exception:
@@ -129,6 +137,19 @@ def init_db() -> None:
         
         cur.execute(
             """
+            CREATE TABLE IF NOT EXISTS interview_responses (
+                hash TEXT PRIMARY KEY,
+                username TEXT,
+                persona_id TEXT,
+                question TEXT,
+                json_data TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+            """
+        )
+
+        cur.execute(
+            """
             CREATE TABLE IF NOT EXISTS personas_pool (
                 id TEXT PRIMARY KEY,
                 name TEXT,
@@ -163,8 +184,35 @@ def init_db() -> None:
             cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS company_size TEXT;")
             cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS b2b_company_type TEXT;")
             cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS b2b_decision_maker BOOLEAN DEFAULT FALSE;")
+            # Anchor Panel Migrations
+            cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS big_five_vector vector(5);")
+            cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS innovation_stance TEXT;")
+            cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT FALSE;")
+            # Demographics and quota fields
+            cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS ses_group TEXT DEFAULT 'C1';")
+            cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS respondent_type TEXT DEFAULT 'potential_customer';")
+            cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS settlement_type TEXT DEFAULT 'kentsel';")
         except Exception as e:
             print(f"[DB] Migration warning for personas_pool: {e}")
+
+        # Row-Level Security (RLS) for personas_pool (B2B Isolation)
+        try:
+            cur.execute("ALTER TABLE personas_pool ENABLE ROW LEVEL SECURITY;")
+            # Sadece kendi oluşturduğu personalar VEYA global olanları görebilir/kullanabilir
+            cur.execute("""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM pg_policies WHERE policyname = 'tenant_isolation_policy' AND tablename = 'personas_pool'
+                    ) THEN
+                        CREATE POLICY tenant_isolation_policy ON personas_pool
+                        USING (created_by = current_setting('appq.current_tenant', true) OR is_global = TRUE);
+                    END IF;
+                END
+                $$;
+            """)
+        except Exception as e:
+            print(f"[DB] RLS Migration warning for personas_pool: {e}")
 
         cur.execute(
             """
@@ -195,6 +243,7 @@ def init_db() -> None:
         )
         # Performans indeksleri — sorgu pattern'lerine göre
         try:
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_interview_responses_user ON interview_responses(username);")
             # studies: liste sayfası sık sık updated_at DESC sıralar
             cur.execute("CREATE INDEX IF NOT EXISTS idx_studies_updated_at ON studies(updated_at DESC);")
             # studies: archived=FALSE filtresi için partial index
@@ -339,6 +388,22 @@ def init_db() -> None:
                 logger.info("Migration 002-timestamp-types uygulandı")
         except Exception as e:
             logger.warning("Migration 002-timestamp-types atlandı: %s", e)
+
+        # — Curated Questions İndeksleri (migration 003) —
+        # curated_questions tablosundaki aramaları ve filtrelemeleri hızlandırır.
+        try:
+            cur.execute(
+                "SELECT version FROM schema_migrations WHERE version = '003-curated-questions-indexes'"
+            )
+            if not cur.fetchone():
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_curated_questions_study_id ON curated_questions(study_id);")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_curated_questions_liked ON curated_questions(is_liked) WHERE is_liked = TRUE;")
+                cur.execute(
+                    "INSERT INTO schema_migrations (version) VALUES ('003-curated-questions-indexes')"
+                )
+                logger.info("Migration 003-curated-questions-indexes uygulandı")
+        except Exception as e:
+            logger.warning("Migration 003-curated-questions-indexes atlandı: %s", e)
 
         # Production'da bu kayıtlar X-Username backdoor riski oluşturur
         _app_env = os.getenv("APP_ENV", "development").lower()
@@ -817,6 +882,7 @@ from .db_auth import get_clients, update_client_usage, add_client, update_client
 
 from .db_vectors import (
     save_persona_to_pool, get_personas_from_pool_by_role, get_similar_personas, get_personas_pool, 
+    delete_persona_from_pool,
     add_to_question_collection, get_question_collection, get_similar_questions, 
     update_question_liked_status, update_question_purpose, delete_from_question_collection
 )

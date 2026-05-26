@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 
 // Yönetici paneli — arama motorlarında görünmemeli
 export const metadata: Metadata = {

@@ -1,7 +1,6 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import { toast } from "sonner";
 import {
@@ -24,10 +23,18 @@ const PLANS = [
     color: "border-[#d9d9dd]",
     badge: null,
     features: [
+<<<<<<< HEAD
       "3 günlük ücretsiz deneme",
       "Toplam 2 adet araştırma hakkı",
       "İstediğiniz kadar persona (maks 10)",
       "Persona sohbetlerini izleme",
+=======
+      "2 araştırma / ay",
+      "3 persona",
+      "Adversarial Review",
+      "RFI Skoru",
+      "Temel rapor",
+>>>>>>> c2e56332200a78c21e940108bc5898a678c72903
     ],
     locked: [
       "Araştırma raporları (Paywall/Blur)",
@@ -65,6 +72,7 @@ const PLANS = [
     color: "border-[#003c33]",
     badge: "En Popüler",
     features: [
+<<<<<<< HEAD
       "Ayda 10 araştırma hakkı",
       "A/B Test ve Kullanıcı mülakatları",
       "Mülakat taslağı iyileştirme",
@@ -72,6 +80,15 @@ const PLANS = [
       "Araştırma başına 2 'Araştırmayla Konuş'",
       "Kurumsal rapor ve paylaşım",
       "3 günlük ücretsiz deneme",
+=======
+      "10 araştırma / ay",
+      "5 persona",
+      "Adversarial Review",
+      "RFI Skoru",
+      "PDF rapor export",
+      "Gerçek zamanlı stream",
+      "SES cross-tab tablosu",
+>>>>>>> c2e56332200a78c21e940108bc5898a678c72903
     ],
     locked: [
       "White-label (Markasız raporlar)",
@@ -94,6 +111,7 @@ const PLANS = [
       "White-label (Markasız/Özel logolu) raporlar",
       "B2B persona modu",
       "Marka Sağlığı analizi",
+<<<<<<< HEAD
       "3 günlük ücretsiz deneme",
     ],
     locked: [],
@@ -112,6 +130,10 @@ const PLANS = [
       "Çok kullanıcılı organizasyon & audit log",
       "Özel entegrasyonlar ve API erişimi",
       "Atanmış müşteri başarı temsilcisi",
+=======
+      "PDF export & SES cross-tab",
+      "7/24 Öncelikli destek",
+>>>>>>> c2e56332200a78c21e940108bc5898a678c72903
     ],
     locked: [],
   },
@@ -120,7 +142,6 @@ const PLANS = [
 // ─── Upgrade Page ─────────────────────────────────────────────────────────────
 
 export default function UpgradePage() {
-  const router = useRouter();
   const { plan, loading } = useClientPlan();
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
   const [selected, setSelected] = useState<string | null>(null);
@@ -147,7 +168,7 @@ export default function UpgradePage() {
       return;
     }
     try {
-      const res = await fetch("http://localhost:8000/api/client/upgrade-plan", {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/client/upgrade-plan", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -180,13 +201,13 @@ export default function UpgradePage() {
         <div className="h-16 w-16 rounded-full bg-[#edfce9] flex items-center justify-center mb-6 shadow-sm">
           <Check size={32} className="text-[#003c33]" />
         </div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-[#17171c] mb-2">
+        <h2 className="text-2xl font-extrabold tracking-tight text-[#17171c] mb-2">
           Plan Güncellendi!
-        </h1>
+        </h2>
         <p className="text-muted-foreground mb-2">
           <span className="font-semibold text-[#003c33]">{selected}</span> planına geçildi.
         </p>
-        <p className="text-sm text-muted-foreground">Dashboard'a yönlendiriliyorsunuz...</p>
+        <p className="text-sm text-muted-foreground">Dashboard&apos;a yönlendiriliyorsunuz...</p>
       </div>
     );
   }
@@ -208,7 +229,7 @@ export default function UpgradePage() {
           <ArrowLeft size={15} /> Geri dön
         </button>
 
-        <h1 className="text-2xl font-extrabold tracking-tight mb-1">Planı Onayla</h1>
+        <h2 className="text-2xl font-extrabold tracking-tight mb-1">Planı Onayla</h2>
         <p className="text-muted-foreground text-sm mb-8">
           {currentPlan} → <span className="font-semibold text-[#003c33]">{selectedPlan.name}</span>
         </p>
@@ -312,7 +333,7 @@ export default function UpgradePage() {
           href="/client"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
-          <ArrowLeft size={15} /> Dashboard'a dön
+          <ArrowLeft size={15} /> Dashboard&apos;a dön
         </Link>
 
         <div className="mb-8">

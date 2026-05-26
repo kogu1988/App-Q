@@ -1,0 +1,204 @@
+"""PDF generation from markdown research reports.
+
+Uses xhtml2pdf (Pisa) to convert styled HTML into PDF bytes.
+No external process or GUI toolkit required — pure Python.
+"""
+from __future__ import annotations
+
+import io
+import logging
+from typing import Optional
+
+import markdown as md_lib
+
+logger = logging.getLogger(__name__)
+
+# ── Inline CSS for the PDF ────────────────────────────────────────────────────
+_CSS = """
+@page {
+    margin: 2cm 2.5cm;
+    size: A4;
+}
+
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    color: #1a1a2e;
+    line-height: 1.6;
+}
+
+h1 {
+    font-size: 22pt;
+    color: #003c33;
+    border-bottom: 2px solid #003c33;
+    padding-bottom: 6pt;
+    margin-top: 24pt;
+    margin-bottom: 12pt;
+}
+
+h2 {
+    font-size: 15pt;
+    color: #003c33;
+    border-bottom: 1px solid #d0d0d0;
+    padding-bottom: 4pt;
+    margin-top: 18pt;
+    margin-bottom: 8pt;
+}
+
+h3 {
+    font-size: 12pt;
+    color: #1a1a2e;
+    margin-top: 12pt;
+    margin-bottom: 6pt;
+}
+
+p {
+    margin: 0 0 8pt 0;
+}
+
+ul, ol {
+    margin: 4pt 0 8pt 20pt;
+    padding: 0;
+}
+
+li {
+    margin-bottom: 3pt;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10pt 0;
+    font-size: 9pt;
+}
+
+th {
+    background-color: #003c33;
+    color: #ffffff;
+    padding: 5pt 8pt;
+    text-align: left;
+    font-weight: bold;
+}
+
+td {
+    padding: 4pt 8pt;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+tr:nth-child(even) td {
+    background-color: #f5f5f5;
+}
+
+code {
+    background-color: #f0f0f0;
+    border-radius: 2pt;
+    padding: 1pt 3pt;
+    font-family: Courier, monospace;
+    font-size: 8.5pt;
+}
+
+pre {
+    background-color: #f0f0f0;
+    border-left: 3pt solid #003c33;
+    padding: 8pt;
+    margin: 8pt 0;
+}
+
+blockquote {
+    border-left: 3pt solid #ff7759;
+    margin: 8pt 0;
+    padding: 4pt 12pt;
+    background-color: #fffaf8;
+    color: #555555;
+}
+
+.report-header {
+    background-color: #003c33;
+    color: #ffffff;
+    padding: 20pt 24pt;
+    margin-bottom: 24pt;
+}
+
+.report-header-title {
+    font-size: 20pt;
+    font-weight: bold;
+    color: #ffffff;
+    margin: 0 0 6pt 0;
+}
+
+.report-header-sub {
+    color: #cccccc;
+    font-size: 9pt;
+    margin: 0;
+}
+"""
+
+
+
+def generate_pdf_from_markdown(
+    markdown_text: str,
+    title: str = "Clarere Research Report",
+    study_id: Optional[str] = None,
+) -> Optional[bytes]:
+    """
+    Convert a markdown research report to PDF bytes.
+
+    Args:
+        markdown_text: Full markdown content of the report.
+        title: Human-readable title shown in the PDF header.
+        study_id: Optional study ID shown in the header subtitle.
+
+    Returns:
+        PDF as bytes, or None if conversion fails.
+    """
+    try:
+        from xhtml2pdf import pisa
+    except ImportError:
+        logger.error(
+            "xhtml2pdf is not installed. Run: pip install xhtml2pdf"
+        )
+        return None
+
+    # 1. Markdown → HTML body
+    body_html = md_lib.markdown(
+        markdown_text,
+        extensions=["tables", "fenced_code", "nl2br"],
+    )
+
+    # 2. Build header block
+    subtitle = f"Rapor ID: {study_id}" if study_id else "Clarere AI Arastirma Platformu"
+    header_html = f"""
+    <div class="report-header">
+        <p class="report-header-title">{title}</p>
+        <p class="report-header-sub">{subtitle}</p>
+    </div>
+    """
+
+    # 3. Full HTML document
+    html = f"""<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"/>
+<style>
+{_CSS}
+</style>
+</head>
+<body>
+{header_html}
+{body_html}
+</body>
+</html>"""
+
+    # 4. HTML → PDF via xhtml2pdf (Pisa)
+    output = io.BytesIO()
+    pisa_status = pisa.CreatePDF(
+        src=html,
+        dest=output,
+        encoding="utf-8",
+    )
+
+    if pisa_status.err:
+        logger.error("PDF generation failed with pisa errors: %s", pisa_status.err)
+        return None
+
+    return output.getvalue()

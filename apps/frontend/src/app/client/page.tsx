@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,7 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     const username = localStorage.getItem("appq_username") || "";
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
     const headers: Record<string, string> = username ? { "X-Username": username } : {};
     fetch(`${apiBase}/api/client/studies`, { headers })
       .then((r) => (r.ok ? r.json() : []))
@@ -38,6 +38,7 @@ export default function ClientDashboard() {
 
   return (
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4">
+<<<<<<< HEAD
       {clientPlan.trial_expired && (
         <div className="p-5 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-3 shadow-sm animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-2">
@@ -60,6 +61,28 @@ export default function ClientDashboard() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>
+=======
+      {/* ── PRESET SHARP CARBON GLOW CARD ────────────────────────────────────── */}
+      <div className="bg-[#17171c] text-white p-6 sm:p-8 rounded-[2px] border border-white/10 relative overflow-hidden shadow-lg">
+        {/* Decorative subtle ambient orange glow */}
+        <div className="absolute right-0 top-0 w-64 h-64 bg-[#ff7759]/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="space-y-2">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+              Karanlıkta kalmış her fikir, sorulmamış bir soruyla başlar.
+            </h2>
+            <p className="text-white/60 text-sm sm:text-base max-w-2xl leading-relaxed">
+              Bugün o soruları sormaya başlayın. Karşınızdaki kişi sentetik olabilir. Ama cevapları fazlasıyla gerçek.
+            </p>
+          </div>
+          <Link href="/client/new" className="shrink-0">
+            <Button className="bg-[#ff7759] hover:bg-[#ff7759]/90 text-[#17171c] font-semibold rounded-[2px] px-6 py-5 text-sm transition-all duration-300 transform hover:scale-[1.02]">
+              Yeni Araştırma Başlat
+            </Button>
+          </Link>
+        </div>
+>>>>>>> c2e56332200a78c21e940108bc5898a678c72903
       </div>
 
       <Card>
