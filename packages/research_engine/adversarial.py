@@ -10,11 +10,10 @@ Kaynak: Bilal (2026) Grounded Simulation §4.5, §8.1
 """
 from __future__ import annotations
 
-import math
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .models import ResearchReport, Finding
+    pass
 
 
 # ── Sabitler ──────────────────────────────────────────────────────────────────

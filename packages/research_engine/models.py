@@ -173,6 +173,10 @@ class Persona:
     diffusion_stage: str = ""           # Stance'ın Türkçe kısa açıklaması (STANCE_PROFILE'dan)
     neo_facets: dict[str, int] = field(default_factory=dict)  # NEO-PI-R facet skorları (0-100)
     big_five: dict[str, int] = field(default_factory=dict)  # Big Five (Openness, Conscientiousness, Extroversion, Agreeableness, Neuroticism)
+    pazarlik_propensity: float = 0.3
+    taksit_preference: float = 0.71
+    sor_osca_threshold: float = 0.5
+    credit_card_limit_doluluk: float = 0.5
 
 
 @dataclass(frozen=True)

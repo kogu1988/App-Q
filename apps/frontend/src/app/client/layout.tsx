@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { Toaster } from "@/components/ui/sonner";
@@ -8,10 +8,15 @@ import { UsernameModal } from "@/components/username-modal";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import Logo from "@/components/logo";
 
+interface SidebarStudy {
+  id: string;
+  title?: string;
+}
+
 // ── Sidebar Studies Widget ───────────────────────────────────────────────────
 
 function SidebarStudiesWidget() {
-  const [studies, setStudies] = useState<any[]>([]);
+  const [studies, setStudies] = useState<SidebarStudy[]>([]);
 
   useEffect(() => {
     const username = localStorage.getItem("appq_username") || "";

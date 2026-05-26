@@ -562,7 +562,7 @@ def synthesize_report(
             ],
             validation_next_steps=[
                 "Kazanmayan varyanttı doğrudan çöpe atmak yerine, onun sevilen özelliklerini kazanan varyanta entegre edip edemeyeceğinizi inceleyin.",
-                f"En güçlü 2-3 bulgunu 5-8 gerçek kullanıcıyla kısa görüşme (15-20 dk) aracılığıyla doğrulayın.",
+                "En güçlü 2-3 bulgunu 5-8 gerçek kullanıcıyla kısa görüşme (15-20 dk) aracılığıyla doğrulayın.",
             ],
             limitations=[
                 "Bu A/B testi, sentetik personalarin oylarıyla sınırlıdır. Canlı ortamdaki gerçek dönüşüm (conversion) oranları farklılık gösterebilir."

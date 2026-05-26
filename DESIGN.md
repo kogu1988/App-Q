@@ -192,6 +192,19 @@ components:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-dark}"
     typography: "{typography.micro}"
+  tooltip:
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.on-dark}"
+    typography: "{typography.micro}"
+    rounded: "{rounded.sm}"
+    padding: 8px 12px
+    border: "1px solid {colors.ink}"
+  info-trigger:
+    backgroundColor: "{colors.soft-stone}"
+    textColor: "{colors.body-muted}"
+    typography: "{typography.micro}"
+    rounded: "{rounded.full}"
+    size: 16px
 ---
 
 ## Overview
@@ -388,6 +401,15 @@ Rounded white form panel set against dark green or warm stone sections. Inputs a
 ### **`footer-newsletter`**
 
 Dark footer subscription block with coral "AI moves fast" label, white headline, muted legal microcopy, a single-line email field, and arrow submit marker. Footer columns use white section labels and muted links.
+
+### **`tooltip`**
+
+Restrained, dark, floating informative panel used for form field explanations. Uses the `primary` near-black background, `micro` typography, and an 8px radius. Flat appearance with a subtle border rather than heavy drop shadows.
+
+### **`info-trigger`**
+
+Small (16px) circular badge used to trigger tooltips. Uses `soft-stone` background and `body-muted` text, avoiding bright attention-grabbing colors.
+
 
 ## Do's and Don'ts
 

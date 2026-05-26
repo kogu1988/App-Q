@@ -23,9 +23,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 # Routers import katmanı — stream router'ını asenkron ağ hattına ekliyoruz
-from apps.backend.routers import admin, client
-from packages.research_engine.routers import stream
-from packages.research_engine.database import current_tenant_var
+from apps.backend.routers import admin, client  # noqa: E402
+from packages.research_engine.routers import stream  # noqa: E402
+from packages.research_engine.database import current_tenant_var  # noqa: E402
 
 # — Rate Limiter —
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])

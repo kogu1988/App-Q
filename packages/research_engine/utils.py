@@ -2,7 +2,7 @@ import os
 import re
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 from packages.research_engine.state import GlobalResearchState, JSONParsingException
 
 logger = logging.getLogger(__name__)

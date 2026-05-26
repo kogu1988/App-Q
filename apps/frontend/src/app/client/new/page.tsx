@@ -39,7 +39,7 @@ interface Brief {
 
 // ─── Brief Preview Card ───────────────────────────────────────────────────────
 
-function renderBriefValue(value: any) {
+function renderBriefValue(value: unknown) {
   if (!value) return null;
   const strValue = Array.isArray(value) ? value.join(", ") : typeof value === "string" ? value : JSON.stringify(value);
   // Numbered list detection: "1. xxx 2. xxx" or newline-separated
@@ -132,6 +132,19 @@ export default function NewResearchWizard() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [brief, setBrief] = useState<Brief>({});
+  const [isReady, setIsReady] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Persona Stage State
+  const [matchedRoles, setMatchedRoles] = useState<{role: string, why: string, count: number}[]>([]);
+  const [isMatching, setIsMatching] = useState(false);
+
+  // Scroll to bottom on new message
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   if (plan?.trial_expired) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] p-4 text-center max-w-md mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -155,27 +168,6 @@ export default function NewResearchWizard() {
       </div>
     );
   }
-  const [brief, setBrief] = useState<Brief>({});
-  const [isReady, setIsReady] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // Persona Stage State
-  const [matchedRoles, setMatchedRoles] = useState<{role: string, why: string, count: number}[]>([]);
-  const [isMatching, setIsMatching] = useState(false);
-
-  // Scroll to bottom on new message
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Kick off with Defne's greeting after mode is confirmed
-  useEffect(() => {
-    if (stage !== "chat") return;
-    const greeting = researchMode === "ab_test"
-      ? "Merhaba! Ben Defne. A/B test simülasyonu için buradayım. Hangi iki varyantı karşılaştırmak istiyorsunuz? Önce ürün/hizmet fikrinizi kısaca anlatın."
-      : "Merhaba! Ben Defne — kıdemli pazar araştırması mimarınız. Ürün veya hizmet fikrinizi anlatın. Adım adım ihtiyacınız olan tüm araştırma verisini birlikte çıkaralım.";
-    setMessages([{ role: "assistant", content: greeting }]);
-  }, [stage, researchMode]);
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -250,7 +242,7 @@ export default function NewResearchWizard() {
       if (!res.ok) throw new Error("Persona eşleştirme hatası");
       const data = await res.json();
       
-      const roles = (data.matched_roles || []).map((r: any) => ({
+      const roles = (data.matched_roles || []).map((r: { role: string; why: string }) => ({
         role: r.role,
         why: r.why,
         count: 2 // Default 2 persons per role
@@ -364,7 +356,13 @@ export default function NewResearchWizard() {
         <Button
           size="lg"
           disabled={researchMode === "ab_test" && abTestLocked}
-          onClick={() => setStage("chat")}
+          onClick={() => {
+            setStage("chat");
+            const greeting = researchMode === "ab_test"
+              ? "Merhaba! Ben Defne. A/B test simülasyonu için buradayım. Hangi iki varyantı karşılaştırmak istiyorsunuz? Önce ürün/hizmet fikrinizi kısaca anlatın."
+              : "Merhaba! Ben Defne — kıdemli pazar araştırması mimarınız. Ürün veya hizmet fikrinizi anlatın. Adım adım ihtiyacınız olan tüm araştırma verisini birlikte çıkaralım.";
+            setMessages([{ role: "assistant", content: greeting }]);
+          }}
           className="w-full gap-2 bg-[#17171c] hover:opacity-85 text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Defne ile Başla

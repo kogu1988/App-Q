@@ -61,6 +61,29 @@ class GeneratePersonaRequest(BaseModel):
 class BulkAddPersonasRequest(BaseModel):
     personas: List[dict]
 
+class ManualPersonaCreate(BaseModel):
+    name: str
+    age: int
+    city: str
+    segment: str
+    role_title: Optional[str] = None
+    stance: Optional[str] = "Mainstream"
+    ses_group: Optional[str] = "C1"
+    price_sensitivity: Optional[int] = 5
+    digital_confidence: Optional[int] = 6
+    is_global: Optional[bool] = True
+    bio: Optional[str] = ""
+    traits: Optional[dict] = None
+    attributes: Optional[dict] = None
+    goals: Optional[List[str]] = None
+    objections: Optional[List[str]] = None
+    pazarlik_propensity: Optional[float] = 0.5
+    taksit_preference: Optional[bool] = True
+    sor_osca_threshold: Optional[float] = 0.5
+    credit_card_limit_doluluk: Optional[float] = 0.5
+    neo_facets: Optional[dict] = None
+
+
 @router.get("/clients")
 async def list_clients():
     return get_clients()
@@ -153,6 +176,23 @@ async def bulk_add_personas(req: BulkAddPersonasRequest):
         saved_count += 1
         
     return {"status": "success", "saved_count": saved_count}
+
+@router.post("/personas/create")
+async def create_manual_persona(req: ManualPersonaCreate):
+    from packages.research_engine.database import save_persona_to_pool
+    from packages.research_engine.caching import get_embedding
+    import uuid
+    
+    p_id = f"p_{uuid.uuid4().hex[:8]}"
+    p_dict = req.model_dump()
+    p_dict["id"] = p_id
+    
+    role_title = req.role_title or req.segment
+    embedding = get_embedding(role_title)
+    save_persona_to_pool(p_dict, embedding=embedding)
+    
+    return {"status": "success", "persona_id": p_id, "persona": p_dict}
+
 
 @router.delete("/personas/{persona_id}")
 async def delete_persona(persona_id: str):

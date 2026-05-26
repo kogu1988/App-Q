@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Response, Query, Header, Request
 import logging
 from dataclasses import asdict
 from pydantic import BaseModel
-from typing import Optional, List, Any
+from typing import Optional, List
 from fastapi.responses import StreamingResponse
 from packages.research_engine.workflow import build_research_plan, generate_personas, run_interviews_stream
 from packages.research_engine.analytics import synthesize_report
@@ -11,7 +11,7 @@ from packages.research_engine.database import (
     list_studies, load_study_payload, save_study, get_personas_pool, save_persona_to_pool,
     archive_study, save_feedback, get_client_by_username,
     upgrade_client_plan, check_simulation_limit, register_client_if_new,
-    increment_simulation_count, atomic_increment_simulation_count,
+    atomic_increment_simulation_count,
     count_user_non_ab_simulations
 )
 from packages.research_engine.intake import process_intake_chat
@@ -655,7 +655,6 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     """Belirli bir personaya ek soru sormak için kullanılır."""
     from packages.research_engine.database import get_study, save_study
     from packages.research_engine.providers import get_model_provider
-    import json
     
     plan_type, plan_config = _resolve_plan(x_username)
     client = get_client_by_username(x_username) if x_username else None
@@ -826,7 +825,7 @@ async def trigger_studio_simulation(request: Request, data: StudioSimulationRequ
             max_adversarial_loops=max_loops
         )
         return result
-    except Exception as e:
+    except Exception:
         logger.error("studio_simulation error for user=%s", x_username, exc_info=True)
         raise HTTPException(status_code=500, detail="Simülasyon kuyruğa alınırken hata oluştu.")
 
@@ -935,7 +934,7 @@ async def intake_chat(request: Request, data: IntakeChatRequest):
             app_mode=data.app_mode
         )
         return result
-    except Exception as e:
+    except Exception:
         logger.error("intake_chat error for user=%s", getattr(data, 'user_message', '')[:40], exc_info=True)
         raise HTTPException(status_code=500, detail="Servis geçici olarak kullanılamıyor.")
 

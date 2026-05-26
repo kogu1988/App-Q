@@ -19,7 +19,8 @@ import {
   Archive,
   ThumbsUp,
   ThumbsDown,
-  ListTodo
+  ListTodo,
+  Lock
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1011,7 +1012,7 @@ export default function StudyDetailPage() {
                             <>
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Büyük Beşli (Big Five)</span>
                               {[
-                                { label: "Açıklık (Openness)", value: persona.big_five.openness, color: "bg-purple-500" },
+                                { label: "Açıklık (Openness)", value: persona.big_five.openness, color: "bg-sky-500" },
                                 { label: "Sorumluluk (Conscientiousness)", value: persona.big_five.conscientiousness, color: "bg-blue-500" },
                                 { label: "Dışadönüklük (Extroversion)", value: persona.big_five.extroversion, color: "bg-orange-500" },
                                 { label: "Uyumluluk (Agreeableness)", value: persona.big_five.agreeableness, color: "bg-teal-500" },
@@ -1238,6 +1239,7 @@ export default function StudyDetailPage() {
                         <div>
                           <CardTitle className="text-base">{item.persona?.name}</CardTitle>
                           <CardDescription className="text-xs">{item.persona?.role_title || "Sentetik Tüketici"} • {item.persona?.age} Yaş</CardDescription>
+                        </div>
                         <Badge variant="outline" className="text-[10px] bg-slate-50 dark:bg-slate-900">{item.turns?.length} Soru</Badge>
                       </div>
                     </CardHeader>
@@ -1604,13 +1606,9 @@ export default function StudyDetailPage() {
                   </CardContent>
                 </Card>
               </div>
-            )
-          }
+            )}
           </div>
         )}
-          </div>
-        )}
-
       </div>
     </div>
   );

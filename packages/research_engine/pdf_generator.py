@@ -14,7 +14,24 @@ import markdown as md_lib
 logger = logging.getLogger(__name__)
 
 # ── Inline CSS for the PDF ────────────────────────────────────────────────────
-_CSS = """
+from pathlib import Path
+
+# Load CSS stylesheet relative to this file
+_CSS_PATH = Path(__file__).parent / "pdf_report.css"
+
+try:
+    if _CSS_PATH.exists():
+        _CSS = _CSS_PATH.read_text(encoding="utf-8")
+    else:
+        logger.warning("Central PDF report CSS not found at %s. Falling back to in-memory styles.", _CSS_PATH)
+        _CSS = ""
+except Exception as e:
+    logger.error("Failed to load central PDF CSS stylesheet: %s. Using default.", e)
+    _CSS = ""
+
+# In case the file is missing or failed, define fallback styles
+if not _CSS:
+    _CSS = """
 @page {
     margin: 2cm 2.5cm;
     size: A4;

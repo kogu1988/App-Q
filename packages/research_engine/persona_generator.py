@@ -1,11 +1,10 @@
 import json
 import uuid
-from typing import Optional
 
-from .schemas import Persona
-from .database import save_persona_to_pool
+from .models import Persona
+from .db_vectors import save_persona_to_pool
 from .matrix import allocate_cohort_matrix
-from .workflow import persona_traits, persona_attributes, STANCE_PROFILE, neo_facets_from_traits, DEFAULT_STANCE_COHORT
+from .workflow import persona_traits, persona_attributes, STANCE_PROFILE, neo_facets_from_traits
 from .caching import get_embedding
 
 def generate_and_save_personas(

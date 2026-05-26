@@ -5,8 +5,6 @@ import logging
 import os
 import threading
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
-import psycopg2
 from psycopg2 import pool as pg_pool
 from psycopg2.extras import RealDictCursor
 from pgvector.psycopg2 import register_vector
@@ -878,14 +876,7 @@ def register_client_if_new(username: str, email: str = "") -> tuple[dict, bool]:
         return dict(row) if row else {"username": username, "plan_type": "Free"}, True
 
 
-from .db_auth import get_clients, update_client_usage, add_client, update_client, delete_client
 
-from .db_vectors import (
-    save_persona_to_pool, get_personas_from_pool_by_role, get_similar_personas, get_personas_pool, 
-    delete_persona_from_pool,
-    add_to_question_collection, get_question_collection, get_similar_questions, 
-    update_question_liked_status, update_question_purpose, delete_from_question_collection
-)
 
 # Initial DB setup
 try:

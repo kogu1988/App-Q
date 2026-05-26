@@ -105,12 +105,8 @@ def run_simulation_task(self, payload: dict):
     """Celery üzerinde çalışacak asıl simülasyon görevi."""
     logger.info(f"Starting async simulation task for hash: {payload.get('hash')}")
     try:
-        import time
         import uuid
-        from dataclasses import asdict
         from .database import get_db, save_study
-        from .providers import get_model_provider
-        from .workflow import run_research
         from .models import ResearchBrief, PanelRole
 
         # 1. Brief Oluştur

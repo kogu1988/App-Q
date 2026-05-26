@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 
@@ -23,8 +23,7 @@ export default function Logo({ className = "", size = 32, strokeColor = "current
       xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
-      className={`logo-animated ${active ? "active" : ""} ${className}`}
-      style={{ overflow: "visible" }}
+      className={`logo-animated overflow-visible ${active ? "active" : ""} ${className}`}
     >
       <defs>
         <path

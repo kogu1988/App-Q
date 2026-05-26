@@ -72,7 +72,7 @@ export default function ClientDashboard() {
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-2">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight font-heading">
               Karanlıkta kalmış her fikir, sorulmamış bir soruyla başlar.
             </h2>
             <p className="text-white/60 text-sm sm:text-base max-w-2xl leading-relaxed">

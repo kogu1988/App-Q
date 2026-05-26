@@ -1,219 +1,260 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
+import { CheckCircle2 } from "lucide-react";
 import Logo from "@/components/logo";
 
 export const metadata: Metadata = {
   title: "Gizlilik Politikası & KVKK Aydınlatma Metni — Clarere",
   description:
-    "Clarere&apos;nun kişisel verileri nasıl işlediğini, KVKK kapsamındaki haklarınızı ve veri güvenliği uygulamalarımızı öğrenin.",
+    "Clarere&apos;nin kişisel verileri nasıl işlediğini, KVKK ve GDPR kapsamındaki haklarınızı ve veri güvenliği uygulamalarımızı öğrenin.",
   robots: { index: true, follow: true },
 };
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-canvas text-ink selection:bg-coral/20 font-sans">
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Logo size={32} strokeColor="#17171c" />
-            <span className="font-bold text-lg tracking-tight">Clarere</span>
+      <nav className="sticky top-0 z-50 bg-canvas/90 backdrop-blur-md border-b border-hairline px-6 h-16 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto w-full flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-85 transition-opacity">
+            <Logo size={24} strokeColor="#17171c" />
+            <span className="font-semibold text-primary tracking-tight text-lg">Clarere</span>
           </Link>
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link href="/" className="text-sm font-medium text-body-muted hover:text-primary transition-colors">
             ← Ana Sayfa
           </Link>
         </div>
       </nav>
 
-      {/* Content */}
-      <main className="max-w-4xl mx-auto px-6 py-16 space-y-12">
-        <header className="space-y-4 pb-8 border-b border-border">
-          <h1 className="text-4xl font-black tracking-tight">Gizlilik Politikası</h1>
-          <p className="text-muted-foreground text-lg">
-            6698 Sayılı Kişisel Verilerin Korunması Kanunu (KVKK) Kapsamında Aydınlatma Metni
+      {/* Main Content Container */}
+      <main className="max-w-4xl mx-auto px-6 py-16 sm:py-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        
+        {/* Header */}
+        <header className="mb-16 border-b border-hairline pb-8">
+          <h1 className="display-section text-primary font-bold mb-4">
+            Gizlilik Politikası & KVKK Aydınlatma Metni
+          </h1>
+          <p className="text-lg text-body-muted leading-relaxed">
+            Clarere olarak kişisel bilgilerinizin güvenliğini sağlamayı taahhüt ediyoruz. Bu politika, hizmetlerimizi kullandığınızda bilgilerinizin nasıl toplandığını, kullanıldığını, paylaşıldığını ve korunduğunu açıklar.
           </p>
-          <p className="text-xs text-muted-foreground">Son güncelleme: 23 Mayıs 2026</p>
+          <p className="text-xs text-body-muted mt-4">Son güncelleme: 1 Ocak 2026</p>
         </header>
 
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">1. Veri Sorumlusu</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Bu aydınlatma metni, <strong className="text-foreground">Clarere</strong> platformunu işleten veri sorumlusu tarafından
-            6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;) madde 10 uyarınca hazırlanmıştır.
-            Platform, Türkiye&apos;deki kullanıcılara yapay zeka destekli sentetik pazar araştırması hizmetleri sunmaktadır.
-          </p>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">2. İşlenen Kişisel Veriler</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Platformu kullandığınızda aşağıdaki veriler işlenebilir:
-          </p>
-          <ul className="space-y-2 text-muted-foreground list-none">
-            {[
-              { label: "Kullanıcı adı", desc: "Platforma erişim ve araştırma kayıtları için." },
-              { label: "E-posta adresi", desc: "Hesap yönetimi ve sistem bildirimleri için (Kurumsal planlar)." },
-              { label: "Araştırma içerikleri", desc: "Oluşturduğunuz brief, mülakat planı ve sentez raporları." },
-              { label: "Kullanım verileri", desc: "Simülasyon sayısı, token kullanımı, oturum bilgileri." },
-              { label: "Teknik veriler", desc: "IP adresi, tarayıcı türü, erişim saati (güvenlik logları)." },
-            ].map(({ label, desc }) => (
-              <li key={label} className="flex gap-3 p-3 rounded-lg bg-muted/40">
-                <span className="font-semibold text-foreground shrink-0">• {label}:</span>
-                <span>{desc}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">3. Kişisel Verilerin İşlenme Amaçları</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Kişisel verileriniz aşağıdaki amaçlarla, KVKK&apos;nın 5. ve 6. maddelerinde belirtilen hukuki sebeplere dayanılarak işlenmektedir:
-          </p>
-          <ul className="space-y-1 text-muted-foreground pl-4">
-            <li>• Hizmetin sunulması ve araştırma workflow&apos;unun yürütülmesi</li>
-            <li>• Abonelik ve plan limiti yönetimi</li>
-            <li>• Kullanıcı doğrulama ve güvenlik</li>
-            <li>• Hizmet kalitesinin iyileştirilmesi (anonim istatistikler)</li>
-            <li>• Yasal yükümlülüklerin yerine getirilmesi</li>
-            <li>• Teknik destek ve müşteri hizmetleri</li>
-          </ul>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">4. Sentetik Veriler ve Gizlilik</h2>
-          <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-2">
-            <p className="text-foreground font-semibold">Önemli: Sentetik Persona Verileri</p>
-            <p className="text-muted-foreground leading-relaxed">
-              Clarere&apos;nun ürettiği sentetik personalar ve mülakat yanıtları, gerçek kişilere ait veriler değildir.
-              Bu veriler, yapay zeka modelleri tarafından istatistiksel örüntüler kullanılarak üretilmiş
-              kurgusal içeriklerdir. Hiçbir sentetik persona gerçek bir bireyi temsil etmez veya ona atıfta bulunmaz.
+        {/* Policy Sections */}
+        <div className="space-y-12">
+          
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">1. Beta Sürüm Bildirimi</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              Sitemiz ve ilgili hizmetlerimiz şu anda erken beta aşamasındadır; hatalar, eksiklikler veya tamamlanmamış özellikler içerebilir. Site, yalnızca ön kullanım, test ve değerlendirme amaçlıdır. Ürünün tam olarak piyasaya sürüleceği veya belirli özelliklerin kalıcı olacağı garanti edilmez.
             </p>
-          </div>
-          <p className="text-muted-foreground leading-relaxed">
-            Araştırma brief&apos;lerinizde gerçek kişilerin isim, iletişim bilgisi veya kimlik bilgilerini
-            paylaşmamanızı tavsiye ederiz. PII (Kişisel Tanımlayıcı Bilgi) maskeleme özelliği aktif olduğunda
-            sistem bu tür verileri otomatik olarak filtreler.
-          </p>
-        </section>
+          </section>
 
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">5. Veri Saklama Süreleri</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left px-4 py-3 font-semibold">Veri Türü</th>
-                  <th className="text-left px-4 py-3 font-semibold">Saklama Süresi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {[
-                  ["Araştırma raporları", "Hesap aktif olduğu sürece + 1 yıl"],
-                  ["Kullanım logları", "6 ay"],
-                  ["Güvenlik logları", "2 yıl (yasal zorunluluk)"],
-                  ["E-posta adresi", "Hesap silinene kadar"],
-                  ["Fatura kayıtları", "10 yıl (Türk Ticaret Kanunu)"],
-                ].map(([type, duration]) => (
-                  <tr key={type}>
-                    <td className="px-4 py-3 text-foreground">{type}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{duration}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">2. Biz Kimiz?</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              <strong className="text-primary">Clarere</strong>, yapay zeka öncelikli bir kullanıcı test ve araştırma platformudur. Bir finans kuruluşu veya danışmanlık hizmeti değiliz; sitemizdeki hiçbir şey finansal tavsiye niteliği taşımaz. Sitede sunulan yapay zeka personaları kurgusaldır ve gerçek kişilerin yerine geçmez.
+            </p>
+          </section>
 
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">6. Veri Güvenliği</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Verilerinizi korumak için aşağıdaki teknik ve idari tedbirler uygulanmaktadır:
-          </p>
-          <ul className="space-y-1 text-muted-foreground pl-4">
-            <li>• HTTPS/TLS ile şifrelenmiş veri iletimi</li>
-            <li>• Veritabanı erişim kontrolü ve bağlantı havuzu güvenliği</li>
-            <li>• Admin API&apos;ye gizli anahtar (secret key) koruması</li>
-            <li>• Rate limiting ile kaba kuvvet saldırılarına karşı koruma</li>
-            <li>• Düzenli güvenlik denetimleri</li>
-          </ul>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">7. Üçüncü Taraflarla Veri Paylaşımı</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Kişisel verileriniz; açık rızanız olmaksızın üçüncü taraflarla pazarlama amaçlı paylaşılmaz.
-            Hizmetin yürütülmesi için aşağıdaki kategorideki veri işleyenlerle çalışılmaktadır:
-          </p>
-          <ul className="space-y-1 text-muted-foreground pl-4">
-            <li>• <strong className="text-foreground">Altyapı sağlayıcıları:</strong> Sunucu ve veritabanı hizmetleri (PostgreSQL, Redis)</li>
-            <li>• <strong className="text-foreground">Yapay zeka sağlayıcıları:</strong> LLM inference için yerel/harici model sağlayıcıları</li>
-            <li>• <strong className="text-foreground">Yasal makamlar:</strong> Türk hukuku kapsamında yasal taleplere uymak için</li>
-          </ul>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">8. KVKK Kapsamındaki Haklarınız</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            KVKK&apos;nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { hak: "Bilgi alma hakkı", desc: "Verilerinizin işlenip işlenmediğini öğrenme" },
-              { hak: "Erişim hakkı", desc: "İşlenen verilerinize erişim talep etme" },
-              { hak: "Düzeltme hakkı", desc: "Yanlış/eksik verilerin düzeltilmesini isteme" },
-              { hak: "Silme hakkı", desc: "Belirli koşullarda verilerinizin silinmesini talep etme" },
-              { hak: "İtiraz hakkı", desc: "Otomatik işleme dayalı kararlara itiraz etme" },
-              { hak: "Şikâyet hakkı", desc: "KVKK İhlali için KVK Kurulu&apos;na başvurma" },
-            ].map(({ hak, desc }) => (
-              <div key={hak} className="p-3 rounded-lg border border-border space-y-1">
-                <p className="font-semibold text-sm text-foreground">{hak}</p>
-                <p className="text-xs text-muted-foreground">{desc}</p>
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">3. Toplanan Bilgiler</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              Hizmetlerimizi kullandığınızda veya platforma kayıt olduğunuzda aşağıdaki kategorideki kişisel verileriniz işlenmektedir:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+              <div className="p-5 border border-hairline rounded-sm bg-white">
+                <span className="mono-label text-coral block mb-2 font-semibold">İLETİŞİM BİLGİLERİ</span>
+                <strong className="text-primary font-semibold block mb-1 text-sm">E-Posta Adresi</strong>
+                <p className="text-xs text-body-muted leading-relaxed">Bekleme listesine katıldığınızda, hesap açtığınızda veya bizimle iletişime geçtiğinizde e-posta adresiniz toplanır.</p>
               </div>
-            ))}
-          </div>
-          <p className="text-muted-foreground text-sm">
-            Haklarınızı kullanmak için:{" "}
-            <a href="mailto:privacy@clarere.com" className="text-primary hover:underline">
-              privacy@clarere.com
-            </a>{" "}
-            adresine yazılı başvuruda bulunabilirsiniz.
-          </p>
-        </section>
+              <div className="p-5 border border-hairline rounded-sm bg-white">
+                <span className="mono-label text-coral block mb-2 font-semibold">ARAŞTIRMA BİLGİLERİ</span>
+                <strong className="text-primary font-semibold block mb-1 text-sm">Landing Page & Brief Verileri</strong>
+                <p className="text-xs text-body-muted leading-relaxed">Analiz edilmesi için gönderdiğiniz web site URL&apos;leri, araştırma brief&apos;leri ve bu içeriklerden elde edilen analizler toplanır.</p>
+              </div>
+              <div className="p-5 border border-hairline rounded-sm bg-white">
+                <span className="mono-label text-coral block mb-2 font-semibold">TEKNİK ANALİZ</span>
+                <strong className="text-primary font-semibold block mb-1 text-sm">Kullanım Verileri (PostHog)</strong>
+                <p className="text-xs text-body-muted leading-relaxed">Cihaz tipi, işletim sistemi, tarayıcı türü, IP adresi ve görüntülenen sayfalar gibi teknik veriler analiz edilerek kullanıcı deneyimi optimizasyonu için toplanır.</p>
+              </div>
+              <div className="p-5 border border-hairline rounded-sm bg-white">
+                <span className="mono-label text-coral block mb-2 font-semibold">DENEYİM KAYDI</span>
+                <strong className="text-primary font-semibold block mb-1 text-sm">Oturum Kayıtları (Session Replay)</strong>
+                <p className="text-xs text-body-muted leading-relaxed">Tıklamalar ve fare hareketleri gibi etkileşimler kullanıcı deneyimini iyileştirmek için kaydedilebilir. Form alanlarına yazdığınız metinler (kaydet/gönder butonuna basmadığınız sürece) kesinlikle kaydedilmez.</p>
+              </div>
+            </div>
+          </section>
 
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">9. Çerezler (Cookies)</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Clarere, oturum yönetimi için <strong className="text-foreground">localStorage</strong> kullanmaktadır.
-            Geleneksel çerez (cookie) mekanizması şu an kullanılmamaktadır. Kullanıcı adı ve oturum bilgileri
-            yalnızca tarayıcınızın yerel depolama alanında tutulur ve sunuculara gönderilmez.
-          </p>
-        </section>
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">4. Verilerin Kullanım Amaçları</h2>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 border-b border-hairline pb-4">
+                <CheckCircle2 size={16} className="text-deep-green shrink-0 mt-1" />
+                <div className="text-sm text-body-muted">
+                  <strong className="text-primary block mb-0.5">İletişim ve Destek</strong>
+                  Sizinle beta davetleri, platform güncellemeleri, faturalandırma ve teknik yardım konularında iletişim kurmak.
+                </div>
+              </div>
+              <div className="flex items-start gap-3 border-b border-hairline pb-4">
+                <CheckCircle2 size={16} className="text-deep-green shrink-0 mt-1" />
+                <div className="text-sm text-body-muted">
+                  <strong className="text-primary block mb-0.5">Hizmet Sağlama</strong>
+                  Talep ettiğiniz yapay zeka tabanlı sentetik pazar araştırmalarını, mülakat simülasyonlarını ve sentez raporlarını üretmek.
+                </div>
+              </div>
+              <div className="flex items-start gap-3 border-b border-hairline pb-4">
+                <CheckCircle2 size={16} className="text-deep-green shrink-0 mt-1" />
+                <div className="text-sm text-body-muted">
+                  <strong className="text-primary block mb-0.5">Hata Giderme & Optimizasyon</strong>
+                  Platformdaki teknik aksaklıkları tespit edip gidermek, kullanıcı akışlarını ve arayüz deneyimini daha akıcı hale getirmek.
+                </div>
+              </div>
+              <div className="flex items-start gap-3 pb-2">
+                <CheckCircle2 size={16} className="text-deep-green shrink-0 mt-1" />
+                <div className="text-sm text-body-muted">
+                  <strong className="text-primary block mb-0.5">Güvenlik ve Uyum</strong>
+                  Platformun kötüye kullanımını, bot saldırılarını engellemek ve yasal mevzuata tam uyum sağlamak.
+                </div>
+              </div>
+            </div>
+          </section>
 
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">10. Politika Güncellemeleri</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Bu gizlilik politikası, yasal değişiklikler veya hizmet güncellemeleri doğrultusunda
-            değiştirilebilir. Önemli değişiklikler için kayıtlı kullanıcılar bilgilendirilecektir.
-            Güncel versiyon her zaman bu sayfada yayınlanır.
-          </p>
-        </section>
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">5. İşleme Dayanakları (KVKK / GDPR Hukuki Sebepleri)</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              Kişisel verileriniz, 6698 sayılı KVKK ve GDPR kapsamında aşağıdaki hukuki dayanaklara göre işlenmektedir:
+            </p>
+            <ul className="space-y-3 text-sm text-body-muted list-disc pl-5 leading-relaxed">
+              <li><strong>Açık Rıza (Consent):</strong> Form doldurarak, bültene katılarak veya bekleme listesine girerek paylaştığınız veriler açık rızanıza dayanır.</li>
+              <li><strong>Sözleşmenin İfası (Contractual Necessity):</strong> Üyelik sözleşmesi kapsamındaki hizmetlerin (simülasyonlar, raporlar) tarafınıza sunulabilmesi için veri işlenmesinin zorunlu olması.</li>
+              <li><strong>Meşru Menfaat (Legitimate Interests):</strong> Sitemizin güvenliğini sağlamak, siber saldırıları önlemek ve hizmet kalitesini artırmak için meşru menfaatimiz kapsamındaki işlemler.</li>
+              <li><strong>Yasal Yükümlülükler (Legal Obligation):</strong> Kanun koyucu ve resmi makamların (KVKK, BTK vb.) zorunlu kıldığı idari ve teknik gerekliliklere uyulması.</li>
+            </ul>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">6. Verilerin Paylaşılması</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              Clarere, kişisel verilerinizi üçüncü şahıslara satmaz veya kiralamaz. Verileriniz sadece aşağıdaki durumlarda ve amaçlarla sınırlı olarak paylaşılabilir:
+            </p>
+            <ul className="space-y-3 text-sm text-body-muted list-disc pl-5 leading-relaxed">
+              <li><strong>Hizmet Sağlayıcılar:</strong> PostHog (oturum ve kullanım analizi), veritabanı barındırma sağlayıcıları ve e-posta gönderim servisleri gibi güvenli altyapı iş ortaklarıyla.</li>
+              <li><strong>Yasal Zorunluluklar:</strong> Bir mahkeme kararı, savcılık talebi veya yürürlükteki yasal süreçlerin zorunlu kıldığı durumlarda yetkili resmi makamlarla.</li>
+              <li><strong>Şirket Yapısı Değişiklikleri:</strong> Şirket birleşmesi, devri veya varlık satışı gibi yapısal durumlarda veriler, gizlilik taahhüdü korunarak halef kuruluşa aktarılabilir.</li>
+            </ul>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">7. Uluslararası Veri Transferleri</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              Kullanılan bulut altyapısı ve analiz araçlarının doğası gereği verileriniz, ikamet ettiğiniz ülke dışındaki (örneğin ABD veya AB ülkeleri) güvenli veri merkezlerinde saklanabilir. Bu tür transferlerde, KVKK Kurul kararları ve GDPR Standart Sözleşme Maddeleri (SCC) gibi uluslararası yasal koruma mekanizmaları ve şifreleme yöntemleri eksiksiz olarak uygulanır.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">8. Veri Saklama Süresi</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              Bilgileriniz, toplama amacına hizmet ettiği sürece saklanır. Bekleme listesinden çıktığınızda veya üyelik hesabınızı sildiğinizde veriler güvenli bir şekilde silinir veya tamamen anonim hale getirilir.
+            </p>
+            <div className="overflow-x-auto mt-4">
+              <table className="w-full text-sm border border-hairline rounded-sm overflow-hidden">
+                <thead className="bg-soft-stone">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-semibold text-primary">Veri Türü</th>
+                    <th className="text-left px-4 py-3 font-semibold text-primary">Saklama Süresi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-hairline bg-white">
+                  {[
+                    ["Araştırma Raporları & Brief&apos;ler", "Hesap aktif olduğu sürece + 1 yıl"],
+                    ["Kullanım Logları (PostHog)", "6 ay"],
+                    ["Güvenlik Logları (Erişim kayıtları)", "2 yıl (5651 sayılı kanun gereği)"],
+                    ["E-Posta Adresi", "Hesap aktif olduğu sürece"],
+                    ["Ödeme & Fatura Kayıtları", "10 yıl (Türk Ticaret Kanunu gereği)"],
+                  ].map(([type, duration]) => (
+                    <tr key={type} className="hover:bg-soft-stone/20 transition-colors">
+                      <td className="px-4 py-3 text-ink font-medium">{type}</td>
+                      <td className="px-4 py-3 text-body-muted">{duration}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">9. Güvenlik Önlemleri</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              Kişisel verilerinizin yetkisiz erişime, kayba veya kötüye kullanıma karşı korunması için Clarere en yüksek sektör standartlarında teknik tedbirler uygulamaktadır:
+            </p>
+            <ul className="space-y-2 text-sm text-body-muted pl-5 list-disc leading-relaxed">
+              <li>Verileriniz tarayıcınız ile sunucularımız arasında aktarılırken <strong>HTTPS ve TLS 1.3 şifreleme protokolleri</strong> ile korunur.</li>
+              <li>Veritabanı düzeyinde gelişmiş erişim kontrolleri (IAM) ve ağ izolasyonu sağlanmıştır.</li>
+              <li>Kaba kuvvet (brute force) saldırılarını ve bot trafiğini önlemek için aktif rate-limiting algoritmaları devrededir.</li>
+              <li>Ekibimizden sadece kısıtlı ve yetkilendirilmiş personel, destek amaçlı veri kontrolleri gerçekleştirebilir.</li>
+              <li><em>Not: İnternet üzerinden yapılan hiçbir aktarım yöntemi %100 güvenli değildir. Bu nedenle tüm güvenlik önlemlerimize rağmen risklerin tamamen sıfırlanamayacağını hatırlatırız.</em></li>
+            </ul>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">10. Haklarınız (KVKK ve GDPR Kapsamında)</h2>
+            <p className="text-body-muted leading-relaxed text-sm mb-4">
+              Kişisel verilerinizin sahibi olarak, mevzuat uyarınca aşağıdaki yasal haklara sahipsiniz:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                { title: "Bilgi Alma & Erişim", desc: "Kişisel verilerinizin işlenip işlenmediğini öğrenme ve bilgi talep etme." },
+                { title: "Düzeltme (Correction)", desc: "Hatalı veya eksik kişisel verilerinizin güncellenmesini isteme." },
+                { title: "Silme & Unutulma", desc: "Belirli yasal şartlar oluştuğunda verilerinizin sistemlerimizden silinmesini isteme." },
+                { title: "İşlemeyi Sınırlandırma", desc: "Veri işleme faaliyetinin geçici veya kalıcı olarak durdurulmasını talep etme." },
+                { title: "Veri Taşınabilirliği", desc: "İşlenen verilerinizi yaygın, okunabilir dijital formatta talep etme." },
+                { title: "Rızayı Geri Çekme", desc: "Açık rızanıza dayanarak yapılan veri işlemelerini istediğiniz zaman durdurma." },
+              ].map(({ title, desc }) => (
+                <div key={title} className="p-4 border border-hairline rounded-sm bg-white">
+                  <strong className="text-primary font-semibold block mb-1 text-sm">{title}</strong>
+                  <p className="text-xs text-body-muted leading-relaxed">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">11. Politika Güncellemeleri</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              Yasal, operasyonel veya sistemsel değişiklikler doğrultusunda bu Gizlilik Politikası zaman zaman güncellenebilir. Önemli bir değişiklik yapıldığında kayıtlı kullanıcılarımıza e-posta yoluyla veya platform içinde belirgin bir duyuruyla bildirim yapılacaktır. Güncel politika her zaman bu sayfada erişilebilir durumda olacaktır.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">12. İletişim ve Başvuru</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              Gizlilik politikamızla ilgili her türlü soru, görüş veya KVKK/GDPR kapsamındaki haklarınızın kullanımı yönündeki talepleriniz için bizimle doğrudan iletişime geçebilirsiniz:
+            </p>
+            <div className="p-5 border border-hairline rounded-sm bg-soft-stone mt-4">
+              <p className="text-ink text-sm font-medium">Clarere Veri Güvenliği Ekibi</p>
+              <p className="text-body-muted text-xs mt-1">E-Posta: <a href="mailto:hi@clarere.com" className="text-coral hover:underline font-semibold font-mono">hi@clarere.com</a></p>
+            </div>
+          </section>
+
+        </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8 mt-16">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+      <footer className="border-t border-hairline py-8 mt-16">
+        <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-body-muted">
           <div className="flex items-center gap-2">
             <Logo size={24} strokeColor="#93939f" />
             <span>Clarere © 2026</span>
           </div>
           <div className="flex gap-6">
-            <Link href="/" className="hover:text-foreground transition-colors">Ana Sayfa</Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors">Kullanım Şartları</Link>
-            <Link href="/#pricing" className="hover:text-foreground transition-colors">Fiyatlandırma</Link>
+            <Link href="/" className="hover:text-primary transition-colors">Ana Sayfa</Link>
+            <Link href="/terms" className="hover:text-primary transition-colors">Kullanım Şartları</Link>
+            <Link href="/#pricing" className="hover:text-primary transition-colors">Fiyatlandırma</Link>
           </div>
         </div>
       </footer>
     </div>
   );
 }
+

@@ -192,7 +192,7 @@ class DiscoveryLoopGuard:
 
         new_reply = result.get("assistant_reply", "")
         if self.detect_circular_questioning(chat_history, new_reply):
-            print(f"[LoopGuard] Loop detected in conversation turn! Breaking loop.")
+            print("[LoopGuard] Loop detected in conversation turn! Breaking loop.")
             
             merged_brief = {**current_brief, **result.get("updated_brief", {})}
             REQUIRED_FIELDS = [
@@ -277,7 +277,7 @@ def reframe_user_input(text: str) -> tuple[str, bool]:
     # Reframe eşleşme: pattern grubuna göre özel öneri veya jenerik öneri
     REFRAME_MAP = [
         # kesinlikle/mutlaka + satış garantisi — UTF-8 ve ASCII
-        (rf"(kesinlikle|mutlaka).{{0,40}}(satacak|sevecek|be[gğ]enecek|isteyecek)",
+        (r"(kesinlikle|mutlaka).{0,40}(satacak|sevecek|be[gğ]enecek|isteyecek)",
          "Bu ürünün pazar potansiyeli ve satış engelleri nelerdir?"),
         # herkes ifadesi
         (rf"herkes.{{0,30}}{_W}",

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 
@@ -33,8 +33,7 @@ export default function AgentLogo({
       xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
-      className={`agent-animated ${active ? "active" : ""} ${animate ? "agent-thinking-active" : ""} ${className}`}
-      style={{ overflow: "visible" }}
+      className={`agent-animated overflow-visible ${active ? "active" : ""} ${animate ? "agent-thinking-active" : ""} ${className}`}
     >
       <defs>
         <style>

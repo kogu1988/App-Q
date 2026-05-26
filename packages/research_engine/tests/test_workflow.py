@@ -4,7 +4,6 @@ Kapsam:
   - T1.2: build_elephant_system_prompt()
   - T1.3: STANCE_PROFILE Agreeableness kalibrasyonu (regression)
 """
-import pytest
 from packages.research_engine.workflow import build_elephant_system_prompt
 from packages.research_engine.models import STANCE_PROFILE, Persona
 
