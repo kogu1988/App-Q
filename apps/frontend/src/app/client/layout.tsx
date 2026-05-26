@@ -132,7 +132,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
+    <div className="h-screen bg-background text-foreground flex flex-col md:flex-row overflow-hidden">
 
       {showModal && (
         <Suspense>
@@ -229,7 +229,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         />
       )}
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto flex flex-col relative">
         {children}
       </main>
       <Toaster />

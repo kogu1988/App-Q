@@ -363,7 +363,7 @@ def init_db() -> None:
         
         # Default system config
         cur.execute("INSERT INTO system_config (key, value) VALUES ('b2c_model', 'Trendyol LLM (app-q-trendyol)') ON CONFLICT (key) DO NOTHING")
-        cur.execute("INSERT INTO system_config (key, value) VALUES ('b2b_model', 'Llama-3 (app-q-kizagan-e4b)') ON CONFLICT (key) DO NOTHING")
+        cur.execute("INSERT INTO system_config (key, value) VALUES ('b2b_model', 'Trendyol Asure 12B (app-q-asure)') ON CONFLICT (key) DO NOTHING")
         cur.execute("INSERT INTO system_config (key, value) VALUES ('pii_active', 'true') ON CONFLICT (key) DO NOTHING")
         cur.execute("INSERT INTO system_config (key, value) VALUES ('pii_terms', 'Trendyol, Hepsiburada, Amazon') ON CONFLICT (key) DO NOTHING")
         
@@ -606,6 +606,40 @@ def get_feedbacks() -> list[dict]:
         cur.execute("SELECT * FROM feedbacks ORDER BY id DESC")
         return [dict(row) for row in cur.fetchall()]
 
+
+
+def count_user_non_ab_simulations(username: str) -> int:
+    """Kullanıcının A/B testleri hariç toplam gerçekleştirdiği araştırma (simülasyon) sayısını döner."""
+    with get_db() as (conn, cur):
+        cur.execute(
+            "SELECT json_data FROM interview_responses WHERE username = %s",
+            (username,)
+        )
+        rows = cur.fetchall()
+        study_ids = []
+        for r in rows:
+            try:
+                import json
+                data = json.loads(r["json_data"])
+                sid = data.get("study_id")
+                if sid:
+                    study_ids.append(sid)
+            except Exception:
+                pass
+                
+        if not study_ids:
+            return 0
+            
+        cur.execute(
+            """
+            SELECT COUNT(*) as count FROM studies
+            WHERE id = ANY(%s)
+              AND (LOWER(category) NOT LIKE '%ab%%test%' AND LOWER(category) NOT LIKE '%a/b%%')
+            """,
+            (study_ids,)
+        )
+        row = cur.fetchone()
+        return row["count"] if row else 0
 
 
 def get_client_by_username(username: str) -> dict | None:

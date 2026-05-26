@@ -330,6 +330,57 @@ export default function StudyDetailPage() {
   const [votes, setVotes] = useState<Record<string, number>>({});
   const { plan: clientPlan } = useClientPlan();
 
+  const [followUpQuestion, setFollowUpQuestion] = useState("");
+  const [sendingFollowUp, setSendingFollowUp] = useState(false);
+
+  const handleSendFollowUp = async () => {
+    if (!followUpQuestion.trim() || !study) return;
+    const persona = study.interviews?.[selectedPersonaIdx]?.persona;
+    if (!persona) return;
+
+    setSendingFollowUp(true);
+    const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/client/studies/${studyId}/follow-up`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(username ? { "X-Username": username } : {}),
+        },
+        body: JSON.stringify({
+          persona_id: persona.id,
+          question: followUpQuestion.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.detail || "Takip sorusu gönderilemedi.");
+      }
+
+      const data = await res.json();
+      const newTurn = data.turn;
+
+      // Update local study state
+      setStudy(prev => {
+        if (!prev || !prev.interviews) return prev;
+        const updatedInterviews = [...prev.interviews];
+        const targetInv = { ...updatedInterviews[selectedPersonaIdx] };
+        targetInv.turns = [...(targetInv.turns || []), newTurn];
+        updatedInterviews[selectedPersonaIdx] = targetInv;
+        return { ...prev, interviews: updatedInterviews };
+      });
+
+      setFollowUpQuestion("");
+      toast.success("Cevap başarıyla simüle edildi.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Bir hata oluştu.");
+    } finally {
+      setSendingFollowUp(false);
+    }
+  };
+
   useEffect(() => {
     if (!studyId) return;
 
@@ -1220,6 +1271,82 @@ export default function StudyDetailPage() {
                       ))}
                     </div>
 
+                    {/* Follow-up Question Input Section */}
+                    {(() => {
+                      const followUpCount = (() => {
+                        let count = 0;
+                        study?.interviews?.forEach(inv => {
+                          inv.turns?.forEach(t => {
+                            if (t.tags?.includes("FOLLOW-UP")) {
+                              count++;
+                            }
+                          });
+                        });
+                        return count;
+                      })();
+
+                      const planType = clientPlan.plan_type;
+                      const isFree = planType === "Free";
+                      const isLimited = planType === "Starter" || planType === "Flex";
+                      const isLimitReached = isLimited && followUpCount >= 3;
+
+                      let inputPlaceholder = "Persona'ya takip sorusu sorun (örn. Neden bu fiyatı yüksek buldunuz?)...";
+                      let isDisabled = sendingFollowUp;
+                      let badgeText = "";
+                      let badgeColor = "bg-slate-100 text-slate-600";
+
+                      if (isFree) {
+                        inputPlaceholder = "Free planda takip sorusu sorulamaz. Lütfen planınızı yükseltin.";
+                        isDisabled = true;
+                        badgeText = "Takip Sorusu Kilitli (Free)";
+                        badgeColor = "bg-red-50 text-red-700 border-red-200";
+                      } else if (isLimitReached) {
+                        inputPlaceholder = "Maksimum takip sorusu limitine (3/3) ulaştınız. Lütfen planınızı yükseltin.";
+                        isDisabled = true;
+                        badgeText = "Limit Doldu (3/3)";
+                        badgeColor = "bg-amber-100 text-amber-800 border-amber-300";
+                      } else if (isLimited) {
+                        badgeText = `Takip Sorusu Limiti: ${followUpCount}/3`;
+                        badgeColor = "bg-indigo-50 text-indigo-700 border-indigo-200";
+                      } else {
+                        badgeText = "Sınırsız Takip Sorusu";
+                        badgeColor = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                      }
+
+                      return (
+                        <div className="p-4 bg-slate-50 border-t border-border space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase text-slate-400">Persona ile Etkileşim (Probing)</span>
+                            <Badge variant="outline" className={`text-[10px] font-semibold ${badgeColor}`}>
+                              {badgeText}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={followUpQuestion}
+                              onChange={(e) => setFollowUpQuestion(e.target.value)}
+                              disabled={isDisabled}
+                              placeholder={inputPlaceholder}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSendFollowUp();
+                              }}
+                              className="flex-1 px-4 py-2 text-xs rounded-xl border border-[#d9d9dd] bg-white focus:outline-none focus:ring-1 focus:ring-[#17171c] disabled:opacity-60 disabled:cursor-not-allowed"
+                            />
+                            <Button
+                              onClick={handleSendFollowUp}
+                              disabled={isDisabled || !followUpQuestion.trim()}
+                              size="sm"
+                              className="bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl px-4 text-xs h-auto"
+                            >
+                              {sendingFollowUp ? <Loader2 size={12} className="animate-spin" /> : "Sor"}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Consistency insights if available */}
                     {interviews[selectedPersonaIdx]?.consistency_notes && interviews[selectedPersonaIdx].consistency_notes!.length > 0 && (
                       <div className="p-4 bg-amber-500/5 border-t border-amber-500/10 text-xs text-amber-800 dark:text-amber-400 space-y-1">
@@ -1250,6 +1377,59 @@ export default function StudyDetailPage() {
             {!isCompleted ? (
               <div className="text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl bg-slate-50/50 /30">
                 Bu araştırma henüz tamamlanmamış veya nihai sentez raporu üretilmemiş.
+              </div>
+            ) : clientPlan.plan_type === "Free" ? (
+              <div className="relative rounded-2xl overflow-hidden min-h-[500px]">
+                {/* Blurred Content */}
+                <div className="filter blur-xl pointer-events-none select-none opacity-20 space-y-6">
+                  {study?.van_westendorp && (
+                    <Card className="shadow-sm border-indigo-100 dark:border-indigo-900/30 overflow-hidden">
+                      <CardContent className="p-6">
+                        <div className="h-40 bg-slate-100 rounded-lg animate-pulse" />
+                      </CardContent>
+                    </Card>
+                  )}
+                  {study?.channel_map && study.channel_map.length > 0 && (
+                    <Card className="shadow-sm border-emerald-100/30">
+                      <CardContent className="p-6">
+                        <div className="h-40 bg-slate-100 rounded-lg animate-pulse" />
+                      </CardContent>
+                    </Card>
+                  )}
+                  <Card className="shadow-sm">
+                    <CardContent className="p-6 sm:p-10">
+                      <p className="font-semibold text-slate-400">Rapor yükleniyor...</p>
+                      <div className="space-y-2 mt-4">
+                        <div className="h-4 bg-slate-200 rounded w-3/4 animate-pulse" />
+                        <div className="h-4 bg-slate-200 rounded w-5/6 animate-pulse" />
+                        <div className="h-4 bg-slate-200 rounded w-2/3 animate-pulse" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Paywall Overlay */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-background/50 backdrop-blur-[6px] rounded-2xl text-center z-10">
+                  <div className="max-w-md p-8 bg-white dark:bg-slate-900 rounded-2xl border-2 border-[#17171c] shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+                    <div className="mx-auto w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center border border-amber-200">
+                      <Lock className="text-amber-800" size={20} />
+                    </div>
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-black text-[#17171c]">Sentez Raporu Kilitli</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Every plan comes with a 3-day free trial and 2 free researches — no credit card required. You get access to the platform so you can run real research and see the output before committing.
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        After 3 days or 2 researches (whichever comes first), you’ll be asked to choose a plan. Your research reports and data stay accessible for 30 days — after that, access is limited. Pick a plan to keep everything unlocked.
+                      </p>
+                    </div>
+                    <Link href="/client/upgrade" className="inline-flex w-full">
+                      <Button className="w-full bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl py-2.5 text-xs">
+                        Plan Seçin ve Raporu Açın →
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="space-y-6">
@@ -1360,7 +1540,7 @@ export default function StudyDetailPage() {
 
                 {/* Channel Discovery Card */}
                 {study?.channel_map && study.channel_map.length > 0 && (
-                  <Card className="shadow-sm border-emerald-100 /30">
+                  <Card className="shadow-sm border-emerald-100/30">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base text-emerald-700 dark:text-emerald-400">Keşif Kanalı Haritası</CardTitle>
                       <CardDescription>Sentetik personaların ürünü keşfetmek için tercih ettiği kanallar.</CardDescription>
@@ -1378,7 +1558,10 @@ export default function StudyDetailPage() {
                   </CardContent>
                 </Card>
               </div>
-            )}
+            )
+          }
+          </div>
+        )}
           </div>
         )}
 

@@ -6,7 +6,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export interface ClientPlan {
   username: string;
-  plan_type: "Free" | "Starter" | "Pro" | "Enterprise";
+  plan_type: "Free" | "Flex" | "Starter" | "Pro" | "Enterprise";
   billing_cycle: "monthly" | "annual";
   period_start: string | null;
   limits: {
@@ -16,6 +16,8 @@ export interface ClientPlan {
   features: Record<string, boolean>;
   total_simulations: number;
   period_simulations: number;
+  trial_expired?: boolean;
+  trial_expired_reason?: string;
 }
 
 const DEFAULT_PLAN: ClientPlan = {

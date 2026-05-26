@@ -39,9 +39,11 @@ interface Brief {
 
 // ─── Brief Preview Card ───────────────────────────────────────────────────────
 
-function renderBriefValue(value: string) {
+function renderBriefValue(value: any) {
+  if (!value) return null;
+  const strValue = Array.isArray(value) ? value.join(", ") : typeof value === "string" ? value : JSON.stringify(value);
   // Numbered list detection: "1. xxx 2. xxx" or newline-separated
-  const numbered = value.split(/(?=\d+\.\s)/).map(s => s.replace(/^\d+\.\s*/, "").trim()).filter(Boolean);
+  const numbered = strValue.split(/(?=\d+\.\s)/).map(s => s.replace(/^\d+\.\s*/, "").trim()).filter(Boolean);
   if (numbered.length > 1) {
     return (
       <ul className="space-y-1 mt-0.5">
@@ -54,7 +56,7 @@ function renderBriefValue(value: string) {
       </ul>
     );
   }
-  return <div className="text-xs text-[#212121] font-medium leading-relaxed break-words whitespace-pre-wrap">{value}</div>;
+  return <div className="text-xs text-[#212121] font-medium leading-relaxed break-words whitespace-pre-wrap">{strValue}</div>;
 }
 
 function BriefPreview({ brief, mode }: { brief: Brief; mode: "research" | "ab_test" }) {
@@ -120,7 +122,7 @@ function BriefPreview({ brief, mode }: { brief: Brief; mode: "research" | "ab_te
 export default function NewResearchWizard() {
   const router = useRouter();
   const { plan } = useClientPlan();
-  const abTestLocked = !plan.features.ab_test;
+  const abTestLocked = !plan?.features?.ab_test;
 
   const [researchMode, setResearchMode] = useState<"research" | "ab_test">("research");
   const [modeConfirmed, setModeConfirmed] = useState(false);
@@ -129,6 +131,30 @@ export default function NewResearchWizard() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (plan?.trial_expired) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-4 text-center max-w-md mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="h-16 w-16 rounded-full bg-amber-50 flex items-center justify-center shadow-sm border border-amber-200">
+          <Lock size={32} className="text-amber-800" />
+        </div>
+        <div className="space-y-3">
+          <h1 className="text-2xl font-black tracking-tight text-[#17171c]">Trial Expired (Deneme Süreniz Doldu)</h1>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Every plan comes with a 3-day free trial and 2 free researches — no credit card required. You get access to the platform so you can run real research and see the output before committing.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            After 3 days or 2 researches (whichever comes first), you’ll be asked to choose a plan. Your research reports and data stay accessible for 30 days — after that, access is limited. Pick a plan to keep everything unlocked.
+          </p>
+        </div>
+        <Link href="/client/upgrade" className="w-full">
+          <Button className="w-full bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl h-12 text-sm">
+            Upgrade Now / Plan Seçin →
+          </Button>
+        </Link>
+      </div>
+    );
+  }
   const [brief, setBrief] = useState<Brief>({});
   const [isReady, setIsReady] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -223,7 +249,7 @@ export default function NewResearchWizard() {
           success_metric: brief.success_metric || null,
           variant_a: brief.variant_a || null,
           variant_b: brief.variant_b || null,
-          questions: brief.questions || [],
+          questions: plan?.plan_type === "Free" ? [] : (brief.questions || []),
         }),
       });
       if (!res.ok) {
@@ -334,8 +360,8 @@ export default function NewResearchWizard() {
 
   // ── STEP 1: Defne Chat ──────────────────────────────────────────────────────
   return (
-    <div className="p-4 sm:p-6 animate-in fade-in duration-300 h-full flex flex-col">
-      <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto flex-1 min-h-0">
+    <div className="p-4 sm:p-6 animate-in fade-in duration-300 flex-1 min-h-0 w-full flex flex-col">
+      <div className="flex flex-col lg:flex-row gap-6 max-w-7xl w-full mx-auto flex-1 min-h-0">
 
         {/* ── LEFT: Chat Panel ── */}
         <div className="flex-1 flex flex-col min-h-0">
@@ -411,12 +437,13 @@ export default function NewResearchWizard() {
               )}
               <div className="flex gap-2">
                 <textarea
-                  className="flex-1 resize-none rounded-xl border border-border bg-[#f5f4f1]  px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#17171c]/30 transition-shadow min-h-[44px] max-h-[120px]"
-                  placeholder="Yanıtınızı yazın... (Enter ile gönder, Shift+Enter ile yeni satır)"
+                  className="flex-1 resize-none rounded-xl border border-border bg-[#f5f4f1] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#17171c]/30 transition-shadow min-h-[44px] max-h-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder={loading ? "Defne yazıyor, lütfen bekleyin..." : "Yanıtınızı yazın... (Enter ile gönder, Shift+Enter ile yeni satır)"}
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   rows={1}
+                  disabled={loading}
                 />
                 <Button
                   onClick={sendMessage}

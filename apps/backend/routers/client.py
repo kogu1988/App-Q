@@ -9,7 +9,8 @@ from packages.research_engine.database import (
     list_studies, load_study_payload, save_study, get_personas_pool, save_persona_to_pool,
     archive_study, save_feedback, get_client_by_username,
     upgrade_client_plan, check_simulation_limit, register_client_if_new,
-    increment_simulation_count, atomic_increment_simulation_count
+    increment_simulation_count, atomic_increment_simulation_count,
+    count_user_non_ab_simulations
 )
 from packages.research_engine.intake import process_intake_chat
 from packages.research_engine.providers import get_model_provider
@@ -24,6 +25,48 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter()
+
+
+class FollowUpRequest(BaseModel):
+    persona_id: str
+    question: str
+
+
+def is_trial_expired(client: dict | None) -> tuple[bool, str]:
+    """Free plan trial expiration checker: 3 days or 2 researches (excluding A/B tests)."""
+    if not client or client.get("plan_type") != "Free":
+        return False, ""
+
+    # 1. Check 3 days limit since created_at
+    created_at_str = client.get("created_at")
+    if created_at_str:
+        try:
+            from datetime import datetime, timezone
+            # parse timezone-aware or naive iso format
+            if "T" in created_at_str:
+                created_at = datetime.fromisoformat(created_at_str)
+            else:
+                created_at = datetime.strptime(created_at_str, "%Y-%m-%d")
+            
+            if created_at.tzinfo is not None:
+                now = datetime.now(timezone.utc)
+            else:
+                now = datetime.now()
+                
+            elapsed = now - created_at
+            if elapsed.days >= 3:
+                return True, "3 günlük ücretsiz deneme süreniz dolmuştur. Devam etmek için lütfen bir plan seçin."
+        except Exception as e:
+            logger.error(f"Error parsing created_at for client {client.get('username')}: {e}")
+
+    # 2. Check 2 researches limit (excluding A/B tests)
+    username = client.get("username")
+    if username:
+        non_ab_sims = count_user_non_ab_simulations(username)
+        if non_ab_sims >= 2:
+            return True, "Deneme sürümündeki 2 ücretsiz araştırma limitine ulaştınız. Devam etmek için lütfen bir plan seçin."
+
+    return False, ""
 
 
 def _resolve_plan(x_username: str | None) -> tuple[str, dict]:
@@ -149,6 +192,8 @@ async def get_me(request: Request, x_username: str | None = Header(default=None)
         billing_cycle = client.get("billing_cycle") or "monthly"
         period_start = client.get("period_start")
 
+    expired, reason = is_trial_expired(client)
+
     return {
         "username": x_username or "anonymous",
         "plan_type": plan_type,
@@ -161,6 +206,8 @@ async def get_me(request: Request, x_username: str | None = Header(default=None)
         "features": {k: v for k, v in config.items() if isinstance(v, bool)},
         "total_simulations": client.get("total_simulations", 0) if client else 0,
         "period_simulations": period_simulations,
+        "trial_expired": expired,
+        "trial_expired_reason": reason,
     }
 
 
@@ -170,7 +217,7 @@ async def upgrade_plan(req: UpgradePlanRequest, x_username: str | None = Header(
     if not x_username:
         raise HTTPException(status_code=401, detail="X-Username header gerekli.")
 
-    valid_plans = ["Free", "Starter", "Pro", "Enterprise"]
+    valid_plans = ["Free", "Flex", "Starter", "Pro", "Enterprise"]
     if req.new_plan not in valid_plans:
         raise HTTPException(status_code=400, detail=f"Geçersiz plan: {req.new_plan}")
     if req.billing_cycle not in ("monthly", "annual"):
@@ -205,7 +252,7 @@ async def register(request: Request, req: RegisterRequest):
     client, created = register_client_if_new(username, req.email)
 
     # İsteğe bağlı plan yükseltme
-    if req.new_plan and req.new_plan in ["Starter", "Pro", "Enterprise"]:
+    if req.new_plan and req.new_plan in ["Flex", "Starter", "Pro", "Enterprise"]:
         upgrade_client_plan(username, req.new_plan, req.billing_cycle)
         client["plan_type"] = req.new_plan
 
@@ -300,6 +347,17 @@ async def create_persona(persona: PersonaCreate):
 @router.post("/plan")
 async def create_plan(request: BriefRequest, x_username: str | None = Header(default=None)):
     plan_type, _ = _resolve_plan(x_username)
+    client = get_client_by_username(x_username) if x_username else None
+    expired, reason = is_trial_expired(client)
+    if expired:
+        raise HTTPException(status_code=403, detail=reason)
+
+    if plan_type == "Free" and request.questions:
+        raise HTTPException(
+            status_code=403,
+            detail="Free planda özel mülakat sorusu eklenemez. Lütfen planınızı yükseltin."
+        )
+
     if request.category.lower() in ("ab_test", "a/b test", "ab test"):
         _require_feature(plan_type, "ab_test")
 
@@ -345,6 +403,11 @@ async def stream_interviews(request: Request, body: dict, x_username: str | None
         raise HTTPException(status_code=400, detail="Missing plan or personas")
 
     plan_type, _ = _resolve_plan(x_username)
+    client = get_client_by_username(x_username) if x_username else None
+    expired, reason = is_trial_expired(client)
+    if expired:
+        raise HTTPException(status_code=403, detail=reason)
+
     _require_feature(plan_type, "streaming")
 
     from packages.research_engine.models import ResearchPlan, Persona
@@ -373,6 +436,100 @@ async def stream_interviews(request: Request, body: dict, x_username: str | None
                 )
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+    
+@router.post("/studies/{study_id}/follow-up")
+async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str | None = Header(default=None)):
+    """Belirli bir personaya ek soru sormak için kullanılır."""
+    from packages.research_engine.database import get_study, save_study
+    from packages.research_engine.providers import get_model_provider
+    import json
+    
+    plan_type, plan_config = _resolve_plan(x_username)
+    client = get_client_by_username(x_username) if x_username else None
+    
+    # 1. Deneme süresi kontrolü
+    expired, reason = is_trial_expired(client)
+    if expired:
+        raise HTTPException(status_code=403, detail=reason)
+        
+    # 2. Free planda engelle
+    if plan_type == "Free":
+        raise HTTPException(status_code=403, detail="Free planda takip sorusu sorulamaz. Lütfen planınızı yükseltin.")
+        
+    study = get_study(study_id)
+    if not study:
+        raise HTTPException(status_code=404, detail="Araştırma bulunamadı.")
+        
+    payload = load_study_payload(study_id, include_pdf=False)
+    interviews = payload.get("interviews", [])
+    
+    # 3. Starter plan follow-up limiti kontrolü (Maks 3 adet)
+    max_follow_ups = plan_config.get("max_follow_ups", 9999)
+    current_follow_ups = 0
+    for inv in interviews:
+        for t in inv.get("turns", []):
+            if "FOLLOW-UP" in t.get("tags", []):
+                current_follow_ups += 1
+                
+    if current_follow_ups >= max_follow_ups:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Starter plan limitinize ulaştınız (Maksimum {max_follow_ups} takip sorusu). Lütfen planınızı yükseltin."
+        )
+
+    target_interview = None
+    target_idx = -1
+    for i, inv in enumerate(interviews):
+        if inv.get("persona", {}).get("id") == data.persona_id:
+            target_interview = inv
+            target_idx = i
+            break
+            
+    if not target_interview:
+        raise HTTPException(status_code=404, detail="Persona mülakatı bulunamadı.")
+        
+    persona = target_interview["persona"]
+    turns = target_interview.get("turns", [])
+    
+    # Konuşma geçmişini kur
+    messages = [
+        {"role": "system", "content": f"Sen bir simülasyon personasısın. Adın {persona.get('name')}. Yaşın {persona.get('age')}. "
+                                      f"Mesleğin {persona.get('role_title', 'Bilinmiyor')}. "
+                                      f"Geçmiş sohbetine sadık kal ve sana sorulan ek soruya doğal, role uygun kısa bir cevap ver."}
+    ]
+    for turn in turns:
+        messages.append({"role": "user", "content": turn.get("question", "")})
+        messages.append({"role": "assistant", "content": turn.get("answer", "")})
+        
+    messages.append({"role": "user", "content": data.question})
+    
+    # Modeli çağır
+    history_text = "\n".join([f"{m['role']}: {m['content']}" for m in messages[-6:]])
+    prompt = f"Geçmiş:\n{history_text}\n\nYeni soru: {data.question}\nCevabın:"
+    
+    try:
+        model = get_model_provider()
+        response = model.generate(messages[0]["content"], prompt)
+        answer = response.strip()
+    except Exception as e:
+        logger.error(f"Follow up error: {e}")
+        raise HTTPException(status_code=500, detail="Cevap üretilemedi.")
+        
+    new_turn = {
+        "question": data.question,
+        "answer": answer,
+        "tags": ["FOLLOW-UP"]
+    }
+    
+    # Payload güncelle
+    target_interview["turns"].append(new_turn)
+    payload["interviews"][target_idx] = target_interview
+    
+    # Kaydet
+    metadata = study
+    save_study(metadata, payload)
+    
+    return {"status": "success", "turn": new_turn}
     
 @router.post("/synthesize")
 async def synthesize(request: SynthesizeRequest, x_username: str | None = Header(default=None)):

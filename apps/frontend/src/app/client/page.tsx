@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { FileText } from "lucide-react";
+import { useClientPlan } from "@/hooks/use-client-plan";
 
 interface Study {
   id: string;
@@ -23,6 +24,7 @@ interface Study {
 export default function ClientDashboard() {
   const [studies, setStudies] = useState<Study[]>([]);
   const [loading, setLoading] = useState(true);
+  const { plan: clientPlan } = useClientPlan();
 
   useEffect(() => {
     const username = localStorage.getItem("appq_username") || "";
@@ -36,6 +38,25 @@ export default function ClientDashboard() {
 
   return (
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4">
+      {clientPlan.trial_expired && (
+        <div className="p-5 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-3 shadow-sm animate-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-2">
+            <span className="text-base">⚠️</span>
+            <p className="text-sm font-black text-amber-900">Trial Expired (Deneme Süreniz Doldu)</p>
+          </div>
+          <p className="text-xs text-amber-800 leading-relaxed max-w-3xl">
+            After 3 days or 2 researches (whichever comes first), you’ll be asked to choose a plan. Your research reports and data stay accessible for 30 days — after that, access is limited. Pick a plan to keep everything unlocked.
+          </p>
+          <div className="pt-1">
+            <Link href="/client/upgrade">
+              <Button size="sm" className="bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl text-xs px-4">
+                Upgrade Now / Plan Seç →
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>

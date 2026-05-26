@@ -34,7 +34,8 @@ App-Q Asistan (Defne) politikası:
 B2C_MODEL_ENV = "APP_Q_B2C_MODEL_ID"
 GENERAL_MODEL_ENV = "APP_Q_GENERAL_MODEL_ID"
 DEFAULT_B2C_MODEL_ID = "app-q-trendyol"
-DEFAULT_GENERAL_MODEL_ID = "app-q-kizagan-e4b"
+DEFAULT_GENERAL_MODEL_ID = "app-q-asure"
+DEFAULT_ORCHESTRATOR_MODEL_ID = "app-q-kizagan-e4b"
 
 
 def strip_visible_reasoning(content: str) -> str:
@@ -184,15 +185,17 @@ class OllamaResearchModel:
         else:
             system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
             
-        # 1. Check Cache
-        cached_response = check_semantic_cache(prompt, system)
-        if cached_response:
-            return cached_response
+        # 1. Check Cache (Skip semantic cache for Defne/Intake wizard to prevent loops)
+        if "Defne" not in system:
+            cached_response = check_semantic_cache(prompt, system)
+            if cached_response:
+                return cached_response
             
         # 2. Proceed with LLM Call
         payload = {
             "model": self.model_id,
             "stream": False,
+            "keep_alive": 0,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": prompt},
@@ -200,6 +203,7 @@ class OllamaResearchModel:
             "options": {
                 "temperature": 0.7,
                 "num_ctx": int(os.getenv("APP_MODEL_CONTEXT_LENGTH", "8192")),
+                "num_predict": 8192,
             },
         }
         request = urllib.request.Request(
@@ -222,8 +226,9 @@ class OllamaResearchModel:
             
         final_response = strip_visible_reasoning(content)
         
-        # 3. Save to Cache
-        save_to_semantic_cache(prompt, final_response, system)
+        # 3. Save to Cache (Skip for Defne/Intake wizard)
+        if "Defne" not in system:
+            save_to_semantic_cache(prompt, final_response, system)
         
         return final_response
 
@@ -234,18 +239,20 @@ class OllamaResearchModel:
         else:
             system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
             
-        # 1. Check Cache
-        cached_response = check_semantic_cache(prompt, system)
-        if cached_response:
-            # Simulate streaming by yielding words
-            words = cached_response.split(" ")
-            for i, word in enumerate(words):
-                yield word + (" " if i < len(words) - 1 else "")
-            return
+        # 1. Check Cache (Skip semantic cache for Defne/Intake wizard to prevent loops)
+        if "Defne" not in system:
+            cached_response = check_semantic_cache(prompt, system)
+            if cached_response:
+                # Simulate streaming by yielding words
+                words = cached_response.split(" ")
+                for i, word in enumerate(words):
+                    yield word + (" " if i < len(words) - 1 else "")
+                return
             
         payload = {
             "model": self.model_id,
             "stream": True,
+            "keep_alive": 0,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": prompt},
@@ -253,6 +260,7 @@ class OllamaResearchModel:
             "options": {
                 "temperature": 0.7,
                 "num_ctx": int(os.getenv("APP_MODEL_CONTEXT_LENGTH", "8192")),
+                "num_predict": 8192,
             },
         }
         request = urllib.request.Request(
@@ -285,9 +293,9 @@ class OllamaResearchModel:
                     except json.JSONDecodeError:
                         continue
                 
-                # 3. Save full streamed response to cache
+                # 3. Save full streamed response to cache (Skip for Defne)
                 final_text = "".join(full_response).strip()
-                if final_text:
+                if final_text and "Defne" not in system:
                     save_to_semantic_cache(prompt, final_text, system)
         except (TimeoutError, urllib.error.URLError) as exc:
             raise ModelProviderError(
@@ -296,38 +304,59 @@ class OllamaResearchModel:
 
 
 class OllamaRouterResearchModel:
-    """Route App-Q calls across retained local Ollama models."""
+    """Route App-Q calls across retained local Ollama models (Orchestrator, Actor, Analyst)."""
 
     def __init__(
         self,
         b2c_model_id: str = DEFAULT_B2C_MODEL_ID,
-        general_model_id: str = DEFAULT_GENERAL_MODEL_ID,
+        b2b_model_id: str = DEFAULT_GENERAL_MODEL_ID,
+        orchestrator_model_id: str = DEFAULT_ORCHESTRATOR_MODEL_ID,
         base_url: str = "http://127.0.0.1:11434",
         timeout_seconds: int = 120,
     ) -> None:
         self.b2c_model_id = b2c_model_id
-        self.general_model_id = general_model_id
+        self.b2b_model_id = b2b_model_id
+        self.orchestrator_model_id = orchestrator_model_id
+        
         self.b2c_model = OllamaResearchModel(
             model_id=b2c_model_id,
             base_url=base_url,
             timeout_seconds=timeout_seconds,
         )
-        self.general_model = OllamaResearchModel(
-            model_id=general_model_id,
+        self.b2b_model = OllamaResearchModel(
+            model_id=b2b_model_id,
+            base_url=base_url,
+            timeout_seconds=timeout_seconds,
+        )
+        self.orchestrator_model = OllamaResearchModel(
+            model_id=orchestrator_model_id,
             base_url=base_url,
             timeout_seconds=timeout_seconds,
         )
 
+    def choose_model(self, system: str, prompt: str) -> tuple[str, OllamaResearchModel]:
+        system_lower = system.lower()
+        prompt_lower = prompt.lower()
+        
+        # 1. Defne / Intake Wizard / Persona Generation -> Orchestrator (Kizagan)
+        if "defne" in system_lower or "araştırma mimarı" in system_lower or "intake" in system_lower or "persona üretici" in system_lower or "persona json" in system_lower:
+            return self.orchestrator_model_id, self.orchestrator_model
+            
+        # 2. Synthesis / Rapor Sentezi / B2B Analist -> Analyst (Asure-12B)
+        if "sentez" in system_lower or "rapor sentezi" in system_lower or "b2b analist" in system_lower or "sentezleyici" in system_lower or "sentez" in prompt_lower or "analiz" in prompt_lower:
+            return self.b2b_model_id, self.b2b_model
+            
+        # 3. Persona Interview / Roleplay -> Actor (Trendyol-8B)
+        return self.b2c_model_id, self.b2c_model
+
     def generate(self, system: str, prompt: str) -> str:
-        model_id = choose_model_id(prompt, self.b2c_model_id, self.general_model_id)
-        model = self.b2c_model if model_id == self.b2c_model_id else self.general_model
+        model_id, model = self.choose_model(system, prompt)
         answer = model.generate(system, prompt)
         self.last_model_id = model_id
         return answer
 
     def generate_stream(self, system: str, prompt: str):
-        model_id = choose_model_id(prompt, self.b2c_model_id, self.general_model_id)
-        model = self.b2c_model if model_id == self.b2c_model_id else self.general_model
+        model_id, model = self.choose_model(system, prompt)
         self.last_model_id = model_id
         for chunk in model.generate_stream(system, prompt):
             yield chunk
@@ -356,7 +385,8 @@ def get_model_provider(provider: str | None = None) -> ResearchModel:
         config = {}
         
     b2c_model_id = config.get("b2c_model") or os.getenv(B2C_MODEL_ENV, DEFAULT_B2C_MODEL_ID)
-    general_model_id = config.get("b2b_model") or os.getenv(GENERAL_MODEL_ENV, DEFAULT_GENERAL_MODEL_ID)
+    b2b_model_id = config.get("b2b_model") or os.getenv("APP_Q_B2B_MODEL_ID", DEFAULT_GENERAL_MODEL_ID)
+    orchestrator_model_id = config.get("orchestrator_model") or os.getenv("APP_Q_ORCHESTRATOR_MODEL_ID", DEFAULT_ORCHESTRATOR_MODEL_ID)
     
     if selected_provider == "mock":
         return MockResearchModel()
@@ -370,7 +400,8 @@ def get_model_provider(provider: str | None = None) -> ResearchModel:
         timeout = int(os.getenv("APP_MODEL_TIMEOUT_SECONDS", "120"))
         return OllamaRouterResearchModel(
             b2c_model_id=b2c_model_id,
-            general_model_id=general_model_id,
+            b2b_model_id=b2b_model_id,
+            orchestrator_model_id=orchestrator_model_id,
             base_url=base_url,
             timeout_seconds=timeout,
         )

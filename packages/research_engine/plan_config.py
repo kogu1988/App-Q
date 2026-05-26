@@ -22,15 +22,17 @@ from __future__ import annotations
 
 PLAN_CONFIG: dict[str, dict] = {
     "Free": {
-        "max_personas": 3,
+        "max_personas": 10,
         "max_simulations": 2,
         "max_tokens": 100_000,
+        "max_follow_ups": 0,
+        "max_talk_to_research": 0,
         "ab_test": False,
         "b2b_mode": False,
         "streaming": False,
         "pdf_export": False,
-        "adversarial": False,
-        "rfi": False,
+        "adversarial": True,
+        "rfi": True,
         "brand_health": False,
         "ses_crosstab": False,
         "custom_personas": False,
@@ -39,16 +41,38 @@ PLAN_CONFIG: dict[str, dict] = {
         "multi_user": False,
         "white_label": False,
     },
-    "Starter": {
-        "max_personas": 5,
-        "max_simulations": 10,
-        "max_tokens": 500_000,
-        "ab_test": False,
+    "Flex": {
+        "max_personas": 10,
+        "max_simulations": 3,
+        "max_tokens": 200_000,
+        "max_follow_ups": 3,
+        "max_talk_to_research": 9999,
+        "ab_test": True,
         "b2b_mode": False,
         "streaming": True,
         "pdf_export": True,
-        "adversarial": False,
-        "rfi": False,
+        "adversarial": True,
+        "rfi": True,
+        "brand_health": False,
+        "ses_crosstab": True,
+        "custom_personas": False,
+        "fine_tuning_export": False,
+        "audit_log": False,
+        "multi_user": False,
+        "white_label": False,
+    },
+    "Starter": {
+        "max_personas": 10,
+        "max_simulations": 10,
+        "max_tokens": 500_000,
+        "max_follow_ups": 3,
+        "max_talk_to_research": 2,
+        "ab_test": True,
+        "b2b_mode": False,
+        "streaming": True,
+        "pdf_export": True,
+        "adversarial": True,
+        "rfi": True,
         "brand_health": False,
         "ses_crosstab": True,
         "custom_personas": False,
@@ -58,9 +82,11 @@ PLAN_CONFIG: dict[str, dict] = {
         "white_label": False,
     },
     "Pro": {
-        "max_personas": 7,
+        "max_personas": 10,
         "max_simulations": 9999,  # unlimited
         "max_tokens": 9_999_999,  # unlimited
+        "max_follow_ups": 9999,
+        "max_talk_to_research": 9999,
         "ab_test": True,
         "b2b_mode": True,
         "streaming": True,
@@ -73,12 +99,14 @@ PLAN_CONFIG: dict[str, dict] = {
         "fine_tuning_export": False,
         "audit_log": False,
         "multi_user": False,
-        "white_label": False,
+        "white_label": True,
     },
     "Enterprise": {
         "max_personas": 999,  # effectively unlimited / custom
         "max_simulations": 9999,
         "max_tokens": 9_999_999,
+        "max_follow_ups": 9999,
+        "max_talk_to_research": 9999,
         "ab_test": True,
         "b2b_mode": True,
         "streaming": True,
@@ -97,22 +125,22 @@ PLAN_CONFIG: dict[str, dict] = {
 
 # Hangi plan seviyesinin bir özelliği açtığını insan-okunabilir olarak döner
 FEATURE_MIN_PLAN: dict[str, str] = {
-    "streaming":         "Starter",
-    "pdf_export":        "Starter",
-    "ses_crosstab":      "Starter",
-    "ab_test":           "Pro",
+    "streaming":         "Flex",
+    "pdf_export":        "Flex",
+    "ses_crosstab":      "Flex",
+    "ab_test":           "Flex",
     "b2b_mode":          "Pro",
-    "adversarial":       "Pro",
-    "rfi":               "Pro",
+    "adversarial":       "Free",
+    "rfi":               "Free",
     "brand_health":      "Pro",
     "custom_personas":   "Enterprise",
     "fine_tuning_export":"Enterprise",
     "audit_log":         "Enterprise",
     "multi_user":        "Enterprise",
-    "white_label":       "Enterprise",
+    "white_label":       "Pro",
 }
 
-PLAN_ORDER = ["Free", "Starter", "Pro", "Enterprise"]
+PLAN_ORDER = ["Free", "Flex", "Starter", "Pro", "Enterprise"]
 
 
 def get_plan_config(plan_type: str) -> dict:

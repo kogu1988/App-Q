@@ -17,61 +17,101 @@ import Link from "next/link";
 const PLANS = [
   {
     key: "Free",
-    name: "Free",
+    name: "Free Trial",
     monthlyPrice: 0,
     annualPrice: 0,
-    description: "Fikri keşfetmeye başlamak için",
+    description: "Sistem özelliklerini denemek için",
     color: "border-[#d9d9dd]",
     badge: null,
     features: [
-      "2 araştırma / ay",
-      "3 persona",
-      "Temel rapor",
+      "3 günlük ücretsiz deneme",
+      "Toplam 2 adet araştırma hakkı",
+      "İstediğiniz kadar persona (maks 10)",
+      "Persona sohbetlerini izleme",
     ],
     locked: [
-      "PDF export",
-      "A/B Test modu",
-      "B2B persona",
-      "Gerçek zamanlı stream",
+      "Araştırma raporları (Paywall/Blur)",
+      "Takip sorusu (probing) sorma",
+      "Özel mülakat sorusu ekleme",
+      "A/B Test simülasyonları",
+    ],
+  },
+  {
+    key: "Flex",
+    name: "Research Pack (Esnek)",
+    monthlyPrice: 1990,
+    annualPrice: 1990,
+    description: "Taahhüt vermeden tek seferlik paket arayanlar için",
+    color: "border-[#b8b7b3]",
+    badge: "Tek Seferlik",
+    features: [
+      "Süre sınırı yoktur (Ömür boyu kullanım)",
+      "Toplam 3 adet araştırma hakkı",
+      "A/B Test simülasyonları dahil",
+      "Araştırma başına 3 takip sorusu",
+      "RFI, Adversarial & SES Cross-tab",
+    ],
+    locked: [
+      "White-label (Markasız raporlar)",
+      "B2B persona modu",
     ],
   },
   {
     key: "Starter",
     name: "Starter",
-    monthlyPrice: 990,
-    annualPrice: 790,
-    description: "Düzenli araştırma yapan bireyler için",
+    monthlyPrice: 2690,
+    annualPrice: 2150, // ~20% discount
+    description: "Büyüyen ekipler ve danışmanlar için ideal",
     color: "border-[#003c33]",
-    badge: "Popüler",
+    badge: "En Popüler",
     features: [
-      "10 araştırma / ay",
-      "5 persona",
-      "PDF rapor export",
-      "Gerçek zamanlı stream",
-      "SES cross-tab tablosu",
+      "Ayda 10 araştırma hakkı",
+      "A/B Test ve Kullanıcı mülakatları",
+      "Mülakat taslağı iyileştirme",
+      "Araştırma başına 3 takip sorusu",
+      "Araştırma başına 2 'Araştırmayla Konuş'",
+      "Kurumsal rapor ve paylaşım",
+      "3 günlük ücretsiz deneme",
     ],
     locked: [
-      "A/B Test modu",
-      "B2B persona",
+      "White-label (Markasız raporlar)",
+      "Sınırsız araştırma/takip",
+      "B2B persona modu",
     ],
   },
   {
     key: "Pro",
     name: "Pro",
-    monthlyPrice: 2990,
-    annualPrice: 2390,
-    description: "Ekipler ve yoğun araştırma süreçleri için",
+    monthlyPrice: 6790,
+    annualPrice: 5430, // ~20% discount
+    description: "Ajanslar ve profesyonel araştırmacılar için",
     color: "border-[#ff7759]",
-    badge: "Tam Paket",
+    badge: "Önerilen",
     features: [
-      "Sınırsız araştırma",
-      "7 persona",
-      "A/B Test simülasyonu",
+      "Sınırsız araştırma sayısı",
+      "Sınırsız takip sorusu (probing)",
+      "Sınırsız 'Araştırmayla Konuş'",
+      "White-label (Markasız/Özel logolu) raporlar",
       "B2B persona modu",
-      "Adversarial Review",
-      "Research Fidelity Index",
       "Marka Sağlığı analizi",
-      "PDF export & SES cross-tab",
+      "3 günlük ücretsiz deneme",
+    ],
+    locked: [],
+  },
+  {
+    key: "Enterprise",
+    name: "Enterprise",
+    monthlyPrice: 51000,
+    annualPrice: 40800,
+    description: "Büyük ölçekli AI destekli araştırmalar için",
+    color: "border-[#17171c]",
+    badge: "Kurumsal",
+    features: [
+      "Sınırsız her şey & custom metodolojiler",
+      "%100 Yerel Veri Lokalizasyonu (2026 KVKK Uyumlu)",
+      "Çok kullanıcılı organizasyon & audit log",
+      "Özel entegrasyonlar ve API erişimi",
+      "Atanmış müşteri başarı temsilcisi",
     ],
     locked: [],
   },
@@ -91,7 +131,7 @@ export default function UpgradePage() {
 
   const handleSelect = (planKey: string) => {
     if (planKey === currentPlan) return;
-    const planOrder = ["Free", "Starter", "Pro", "Enterprise"];
+    const planOrder = ["Free", "Flex", "Starter", "Pro", "Enterprise"];
     if (planOrder.indexOf(planKey) <= planOrder.indexOf(currentPlan)) return;
     setSelected(planKey);
     setStep("confirm");
@@ -153,8 +193,9 @@ export default function UpgradePage() {
 
   // ── Confirm Step ──
   if (step === "confirm" && selectedPlan) {
-    const price = billing === "annual" ? selectedPlan.annualPrice : selectedPlan.monthlyPrice;
-    const saving = selectedPlan.monthlyPrice > 0
+    const isFlex = selectedPlan.key === "Flex";
+    const price = isFlex ? selectedPlan.monthlyPrice : (billing === "annual" ? selectedPlan.annualPrice : selectedPlan.monthlyPrice);
+    const saving = !isFlex && selectedPlan.monthlyPrice > 0
       ? Math.round((1 - selectedPlan.annualPrice / selectedPlan.monthlyPrice) * 100)
       : 0;
 
@@ -182,24 +223,30 @@ export default function UpgradePage() {
           </div>
 
           {/* Billing Toggle */}
-          <div className="flex gap-2">
-            {(["monthly", "annual"] as const).map(cycle => (
-              <button
-                key={cycle}
-                onClick={() => setBilling(cycle)}
-                className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all ${
-                  billing === cycle
-                    ? "border-[#17171c] bg-[#17171c] text-white"
-                    : "border-[#d9d9dd] text-muted-foreground hover:border-[#17171c]"
-                }`}
-              >
-                {cycle === "monthly" ? "Aylık" : "Yıllık"}
-                {cycle === "annual" && saving > 0 && (
-                  <span className="ml-1 text-[10px] text-[#ff7759] font-bold">-%{saving}</span>
-                )}
-              </button>
-            ))}
-          </div>
+          {!isFlex ? (
+            <div className="flex gap-2">
+              {(["monthly", "annual"] as const).map(cycle => (
+                <button
+                  key={cycle}
+                  onClick={() => setBilling(cycle)}
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all ${
+                    billing === cycle
+                      ? "border-[#17171c] bg-[#17171c] text-white"
+                      : "border-[#d9d9dd] text-muted-foreground hover:border-[#17171c]"
+                  }`}
+                >
+                  {cycle === "monthly" ? "Aylık" : "Yıllık"}
+                  {cycle === "annual" && saving > 0 && (
+                    <span className="ml-1 text-[10px] text-[#ff7759] font-bold">-%{saving}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="py-2.5 px-4 rounded-xl text-xs font-semibold border border-[#b8b7b3] bg-[#b8b7b3]/10 text-amber-800 text-center">
+              ⚠️ Bu paket tek seferliktir, abonelik taahhüdü veya yenileme içermez.
+            </div>
+          )}
 
           <div className="flex items-end justify-between pt-2 border-t border-[#d9d9dd]">
             <span className="text-muted-foreground text-sm">Tutar</span>
@@ -207,9 +254,14 @@ export default function UpgradePage() {
               <span className="text-2xl font-extrabold text-[#17171c]">
                 {price === 0 ? "Ücretsiz" : `₺${price.toLocaleString("tr-TR")}`}
               </span>
-              {price > 0 && (
+              {price > 0 && !isFlex && (
                 <span className="text-xs text-muted-foreground ml-1">
                   / {billing === "annual" ? "ay (yıllık fatura)" : "ay"}
+                </span>
+              )}
+              {isFlex && (
+                <span className="text-xs text-muted-foreground ml-1 font-semibold">
+                  (Tek Seferlik Ödeme)
                 </span>
               )}
             </div>
@@ -230,7 +282,7 @@ export default function UpgradePage() {
         <div className="flex gap-4 text-[11px] text-muted-foreground mb-6">
           <div className="flex items-center gap-1"><Shield size={12} /> SSL Güvenli</div>
           <div className="flex items-center gap-1"><Lock size={12} /> KVKK Uyumlu</div>
-          <div className="flex items-center gap-1"><CreditCard size={12} /> İstediğin zaman iptal</div>
+          <div className="flex items-center gap-1"><CreditCard size={12} /> Kolay Ödeme</div>
         </div>
 
         <Button
@@ -255,7 +307,7 @@ export default function UpgradePage() {
   // ── Select Plan ──
   return (
     <div className="p-4 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <Link
           href="/client"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
@@ -274,32 +326,38 @@ export default function UpgradePage() {
         </div>
 
         {/* Billing Toggle */}
-        <div className="flex items-center gap-3 mb-8 w-fit">
-          {(["monthly", "annual"] as const).map(cycle => (
-            <button
-              key={cycle}
-              onClick={() => setBilling(cycle)}
-              className={`px-5 py-2 rounded-full text-sm font-medium border transition-all ${
-                billing === cycle
-                  ? "border-[#17171c] bg-[#17171c] text-white shadow-sm"
-                  : "border-[#d9d9dd] text-muted-foreground hover:border-[#17171c]"
-              }`}
-            >
-              {cycle === "monthly" ? "Aylık" : "Yıllık"}
-              {cycle === "annual" && (
-                <span className="ml-1.5 text-[10px] font-bold text-[#ff7759]">%20 indirim</span>
-              )}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-3 mb-8 w-full">
+          <div className="flex items-center gap-2 bg-[#f5f4f1]/80 p-1 rounded-full border border-[#d9d9dd]">
+            {(["monthly", "annual"] as const).map(cycle => (
+              <button
+                key={cycle}
+                onClick={() => setBilling(cycle)}
+                className={`px-5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  billing === cycle
+                    ? "bg-[#17171c] text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {cycle === "monthly" ? "Aylık" : "Yıllık"}
+                {cycle === "annual" && (
+                  <span className="ml-1.5 text-[9px] font-bold text-[#ff7759] bg-[#ff7759]/10 px-1.5 py-0.5 rounded-full">%20 indirim</span>
+                )}
+              </button>
+            ))}
+          </div>
+          <span className="text-xs text-muted-foreground font-semibold italic">
+            * Research Pack (Esnek) abonelik değildir, tek seferlik bir pakettir.
+          </span>
         </div>
 
         {/* Plan Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {PLANS.map(p => {
-            const planOrder = ["Free", "Starter", "Pro", "Enterprise"];
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {PLANS.filter(p => p.key !== "Enterprise").map(p => {
+            const planOrder = ["Free", "Flex", "Starter", "Pro", "Enterprise"];
             const isCurrent = p.key === currentPlan;
             const isDowngrade = planOrder.indexOf(p.key) < planOrder.indexOf(currentPlan);
-            const price = billing === "annual" ? p.annualPrice : p.monthlyPrice;
+            const isFlex = p.key === "Flex";
+            const price = isFlex ? p.monthlyPrice : (billing === "annual" ? p.annualPrice : p.monthlyPrice);
             const disabled = isCurrent || isDowngrade;
 
             return (
@@ -319,12 +377,12 @@ export default function UpgradePage() {
               >
                 {/* Badge */}
                 {p.badge && (
-                  <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ff7759] text-white">
+                  <span className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#ff7759] text-white">
                     {p.badge}
                   </span>
                 )}
                 {isCurrent && (
-                  <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#edfce9] text-[#003c33] border border-[#003c33]/30">
+                  <span className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#edfce9] text-[#003c33] border border-[#003c33]/30">
                     Mevcut Plan
                   </span>
                 )}
@@ -340,30 +398,32 @@ export default function UpgradePage() {
                 </div>
 
                 <div className="font-bold text-base mb-0.5">{p.name}</div>
-                <div className="text-xs text-muted-foreground mb-4">{p.description}</div>
+                <div className="text-[11px] text-muted-foreground mb-4 min-h-[32px] leading-tight">{p.description}</div>
 
                 {/* Price */}
                 <div className="mb-4">
                   {price === 0 ? (
-                    <span className="text-2xl font-extrabold">Ücretsiz</span>
+                    <span className="text-xl font-extrabold">Ücretsiz</span>
                   ) : (
                     <div className="flex items-end gap-1">
-                      <span className="text-2xl font-extrabold">₺{price.toLocaleString("tr-TR")}</span>
-                      <span className="text-xs text-muted-foreground mb-1">/ ay</span>
+                      <span className="text-xl font-extrabold">₺{price.toLocaleString("tr-TR")}</span>
+                      <span className="text-[10px] text-muted-foreground mb-0.5 font-semibold">
+                        {isFlex ? " / 3 Araştırma" : "/ ay"}
+                      </span>
                     </div>
                   )}
                 </div>
 
                 {/* Features */}
-                <ul className="space-y-1.5 flex-1">
+                <ul className="space-y-1.5 flex-1 mb-4">
                   {p.features.map(f => (
-                    <li key={f} className="flex items-start gap-1.5 text-xs">
+                    <li key={f} className="flex items-start gap-1.5 text-[11px] leading-snug">
                       <Check size={12} className="text-[#003c33] shrink-0 mt-0.5" />
                       <span>{f}</span>
                     </li>
                   ))}
                   {p.locked.map(f => (
-                    <li key={f} className="flex items-start gap-1.5 text-xs opacity-40">
+                    <li key={f} className="flex items-start gap-1.5 text-[11px] leading-snug opacity-40">
                       <Lock size={11} className="shrink-0 mt-0.5" />
                       <span>{f}</span>
                     </li>
@@ -372,7 +432,7 @@ export default function UpgradePage() {
 
                 {/* CTA */}
                 {!disabled && (
-                  <div className={`mt-4 w-full py-2 rounded-xl text-sm font-semibold text-center transition-all ${
+                  <div className={`mt-auto w-full py-2 rounded-xl text-xs font-semibold text-center transition-all ${
                     p.key === "Pro"
                       ? "bg-[#ff7759] text-white"
                       : "bg-[#17171c] text-white"
@@ -386,19 +446,25 @@ export default function UpgradePage() {
         </div>
 
         {/* Enterprise CTA */}
-        <div className="rounded-2xl border border-[#d9d9dd] p-5 flex items-center justify-between bg-[#f5f4f1]/30">
-          <div>
-            <div className="font-bold text-sm">Enterprise</div>
-            <div className="text-xs text-muted-foreground">Sınırsız persona, white-label, çok kullanıcılı organizasyon</div>
+        <div className="rounded-2xl border-2 border-[#17171c] p-6 flex flex-col md:flex-row items-start md:items-center justify-between bg-[#f5f4f1]/50 gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-[#17171c] text-white text-[10px] font-bold">ENTERPRISE</Badge>
+              <span className="font-extrabold text-base text-[#17171c]">Kurumsal Çözüm</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-tight max-w-xl">
+              Sınırsız her şey, custom metodolojiler, özel entegrasyonlar, atanmış destek ekibi ve **%100 Yerel Veri Lokalizasyonu (2026 KVKK Uyumlu)** kurumsal garantisi ile organizasyonunuzu ölçeklendirin.
+            </p>
           </div>
           <a
             href="mailto:hello@clarere.com?subject=Enterprise Plan Talebi"
-            className="px-4 py-2 rounded-xl bg-[#17171c] text-white text-sm font-semibold hover:opacity-85 transition-opacity shrink-0"
+            className="px-5 py-2.5 rounded-xl bg-[#17171c] text-white text-xs font-semibold hover:opacity-85 transition-opacity shrink-0 w-full md:w-auto text-center"
           >
-            İletişime Geç
+            İletişime Geç (₺51.000 / Ay)
           </a>
         </div>
       </div>
     </div>
   );
 }
+

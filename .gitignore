@@ -8,6 +8,8 @@ node_modules/
 .next/
 dist/
 build/
+docs/
+.pytest_cache
 
 # Geliştirici araçları — repo'ya eklenmez
 .agent/

@@ -16,7 +16,7 @@ interface PlanGateProps {
   compact?: boolean;
 }
 
-const PLAN_ORDER = ["Free", "Starter", "Pro", "Enterprise"];
+const PLAN_ORDER = ["Free", "Flex", "Starter", "Pro", "Enterprise"];
 
 export function PlanGate({
   currentPlan,
@@ -64,7 +64,7 @@ export function PlanGate({
           </p>
         </div>
         <Link
-          href="/#pricing"
+          href="/client/upgrade"
           className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-accent text-accent-foreground hover:opacity-90 transition-opacity"
         >
           Planı Yükselt →

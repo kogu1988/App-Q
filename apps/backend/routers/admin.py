@@ -182,6 +182,7 @@ async def get_metrics():
     active_models = {
         "b2c": config.get("b2c_model", "—"),
         "b2b": config.get("b2b_model", "—"),
+        "orchestrator": config.get("orchestrator_model", "—"),
     }
 
     return {

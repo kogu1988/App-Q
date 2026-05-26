@@ -388,6 +388,12 @@ def process_intake_chat(current_brief: dict[str, Any], chat_history: list[dict[s
         if match:
             response_text = match.group(0)
             
+        # Model yanıtlarındaki olası Python veri yapısı formatlarını (None, True, False)
+        # standart JSON formatına (null, true, false) dönüştürerek hataya karşı dayanıklı hale getir
+        response_text = re.sub(r':\s*None\b', ': null', response_text)
+        response_text = re.sub(r':\s*True\b', ': true', response_text)
+        response_text = re.sub(r':\s*False\b', ': false', response_text)
+            
         result = json.loads(response_text)
 
         # Varsayılan yapıyı koruma
@@ -402,8 +408,8 @@ def process_intake_chat(current_brief: dict[str, Any], chat_history: list[dict[s
 
         return result
     except Exception as e:
-        print(f"Intake parsing error: {e}")
+        print(f"Intake parsing error: {e}\nRaw Response: {response_text}")
         return {
             "updated_brief": current_brief,
-            "assistant_reply": f"Sistem Hatası: {str(e)}. Gelen Veri: {response_text[:150]}"
+            "assistant_reply": "Kusura bakmayın, bir anlığına dikkatim dağıldı ve yanıtı tamamlayamadım. Lütfen son söylediğinizi tekrarlar mısınız veya devam edebilir miyiz?"
         }

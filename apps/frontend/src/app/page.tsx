@@ -568,6 +568,7 @@ export default function HomePage() {
             <span className="text-sm text-[#93939f]">Clarere © 2026</span>
           </div>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-[#93939f]">
+            <Link href="/guide" className="hover:text-[#212121] transition-colors">Kullanım Kılavuzu</Link>
             <Link href="/#faq" className="hover:text-[#212121] transition-colors">SSS</Link>
             <Link href="/#pricing" className="hover:text-[#212121] transition-colors">Fiyatlandırma</Link>
             <Link href="/privacy" className="hover:text-[#212121] transition-colors">Gizlilik</Link>

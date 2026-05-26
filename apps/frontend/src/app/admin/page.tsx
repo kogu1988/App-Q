@@ -92,7 +92,7 @@ interface MetricsData {
   clients: { username: string; plan_type: string; tokens_used: number; max_tokens: number; total_simulations: number; max_simulations: number; period_simulations: number }[];
   study_stats: { total: number; avg_quality: number; with_report: number; archived: number; error_count: number };
   categories: { category: string; count: number }[];
-  models: { b2c: string; b2b: string };
+  models: { b2c: string; b2b: string; orchestrator: string };
 }
 
 interface SchemaField { key: string; type: string; required?: boolean; desc: string; }
@@ -334,33 +334,33 @@ export default function AdminPage() {
           </div>
         </header>
 
-        <Tabs defaultValue="clients" className="w-full">
-          <TabsList className="grid w-full grid-cols-8 bg-muted p-1 rounded-lg">
-            <TabsTrigger value="clients" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <Users size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Danışanlar</span>
+        <Tabs defaultValue="clients" orientation="vertical" className="flex flex-col md:flex-row gap-6 w-full">
+          <TabsList className="flex flex-col h-auto w-full md:w-64 bg-muted p-2 rounded-lg gap-2 justify-start items-stretch">
+            <TabsTrigger value="clients" className="justify-start px-4 py-2.5 w-full">
+              <Users size={16} className="mr-3" />
+              <span>Danışanlar</span>
             </TabsTrigger>
-            <TabsTrigger value="config" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <Settings size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Yapılandırma</span>
+            <TabsTrigger value="config" className="justify-start px-4 py-2.5 w-full">
+              <Settings size={16} className="mr-3" />
+              <span>Yapılandırma</span>
             </TabsTrigger>
-            <TabsTrigger value="personas" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <ListOrdered size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Personalar</span>
+            <TabsTrigger value="personas" className="justify-start px-4 py-2.5 w-full">
+              <ListOrdered size={16} className="mr-3" />
+              <span>Personalar</span>
             </TabsTrigger>
-            <TabsTrigger value="questions" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <MessageSquare size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Soru Koleksiyonu</span>
+            <TabsTrigger value="questions" className="justify-start px-4 py-2.5 w-full">
+              <MessageSquare size={16} className="mr-3" />
+              <span>Soru Koleksiyonu</span>
             </TabsTrigger>
-            <TabsTrigger value="feedbacks" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <Heart size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Geri Bildirimler</span>
+            <TabsTrigger value="feedbacks" className="justify-start px-4 py-2.5 w-full">
+              <Heart size={16} className="mr-3" />
+              <span>Geri Bildirimler</span>
             </TabsTrigger>
-            <TabsTrigger value="logs" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md">
-              <Activity size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Denetim Kayıtları</span>
+            <TabsTrigger value="logs" className="justify-start px-4 py-2.5 w-full">
+              <Activity size={16} className="mr-3" />
+              <span>Denetim Kayıtları</span>
             </TabsTrigger>
-            <TabsTrigger value="schemas" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md" onClick={() => {
+            <TabsTrigger value="schemas" className="justify-start px-4 py-2.5 w-full" onClick={() => {
               if (!schemas) {
                 setSchemasLoading(true);
                 fetch("http://localhost:8000/api/admin/schemas")
@@ -370,10 +370,10 @@ export default function AdminPage() {
                   .finally(() => setSchemasLoading(false));
               }
             }}>
-              <Code size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Ajan Şablonları</span>
+              <Code size={16} className="mr-3" />
+              <span>Ajan Şablonları</span>
             </TabsTrigger>
-            <TabsTrigger value="metrics" className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md" onClick={() => {
+            <TabsTrigger value="metrics" className="justify-start px-4 py-2.5 w-full" onClick={() => {
               if (!metrics && !metricsLoading) {
                 setMetricsLoading(true);
                 fetch("http://localhost:8000/api/admin/metrics")
@@ -383,10 +383,12 @@ export default function AdminPage() {
                   .finally(() => setMetricsLoading(false));
               }
             }}>
-              <BarChart3 size={16} className="sm:mr-2" />
-              <span className="hidden sm:inline">Metrikler</span>
+              <BarChart3 size={16} className="mr-3" />
+              <span>Metrikler</span>
             </TabsTrigger>
           </TabsList>
+          
+          <div className="flex-1 w-full min-w-0">
 
           {/* ══════════════ TAB: CLIENTS ══════════════ */}
           <TabsContent value="clients" className="mt-6 space-y-4">
@@ -628,21 +630,21 @@ export default function AdminPage() {
                 <CardTitle className="text-base">Sistem Prompt Editörleri</CardTitle>
                 <CardDescription>Araştırma sihirbazı, persona mülakat ve sentez raporu için LLM system promptları.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
                   { key: "wizard_prompt", label: "Araştırma Sihirbazı Promptu (Defne)" },
                   { key: "persona_interview_prompt", label: "Persona Mülakat Promptu" },
                   { key: "synthesis_prompt", label: "Sentez Raporu Promptu" },
                 ].map(({ key, label }) => (
-                  <div key={key} className="space-y-2">
+                  <div key={key} className="flex flex-col space-y-2 border border-border/50 rounded-lg p-4 bg-muted/20">
                     <Label className="font-semibold">{label}</Label>
                     <Textarea
                       id={`prompt-${key}`}
                       defaultValue={(config as Record<string, string>)[key] || ""}
-                      rows={5}
-                      className="text-sm font-mono bg-[#f5f4f1] "
+                      rows={8}
+                      className="text-sm font-mono bg-[#f5f4f1] flex-1 resize-none"
                     />
-                    <div className="flex justify-end">
+                    <div className="flex justify-end pt-2">
                       <Button
                         size="sm"
                         disabled={savingConfig === key}
@@ -650,7 +652,7 @@ export default function AdminPage() {
                           const el = document.getElementById(`prompt-${key}`) as HTMLTextAreaElement;
                           if (el) saveConfig(key, el.value);
                         }}
-                        className="gap-2 bg-[#ff7759] text-white hover:bg-[#ff7759]/90"
+                        className="gap-2 bg-[#ff7759] text-[#edfce9] hover:bg-[#ff7759]/90 w-full"
                       >
                         {savingConfig === key ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                         Promptu Kaydet
@@ -1302,10 +1304,11 @@ export default function AdminPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="grid sm:grid-cols-3 gap-3">
                       {[
-                        { label: "B2C Modeli (Tüketici)", value: metrics.models.b2c, color: "text-[#003c33]", bg: "bg-[#edfce9]" },
-                        { label: "B2B Modeli (Kurumsal)", value: metrics.models.b2b, color: "text-[#1863dc]", bg: "bg-[#f1f5ff]" },
+                        { label: "Orkestratör (Kızıgan e4b)", value: metrics.models.orchestrator, color: "text-[#ff7759]", bg: "bg-orange-50" },
+                        { label: "Aktör (Trendyol-7B)", value: metrics.models.b2c, color: "text-[#003c33]", bg: "bg-[#edfce9]" },
+                        { label: "Analist (Asure-12B)", value: metrics.models.b2b, color: "text-[#1863dc]", bg: "bg-[#f1f5ff]" },
                       ].map(m => (
                         <div key={m.label} className={`rounded-lg px-4 py-3 ${m.bg}`}>
                           <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-0.5">{m.label}</div>
@@ -1450,6 +1453,7 @@ export default function AdminPage() {
               </>
             )}
           </TabsContent>
+          </div>
         </Tabs>
       </div>
     </div>
