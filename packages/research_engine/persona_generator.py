@@ -113,3 +113,57 @@ def generate_and_save_personas(
         print("LLM Persona generation failed:", str(e))
         
     return personas
+
+def generate_random_persona_draft(model) -> dict:
+    """Frontend formu için tek bir rastgele persona taslağı üretir."""
+    import random
+    
+    archetypes = [
+        "Mavi Yakalı Fabrika İşçisi", "Üniversite Öğrencisi (Z Kuşağı)", "Ev Hanımı",
+        "Kurumsal Beyaz Yaka Yönetici", "Küçük Esnaf (Geleneksel)", "Teknoloji Girişimcisi",
+        "Emekli Memur", "Serbest Çalışan (Sanatçı/Tasarımcı)", "Sağlık Çalışanı (Hemşire/Doktor)",
+        "Ataması Yapılmamış Öğretmen", "Tarım Çalışanı / Çiftçi", "İnşaat Ustası",
+        "Kurye / Lojistik Çalışanı", "Güzellik Uzmanı / Kuaför", "Yazılım Geliştirici",
+        "Çağrı Merkezi Temsilcisi", "Banka Memuru", "Kasiyer / Mağaza Çalışanı"
+    ]
+    selected_seed = random.choice(archetypes)
+    
+    # Python ile yaş, tecrübe sınırı ve katılımcı tipini önceden (rastgele) belirliyoruz.
+    # LLM'in matematik halüsinasyonlarını engelliyoruz.
+    random_age = random.randint(18, 65)
+    max_experience_years = max(0, random_age - 18)
+    respondent_types = ["potential_customer", "competitor_user", "individual_user"]
+    selected_respondent_type = random.choice(respondent_types)
+    
+    system = "Sen App-Q için dinamik persona üreticisisin. Tamamen rastgele, inandırıcı ve Türkiye pazarına uygun bir tüketici profili üret. JSON dışında hiçbir şey yazma."
+    prompt = (
+        f"Lütfen MÜTLAKA şu temel arketip etrafında şekillenen bir profil üret: **{selected_seed}**.\n"
+        f"DİKKAT! Bu kişinin yaşı: **{random_age}**.\n"
+        f"Bu kişinin yasal olarak en fazla **{max_experience_years}** yıllık iş tecrübesi olabilir (18 yaş sınırından dolayı). Biyografisinde sakın {max_experience_years} yıldan daha fazla çalıştığını iddia etme!\n"
+        f"Bu kişinin Katılımcı Tipi (respondent_type) şudur: **{selected_respondent_type}**.\n\n"
+        "Aşağıdaki yapıda TEK bir JSON objesi döndür. Değerleri seçerken SOSYOEKONOMİK STATÜ (SES), MESLEK ve HEDEFLER/İTİRAZLAR "
+        "arasında kusursuz bir mantıksal tutarlılık kur.\n"
+        "Şablon içindeki veri tiplerini kendi yaratıcılığınla doldur.\n\n"
+        "{\n"
+        "  \"_reasoning\": \"Seçilen yaş, SES, meslek ve itirazların neden birbiriyle uyumlu olduğuna dair kısa bir analiz...\",\n"
+        "  \"name\": \"<Gerçekçi ve yaygın bir Türk ismi>\",\n"
+        f"  \"age\": {random_age},\n"
+        "  \"city\": \"<Türkiye'den mantıklı bir şehir>\",\n"
+        "  \"segment\": \"<Seçtiğin spesifik rol veya segment>\",\n"
+        "  \"stance\": \"<Innovator, EarlyAdopter, Mainstream, Laggard veya Skeptic>\",\n"
+        "  \"ses_group\": \"<AB, C1, C2, veya DE>\",\n"
+        f"  \"respondent_type\": \"{selected_respondent_type}\",\n"
+        "  \"settlement_type\": \"<kentsel, banliyö veya kırsal>\",\n"
+        "  \"goals\": \"<Kısa, net ve arketipe uygun 2-3 hedef (virgülle ayrılmış)>\",\n"
+        "  \"objections\": \"<Kısa, net ve arketipe uygun 2-3 itiraz veya endişe (virgülle ayrılmış)>\",\n"
+        f"  \"bio\": \"<Kısa hayat hikayesi. En fazla {max_experience_years} yıllık tecrübesi olabilir!>\"\n"
+        "}"
+    )
+    
+    try:
+        response_text = model.generate(system, prompt, response_format="json")
+        parsed = json.loads(response_text)
+        return parsed
+    except Exception as e:
+        print("Draft Persona generation failed:", str(e))
+        return {}

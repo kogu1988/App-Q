@@ -3,11 +3,14 @@ from pydantic import BaseModel
 from typing import Optional, List
 import os
 from packages.research_engine.database import (
-    get_clients, get_system_config, get_feedbacks, get_audit_logs,
-    add_client, update_client, delete_client, update_system_config,
+    get_system_config, get_feedbacks, get_audit_logs, update_system_config, get_db
+)
+from packages.research_engine.db_auth import (
+    get_clients, add_client, update_client, delete_client
+)
+from packages.research_engine.db_vectors import (
     get_personas_pool, get_question_collection, update_question_liked_status,
-    update_question_purpose, delete_from_question_collection,
-    get_db
+    update_question_purpose, delete_from_question_collection
 )
 from packages.research_engine.plan_config import PLAN_CONFIG, PLAN_ORDER, FEATURE_MIN_PLAN
 
@@ -68,6 +71,8 @@ class ManualPersonaCreate(BaseModel):
     city: str
     segment: str
     role_title: Optional[str] = None
+    respondent_type: Optional[str] = "potential_customer"
+    settlement_type: Optional[str] = "kentsel"
     stance: Optional[str] = "Mainstream"
     ses_group: Optional[str] = "C1"
     price_sensitivity: Optional[int] = 5
@@ -138,9 +143,7 @@ async def generate_personas_endpoint(req: GeneratePersonaRequest):
     from packages.research_engine.persona_generator import generate_and_save_personas
     from packages.research_engine.providers import get_model_provider
     
-    config = get_system_config()
-    model_name = config.get("orchestrator_model", "mock")
-    model = get_model_provider(model_name)
+    model = get_model_provider()
     
     personas = generate_and_save_personas(
         role_title=req.role_title,
@@ -162,7 +165,7 @@ async def generate_personas_endpoint(req: GeneratePersonaRequest):
 
 @router.post("/personas/bulk-add")
 async def bulk_add_personas(req: BulkAddPersonasRequest):
-    from packages.research_engine.database import save_persona_to_pool
+    from packages.research_engine.db_vectors import save_persona_to_pool
     from packages.research_engine.caching import get_embedding
     import uuid
     
@@ -179,9 +182,21 @@ async def bulk_add_personas(req: BulkAddPersonasRequest):
         
     return {"status": "success", "saved_count": saved_count}
 
+@router.get("/personas/draft")
+async def get_random_persona_draft():
+    from packages.research_engine.persona_generator import generate_random_persona_draft
+    from packages.research_engine.providers import get_model_provider
+    
+    model = get_model_provider()
+    
+    draft = generate_random_persona_draft(model)
+    if not draft:
+        raise HTTPException(status_code=500, detail="Taslak persona üretilemedi.")
+    return {"status": "success", "draft": draft}
+
 @router.post("/personas/create")
 async def create_manual_persona(req: ManualPersonaCreate):
-    from packages.research_engine.database import save_persona_to_pool
+    from packages.research_engine.db_vectors import save_persona_to_pool
     from packages.research_engine.caching import get_embedding
     import uuid
     
@@ -198,7 +213,7 @@ async def create_manual_persona(req: ManualPersonaCreate):
 
 @router.delete("/personas/{persona_id}")
 async def delete_persona(persona_id: str):
-    from packages.research_engine.database import delete_persona_from_pool, get_personas_pool
+    from packages.research_engine.db_vectors import delete_persona_from_pool, get_personas_pool
     personas = get_personas_pool()
     target = None
     for p in personas:

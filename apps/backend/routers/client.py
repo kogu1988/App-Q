@@ -8,11 +8,13 @@ from packages.research_engine.workflow import build_research_plan, generate_pers
 from packages.research_engine.analytics import synthesize_report
 from packages.research_engine.privacy import PrivacyMasker, PrivacyResearchModelWrapper
 from packages.research_engine.database import (
-    list_studies, load_study_payload, save_study, get_personas_pool, save_persona_to_pool,
-    archive_study, save_feedback, get_client_by_username,
-    upgrade_client_plan, check_simulation_limit, register_client_if_new,
-    atomic_increment_simulation_count,
+    list_studies, load_study_payload, save_study, archive_study, save_feedback,
+    get_client_by_username, upgrade_client_plan, check_simulation_limit, 
+    register_client_if_new, atomic_increment_simulation_count,
     count_user_non_ab_simulations
+)
+from packages.research_engine.db_vectors import (
+    get_personas_pool, save_persona_to_pool
 )
 from packages.research_engine.intake import process_intake_chat
 from packages.research_engine.providers import get_model_provider

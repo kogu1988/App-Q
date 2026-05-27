@@ -134,8 +134,18 @@ def get_similar_personas(embedding: list[float], limit: int = 5) -> list[dict]:
 
 def get_personas_pool() -> list[dict]:
     with get_db() as (conn, cur):
-        cur.execute("SELECT * FROM personas_pool")
-        return [dict(row) for row in cur.fetchall()]
+        # We explicitly omit 'embedding' and 'big_five_vector' to prevent FastAPI serialization crashes
+        # Or we can just delete them from the dict
+        cur.execute("SELECT * FROM personas_pool ORDER BY created_at DESC")
+        personas = []
+        for row in cur.fetchall():
+            p = dict(row)
+            if "embedding" in p:
+                del p["embedding"]
+            if "big_five_vector" in p:
+                del p["big_five_vector"]
+            personas.append(p)
+        return personas
 
 def delete_persona_from_pool(persona_id: str) -> bool:
     with get_db() as (conn, cur):

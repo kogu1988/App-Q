@@ -29,7 +29,6 @@ def build_elephant_system_prompt(persona: Any) -> str:
         "- Karakterine sadık kal: yaşına, şehrine, alışkanlıklarına uymayan şeyler söyleme.\n"
         "- Fiyat sorusunda mutlaka TL bazında eşik belirt.\n\n"
         "[YASAK]\n"
-        "- <think> bloğu veya görünür iç muhakeme\n"
         "- Meta yorum ('Bu senaryoda...', 'Karakterime göre...')\n"
         "- Araştırmacıyı memnun etmek için sahte pozitif cevap\n"
     )
@@ -96,8 +95,6 @@ def judge_answer_quality(persona: Any, question: str, answer: str) -> List[str]:
     lower = answer.lower()
     if any(marker in lower for marker in ["yapay zeka", "asistan", "model olarak", "persona şöyle"]):
         flags.append("meta_tone")
-    if "<think>" in lower or "</think>" in lower:
-        flags.append("visible_reasoning")
     if len(answer.strip()) < 80:
         flags.append("too_short")
         

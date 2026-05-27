@@ -212,6 +212,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
   const [manualOpen, setManualOpen] = useState(false);
   const [resetAlertOpen, setResetAlertOpen] = useState(false);
   const [savingManual, setSavingManual] = useState(false);
+  const [generatingDraft, setGeneratingDraft] = useState(false);
   const [wizardMode, setWizardMode] = useState<"grounded" | "sandbox">("grounded");
 
   const [manualForm, setManualForm] = useState({
@@ -221,6 +222,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
     segment: "",
     role_title: "",
     respondent_type: "potential_customer",
+    settlement_type: "kentsel",
     stance: "Mainstream",
     ses_group: "C1",
     price_sensitivity: 5,
@@ -301,6 +303,36 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
     toast.success("Bilimsel varsayılan ayarlar geri yüklendi.");
   };
 
+  const handleGenerateDraft = async () => {
+    setGeneratingDraft(true);
+    try {
+      const res = await fetch("/api/admin/personas/draft");
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const draft = data.draft;
+      
+      setManualForm(f => ({
+        ...f,
+        name: draft.name || f.name,
+        age: draft.age || f.age,
+        city: draft.city || f.city,
+        segment: draft.segment || f.segment,
+        stance: draft.stance || f.stance,
+        ses_group: draft.ses_group || f.ses_group,
+        respondent_type: draft.respondent_type || f.respondent_type,
+        settlement_type: draft.settlement_type || f.settlement_type,
+        bio: draft.bio || f.bio,
+        goals: draft.goals || f.goals,
+        objections: draft.objections || f.objections,
+      }));
+      toast.success("Sürpriz taslak üretildi! Değerleri inceleyip kaydedebilirsiniz.");
+    } catch {
+      toast.error("Taslak persona üretimi başarısız oldu.");
+    } finally {
+      setGeneratingDraft(false);
+    }
+  };
+
   const handleSubmitManual = async () => {
     if (!manualForm.name.trim() || !manualForm.segment.trim()) {
       toast.error("Lütfen İsim ve Rol/Segment alanlarını doldurun.");
@@ -318,6 +350,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
         segment: manualForm.segment,
         role_title: manualForm.role_title || manualForm.segment,
         respondent_type: manualForm.respondent_type,
+        settlement_type: manualForm.settlement_type,
         stance: manualForm.stance,
         ses_group: manualForm.ses_group,
         price_sensitivity: Number(manualForm.price_sensitivity),
@@ -356,6 +389,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
         segment: "",
         role_title: "",
         respondent_type: "potential_customer",
+        settlement_type: "kentsel",
         stance: "Mainstream",
         ses_group: "C1",
         price_sensitivity: 5,
@@ -463,29 +497,44 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                   </DialogHeader>
 
                   <div className="space-y-4 mt-4 text-left">
-                    {/* Segmented Control Wizard Toggle (Stark Monochrome Style) */}
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase">
-                        Sihirbaz Modu
-                      </Label>
-                      <div className="flex border border-border rounded-lg p-0.5 max-w-xs bg-muted/20">
+                    <div className="flex items-end justify-between gap-4">
+                      {/* Segmented Control Wizard Toggle (Stark Monochrome Style) */}
+                      <div className="space-y-1.5 flex-1">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase">
+                          Sihirbaz Modu
+                        </Label>
+                        <div className="flex border border-border rounded-lg p-0.5 max-w-xs bg-muted/20">
+                          <button
+                            type="button"
+                            onClick={() => handleWizardModeChange("grounded")}
+                            className={`flex-1 text-[10px] font-bold py-1 px-3 rounded-md transition-colors ${
+                              wizardMode === "grounded" ? "bg-[#17171c] text-white" : "text-[#616161] hover:text-[#17171c]"
+                            }`}
+                          >
+                            Grounded (Bilimsel)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleWizardModeChange("sandbox")}
+                            className={`flex-1 text-[10px] font-bold py-1 px-3 rounded-md transition-colors ${
+                              wizardMode === "sandbox" ? "bg-[#17171c] text-white" : "text-[#616161] hover:text-[#17171c]"
+                            }`}
+                          >
+                            Custom Sandbox
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Random Persona Generator Button */}
+                      <div className="pb-[2px]">
                         <button
                           type="button"
-                          onClick={() => handleWizardModeChange("grounded")}
-                          className={`flex-1 text-[10px] font-bold py-1 px-3 rounded-md transition-colors ${
-                            wizardMode === "grounded" ? "bg-[#17171c] text-white" : "text-[#616161] hover:text-[#17171c]"
-                          }`}
+                          onClick={handleGenerateDraft}
+                          disabled={generatingDraft}
+                          className="flex items-center justify-center gap-1.5 text-[10px] font-bold py-1 px-4 rounded-md border border-[#17171c] bg-white hover:bg-[#17171c] hover:text-white text-[#17171c] transition-colors h-[28px] shadow-sm disabled:opacity-50"
                         >
-                          Grounded (Bilimsel)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleWizardModeChange("sandbox")}
-                          className={`flex-1 text-[10px] font-bold py-1 px-3 rounded-md transition-colors ${
-                            wizardMode === "sandbox" ? "bg-[#17171c] text-white" : "text-[#616161] hover:text-[#17171c]"
-                          }`}
-                        >
-                          Custom Sandbox
+                          {generatingDraft ? <Loader2 size={12} className="animate-spin" /> : <span className="text-[10px]">✨</span>}
+                          {generatingDraft ? "Üretiliyor..." : "AI ile Doldur"}
                         </button>
                       </div>
                     </div>
@@ -566,6 +615,18 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                             <option value="churned_user">Kaybedilmiş Kullanıcı</option>
                             <option value="decision_maker">Karar Verici</option>
                             <option value="individual_user">Bireysel / Genel Tüketici</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Yerleşim Tipi</Label>
+                          <select
+                            value={manualForm.settlement_type}
+                            onChange={e => setManualForm(f => ({ ...f, settlement_type: e.target.value }))}
+                            className="w-full h-8 text-xs border border-border rounded-lg px-2 bg-background text-foreground cursor-pointer focus:ring-1 focus:ring-primary"
+                          >
+                            <option value="kentsel">Kentsel (Metropol)</option>
+                            <option value="banliyö">Banliyö (Şehir Çeperi)</option>
+                            <option value="kırsal">Kırsal (Taşra)</option>
                           </select>
                         </div>
                       </div>

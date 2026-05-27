@@ -229,6 +229,19 @@ def init_db() -> None:
             cur.execute("CREATE INDEX IF NOT EXISTS ai_semantic_cache_embedding_idx ON ai_semantic_cache USING hnsw (prompt_embedding vector_cosine_ops);")
         except Exception as e:
             print(f"[DB] Index migration warning for ai_semantic_cache: {e}")
+            
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ai_rationales (
+                id SERIAL PRIMARY KEY,
+                prompt_hash TEXT,
+                model_id TEXT,
+                thinking_text TEXT,
+                response_text TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+            """
+        )
         # — Migration versiyon tablosu (DB-3) —
         # Her migration satırı idempotent olarak izlenir.
         cur.execute(
@@ -443,14 +456,28 @@ def init_db() -> None:
             "dinamiklerini (kargo, taksit, KVKK, komisyon vb.) göz önünde bulundur."
         )
         default_synthesis = (
-            "Müşterinin ürün fikrini, pazar araştırması brief'ini ve personalarla yapılan mülakat transcriptlerini "
-            "analiz et. Türkiye pazarı için derinlemesine bir sentez raporu üret. Raporda pazar fırsatlarını, "
-            "kritik itirazları, bariyerleri, fiyatlandırma analizlerini ve ürün geliştirme önerilerini somut başlıklar "
-            "altında topla. Markdown formatında yaz."
+            "[ROLE]\n"
+            "Sen, pazar araştırması boru hattının (pipeline) \"Tepe Denetleyicisi ve Tematik Analist\"isin. "
+            "Mülakat transkriptlerini Braun & Clarke tematik analiz çerçevesine göre kodlamak ve nesnel kanıtlara (Evidence Chain) dayalı pazar raporları üretmekle görevlisin.\n\n"
+            "[BOUNDARIES (KESİN SINIRLAR)]\n"
+            "- Sıfır Halüsinasyon (Zero-Shot Hallucination Ban): Transkriptte GÖREMEDİĞİN hiçbir şikayeti, fiyat itirazını veya övgüyü rapora ekleyemezsin.\n"
+            "- Çekişmeli Kalite İncelemesi (Adversarial Review): Müşterinin \"Ürünüm çok güzel olacak\" varsayımını asla destekleme. Raporda en az 3 \"Kritik Başarısızlık Bariyeri\" (Barrier to Entry) belirteceksin.\n"
+            "- Görev Dönüşüm Etkisi (Task-Transformation): Sentezi yazarken yapay zeka tonunu kapat. Bir McKinsey danışmanı gibi, acımasızca dürüst ve doğrudan bir profesyonel dil kullan.\n\n"
+            "[OUTPUT FORMAT]\n"
+            "Sadece ayrıştırılabilir JSON dön. (Markdown ```json bloğu içine ALMA).\n"
+            "Şema:\n"
+            "{\n"
+            "  \"market_viability_score\": \"1-100\",\n"
+            "  \"critical_barriers\": [\"bariyer_1\", \"bariyer_2\"],\n"
+            "  \"evidence_chain\": [\n"
+            "    {\"claim\": \"Kullanıcılar fiyatı yüksek buluyor\", \"quote\": \"Bu parayı vermem, çok pahalı\", \"persona\": \"Ahmet (C1)\"}\n"
+            "  ],\n"
+            "  \"strategic_recommendations\": [\"öneri_1\", \"öneri_2\"]\n"
+            "}"
         )
         cur.execute("INSERT INTO system_config (key, value) VALUES ('wizard_prompt', %s) ON CONFLICT (key) DO NOTHING", (default_wizard,))
         cur.execute("INSERT INTO system_config (key, value) VALUES ('persona_interview_prompt', %s) ON CONFLICT (key) DO NOTHING", (default_persona,))
-        cur.execute("INSERT INTO system_config (key, value) VALUES ('synthesis_prompt', %s) ON CONFLICT (key) DO NOTHING", (default_synthesis,))
+        cur.execute("INSERT INTO system_config (key, value) VALUES ('synthesis_prompt', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (default_synthesis,))
 
 
 def save_study(metadata: dict, payload: dict) -> str:
@@ -876,6 +903,23 @@ def register_client_if_new(username: str, email: str = "") -> tuple[dict, bool]:
         return dict(row) if row else {"username": username, "plan_type": "Free"}, True
 
 
+
+
+def log_ai_rationale(prompt_hash: str, model_id: str, thinking_text: str, response_text: str) -> None:
+    """Log the <thinking> block to the database for transparency and auditing."""
+    if not thinking_text:
+        return
+    try:
+        with get_db() as (conn, cur):
+            cur.execute(
+                """
+                INSERT INTO ai_rationales (prompt_hash, model_id, thinking_text, response_text)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (prompt_hash, model_id, thinking_text, response_text)
+            )
+    except Exception as e:
+        logger.error(f"Failed to log AI rationale: {e}")
 
 
 # Initial DB setup

@@ -1,7 +1,9 @@
 import uvicorn
 import gc
 import sys
+from dotenv import load_dotenv
 
+load_dotenv()
 def main():
     # 1. Ajan Hafıza Yönetimi (Memory Cleanup)
     print("Bellek temizleniyor (Garbage Collection)...")

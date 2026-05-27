@@ -28,57 +28,62 @@ OLLAMA_LOCK = threading.Semaphore(1)
 
 
 APP_Q_GENERATION_POLICY = """
-[GÖREV]
-Sen App-Q'nun araştırma motoru için çalışan, gerçek bir Türk kullanıcı personasını canlandıran bir aktörsün.
-Görevin: Sana verilen persona kimliğine birebir girerek, araştırmacının sorduğu soruyu o karakterin sesinden yanıtlamak.
+[ROLE]
+Sen gerçekçi bir Türk tüketicisisin. Sana atanan kişilik profiline (NEO-PI-R Vektörü), sosyo-ekonomik duruma (SES) ve İnovasyon Yayılım Eğrisi rolüne sadık kalarak, mülakatçının sana sunduğu ürün veya senaryoya tepki vereceksin.
 
-[ALTIN KURAL — KİMLİĞİN]
-Sen bir yapay zeka değilsin. Sen o persona'sın. Hiçbir koşulda:
-- "Ben bir yapay zeka olarak...", "Persona şöyle düşünür...", "Asistan olarak..." gibi ifadeler kullanma.
-- Karakterin dışına çıkma. "Bilgi sınırım dahilinde..." gibi meta yorumlar yapma.
-Sadece ve sadece birinci tekil şahısla (ben/benim) konuş.
+[BOUNDARIES (KESİN SINIRLAR)]
+- Araştırmacının ürününün başarılı olup olmaması senin umurunda DEĞİLDİR (Hipoteze Körlük).
+- Asla bir yapay zeka veya asistan gibi "Size nasıl yardımcı olabilirim?" tarzı cümleler kurma.
+- Çıktını her zaman önce `<thinking>` bloğunda rasyonel olarak planla, ardından `<response>` bloğunda sadece karakterin ağzından konuş.
 
-[YANIT KALİTESİ]
-- Kısa ve somut ol: 2-4 cümle yeterli. Gereksiz açıklama, maddeleme veya önsöz yapma.
-- Türkiye gerçeklerine bağlı kal: TL bazında fiyat ver, taksit/kargo/komisyon/KVKK gibi somut Türkiye bağlamını kullan.
-- Dürüst ol: Ürünün zayıf noktasını gör, olumlu görünmek için cevap verme.
-- Eğer fiyat sorusuysa mutlaka TL rakamı ver.
-- Eğer güven/gizlilik sorusuysa mutlaka KVKK veya veri kaygısına değin.
+[COGNITIVE & CULTURAL RULES]
+1. Açık Reddetme İzni (ELEPHANT Çerçevesi): Mülakatçının sunduğu varsayımlara körü körüne katılmak ZORUNDA DEĞİLSİN. Sosyal dalkavukluk (sycophancy) yapma. İhtiyaçlarına veya bütçene uymayan bir ürünü doğrudan reddet, itiraz et ve açıkça eleştir.
+2. Bilişsel Hafıza Sönümlemesi (ACT-R): Mülakatta sadece sana sorulan son 4 soruyu (Cowan limiti) tam netlikle hatırla. Konuşmanın başındaki detayları silikleştir.
+3. Dijital Pazarlık Ritüeli: Eğer ürün bütçeni zorluyorsa veya fiyatı belirsizse (Hofstede UAI=85), satıcıdan mutlaka %30'a varan bir indirim talep et.
+4. Taksit ve BDDK Kısıtları: Ödemelerde tek çekim yerine mutlaka taksit iste (tercih oranı %71). Ancak güncel BDDK yasaklarını hatırla (Örn: elektronik eşyalarda maksimum 4 ay, yurtdışı seyahatte taksit yok).
+5. Sepet Terk Etme (S-O-R Paradigması): Eğer kargo ücreti, ürün fiyatının %12'sinden fazlaysa, sepeti doğrudan terk etme eylemi göster (Sürpriz maliyet tepkisi).
 
-[YASAK]
-- <think> bloğu veya iç muhakeme yazmak
-- "Araştırmacıya göre...", "Bu senaryoda..." gibi dışarıdan bakış açısı
-- Belirsiz, genel, her duruma uyan jenerik cevaplar
-- Araştırmacıyı memnun etmeye çalışmak; gerçek itirazlarını gizlemek
+[OUTPUT FORMAT]
+<thinking>
+Karakterin içsel rasyonel değerlendirmesi, psikometrik sınırlarının analizi, reddetme veya kabul etme gerekçesi.
+</thinking>
+<response>
+Karakterin ağzından, yöresel ve doğal Türk e-ticaret jargonu (örn: "bize gelişi ne olur", "fiyat-performans ürünü") kullanılarak verilmiş doğrudan yanıt.
+</response>
 """
 
 INTAKE_POLICY = """
-[KİMSİN]
-Sen Defne'sin — App-Q'nun pazar araştırması sihirbazı. Kullanıcının ürün/hizmet fikrini sohbet ederek anlıyor, araştırma brief'ini adım adım dolduruyorsun.
+[ROLE]
+Sen, otonom pazar araştırması platformunun "İlk Savunma Hattı ve Proje Tasarımcısı" olan Kıdemli Pazarlama Uzmanısın. Kullanıcıdan gelen yönlendirici, taraflı ve öznel araştırma brief'lerini alıp, bunları bilimsel olarak test edilebilir, nötr ve nesnel (Sokratik) araştırma sorularına dönüştürmekle görevlisin.
 
-[TEMEL GÖREV]
-Her turda tam olarak bir şey yap:
-1. Kullanıcının söylediklerini brief'e kaydet (hepsini, eksiksiz).
-2. Brief'teki tek bir eksik alanı, doğal Türkçe bir soruyla sor.
-3. Her alan dolduğunda bir sonrakine geç. Aynı alanı iki kez sorma.
-   * Önemli: Kullanıcı son mesajında veya geçmişte bir soruyu yanıtladıysa (kısa da olsa), o alanı doldurulmuş say ve KESİNLİKLE o soruyu tekrar sorma; doğrudan bir sonraki sıradaki eksik alana geç!
+[BOUNDARIES (KESİN SINIRLAR)]
+- ASLA mülakat simülasyonu yapmayacaksın.
+- ASLA sahte araştırma sonuçları veya rapor üretmeyeceksin. 
+- YALNIZCA girdinin yeniden çerçevelenmesini (Input Reframing) yapacak ve örneklem (persona) matrisini oluşturup görevini sonlandıracaksın.
+- Mülakatçı etmenlere, araştırmacının "neyi doğrulamak istediği" bilgisini ASLA aktarmayacaksın (Bağlam İzolasyonu kuralı).
 
-[DOĞAL VE DİL BİLGİSEL OLARAK KUSURSUZ TÜRKÇE KURALI]
-- JSON alan adı (expected_price, respondent_types vb.) ASLA kullanma.
-- "Ücretlendirme modelini nasıl düşünüyorsunuz?" sor; "expected_price alanı..." deme.
-- Tamamen akıcı, dil bilgisel olarak kusursuz, doğal Türkçe cümleler kur. İngilizce'den kelimesi kelimesine çevrilmiş gibi duran mantıksız cümle yapılarından kesinlikle kaçın. Cümle dizilimi ve kelime seçimleri (Örn: 'bu uygulamayı potansiyel müşterilere sormak istediğiniz ana sorular' yerine 'bu uygulama hakkında potansiyel müşterilerinize sormak istediğiniz sorular', veya 'Rekabetçi ortamı şu ana kadar netleştirdiğimiz kitle...' yerine 'Şu ana kadar kitleyi netleştirdik, şimdi rekabetçi ortamı ele alalım...') akıcı ve anlamlı olmalıdır.
-- Samimi, sıcak, kısa cümleler kullan. Kullanıcıyı geri bildirimsiz bırakma.
+[OBJECTIVES & RULES]
+1. Girdinin Yeniden Çerçevelenmesi (Input Reframing): 
+   - Kullanıcı girdisindeki birinci tekil şahıs perspektifini ("Bence bu satar") ve yüksek epistemik kesinlik bildiren kelimeleri ("Kesinlikle, kusursuz") sil.
+   - Onaylanma arayışı içeren soruları, "risk, potansiyel bariyer ve sürtünme noktası" odaklı, yanlışlanabilir hipotezlere dönüştür.
+2. Kohort Matrisi Dağılımı: 
+   - Araştırma paneli için Rogers'ın İnovasyon Yayılım Eğrisi (%15 Şampiyon, %35 Pragmatist, %20 Şüpheci, %15 Engelleyici, %15 Gözlemci) ve TÜAD 2025 SES kotalarına (AB, C1, C2, DE) uygun matematiksel bir örneklem tasarla.
+   - Her bir persona için NEO-PI-R (Big Five) kısıtlarını (Açıklık, Sorumluluk, Dışadönüklük, Uyumluluk, Nevrotiklik) -1.0 ile 1.0 arasında vektör olarak tanımla.
 
-[TAMAMLANMA KONTROLÜ]
-Şu 8 alan dolmadan "Araştırmayı başlatmaya hazırım, butona basabilirsin" ASLA yazma:
-ürün fikri, başlık, hedef kitle, fiyat modeli, rakipler, başarı ölçütü, katılımcı tipleri, keşif kanalları.
-
-[YASAK]
-- Kullanıcıyı azarlamak veya eksiklerini yüzüne vurmak
-- Aynı veya benzer soruyu iki kez sormak (Kullanıcının son mesajda yanıtladığı konuyu KESİNLİKLE tekrar sorma!)
-- <think> bloğu veya iç muhakeme yazmak
-- Kullanıcının söylemediği değerleri tahmin edip kaydetmek (özellikle kanallar ve katılımcı tipleri)
-- İngilizce/snake_case değer kaydetmek: "new_owner" değil "Yeni evcil hayvan sahipleri" yaz
+[OUTPUT FORMAT]
+Çıktını KESİNLİKLE markdown veya ek açıklama metni olmadan, saf ve ayrıştırılabilir (RFC 8259 uyumlu) JSON formatında üretmelisin.
+Şema:
+{
+  "objective_product_context": "Ürünün nesnel fonksiyonel tanımı",
+  "primary_research_questions": ["nötr_soru_1", "nötr_soru_2"],
+  "allocated_cohort_matrix": [
+    {
+      "persona_name": "İsim (SES Grubu)",
+      "stance": "Rogers Eğrisi Rolü",
+      "big_five_constraints": [-0.5, 0.2, 0.8, -0.4, 0.5]
+    }
+  ]
+}
 """
 
 
@@ -91,10 +96,38 @@ DEFAULT_GENERAL_MODEL_ID = "app-q-asure"
 DEFAULT_ORCHESTRATOR_MODEL_ID = "app-q-kizagan-e4b"
 
 
-def strip_visible_reasoning(content: str) -> str:
-    """Remove visible reasoning blocks emitted by some local reasoning models."""
-    without_tags = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL | re.IGNORECASE)
-    return without_tags.strip()
+def clean_json_output(content: str) -> str:
+    """Markdown kod bloklarını ve gereksiz metinleri silerek sadece JSON'u döndürür."""
+    import re
+    match = re.search(r'```(?:json)?\s*(.*?)\s*```', content, flags=re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return content.strip()
+
+def strip_visible_reasoning(content: str) -> tuple[str, str]:
+    """Extract <thinking> blocks and return (thinking_text, response_text)."""
+    import re
+    
+    thinking_text = ""
+    # Try to find <thinking>...</thinking>
+    think_match = re.search(r"<thinking>(.*?)</thinking>", content, flags=re.DOTALL | re.IGNORECASE)
+    if think_match:
+        thinking_text = think_match.group(1).strip()
+        # Remove the thinking block from the response
+        response_text = re.sub(r"<thinking>.*?</thinking>", "", content, flags=re.DOTALL | re.IGNORECASE).strip()
+    else:
+        # Fallback for older <think> tag
+        think_match = re.search(r"<think>(.*?)</think>", content, flags=re.DOTALL | re.IGNORECASE)
+        if think_match:
+            thinking_text = think_match.group(1).strip()
+            response_text = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL | re.IGNORECASE).strip()
+        else:
+            response_text = content.strip()
+            
+    # Clean XML tags from response if model forgot to close them
+    response_text = re.sub(r"<(thinking|think|response)>|</(thinking|think|response)>", "", response_text, flags=re.IGNORECASE).strip()
+            
+    return thinking_text, response_text
 
 
 def choose_model_id(prompt: str, b2c_model_id: str, general_model_id: str) -> str:
@@ -285,7 +318,20 @@ class OllamaResearchModel:
         if not content:
             raise ModelProviderError(f"Ollama boş yanıt döndürdü: {data}")
             
-        final_response = strip_visible_reasoning(content)
+        thinking_text, final_response = strip_visible_reasoning(content)
+        
+        if response_format == "json":
+            final_response = clean_json_output(final_response)
+        
+        # Save Rationale
+        if thinking_text:
+            import hashlib
+            prompt_hash = hashlib.md5((system + prompt).encode("utf-8")).hexdigest()
+            try:
+                from .database import log_ai_rationale
+                log_ai_rationale(prompt_hash, self.model_id, thinking_text, final_response)
+            except ImportError:
+                pass
         
         # 3. Save to Cache (Skip for Defne/Intake wizard)
         if "Defne" not in system:
@@ -338,7 +384,7 @@ class OllamaResearchModel:
             with OLLAMA_LOCK:
                 with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
                     inside_think_block = False
-                    full_response = []
+                    full_stream = []
                     for line in response:
                         if not line.strip():
                             continue
@@ -346,21 +392,35 @@ class OllamaResearchModel:
                             data = json.loads(line.decode("utf-8"))
                             content = data.get("message", {}).get("content", "")
                             if content:
-                                if "<think>" in content:
+                                full_stream.append(content)
+                                if "<think>" in content or "<thinking>" in content:
                                     inside_think_block = True
-                                    content = content.split("<think>")[0]
-                                elif "</think>" in content:
+                                    content = re.split(r"<thinking>|<think>", content)[0]
+                                elif "</think>" in content or "</thinking>" in content:
                                     inside_think_block = False
-                                    content = content.split("</think>")[-1]
+                                    content = re.split(r"</thinking>|</think>", content)[-1]
                                 
                                 if not inside_think_block and content:
-                                    full_response.append(content)
                                     yield content
                         except json.JSONDecodeError:
                             continue
                     
-                    # 3. Save full streamed response to cache (Skip for Defne)
-                    final_text = "".join(full_response).strip()
+                    # 3. Process full output, extract thinking and save to cache/db
+                    raw_text = "".join(full_stream)
+                    thinking_text, final_text = strip_visible_reasoning(raw_text)
+                    
+                    if response_format == "json":
+                        final_text = clean_json_output(final_text)
+                        
+                    if thinking_text:
+                        import hashlib
+                        prompt_hash = hashlib.md5((system + prompt).encode("utf-8")).hexdigest()
+                        try:
+                            from .database import log_ai_rationale
+                            log_ai_rationale(prompt_hash, self.model_id, thinking_text, final_text)
+                        except ImportError:
+                            pass
+                            
                     if final_text and "Defne" not in system:
                         save_to_semantic_cache(prompt, final_text, system)
         except (TimeoutError, urllib.error.URLError) as exc:
@@ -444,7 +504,19 @@ class VLLMResearchModel:
             **kwargs
         )
         content = response.choices[0].message.content or ""
-        final_response = strip_visible_reasoning(content)
+        thinking_text, final_response = strip_visible_reasoning(content)
+        
+        if response_format == "json":
+            final_response = clean_json_output(final_response)
+            
+        if thinking_text:
+            import hashlib
+            prompt_hash = hashlib.md5((system + prompt).encode("utf-8")).hexdigest()
+            try:
+                from .database import log_ai_rationale
+                log_ai_rationale(prompt_hash, self.model_id, thinking_text, final_response)
+            except ImportError:
+                pass
         
         if "Defne" not in system:
             save_to_semantic_cache(prompt, final_response, system)
@@ -486,23 +558,37 @@ class VLLMResearchModel:
             **kwargs
         )
         
-        full_response = []
+        full_stream = []
         inside_think = False
         for chunk in response:
             content = chunk.choices[0].delta.content
             if content:
-                if "<think>" in content:
+                full_stream.append(content)
+                if "<think>" in content or "<thinking>" in content:
                     inside_think = True
-                    content = content.split("<think>")[0]
-                elif "</think>" in content:
+                    content = re.split(r"<thinking>|<think>", content)[0]
+                elif "</think>" in content or "</thinking>" in content:
                     inside_think = False
-                    content = content.split("</think>")[-1]
+                    content = re.split(r"</thinking>|</think>", content)[-1]
                     
                 if not inside_think and content:
-                    full_response.append(content)
                     yield content
                     
-        final_text = "".join(full_response).strip()
+        raw_text = "".join(full_stream)
+        thinking_text, final_text = strip_visible_reasoning(raw_text)
+        
+        if response_format == "json":
+            final_text = clean_json_output(final_text)
+            
+        if thinking_text:
+            import hashlib
+            prompt_hash = hashlib.md5((system + prompt).encode("utf-8")).hexdigest()
+            try:
+                from .database import log_ai_rationale
+                log_ai_rationale(prompt_hash, self.model_id, thinking_text, final_text)
+            except ImportError:
+                pass
+                
         if final_text and "Defne" not in system:
             save_to_semantic_cache(prompt, final_text, system)
 
