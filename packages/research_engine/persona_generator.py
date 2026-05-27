@@ -15,7 +15,8 @@ def generate_and_save_personas(
     market: str = "Türkiye",
     target_users: str = "genel tüketici",
     why: str = "Hedef kitle temsilcisi",
-    save_to_pool: bool = True
+    save_to_pool: bool = True,
+    negative_targeting: str = ""
 ) -> list[Persona]:
     """Admin veya Enterprise için LLM ile persona üretir ve havuza kaydeder."""
     personas = []
@@ -42,6 +43,7 @@ def generate_and_save_personas(
         f"Hedef kullanıcı grubu: {target_users}\n"
         f"Rol: {role_title} (Gerekçe: {why})\n"
         f"Üretilecek Persona Sayısı: {count}\n\n"
+        f"{('NEGATİF HEDEFLEME KISITLARI (KESİNLİKLE İÇERMEMESİ GEREKEN ÖZELLİKLER):\n- ' + negative_targeting + '\n\n') if negative_targeting else ''}"
         "LÜTFEN AŞAĞIDAKİ MATRİS KISITLARINA (HARD CONSTRAINTS) KESİNLİKLE UY:\n"
         f"{constraints_text}"
         "Lütfen aşağıdaki yapıda bir JSON listesi döndür:\n"

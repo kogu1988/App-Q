@@ -57,6 +57,7 @@ class GeneratePersonaRequest(BaseModel):
     target_users: Optional[str] = "genel tüketici"
     why: Optional[str] = "Hedef kitle temsilcisi"
     save_to_pool: Optional[bool] = True
+    negative_targeting: Optional[str] = ""
 
 class BulkAddPersonasRequest(BaseModel):
     personas: List[dict]
@@ -149,7 +150,8 @@ async def generate_personas_endpoint(req: GeneratePersonaRequest):
         market=req.market,
         target_users=req.target_users,
         why=req.why,
-        save_to_pool=req.save_to_pool
+        save_to_pool=req.save_to_pool,
+        negative_targeting=req.negative_targeting
     )
     
     return {

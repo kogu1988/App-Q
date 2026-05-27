@@ -250,11 +250,9 @@ export default function PrivacyPage() {
           <div className="flex gap-6">
             <Link href="/" className="hover:text-primary transition-colors">Ana Sayfa</Link>
             <Link href="/terms" className="hover:text-primary transition-colors">Kullanım Şartları</Link>
-            <Link href="/#pricing" className="hover:text-primary transition-colors">Fiyatlandırma</Link>
           </div>
         </div>
       </footer>
     </div>
   );
 }
-

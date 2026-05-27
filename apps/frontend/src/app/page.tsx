@@ -732,7 +732,6 @@ export default function HomePage() {
           <div className="flex flex-wrap justify-center gap-6 text-sm text-[#93939f]">
             <span onClick={() => navigateTo("/guide")} className="hover:text-[#212121] transition-colors cursor-pointer" role="link">Kullanım Kılavuzu</span>
             <span onClick={() => navigateTo("/#faq")} className="hover:text-[#212121] transition-colors cursor-pointer" role="link">SSS</span>
-            <span onClick={() => navigateTo("/#pricing")} className="hover:text-[#212121] transition-colors cursor-pointer" role="link">Fiyatlandırma</span>
             <span onClick={() => navigateTo("/privacy")} className="hover:text-[#212121] transition-colors cursor-pointer" role="link">Gizlilik</span>
             <span onClick={() => navigateTo("/terms")} className="hover:text-[#212121] transition-colors cursor-pointer" role="link">Kullanım Koşulları</span>
           </div>

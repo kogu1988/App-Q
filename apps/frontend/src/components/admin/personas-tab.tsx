@@ -205,7 +205,6 @@ const getBigFive = (p: PersonaInfo) => {
 };
 
 export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; onRefresh: () => void }) {
-  const [generatingPersonas, setGeneratingPersonas] = useState(false);
   const [deletingPersona, setDeletingPersona] = useState<string | null>(null);
   const [poolPage, setPoolPage] = useState(1);
 
@@ -221,6 +220,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
     city: "İstanbul",
     segment: "",
     role_title: "",
+    respondent_type: "potential_customer",
     stance: "Mainstream",
     ses_group: "C1",
     price_sensitivity: 5,
@@ -317,6 +317,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
         city: manualForm.city,
         segment: manualForm.segment,
         role_title: manualForm.role_title || manualForm.segment,
+        respondent_type: manualForm.respondent_type,
         stance: manualForm.stance,
         ses_group: manualForm.ses_group,
         price_sensitivity: Number(manualForm.price_sensitivity),
@@ -354,6 +355,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
         city: "İstanbul",
         segment: "",
         role_title: "",
+        respondent_type: "potential_customer",
         stance: "Mainstream",
         ses_group: "C1",
         price_sensitivity: 5,
@@ -381,41 +383,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
     }
   };
 
-
-  const [genForm, setGenForm] = useState({
-    role_title: "",
-    count: 3,
-    category: "genel",
-    market: "Türkiye",
-    target_users: "genel tüketici",
-    why: "Hedef kitle temsilcisi",
-    save_to_pool: true,
-  });
-
-  const handleGeneratePersonas = async () => {
-    if (!genForm.role_title.trim()) {
-      toast.error("Lütfen bir rol başlığı girin.");
-      return;
-    }
-    setGeneratingPersonas(true);
-    try {
-      const res = await fetch("/api/admin/personas/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(genForm),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      toast.success(`${data.generated_count || genForm.count} adet yapay zeka personası üretildi ve havuza eklendi.`);
-      setGenForm(f => ({ ...f, role_title: "" }));
-      onRefresh();
-    } catch {
-      toast.error("Yapay zeka ile persona üretimi başarısız oldu.");
-    } finally {
-      setGeneratingPersonas(false);
-    }
-  };
-
+  // Removed AI generate form
   const handleDeletePersona = async (personaId: string) => {
     if (!confirm("Bu personayı silmek istediğinizden emin misiniz?")) {
       return;
@@ -442,172 +410,20 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
   return (
     <div className="mt-6 flex-1 outline-none">
       <div className="mb-6">
-        <p className="text-sm text-muted-foreground">
-          Sisteme kayıtlı sentetik kullanıcılar ve toplu persona üretim paneli.
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Global ve müşteri özel durumlar için sisteme yüklenmiş tüm sentetik kullanıcılar.
         </p>
       </div>
-      <div className="flex flex-col gap-6">
-        <div className="space-y-6 w-full">
-          <Card className="border-[#d9d9dd] shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Plus size={15} className="text-[#003c33]" />
-                Yapay Zeka Persona Üretim Paneli
-              </CardTitle>
-              <CardDescription className="text-[11px] mt-1">
-                Havuza yapay zeka ile toplu sentetik persona ekleyin.
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="pt-2 space-y-3">
-              <div className="space-y-1">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase">
-                  Rol Başlığı / Segment
-                  <InfoTooltip text="Üretilecek personanın ana kimliği (Örn: Ev Hanımı, Yazılımcı, Emekli). Havuzda 'Rol / Segment' olarak görünür." />
-                </Label>
-                <Input
-                  value={genForm.role_title}
-                  onChange={e => setGenForm(f => ({ ...f, role_title: e.target.value }))}
-                  placeholder="Örn: Ev Hanımı, Yazılımcı, Emekli"
-                  className="h-8 text-xs bg-background text-foreground"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">
-                    Kategori
-                    <InfoTooltip text="Personanın ilgi veya uzmanlık alanı (Örn: E-ticaret, Bankacılık). Hedefli araştırmalarda filtreleme sağlar." />
-                  </Label>
-                  <Input
-                    value={genForm.category}
-                    onChange={e => setGenForm(f => ({ ...f, category: e.target.value }))}
-                    placeholder="Örn: E-ticaret, Bankacılık"
-                    className="h-8 text-xs bg-background text-foreground"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">
-                    Hedef Tüketici Tanımı
-                    <InfoTooltip text="Personanın markayla olan ilişkisi. Havuzdaki 'Katılımcı Tipi'ni belirler (Örn: Potansiyel Müşteri, Rakip Kullanıcı)." />
-                  </Label>
-                  <Input
-                    value={genForm.target_users}
-                    onChange={e => setGenForm(f => ({ ...f, target_users: e.target.value }))}
-                    placeholder="Örn: genel tüketici"
-                    className="h-8 text-xs bg-background text-foreground"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">
-                    Miktar (1-10)
-                    <InfoTooltip text="Bu profile uygun tek seferde üretilecek ve havuza eklenecek farklı varyasyonlardaki persona sayısı." />
-                  </Label>
-                  <select
-                    value={genForm.count}
-                    onChange={e => setGenForm(f => ({ ...f, count: +e.target.value }))}
-                    className="w-full h-8 text-xs border border-border rounded-lg px-2 bg-background text-foreground cursor-pointer focus:ring-1 focus:ring-primary"
-                  >
-                    {[1, 2, 3, 5, 10].map(n => (
-                      <option key={n} value={n}>
-                        {n} Persona
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-bold text-muted-foreground uppercase">
-                    Hedef Pazar
-                    <InfoTooltip text="Personanın yaşadığı coğrafya veya ülke. Havuzdaki 'Lokasyon' bilgisini doğrudan etkiler (Örn: Türkiye, Global)." />
-                  </Label>
-                  <Input
-                    value={genForm.market}
-                    onChange={e => setGenForm(f => ({ ...f, market: e.target.value }))}
-                    className="h-8 text-xs bg-background text-foreground"
-                  />
-                </div>
-              </div>
-
-              <Button
-                onClick={handleGeneratePersonas}
-                disabled={generatingPersonas || !genForm.role_title}
-                className="w-full gap-1.5 bg-[#17171c] hover:opacity-85 text-white h-8 text-xs font-semibold mt-2"
-              >
-                {generatingPersonas ? (
-                  <>
-                    <Loader2 size={12} className="animate-spin" />
-                    Üretiliyor...
-                  </>
-                ) : (
-                  <>
-                    <Zap size={12} className="text-amber-400 fill-amber-400" />
-                    Toplu Persona Üret
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="w-full space-y-6">
-          <div className="bg-[#edfce9]/40 border border-[#003c33]/20 rounded-lg p-4 text-sm text-[#003c33] animate-in fade-in slide-in-from-bottom-2">
-            <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-[#003c33] shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-bold mb-1.5">Üretim Parametreleri Havuza Nasıl Yansır?</h4>
-                <p className="text-xs text-[#003c33]/80 mb-2.5">
-                  Persona üretirken girdiğiniz bilgiler, havuzdaki kullanıcıların detaylarını
-                  doğrudan şekillendirir:
-                </p>
-                <ul className="text-xs space-y-2 text-[#003c33]/80 list-disc pl-4">
-                  <li>
-                    <strong className="font-semibold text-[#003c33]">Rol Başlığı / Segment:</strong> Havuzdaki{" "}
-                    <strong className="font-semibold text-[#003c33]">Rol / Segment</strong> sütununu oluşturur.
-                    Personanın temel sosyokültürel veya mesleki kimliğidir.
-                  </li>
-                  <li>
-                    <strong className="font-semibold text-[#003c33]">Kategori:</strong> Personanın ilgi veya
-                    uzmanlık alanıdır, ana tabloda görünmese de simülasyonlarda ve hedefli filtrelemelerde
-                    kullanılır.
-                  </li>
-                  <li>
-                    <strong className="font-semibold text-[#003c33]">Hedef Tüketici Tanımı:</strong> Havuzdaki{" "}
-                    <strong className="font-semibold text-[#003c33]">Katılımcı Tipi</strong>ni (Örn: Potansiyel
-                    Müşteri, Kaybedilmiş Kullanıcı, Rakip Kullanıcı) doğrudan belirler.
-                  </li>
-                  <li>
-                    <strong className="font-semibold text-[#003c33]">Hedef Pazar:</strong> Havuzdaki{" "}
-                    <strong className="font-semibold text-[#003c33]">Lokasyon</strong> (şehir) bilgisini
-                    oluşturur. Coğrafi ve kültürel bağlamı şekillendirir.
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <Card className="border-[#d9d9dd] shadow-sm h-full">
-            <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <CardTitle className="text-base">
-                  Sentetik Tüketici Havuzu{" "}
-                  <span className="text-muted-foreground font-normal text-sm">({personas.length} persona)</span>
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Global ve müşteri özel durumlar için sisteme yüklenmiş tüm sentetik kullanıcılar.
-                </CardDescription>
-              </div>
-
-              <Dialog open={manualOpen} onOpenChange={setManualOpen}>
-                <DialogTrigger render={
-                  <Button className="gap-1.5 bg-[#003c33] hover:bg-[#002f28] text-white h-8 text-xs font-semibold">
-                    <Plus size={14} />
-                    Manuel Persona Ekle
-                  </Button>
-                } />
-                <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-background text-foreground relative">
+      
+      <div className="flex justify-between items-center mb-2">
+        <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+          <DialogTrigger render={
+            <Button className="gap-2 bg-[#17171c] text-white hover:opacity-85 h-9">
+              <Plus size={16} />
+              Manuel Persona Ekle
+            </Button>
+          } />
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-background text-foreground">
                   {/* Transition Reset Alert Overlay */}
                   {resetAlertOpen && (
                     <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-[100] flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
@@ -734,6 +550,23 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                             placeholder="Örn: Ev Hanımı, E-ticaret Satıcısı"
                             className="h-8 text-xs bg-background text-foreground"
                           />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Katılımcı Tipi</Label>
+                          <select
+                            value={manualForm.respondent_type}
+                            onChange={e => setManualForm(f => ({ ...f, respondent_type: e.target.value }))}
+                            className="w-full h-8 text-xs border border-border rounded-lg px-2 bg-background text-foreground cursor-pointer focus:ring-1 focus:ring-primary"
+                          >
+                            <option value="potential_customer">Potansiyel Müşteri</option>
+                            <option value="competitor_user">Rakip Kullanıcı</option>
+                            <option value="churned_user">Kaybedilmiş Kullanıcı</option>
+                            <option value="decision_maker">Karar Verici</option>
+                            <option value="individual_user">Bireysel / Genel Tüketici</option>
+                          </select>
                         </div>
                       </div>
                     </div>
@@ -978,9 +811,10 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                   </div>
                 </DialogContent>
               </Dialog>
-            </CardHeader>
+      </div>
 
-            <CardContent>
+      <Card className="border-[#d9d9dd] shadow-sm h-full">
+        <CardContent className="pt-4">
               <div className="overflow-x-auto w-full">
                 <Table>
                   <TableHeader>
@@ -1343,9 +1177,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                 </div>
               )}
             </CardContent>
-          </Card>
-        </div>
-      </div>
+      </Card>
     </div>
   );
 }

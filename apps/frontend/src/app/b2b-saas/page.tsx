@@ -255,7 +255,6 @@ export default function B2BSaaSPage() {
           <div className="flex flex-wrap justify-center gap-6 text-sm text-[#93939f]">
             <Link href="/guide" className="hover:text-[#17171c] transition-colors">Kullanım Kılavuzu</Link>
             <Link href="/#faq" className="hover:text-[#17171c] transition-colors">SSS</Link>
-            <Link href="/#pricing" className="hover:text-[#17171c] transition-colors">Fiyatlandırma</Link>
             <Link href="/privacy" className="hover:text-[#17171c] transition-colors">Gizlilik</Link>
             <Link href="/terms" className="hover:text-[#17171c] transition-colors">Kullanım Koşulları</Link>
           </div>

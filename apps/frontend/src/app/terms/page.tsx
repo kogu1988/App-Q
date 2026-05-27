@@ -232,7 +232,6 @@ export default function TermsPage() {
           <div className="flex gap-6">
             <Link href="/" className="hover:text-primary transition-colors">Ana Sayfa</Link>
             <Link href="/privacy" className="hover:text-primary transition-colors">Gizlilik Politikası</Link>
-            <Link href="/#pricing" className="hover:text-primary transition-colors">Fiyatlandırma</Link>
           </div>
         </div>
       </footer>
