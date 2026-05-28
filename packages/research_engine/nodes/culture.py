@@ -48,13 +48,38 @@ SES_PROFILES: Dict[str, Dict[str, Any]] = {
     },
 }
 
-# ── TÜAD 2025 SES Kota Yönetimi ──────────────────────────────────────────────
+# ── TÜAD 2025 SES Kota Yönetimi ────────────────────────────────────────────
 # Türkiye nüfus dağılımı (TÜAD 2025 verileri, yaklaşık oranlar)
 TUAD_SES_QUOTA: Dict[str, float] = {
     "AB": 0.215,   # Üst grup — %21.5
     "C1": 0.224,   # Üst-orta — %22.4
     "C2": 0.325,   # Alt-orta — %32.5 (en büyük dilim)
     "DE": 0.236,   # Alt grup — %23.6
+}
+
+# ── S-O-R OSCA Logistik Katsayıları (god_doc.md §7) ──────────────────────
+# Türkiye e-ticaret tüketici anketi kalibrasyonu (OSCA, N=1.240)
+# β₀: intercept, β₁: görünür kargo, β₂: sepet değeri (negatif etki),
+# β₃: sürpriz kargo (büyük ani etki), β₄: pazarlık farkı,
+# β₅: asgari ödeme oranı, β₆: BDDK taksit imkânı (negatif - terk azaltır),
+# β₇: marka güveni (negatif - terk azaltır)
+SOR_COEFFICIENTS: Dict[str, float] = {
+    "b0": -1.50,
+    "b1": +0.40,  # X_visible_shipping
+    "b2": -0.08,  # X_cart_value proxy (yüksek = terk azalır)
+    "b3": +1.20,  # I_surprise_shipping (sürpriz kargo)
+    "b4": +0.25,  # X_bargain_gap (pazarlık farkı)
+    "b5": +0.15,  # X_min_ratio (asgari ödeme riski)
+    "b6": -0.30,  # X_BDDK_installments (taksit imkânı)
+    "b7": -0.45,  # X_brand_trust (marka güveni)
+}
+
+# SES'e göre asgari ödeme oranı (min_payment_ratio): finansal stres göstergesi
+SES_MIN_PAYMENT_RATIO: Dict[str, float] = {
+    "AB": 0.10,
+    "C1": 0.30,
+    "C2": 0.55,
+    "DE": 0.80,
 }
 
 def apply_ses_quota(
@@ -82,13 +107,13 @@ def apply_ses_quota(
 
 def get_turkey_behavior_context(persona: Any, question: Any) -> str:
     """Türkiye pazarı tüketicilerinin yerel işlem ve alışveriş davranış reflekslerini döner.
-    İçerik: C2C pazarlık, enflasyon hedging/taksit, kargo sepet terk (OSCA).
+    İçerik: C2C pazarlık, enflasyon hedging/taksit, kargo sepet terk (OSCA 7-katsayı modeli).
     """
     question_text = getattr(question, "question", "").lower()
     question_tags = getattr(question, "tags", []) or []
-    
+
     turkey_context = ""
-    
+
     # 1. Fiyat / Ödeme / Bütçe İlgili Sorular
     if "fiyat" in question_text or "pricing" in question_tags:
         pazarlik_txt = (
@@ -102,22 +127,41 @@ def get_turkey_behavior_context(persona: Any, question: Any) -> str:
             "Kredi kartı limit doluluğun %50 seviyelerinde, asgari ödeme yapmaktan çekiniyorsun."
         )
         turkey_context = pazarlik_txt + taksit_txt
-        
-    # 2. Kargo / Teslimat / Nakliye İlgili Sorular (S-O-R Sepet Terk)
+
+    # 2. Kargo / Teslimat / Nakliye İlgili Sorular — S-O-R OSCA 7-Katsayı Modeli
     elif any(marker in question_text for marker in ["kargo", "teslimat", "shipping"]):
         traits = getattr(persona, "traits", {}) or {}
-        n_val = traits.get("Neuroticism", 50) / 10.0
-        c_val = traits.get("Conscientiousness", 50) / 10.0
-        
-        # Logistic S-O-R model matching user-approved Turkey parameters
-        logit = -1.5 + 0.4 * 8.0 + 0.2 * n_val - 0.1 * c_val
+        ses_group = getattr(persona, "ses_group", "C2")
+        brand_loyalty = getattr(persona, "brand_loyalty", 5)
+
+        # Bağımsız değişkenler
+        x_visible_shipping = 1.0                                      # Kargo sorusu tetiklendi
+        x_cart_value       = 1.0 - (getattr(persona, "price_sensitivity", 5) / 10.0)  # Yüksek fiyat duyarlı = düşük sepet
+        i_surprise         = 1.0                                      # Kargo sorusu = sürpriz maliyet bağlamı
+        x_bargain_gap      = 0.30                                     # Türkiye standart %30 pazarlık normu
+        x_min_ratio        = SES_MIN_PAYMENT_RATIO.get(ses_group, 0.50)
+        # BDDK taksit proxy: fiyat duyarlı tüketici daha fazla taksit ister
+        x_bddk             = min(1.0, getattr(persona, "price_sensitivity", 5) / 10.0)
+        x_brand_trust      = brand_loyalty / 10.0
+
+        c = SOR_COEFFICIENTS
+        logit = (
+            c["b0"]
+            + c["b1"] * x_visible_shipping
+            + c["b2"] * x_cart_value
+            + c["b3"] * i_surprise
+            + c["b4"] * x_bargain_gap
+            + c["b5"] * x_min_ratio
+            + c["b6"] * x_bddk
+            + c["b7"] * x_brand_trust
+        )
         prob_abandon = 1.0 / (1.0 + math.exp(-logit))
-        
+
         if prob_abandon > 0.5:
             turkey_context = (
                 f"\n[YEREL REFLEKS — S-O-R SEPET TERK (OSCA)]\n"
                 f"Beklenmedik kargo ücreti sende ciddi bir hayal kırıklığı ve finansal kayıp algısı yarattı. "
                 f"Sepet terk etme olasılığın çok yüksek ({prob_abandon:.2f}). Alışverişi tamamlamadan çıkacağını söyle."
             )
-            
+
     return turkey_context

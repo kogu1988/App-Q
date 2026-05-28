@@ -21,7 +21,10 @@ from .database import get_system_config, log_audit
 from .quality import calculate_turn_quality, calculate_ewma
 
 # Import modular components for clean structure and delegation
-from packages.research_engine.nodes.memory import calculate_act_r_memory_prompt
+from packages.research_engine.nodes.memory import (
+    calculate_act_r_memory_prompt,
+    summarize_turns_if_needed,
+)
 from packages.research_engine.nodes.culture import (
     HOFSTEDE_TURKEY,
     HOFSTEDE_TURKEY_PROMPT,
@@ -606,7 +609,12 @@ def run_interviews_stream(
                         quality_flags=quality_flags,
                     )
                     turns.append(turn)
-                    
+
+                    # Kademeli Bellek Özetleme: her 10 turda tetiklenir (god_doc.md §5)
+                    mem_summary = summarize_turns_if_needed(turns)
+                    if mem_summary:
+                        consistency_notes.append(mem_summary)
+
                     turn_quality = calculate_turn_quality(quality_flags)
                     ewma_score = calculate_ewma(turn_quality, ewma_score)
                     consistency_notes.append(f"Turn {len(turns)} EWMA: {ewma_score:.2f}")
