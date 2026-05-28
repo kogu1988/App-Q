@@ -53,9 +53,9 @@ async def async_intake_and_reframing_node(state: GlobalResearchState) -> Dict[st
     
     response = model.generate(system=system_prompt, prompt=user_prompt)
     try:
-        objective_context = safe_extract_json(response) # Güvenli regex-json parser devrede
-    except Exception:
-        # Fallback if json parsing fails despite safe extraction
+        objective_context = safe_extract_json(response)
+    except Exception as _e:
+        logger.warning("JSON parse başarısız, fallback kullanılıyor: %s", _e)
         objective_context = {
             "objective_product_context": sanitized_text,
             "primary_research_questions": ["Bu ürün konseptine dair tüketici bariyerleri nelerdir?"]
@@ -69,8 +69,8 @@ async def async_intake_and_reframing_node(state: GlobalResearchState) -> Dict[st
     # Sabit 15 personalık kararlı bir panel büyüklüğü simüle ediliyor
     try:
         allocated_personas = allocate_cohort_matrix(N=15)
-    except Exception:
-        # Eğer matrix.py eksikse veya fonksiyon yoksa fallback
+    except Exception as _e:
+        logger.warning("allocate_cohort_matrix başarısız, tek-persona fallback kullanılıyor: %s", _e)
         allocated_personas = [
             {"stance": "Skeptic", "ses_group": "DE", "big_five_constraints": {"openness": 30}}
         ]

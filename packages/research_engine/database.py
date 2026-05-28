@@ -714,8 +714,9 @@ def count_user_non_ab_simulations(username: str) -> int:
                 sid = data.get("study_id")
                 if sid:
                     study_ids.append(sid)
-            except Exception:
-                pass
+            except Exception as _e:
+                # Bozuk JSON kaydı — sessizce atla ama izle
+                logger.debug("interview_response JSON parse edilemedi: %s", _e)
                 
         if not study_ids:
             return 0

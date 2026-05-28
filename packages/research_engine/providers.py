@@ -52,41 +52,6 @@ Karakterin ağzından, yöresel ve doğal Türk e-ticaret jargonu (örn: "bize g
 </response>
 """
 
-INTAKE_POLICY = """
-[ROLE]
-Sen, otonom pazar araştırması platformunun "İlk Savunma Hattı ve Proje Tasarımcısı" olan Kıdemli Pazarlama Uzmanısın. Kullanıcıdan gelen yönlendirici, taraflı ve öznel araştırma brief'lerini alıp, bunları bilimsel olarak test edilebilir, nötr ve nesnel (Sokratik) araştırma sorularına dönüştürmekle görevlisin.
-
-[BOUNDARIES (KESİN SINIRLAR)]
-- ASLA mülakat simülasyonu yapmayacaksın.
-- ASLA sahte araştırma sonuçları veya rapor üretmeyeceksin. 
-- YALNIZCA girdinin yeniden çerçevelenmesini (Input Reframing) yapacak ve örneklem (persona) matrisini oluşturup görevini sonlandıracaksın.
-- Mülakatçı etmenlere, araştırmacının "neyi doğrulamak istediği" bilgisini ASLA aktarmayacaksın (Bağlam İzolasyonu kuralı).
-
-[OBJECTIVES & RULES]
-1. Girdinin Yeniden Çerçevelenmesi (Input Reframing): 
-   - Kullanıcı girdisindeki birinci tekil şahıs perspektifini ("Bence bu satar") ve yüksek epistemik kesinlik bildiren kelimeleri ("Kesinlikle, kusursuz") sil.
-   - Onaylanma arayışı içeren soruları, "risk, potansiyel bariyer ve sürtünme noktası" odaklı, yanlışlanabilir hipotezlere dönüştür.
-2. Kohort Matrisi Dağılımı: 
-   - Araştırma paneli için Rogers'ın İnovasyon Yayılım Eğrisi (%15 Şampiyon, %35 Pragmatist, %20 Şüpheci, %15 Engelleyici, %15 Gözlemci) ve TÜAD 2025 SES kotalarına (AB, C1, C2, DE) uygun matematiksel bir örneklem tasarla.
-   - Her bir persona için NEO-PI-R (Big Five) kısıtlarını (Açıklık, Sorumluluk, Dışadönüklük, Uyumluluk, Nevrotiklik) -1.0 ile 1.0 arasında vektör olarak tanımla.
-
-[OUTPUT FORMAT]
-Çıktını KESİNLİKLE markdown veya ek açıklama metni olmadan, saf ve ayrıştırılabilir (RFC 8259 uyumlu) JSON formatında üretmelisin.
-Şema:
-{
-  "objective_product_context": "Ürünün nesnel fonksiyonel tanımı",
-  "primary_research_questions": ["nötr_soru_1", "nötr_soru_2"],
-  "allocated_cohort_matrix": [
-    {
-      "persona_name": "İsim (SES Grubu)",
-      "stance": "Rogers Eğrisi Rolü",
-      "big_five_constraints": [-0.5, 0.2, 0.8, -0.4, 0.5]
-    }
-  ]
-}
-"""
-
-
 
 
 B2C_MODEL_ENV = "APP_Q_B2C_MODEL_ID"
@@ -438,8 +403,9 @@ class OllamaResearchModel:
             with OLLAMA_LOCK:
                 with urllib.request.urlopen(request, timeout=self.timeout_seconds):
                     pass
-        except Exception:
-            pass
+        except Exception as _e:
+            # VRAM flush: fire-and-forget — hata kritik değil ama izlenebilir olmalı
+            logger.debug("VRAM flush isteği başarısız (model zaten boşaltılmış olabilir): %s", _e)
 
 
 class VLLMResearchModel:
@@ -657,7 +623,9 @@ def discover_ollama_models(base_url: str = "http://127.0.0.1:11434") -> list[str
         with urllib.request.urlopen(req, timeout=2) as response:
             data = json.loads(response.read().decode("utf-8"))
             return [model["name"] for model in data.get("models", [])]
-    except Exception:
+    except Exception as _e:
+        # Ollama çevrimdışı olabilir — probe sessiz başarısız olmalı ama loglanmalı
+        logger.debug("Ollama model discovery başarısız (%s): %s", base_url, _e)
         return []
 
 
@@ -668,7 +636,9 @@ def get_model_provider(provider: str | None = None) -> ResearchModel:
     try:
         from .database import get_system_config
         config = get_system_config()
-    except Exception:
+    except Exception as _e:
+        # DB bağlantısı kurulamadı — env değişkenleriyle devam edilir
+        logger.warning("system_config DB'den okunamadı, env defaults kullanılıyor: %s", _e)
         config = {}
         
     b2c_model_id = config.get("b2c_model") or os.getenv(B2C_MODEL_ENV, DEFAULT_B2C_MODEL_ID)
