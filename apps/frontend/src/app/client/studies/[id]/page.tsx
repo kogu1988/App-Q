@@ -611,13 +611,13 @@ export default function StudyDetailPage() {
               clientPlan === "Free" ? (
                 <Button
                   variant="outline"
-                  className="w-full sm:w-auto gap-2 text-slate-400 border-slate-200 cursor-not-allowed relative"
+                  className="w-full sm:w-auto gap-2 text-slate-400 border-slate-200 cursor-not-allowed"
                   onClick={() =>
                     toast.error(
                       <div className="flex flex-col gap-1.5">
-                        <span className="font-semibold text-[13px]">PDF indirme Starter+ plan gerektirir.</span>
-                        <span className="text-xs opacity-90">Raporunuzu PDF olarak almak için planınızı yükseltin.</span>
-                        <Link href="/client/upgrade" className="text-xs underline font-bold mt-1">Hemen Yükselt →</Link>
+                        <span className="font-semibold text-[13px]">PDF İndirme · Starter+ planı gerektirir</span>
+                        <span className="text-xs opacity-90">Bu özelliğe erişmek için planınızı yükseltin.</span>
+                        <Link href="/client/upgrade" className="text-xs underline font-bold mt-1">Planı Yükselt →</Link>
                       </div>,
                       { duration: 5000 }
                     )
@@ -641,10 +641,11 @@ export default function StudyDetailPage() {
                         if (errData?.detail?.code === "PLAN_GATE" || (typeof errData?.detail === "string" && errData.detail.includes("plan"))) {
                           toast.error(
                             <div className="flex flex-col gap-1.5">
-                              <span className="font-semibold text-[13px]">Bu özellik üst paket gerektirir.</span>
-                              <span className="text-xs opacity-90">{errData?.detail?.message || "PDF çıktısı almak için planınızı yükseltin."}</span>
-                              <Link href="/client/upgrade" className="text-xs underline font-bold mt-1">Hemen Yükselt</Link>
-                            </div>
+                              <span className="font-semibold text-[13px]">PDF İndirme · Starter+ planı gerektirir</span>
+                              <span className="text-xs opacity-90">Bu özelliğe erişmek için planınızı yükseltin.</span>
+                              <Link href="/client/upgrade" className="text-xs underline font-bold mt-1">Planı Yükselt →</Link>
+                            </div>,
+                            { duration: 5000 }
                           );
                           return;
                         }
@@ -1402,12 +1403,12 @@ export default function StudyDetailPage() {
                               let badgeColor = "bg-slate-100 text-slate-600";
 
                               if (isFree) {
-                                inputPlaceholder = "Free planda takip sorusu sorulamaz. Lütfen planınızı yükseltin.";
+                                inputPlaceholder = "Takip sorusu · Starter+ planı gerektirir.";
                                 isDisabled = true;
-                                badgeText = "Takip Sorusu Kilitli (Free)";
+                                badgeText = "Takip Sorusu · Starter+ Gerekli";
                                 badgeColor = "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400";
                               } else if (isLimitReached) {
-                                inputPlaceholder = "Maksimum takip sorusu limitine (3/3) ulaştınız. Lütfen planınızı yükseltin.";
+                                inputPlaceholder = "Takip sorusu limitine ulaştınız (3/3). Planınızı yükseltin.";
                                 isDisabled = true;
                                 badgeText = "Limit Doldu (3/3)";
                                 badgeColor = "bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-400";
@@ -1553,18 +1554,15 @@ export default function StudyDetailPage() {
                     <div className="mx-auto w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center border border-amber-200">
                       <Lock className="text-amber-800" size={20} />
                     </div>
-                    <div className="space-y-3">
-                      <h3 className="text-lg font-black text-[#17171c]">Sentez Raporu Kilitli</h3>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-black text-[#17171c]">Sentez Raporu · Starter+ planı gerektirir</h3>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        Every plan comes with a 3-day free trial and 2 free researches — no credit card required. You get access to the platform so you can run real research and see the output before committing.
-                      </p>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        After 3 days or 2 researches (whichever comes first), you’ll be asked to choose a plan. Your research reports and data stay accessible for 30 days — after that, access is limited. Pick a plan to keep everything unlocked.
+                        Bu özelliğe erişmek için planınızı yükseltin. İlk 3 gün ve 2 araştırma ücretsiz — kredi kartı gerekmez.
                       </p>
                     </div>
                     <Link href="/client/upgrade" className="inline-flex w-full">
                       <Button className="w-full bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl py-2.5 text-xs">
-                        Plan Seçin ve Raporu Açın →
+                        Planı Yükselt →
                       </Button>
                     </Link>
                   </div>
