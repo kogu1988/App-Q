@@ -18,7 +18,7 @@ from .models import (
     DEFAULT_STANCE_COHORT,
 )
 from .database import get_system_config, log_audit
-from .quality import calculate_turn_quality, calculate_ewma
+from .quality import calculate_turn_quality, calculate_ewma, detect_echo
 
 # Import modular components for clean structure and delegation
 from packages.research_engine.nodes.memory import (
@@ -459,14 +459,17 @@ def run_interviews(
         db_prompt = None
 
     for persona in personas:
-        system = db_prompt if db_prompt else build_elephant_system_prompt(persona)
+        original_system = db_prompt if db_prompt else build_elephant_system_prompt(persona)
+        base_system = original_system
+        ewma_score = 1.0  # EWMA başlangıç skoru (god_doc.md §5)
 
-        turns: List[InterviewTurn] = []
+        turns: List[InterviewTurn] = [
+        ]
         consistency_notes = [
             f"Persona stance: {persona.stance}",
             f"Bilgi sınırı: {persona.knowledge_boundary}",
         ]
-        
+
         for script_question in script:
             # 1. ACT-R Episodic Memory
             turn_memory = calculate_act_r_memory_prompt(turns, script_question)
@@ -488,13 +491,17 @@ def run_interviews(
                 f"Soru: {script_question.question}\n"
                 "Kısa, somut ve Türkiye pazarı gerçeklerine uygun cevap ver."
             )
-            answer = model.generate(system, prompt)
+            answer = model.generate(base_system, prompt)
             quality_flags = judge_answer_quality(persona, script_question.question, answer)
 
             # 3. ELEPHANT & Zero-Sum Bet check
             answer, quality_flags = handle_zero_sum_bet(
-                persona, script_question, answer, system, prompt, model, quality_flags
+                persona, script_question, answer, base_system, prompt, model, quality_flags
             )
+
+            # 4. Echo Detection (god_doc.md §5 EWMA Tamir Protokolü)
+            if detect_echo(answer, script_question.question):
+                quality_flags = list(quality_flags) + ["echo_detected"]
 
             turns.append(
                 InterviewTurn(
@@ -505,6 +512,22 @@ def run_interviews(
                     quality_flags=quality_flags,
                 )
             )
+
+            # 5. EWMA Tamir Protokolü (god_doc.md §5)
+            turn_quality = calculate_turn_quality(quality_flags)
+            ewma_score = calculate_ewma(turn_quality, ewma_score)
+            consistency_notes.append(f"Turn {len(turns)} EWMA: {ewma_score:.2f}")
+
+            if ewma_score < 0.65:
+                base_system = original_system + (
+                    "\n\n[SİSTEM UYARISI: KALİTE DÜŞTÜ] "
+                    "Karakterinden kayıyorsun veya soruları tekrarlıyorsun. "
+                    "Kısa, somut ve GERÇEK BİR TÜRK KULLANICI gibi cevap ver. "
+                    "Asistan olduğunu ASLA belli etme."
+                )
+            elif ewma_score >= 0.80:
+                base_system = original_system  # Sistem promptunu sıfırla
+
         interviews.append(PersonaInterview(persona=persona, turns=turns, consistency_notes=consistency_notes))
     return interviews
 
@@ -607,6 +630,10 @@ def run_interviews_stream(
                         )
                 
                 if not critical_failure or attempt == max_retries:
+                    # 4. Echo Detection (god_doc.md §5 EWMA Tamir Protokolü)
+                    if detect_echo(full_answer, script_question.question):
+                        quality_flags = list(quality_flags) + ["echo_detected"]
+
                     turn = InterviewTurn(
                         question=script_question.question,
                         answer=full_answer,

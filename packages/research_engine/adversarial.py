@@ -1,12 +1,13 @@
 """
 adversarial.py — Grounded Simulation Adversarial Review Pipeline (S2)
 
-3-aşamalı adversarial review:
+4-aşamalı adversarial review:
   1. Bias Audit       — persona convergence + SES/stance dağılım kontrolü
   2. Evidence Chain   — her Finding ≥2 farklı stance kanıt + güven kalibrasyon
   3. Double-Simulation Awareness — dil kalibrasyonu + validation önerileri
+  4. Echo Drift Audit — EWMA + yankılanma tespiti (god_doc.md §5)
 
-Kaynak: Bilal (2026) Grounded Simulation §4.5, §8.1
+Kaynak: Bilal (2026) Grounded Simulation §4.5, §5, §8.1
 """
 from __future__ import annotations
 
@@ -242,11 +243,106 @@ def double_simulation_check(report_dict: dict) -> list[dict]:
     return flags
 
 
+# ── Aşama 4: Echo Drift Audit ────────────────────────────────────────
+
+EWMA_DRIFT_THRESHOLD = 0.65   # Bu altında EWMA raporda uyarı tetiklenir
+ECHO_PERSONA_RATIO  = 0.5     # Persona turlarının yarısından fazlası echo ise ciddi uyarı
+
+
+def echo_drift_audit(report_dict: dict) -> list[dict]:
+    """
+    EWMA Tamir Protokolü sonucu raporlama (god_doc.md §5).
+
+    Kontroller:
+    - Her persona'nın consistency_notes içindeki EWMA skorları okunur
+    - 'echo_detected' içeren turn sayısı hesaplanır
+    - Son EWMA ≤ EWMA_DRIFT_THRESHOLD ise 'persona_drift' uyarısı
+    - Echo oranı ≥ ECHO_PERSONA_RATIO ise 'çok fazla yankılanma' uyarısı
+    """
+    flags: list[dict] = []
+    interviews = report_dict.get("interviews", [])
+
+    for iv in interviews:
+        persona = iv if isinstance(iv, dict) else getattr(iv, "__dict__", {})
+        persona_name = (
+            persona.get("persona", {}).get("name", "Bilinmiyor")
+            if isinstance(persona.get("persona"), dict)
+            else getattr(getattr(iv, "persona", None), "name", "Bilinmiyor")
+        )
+
+        # consistency_notes içinden EWMA skorlarını çıkar
+        notes = (
+            persona.get("consistency_notes", [])
+            if isinstance(persona, dict)
+            else getattr(iv, "consistency_notes", [])
+        )
+        ewma_scores: list[float] = []
+        for note in notes:
+            if "EWMA:" in str(note):
+                try:
+                    ewma_val = float(str(note).split("EWMA:")[-1].strip())
+                    ewma_scores.append(ewma_val)
+                except ValueError:
+                    pass
+
+        # turns üzerinden echo sayısını hesapla
+        turns = (
+            persona.get("turns", [])
+            if isinstance(persona, dict)
+            else getattr(iv, "turns", [])
+        )
+        total_turns = len(turns)
+        echo_turns = sum(
+            1 for t in turns
+            if "echo_detected" in (
+                t.get("quality_flags", []) if isinstance(t, dict)
+                else getattr(t, "quality_flags", [])
+            )
+        )
+
+        # EWMA drift kontrolü
+        if ewma_scores:
+            final_ewma = ewma_scores[-1]
+            if final_ewma <= EWMA_DRIFT_THRESHOLD:
+                flags.append({
+                    "phase": "echo_drift",
+                    "severity": "warning",
+                    "code": "PERSONA_DRIFT_DETECTED",
+                    "persona": persona_name,
+                    "message": (
+                        f"'{persona_name}': Son EWMA skoru {final_ewma:.2f} "
+                        f"(eşik: {EWMA_DRIFT_THRESHOLD}). "
+                        "Karakter kayması (persona drift) tespit edildi — "
+                        "persona ses tutarlılığı zayıflamış olabilir."
+                    ),
+                    "final_ewma": final_ewma,
+                })
+
+        # Echo oranı kontrolü
+        if total_turns > 0:
+            echo_ratio = echo_turns / total_turns
+            if echo_ratio >= ECHO_PERSONA_RATIO:
+                flags.append({
+                    "phase": "echo_drift",
+                    "severity": "warning",
+                    "code": "HIGH_ECHO_RATIO",
+                    "persona": persona_name,
+                    "message": (
+                        f"'{persona_name}': {echo_turns}/{total_turns} turda yankılanma (echo) tespit edildi "
+                        f"(%{echo_ratio:.0%}). "
+                        "Model soru kalıplarını kopyalayıp karakter sesini yitiriyor olabilir."
+                    ),
+                    "echo_ratio": round(echo_ratio, 2),
+                })
+
+    return flags
+
+
 # ── Orchestrator ──────────────────────────────────────────────────────────────
 
 def run_adversarial_review(report_dict: dict) -> dict:
     """
-    3-aşamalı adversarial review'u çalıştırır ve özet döner.
+    4-aşamalı adversarial review'u çalıştırır ve özet döner.
 
     Returns:
         {
@@ -272,10 +368,14 @@ def run_adversarial_review(report_dict: dict) -> dict:
     ds_flags = double_simulation_check(report_dict)
     all_flags.extend(ds_flags)
 
+    # Aşama 4: Echo Drift Audit (god_doc.md §5)
+    echo_flags = echo_drift_audit(report_dict)
+    all_flags.extend(echo_flags)
+
     # Özet hesapla
     warning_count = sum(1 for f in all_flags if f.get("severity") in ("warning", "fail"))
     phases_flagged = list({f["phase"] for f in all_flags if f.get("severity") in ("warning", "fail")})
-    phases_all = {"bias_audit", "evidence_chain", "double_simulation"}
+    phases_all = {"bias_audit", "evidence_chain", "double_simulation", "echo_drift"}
     phases_passed = list(phases_all - set(phases_flagged))
 
     if not all_flags:

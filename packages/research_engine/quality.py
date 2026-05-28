@@ -123,14 +123,64 @@ def calculate_turn_quality(flags: list[str]) -> float:
             score -= 0.5
         elif flag in {"too_short", "weak_skepticism"}:
             score -= 0.3
+        elif flag == "echo_detected":
+            score -= 0.4   # Yankılanma ciddi bir karakter kayması sinyali
         else:
             score -= 0.2
     return max(0.0, score)
 
 
 def calculate_ewma(current_score: float, previous_ewma: float, alpha: float = 0.3) -> float:
-    """Exponentially Weighted Moving Average (EWMA) hesaplar."""
+    """Exponentially Weighted Moving Average (EWMA) hesaplar.
+
+    god_doc.md §5 formülü: EWMA_t = α·S_t + (1-α)·EWMA_{t-1}
+    α = 0.3 → son tura %30, geçmişe %70 ağırlık verir.
+    """
     return alpha * current_score + (1 - alpha) * previous_ewma
+
+
+def detect_echo(answer: str, question: str, threshold: float = 0.40) -> bool:
+    """Yankılanma (Echoing) tespiti — god_doc.md §5 EWMA Tamir Protokolü.
+
+    Persona yanıtının soruyla kelime düzeyinde aşırı örtüşmesini tespit eder.
+    Bu, modelin soruyu parafraz ettiğini (echoing) ve karakter sesini kaybettiğini gösterir.
+
+    Yöntem: Jaccard benzerliği (küçük harf, stop-word'ler hariç)
+    Eşik: 0.40 — Türkçe morfoloji nedeniyle 0.45 sınır değerinin biraz altı seçildi.
+           "buluyor" ≠ "buluyorum" gibi çekim farklılıkları overlap'i hafifçe düşürür.
+
+    Args:
+        answer:    Persona yanıtı
+        question:  Sorulan soru
+        threshold: Jaccard eşiği (0.0-1.0)
+
+    Returns:
+        True → yankılanma tespit edildi
+    """
+    # Türkçe stop-word seti (sık geçen ama anlam taşımayan kelimeler)
+    STOP_WORDS = {
+        "bir", "ve", "bu", "ile", "da", "de", "ki", "o", "ben", "sen",
+        "biz", "siz", "ama", "ya", "gibi", "için", "olan", "daha", "en",
+        "onlar", "olarak", "ne", "nasıl", "neden", "çok", "az", "mı", "mi",
+        "mu", "mü", "var", "yok", "bu", "şu", "o", "bunu", "şunu",
+        "hangi", "kadar", "her", "hiç", "bile", "sadece", "hem",
+    }
+
+    def tokenize(text: str) -> set[str]:
+        tokens = set(text.lower().split())
+        return tokens - STOP_WORDS
+
+    ans_tokens = tokenize(answer)
+    q_tokens = tokenize(question)
+
+    if not ans_tokens or not q_tokens:
+        return False
+
+    intersection = len(ans_tokens & q_tokens)
+    union = len(ans_tokens | q_tokens)
+    jaccard = intersection / union if union > 0 else 0.0
+
+    return jaccard >= threshold
 
 
 def enrich_report_json(
