@@ -191,6 +191,35 @@ def _extract_tl_amounts(text: str) -> list[float]:
     return sorted(set(amounts))
 
 
+def _cumulative_freq(values: list[float], prices: list[float]) -> list[float]:
+    """Fiyat noktaları için kümülatif frekans yüzdesini hesaplar (0–100)."""
+    n = len(values)
+    if n == 0:
+        return [0.0] * len(prices)
+    return [sum(1 for v in values if v <= p) / n * 100 for p in prices]
+
+
+def _find_intersection(freq_a: list[float], freq_b: list[float],
+                       prices: list[float]) -> float:
+    """İki kümülatif frekans eğrisinin kesişim fiyatını lineer interpolasyon ile bulur.
+
+    PSM metodolojisinde PMC, PME, OPP ve IPP hesabı için kullanılır.
+    Kesişim bulunamazsa merkez fiyat döner.
+    """
+    for i in range(len(prices) - 1):
+        diff_curr = freq_a[i] - freq_b[i]
+        diff_next = freq_a[i + 1] - freq_b[i + 1]
+        if diff_curr * diff_next <= 0:  # işaret değişti = kesişim
+            denominator = diff_curr - diff_next
+            if abs(denominator) < 1e-9:
+                return prices[i]
+            t = diff_curr / denominator
+            return round(prices[i] + t * (prices[i + 1] - prices[i]), 0)
+    # Kesişim bulunamazsa medyan döner
+    return round(statistics.median(prices), 0)
+
+
+
 def _derive_psm_thresholds(persona: Persona, base_price: float) -> tuple[float, float, float, float]:
     """
     Fiyat hassasiyeti + temel fiyatla 4 PSM eşiği üretir.
@@ -268,22 +297,33 @@ def van_westendorp_analysis(brief: ResearchBrief, interviews: list[PersonaInterv
     if not too_cheap_all:
         return None  # Veri yetersiz
 
-    def p(data: list[float], pct: float) -> float:
-        """Percentile (0-100)"""
-        s = sorted(data)
-        idx = (pct / 100) * (len(s) - 1)
-        lo, hi = int(idx), min(int(idx) + 1, len(s) - 1)
-        return round(s[lo] + (s[hi] - s[lo]) * (idx - lo), 0)
+    # Fiyat eksenini oluştur (100 noktalı, granüler)
+    all_vals = too_cheap_all + cheap_all + expensive_all + too_expensive_all
+    p_min = max(1.0, min(all_vals) * 0.8)
+    p_max = max(all_vals) * 1.2
+    prices = [p_min + (p_max - p_min) * i / 99 for i in range(100)]
 
-    # PSM kritik noktaları
-    # PMC = "too_cheap" eğrisi ile "not_expensive" kesişimi => "ucuz ama şüpheli" alt sınırı
-    pmc = p(cheap_all, 25)       # %25 percentile of acceptable
-    # PME = "too_expensive" ve "not_cheap" kesişimi => "pahalı" üst sınırı
-    pme = p(expensive_all, 75)   # %75 percentile of expensive
-    # OPP = PMC x PME noktası (stres altında bile kabul)
-    opp = round((pmc + pme) / 2, 0)
-    # IPP = Cheap x Expensive kesişimi ("normal" müşteri beklentisi)
-    ipp = round((p(cheap_all, 50) + p(expensive_all, 50)) / 2, 0)
+    # Kümülatif frekans eğrileri (god_doc.md §8)
+    # too_cheap ve cheap: artan eğri (düşük fiyatta herkes ucuz buluyor)
+    cf_too_cheap = _cumulative_freq(too_cheap_all, prices)
+    cf_cheap     = _cumulative_freq(cheap_all, prices)
+    # expensive ve too_expensive: azalan eğri (üstünden başlıyor)
+    cf_expensive     = [100 - f for f in _cumulative_freq(expensive_all, prices)]
+    cf_too_expensive = [100 - f for f in _cumulative_freq(too_expensive_all, prices)]
+
+    # PSM kritik kesişim noktaları (god_doc.md §8)
+    # PMC: "Çok Ucuz %" = "Pahalı %"  kesişimi — kabulün alt sınırı
+    pmc = _find_intersection(cf_too_cheap, cf_expensive, prices)
+    # PME: "Ucuz %" = "Çok Pahalı %" kesişimi — kabulün üst sınırı
+    pme = _find_intersection(cf_cheap, cf_too_expensive, prices)
+    # OPP: "Çok Ucuz %" = "Çok Pahalı %" kesişimi — satış hacmini maksimize eden nokta
+    opp = _find_intersection(cf_too_cheap, cf_too_expensive, prices)
+    # IPP: "Ucuz %" = "Pahalı %" kesişimi — ortalama tüketici beklentisi
+    ipp = _find_intersection(cf_cheap, cf_expensive, prices)
+
+    # PSM mantık koruması: PMC ≤ OPP ≤ PME
+    pmc = min(pmc, opp)
+    pme = max(pme, opp)
 
     return VanWestendorpInsight(
         too_cheap_values=sorted(too_cheap_all),

@@ -425,11 +425,17 @@ def generate_personas_from_roles(brief: ResearchBrief, panel_roles: List[PanelRo
 def classify_question(question: str) -> List[str]:
     lower = question.lower()
     tags: List[str] = []
-    if "problem" in lower or "çözdüğünü" in lower:
+    if "problem" in lower or "çözdüğünü" in lower or "sorun" in lower or "zorluk" in lower:
         tags.append("pain_point")
-    if "durdurur" in lower or "güvenilmez" in lower:
+    if "durdurur" in lower or "güvenilmez" in lower or "hayır" in lower or "endişe" in lower:
         tags.append("objection")
-    if "para" in lower or "fiyat" in lower:
+    # PSM: Türk e-ticaretinde fiyat sinyali yakalayan kapsamlı keyword seti
+    PRICING_KW = [
+        "para", "fiyat", "ücret", "tl", "lira", "₺", "ödeme", "bütçe",
+        "pahalı", "ucuz", "ne kadar", "kaç", "maliyet", "kargo ücreti",
+        "taksit", "indirim", "kampanya", "fırsatı",
+    ]
+    if any(kw in lower for kw in PRICING_KW):
         tags.append("pricing")
     if "avantaj" in lower or "dezavantaj" in lower:
         tags.extend(["value", "positioning"])
