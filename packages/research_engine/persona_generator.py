@@ -3,7 +3,7 @@ import uuid
 
 from .models import Persona
 from .db_vectors import save_persona_to_pool
-from .matrix import allocate_cohort_matrix
+from .matrix import allocate_cohort_matrix, validate_stance_diversity
 from .workflow import persona_traits, persona_attributes, STANCE_PROFILE, neo_facets_from_traits
 from .caching import get_embedding
 
@@ -111,7 +111,19 @@ def generate_and_save_personas(
                 save_persona_to_pool(p.model_dump(), embedding=embedding)
     except Exception as e:
         print("LLM Persona generation failed:", str(e))
-        
+
+    # Stance Diversity doğrulaması — panel oluştuktan hemen sonra (god_doc.md §bias_audit)
+    if personas:
+        panel_dicts = [{"stance": p.stance, "ses_group": p.ses_group} for p in personas]
+        diversity_check = validate_stance_diversity(panel_dicts)
+        if not diversity_check["valid"]:
+            print(
+                f"[UYARI] Stance Diversity doğrulaması başarısız "
+                f"(balance: {diversity_check['balance_score']:.2f}, "
+                f"stance_count: {diversity_check['stance_count']}): "
+                + " | ".join(diversity_check["issues"])
+            )
+
     return personas
 
 def generate_random_persona_draft(model) -> dict:

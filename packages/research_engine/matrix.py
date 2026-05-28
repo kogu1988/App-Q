@@ -32,6 +32,12 @@ P_GENDER = {
     "Erkek": 0.50,
 }
 
+# Stance Diversity sabitleri (adversarial.py §bias_audit ile senkron)
+MIN_STANCE_COUNT    = 3     # Panelde bulunması gereken minimum farklı stance sayısı
+MIN_PER_STANCE      = 1     # Her stance'tan en az bu kadar persona
+SKEPTIC_REQUIRED    = True  # Skeptic her panelde zorunlu (dalkavukluğa karşı anti-sycophancy guard)
+
+
 def calculate_joint_probability_matrix() -> dict[tuple[str, str], float]:
     """
     Rogers x SES birleşik olasılık matrisini (M_Cohort) hesaplar.
@@ -74,8 +80,23 @@ def allocate_cohort_matrix(N: int) -> list[dict]:
     for i in range(remaining_slots):
         key = sorted_remainders[i][0]
         allocations[key] += 1
+    # Skeptic garantisi: küçük panellerde Skeptic sıfıra düşebilir (anti-sycophancy guard)
+    # N >= 5 ise en az 1 Skeptic zorunlu — baskın stanceden 1 yeri Skeptic'e ver
+    if N >= 5:
+        skeptic_total = sum(v for (s, _), v in allocations.items() if s == "Skeptic")
+        if skeptic_total == 0:
+            # Largest Remainder ile en fazla atanan stance hücresinden 1 al
+            dominant_key = max(
+                [(k, v) for k, v in allocations.items() if k[0] != "Skeptic"],
+                key=lambda x: x[1]
+            )[0]
+            if allocations[dominant_key] > 0:
+                allocations[dominant_key] -= 1
+                # Skeptic için mevcut SES'leri kullan — en yüksek sesli Skeptic hücresi
+                skeptic_keys = [k for k in allocations if k[0] == "Skeptic"]
+                if skeptic_keys:
+                    allocations[skeptic_keys[0]] += 1
 
-    # 3. Aşama: Kotaları bireysel görev (taslak) objelerine aç
     assigned_personas = []
     for (stance, ses), count in allocations.items():
         for _ in range(count):
@@ -160,3 +181,118 @@ def calculate_big_five_constraints(stance: str, ses: str) -> dict[str, str]:
         constraints["extroversion"] = "40-60 (Orta)"
 
     return constraints
+
+
+# ── Stance Diversity Doğrulaması ───────────────────────────────────────────────
+
+def stance_balance_score(personas: list[dict]) -> float:
+    """Shannon entropi tabanlı stance denge skoru hesaplar (0.0-1.0).
+
+    1.0 = mükemmel denge (tüm stanceler eşit dağılım)
+    0.0 = tekil stance (hiç çeşitlilik yok)
+
+    Grounded Simulation §bias_audit: stance diversity F1 üzerindeki en büyük
+    tek driver (ΔF1 = −0.582).
+    """
+    if not personas:
+        return 0.0
+
+    counts: dict[str, int] = {}
+    for p in personas:
+        stance = p.get("stance", "Unknown")
+        counts[stance] = counts.get(stance, 0) + 1
+
+    n = len(personas)
+    k = len(P_ROGERS)  # Maksimum olası stance sayısı
+
+    # Shannon entropi H = -Σ p_i * log(p_i)
+    entropy = 0.0
+    for count in counts.values():
+        p_i = count / n
+        if p_i > 0:
+            entropy -= p_i * math.log2(p_i)
+
+    # Maksimum entropi log2(k) ile normalize et → [0, 1]
+    max_entropy = math.log2(k) if k > 1 else 1.0
+    return round(entropy / max_entropy, 4)
+
+
+def validate_stance_diversity(personas: list[dict]) -> dict:
+    """Panel persona listesinin stance çeşitliliğini doğrular.
+
+    adversarial.py'deki bias_audit raporlama sonrası değil,
+    panel oluşturulduktan hemen sonra çağrılır — yani sorun kaynağında yakalanır.
+
+    Returns:
+        {
+            "valid": bool,           # True = panel geçerli
+            "stance_count": int,     # Farklı stance sayısı
+            "balance_score": float,  # Shannon entropy 0-1
+            "issues": list[str],     # Bulunan sorunlar
+            "stance_distribution": dict,  # Stance → persona sayısı
+            "has_skeptic": bool,     # Anti-sycophancy guard
+        }
+    """
+    issues: list[str] = []
+
+    if not personas:
+        return {
+            "valid": False,
+            "stance_count": 0,
+            "balance_score": 0.0,
+            "issues": ["Panel boş — persona bulunamadı."],
+            "stance_distribution": {},
+            "has_skeptic": False,
+        }
+
+    # Stance dağılımını hesapla
+    distribution: dict[str, int] = {}
+    for p in personas:
+        stance = p.get("stance", "Unknown")
+        distribution[stance] = distribution.get(stance, 0) + 1
+
+    stance_count = len(distribution)
+    balance = stance_balance_score(personas)
+    has_skeptic = "Skeptic" in distribution
+
+    # Minimum stance sayısı kontrolü
+    if stance_count < MIN_STANCE_COUNT:
+        issues.append(
+            f"Yetersiz stance çeşitliliği: {stance_count} farklı stance "
+            f"(minimum: {MIN_STANCE_COUNT}). "
+            "Stance diversity F1 üzerinde en büyük single driver (ΔF1 = −0.582)."
+        )
+
+    # Skeptic zorunluluğu (anti-sycophancy guard)
+    if SKEPTIC_REQUIRED and not has_skeptic:
+        issues.append(
+            "Panel'de 'Skeptic' stance eksik. "
+            "Skeptic, dalkavukluğu engelleyen zorunlu anti-sycophancy bariyer persona'sıdır. "
+            "Modelin onaylama sapmasını engeller."
+        )
+
+    # Aşırı baskın stance kontrolü (%60 üstü)
+    n = len(personas)
+    for stance, count in distribution.items():
+        ratio = count / n
+        if ratio > 0.60 and n >= 3:
+            issues.append(
+                f"'{stance}' stance panel'in %{ratio:.0%}'ini oluşturuyor — "
+                "aşırı baskınlık echo chamber riskini artırır."
+            )
+
+    # Shannon denge skoru düşükse uyar
+    if balance < 0.5 and n >= 3:
+        issues.append(
+            f"Stance denge skoru düşük: {balance:.2f} (Shannon entropy tabanlı). "
+            "0.5 üstü önerilir — gerçekçi pazar çeşitliliğini yansıtmaz."
+        )
+
+    return {
+        "valid": len(issues) == 0,
+        "stance_count": stance_count,
+        "balance_score": balance,
+        "issues": issues,
+        "stance_distribution": distribution,
+        "has_skeptic": has_skeptic,
+    }
