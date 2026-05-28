@@ -8,7 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Pencil, Trash2, Check, X } from "lucide-react";
+import { Plus, Loader2, Pencil, Trash2, Check, X, AlertTriangle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ClientInfo {
   username: string;
@@ -44,6 +52,8 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
     plan_end: "",
   });
   const [savingClient, setSavingClient] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deletingClient, setDeletingClient] = useState(false);
 
   // Edit Client States
   const [editingClient, setEditingClient] = useState<string | null>(null);
@@ -132,14 +142,17 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
   };
 
   const deleteClient = async (username: string) => {
-    if (!confirm(`"${username}" danışanını silmek istediğinize emin misiniz?`)) return;
+    setDeletingClient(true);
     try {
       const res = await fetch(`/api/admin/clients/${username}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       toast.success("Danışan silindi.");
+      setDeleteTarget(null);
       onRefresh();
     } catch {
       toast.error("Silme başarısız.");
+    } finally {
+      setDeletingClient(false);
     }
   };
 
@@ -392,7 +405,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
                               size="sm"
                               variant="ghost"
                               className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-                              onClick={() => deleteClient(cli.username)}
+                              onClick={() => setDeleteTarget(cli.username)}
                             >
                               <Trash2 size={14} />
                             </Button>
@@ -408,5 +421,39 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
         </CardContent>
       </Card>
     </div>
-  );
-}
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-50 border border-red-200 shrink-0">
+                <AlertTriangle size={18} className="text-red-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-base">Danışanı Sil</DialogTitle>
+                <DialogDescription className="text-sm mt-0.5">
+                  <span className="font-semibold text-foreground">&quot;{deleteTarget}&quot;</span> hesabı kalıcı olarak silinecek. Bu işlem geri alınamaz.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <button
+              onClick={() => setDeleteTarget(null)}
+              className="flex-1 h-9 px-4 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors"
+            >
+              İptal
+            </button>
+            <button
+              onClick={() => deleteTarget && deleteClient(deleteTarget)}
+              disabled={deletingClient}
+              className="flex-1 h-9 px-4 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {deletingClient && <Loader2 size={14} className="animate-spin" />}
+              Evet, Sil
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>

@@ -12,6 +12,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Settings,
   Users,
   Activity,
@@ -200,6 +208,8 @@ export default function AdminPage() {
   // Edit question purpose states
   const [editingQuestion, setEditingQuestion] = useState<number | null>(null);
   const [editPurpose, setEditPurpose] = useState("");
+  const [deleteQuestionTarget, setDeleteQuestionTarget] = useState<number | null>(null);
+  const [deletingQuestion, setDeletingQuestion] = useState(false);
 
   const fetchAll = useCallback(() => {
     Promise.all([
@@ -272,13 +282,16 @@ export default function AdminPage() {
   };
 
   const deleteQuestion = async (id: number) => {
-    if (!confirm("Bu soruyu koleksiyondan silmek istediğinize emin misiniz?")) return;
+    setDeletingQuestion(true);
     try {
       await fetch(`/api/admin/questions/${id}`, { method: "DELETE" });
       setQuestions(prev => prev.filter(q => q.id !== id));
       toast.success("Soru silindi.");
+      setDeleteQuestionTarget(null);
     } catch {
       toast.error("Silme başarısız.");
+    } finally {
+      setDeletingQuestion(false);
     }
   };
 
@@ -438,7 +451,7 @@ export default function AdminPage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => deleteQuestion(q.id)}
+                                onClick={() => setDeleteQuestionTarget(q.id)}
                                 className="h-8 w-8 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
                               >
                                 <Trash2 size={14} />
@@ -1277,6 +1290,41 @@ export default function AdminPage() {
           </div>
         </Tabs>
       </div>
+
+      {/* Question Delete Confirmation Modal */}
+      <Dialog open={!!deleteQuestionTarget} onOpenChange={(o) => !o && setDeleteQuestionTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-50 border border-red-200 shrink-0">
+                <Trash2 size={18} className="text-red-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-base">Soruyu Sil</DialogTitle>
+                <DialogDescription className="text-sm mt-0.5">
+                  Bu soru koleksiyondan kalıcı olarak silinecek. Bu işlem geri alınamaz.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <button
+              onClick={() => setDeleteQuestionTarget(null)}
+              className="flex-1 h-9 px-4 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors"
+            >
+              İptal
+            </button>
+            <button
+              onClick={() => deleteQuestionTarget && deleteQuestion(deleteQuestionTarget)}
+              disabled={deletingQuestion}
+              className="flex-1 h-9 px-4 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {deletingQuestion && <Loader2 size={14} className="animate-spin" />}
+              Evet, Sil
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

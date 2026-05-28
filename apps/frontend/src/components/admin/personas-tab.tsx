@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Trash2, Eye, Zap, Info } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, Loader2, Trash2, Eye, Zap, Info, AlertTriangle } from "lucide-react";
 
 interface PersonaInfo {
   id: string;
@@ -206,6 +206,8 @@ const getBigFive = (p: PersonaInfo) => {
 
 export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; onRefresh: () => void }) {
   const [deletingPersona, setDeletingPersona] = useState<string | null>(null);
+  const [deletePersonaTarget, setDeletePersonaTarget] = useState<string | null>(null);
+  const [deletePersonaName, setDeletePersonaName] = useState<string>("");
   const [poolPage, setPoolPage] = useState(1);
 
   // Two-Tier Manual Persona Wizard States
@@ -417,11 +419,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
     }
   };
 
-  // Removed AI generate form
   const handleDeletePersona = async (personaId: string) => {
-    if (!confirm("Bu personayı silmek istediğinizden emin misiniz?")) {
-      return;
-    }
     setDeletingPersona(personaId);
     try {
       const res = await fetch(`/api/admin/personas/${personaId}`, {
@@ -432,6 +430,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
         throw new Error(errData.detail || "Silme işlemi başarısız oldu.");
       }
       toast.success("Persona havuzdan silindi.");
+      setDeletePersonaTarget(null);
       onRefresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Persona silinemedi.";
@@ -1183,7 +1182,10 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                             ) : (
                               <Button
                                 variant="ghost"
-                                onClick={() => handleDeletePersona(p.id)}
+                                onClick={() => {
+                                  setDeletePersonaTarget(p.id);
+                                  setDeletePersonaName(p.name);
+                                }}
                                 title="Havuzdan Sil"
                                 disabled={deletingPersona === p.id}
                                 className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
@@ -1239,6 +1241,41 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
               )}
             </CardContent>
       </Card>
+
+      {/* Persona Delete Confirmation Modal */}
+      <Dialog open={!!deletePersonaTarget} onOpenChange={(o) => !o && setDeletePersonaTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-50 border border-red-200 shrink-0">
+                <AlertTriangle size={18} className="text-red-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-base">Personayı Sil</DialogTitle>
+                <DialogDescription className="text-sm mt-0.5">
+                  <span className="font-semibold text-foreground">&quot;{deletePersonaName}&quot;</span> personası havuzdan kalıcı olarak silinecek.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <button
+              onClick={() => setDeletePersonaTarget(null)}
+              className="flex-1 h-9 px-4 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors"
+            >
+              İptal
+            </button>
+            <button
+              onClick={() => deletePersonaTarget && handleDeletePersona(deletePersonaTarget)}
+              disabled={!!deletingPersona}
+              className="flex-1 h-9 px-4 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {deletingPersona && <Loader2 size={14} className="animate-spin" />}
+              Evet, Sil
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
