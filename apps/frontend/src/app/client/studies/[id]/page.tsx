@@ -20,8 +20,10 @@ import {
   ThumbsUp,
   ThumbsDown,
   ListTodo,
-  Lock
+  Lock,
+  Trash2
 } from "lucide-react";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -337,6 +339,9 @@ export default function StudyDetailPage() {
   const [selectedPersonaIdx, setSelectedPersonaIdx] = useState<number>(0);
   const [archiving, setArchiving] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
   // Map of turn votes: { "personaIdx-turnIdx": { vote: 1|-1, comment?: string } }
   const [votes, setVotes] = useState<Record<string, { vote: number; comment: string }>>({});
   // Track which turn has the comment box open
@@ -376,7 +381,6 @@ export default function StudyDetailPage() {
   }, [studyId]);
 
   const handleArchive = async () => {
-    if (!confirm("Bu araştırmayı arşivlemek istediğinize emin misiniz? Arşivlenen araştırmalar listede görünmez.")) return;
     setArchiving(true);
     try {
       const res = await fetch(`/api/client/studies/${studyId}/archive`, { method: "PUT" });
@@ -389,6 +393,28 @@ export default function StudyDetailPage() {
       setArchiving(false);
     }
   };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
+    try {
+      const res = await fetch(`/api/client/studies/${studyId}`, {
+        method: "DELETE",
+        headers: username ? { "X-Username": username } : {},
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.detail || "Silme başarısız.");
+      }
+      toast.success("Araştırma kalıcı olarak silindi.");
+      router.push("/client");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Araştırma silinemedi.");
+      setDeleting(false);
+      setDeleteModalOpen(false);
+    }
+  };
+
 
   const handleFeedback = (personaIdx: number, turnIdx: number, vote: number) => {
     const key = `${personaIdx}-${turnIdx}`;
@@ -639,6 +665,65 @@ export default function StudyDetailPage() {
                 Arşivlendi
               </Badge>
             )}
+
+            {/* ── Sil Butonu + Onay Modalı ── */}
+            <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-red-600 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 transition-colors"
+                >
+                  <Trash2 size={14} />
+                  Sil
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/40 shrink-0">
+                      <Trash2 size={18} className="text-red-600 dark:text-red-400" />
+                    </div>
+                    <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white">
+                      Araştırmayı Sil
+                    </DialogTitle>
+                  </div>
+                  <DialogDescription className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed ml-13 pl-[52px]">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">&ldquo;{metadata?.title || "Bu araştırma"}&rdquo;</span>{" "}
+                    kalıcı olarak silinecek. Mülakat kayıtları, rapor ve tüm veriler geri alınamaz biçimde kaldırılır.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="my-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40">
+                  <p className="text-xs text-red-700 dark:text-red-400 font-medium">
+                    ⚠️ Bu işlem geri alınamaz. Devam etmeden önce emin olun.
+                  </p>
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setDeleteModalOpen(false)}
+                    disabled={deleting}
+                    className="flex-1"
+                  >
+                    Vazgeç
+                  </Button>
+                  <Button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white border-0 gap-2"
+                  >
+                    {deleting ? (
+                      <><Loader2 size={14} className="animate-spin" /> Siliniyor...</>
+                    ) : (
+                      <><Trash2 size={14} /> Evet, Kalıcı Olarak Sil</>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
           </div>
         </div>
       </div>
