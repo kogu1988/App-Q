@@ -27,15 +27,22 @@ interface Brief {
   market?: string;
   category?: string;
   idea?: string;
-  target_users?: string[];
-  questions?: string[];
-  competitors?: string[];
+  target_users?: string | string[];
+  questions?: string | string[];
+  competitors?: string | string[];
   expected_price?: string;
   sales_channel?: string;
   success_metric?: string;
   variant_a?: string;
   variant_b?: string;
 }
+
+/** Backend bazen string, bazen string[] döner — her ikisini de handle eder */
+const toArray = (val: string | string[] | undefined): string[] => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  return [val];
+};
 
 // ─── Brief Preview Card ───────────────────────────────────────────────────────
 
@@ -66,15 +73,15 @@ function BriefPreview({ brief, mode, onToggleMobile }: { brief: Brief; mode: "re
       { icon: Target, label: "Ürün Fikri", value: brief.idea },
       { icon: Layers, label: "Varyant A", value: brief.variant_a },
       { icon: Layers, label: "Varyant B", value: brief.variant_b },
-      { icon: Users, label: "Hedef Kitle", value: brief.target_users?.join(", ") },
+      { icon: Users, label: "Hedef Kitle", value: toArray(brief.target_users).join(", ") || undefined },
       { icon: CheckCircle2, label: "Başarı Kriteri", value: brief.success_metric },
     ]
     : [
       { icon: FileText, label: "Başlık", value: brief.title },
       { icon: Target, label: "Ürün Fikri", value: brief.idea },
-      { icon: Users, label: "Hedef Kitle", value: brief.target_users?.join(", ") },
+      { icon: Users, label: "Hedef Kitle", value: toArray(brief.target_users).join(", ") || undefined },
       { icon: DollarSign, label: "Fiyat Modeli", value: brief.expected_price },
-      { icon: Layers, label: "Rakipler", value: brief.competitors?.join(", ") },
+      { icon: Layers, label: "Rakipler", value: toArray(brief.competitors).join(", ") || undefined },
       { icon: CheckCircle2, label: "Başarı Kriteri", value: brief.success_metric },
     ];
 
