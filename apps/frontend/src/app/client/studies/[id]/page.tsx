@@ -608,63 +608,62 @@ export default function StudyDetailPage() {
 
           <div className="flex flex-wrap items-center gap-3">
             {isCompleted && (
-              <Button 
-                className="w-full sm:w-auto btn-pill-primary gap-2"
-                onClick={async () => {
-                  const username = localStorage.getItem("appq_username");
-                  try {
-                    const res = await fetch(`/api/client/studies/${studyId}/pdf`, {
-                      method: "POST",
-                      headers: username ? { "X-Username": username } : {}
-                    });
-                    if (!res.ok) {
-                      const errData = await res.json().catch(() => ({}));
-                      if (errData?.detail?.code === "PLAN_GATE" || errData?.detail?.includes("plan")) {
-                        toast.error(
-                          <div className="flex flex-col gap-1.5">
-                            <span className="font-semibold text-[13px]">Bu özellik üst paket gerektirir.</span>
-                            <span className="text-xs opacity-90">{errData?.detail?.message || "PDF çıktısı almak için planınızı yükseltmelisiniz."}</span>
-                            <Link href="/client/upgrade" className="text-xs underline font-bold mt-1">Hemen Yükselt</Link>
-                          </div>
-                        );
-                        return;
-                      }
-                      throw new Error(errData?.detail || "Rapor indirilemedi.");
-                    }
-                    const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `AppQ-Rapor-${studyId}.pdf`;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                  } catch (e) {
-                    toast.error("İndirme işlemi başarısız oldu.");
+              clientPlan === "Free" ? (
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto gap-2 text-slate-400 border-slate-200 cursor-not-allowed relative"
+                  onClick={() =>
+                    toast.error(
+                      <div className="flex flex-col gap-1.5">
+                        <span className="font-semibold text-[13px]">PDF indirme Starter+ plan gerektirir.</span>
+                        <span className="text-xs opacity-90">Raporunuzu PDF olarak almak için planınızı yükseltin.</span>
+                        <Link href="/client/upgrade" className="text-xs underline font-bold mt-1">Hemen Yükselt →</Link>
+                      </div>,
+                      { duration: 5000 }
+                    )
                   }
-                }}
-              >
-                <Download size={16} />
-                PDF Raporu İndir
+                >
+                  <Lock size={14} />
+                  PDF Raporu İndir
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full sm:w-auto btn-pill-primary gap-2"
+                  onClick={async () => {
+                    const username = localStorage.getItem("appq_username");
+                    try {
+                      const res = await fetch(`/api/client/studies/${studyId}/pdf`, {
+                        method: "GET",
+                        headers: username ? { "X-Username": username } : {}
+                      });
+                      if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        if (errData?.detail?.code === "PLAN_GATE" || (typeof errData?.detail === "string" && errData.detail.includes("plan"))) {
+                          toast.error(
+                            <div className="flex flex-col gap-1.5">
+                              <span className="font-semibold text-[13px]">Bu özellik üst paket gerektirir.</span>
+                              <span className="text-xs opacity-90">{errData?.detail?.message || "PDF çıktısı almak için planınızı yükseltin."}</span>
+                              <Link href="/client/upgrade" className="text-xs underline font-bold mt-1">Hemen Yükselt</Link>
+                            </div>
+                          );
+                          return;
+                        }
+                        throw new Error(errData?.detail || "Rapor indirilemedi.");
+                      }
+                      const blob = await res.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `AppQ-Rapor-${studyId}.pdf`;
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                    } catch (e) {
+                      toast.error("İndirme işlemi başarısız oldu.");
+                    }
               </Button>
             )}
-            {!isArchived ? (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleArchive}
-                disabled={archiving}
-                className="gap-2 text-slate-600 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                {archiving ? <Loader2 size={14} className="animate-spin" /> : <Archive size={14} />}
-                Arşivle
-              </Button>
-            ) : (
-              <Badge variant="secondary" className="text-xs gap-1">
-                <Archive size={12} />
-                Arşivlendi
-              </Badge>
-            )}
+
 
             {/* ── Sil Butonu + Onay Modalı ── */}
             <Button
@@ -688,15 +687,15 @@ export default function StudyDetailPage() {
                       Araştırmayı Sil
                     </DialogTitle>
                   </div>
-                  <DialogDescription className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed ml-13 pl-[52px]">
+                  <DialogDescription className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed pl-[52px]">
                     <span className="font-semibold text-slate-800 dark:text-slate-200">&ldquo;{metadata?.title || "Bu araştırma"}&rdquo;</span>{" "}
-                    kalıcı olarak silinecek. Mülakat kayıtları, rapor ve tüm veriler geri alınamaz biçimde kaldırılır.
+                    listeden kaldırılacak ve bir daha göremeyeceksiniz.
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="my-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40">
-                  <p className="text-xs text-red-700 dark:text-red-400 font-medium">
-                    ⚠️ Bu işlem geri alınamaz. Devam etmeden önce emin olun.
+                <div className="my-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
+                  <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                    Araştırma listeden kaldırılır. Bu işlem geri alınamaz.
                   </p>
                 </div>
 

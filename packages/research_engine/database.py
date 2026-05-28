@@ -634,19 +634,20 @@ def archive_study(study_id: str) -> None:
 
 
 def delete_study(study_id: str) -> bool:
-    """Araştırmayı ve tüm ilişkili verileri kalıcı olarak siler.
+    """Kullanıcı tarafından silinen araştırmayı listeden gizler (soft delete).
 
-    Sıralama önemli: önce study_payloads ve feedbacks kaldırılır,
-    sonra studies satırı silinir (FK constraint).
+    Veriler fiziksel olarak silinmez; archived=TRUE yapılır.
+    İç araştırma/analiz amaçlı DB’de korunur.
 
     Returns:
-        True  → silme başarılı
+        True  → işlem başarılı
         False → study_id bulunamadı
     """
     with get_db() as (conn, cur):
-        cur.execute("DELETE FROM study_payloads WHERE study_id = %s", (study_id,))
-        cur.execute("DELETE FROM feedbacks WHERE study_id = %s", (study_id,))
-        cur.execute("DELETE FROM studies WHERE id = %s", (study_id,))
+        cur.execute(
+            "UPDATE studies SET archived = TRUE, updated_at = %s WHERE id = %s",
+            (datetime.now().isoformat(timespec="seconds"), study_id),
+        )
         return cur.rowcount > 0
 
 
