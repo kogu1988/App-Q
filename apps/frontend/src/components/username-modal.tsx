@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -19,7 +19,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
   const searchParams = useSearchParams();
   const planParam = searchParams.get("plan");
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+
 
   const planLabel: Record<string, string> = {
     starter: "Starter",
@@ -39,7 +39,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/client/register`, {
+      const res = await fetch(`/api/client/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -121,9 +121,9 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
           </div>
 
           <button
-            type="submit"
-            disabled={loading || !value}
-            className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            onClick={handleSubmit}
+            className="w-full py-2.5 rounded-xl bg-[#17171c] text-white font-semibold text-sm hover:opacity-85 transition-opacity"
           >
             {loading ? "Yükleniyor…" : "Başla →"}
           </button>

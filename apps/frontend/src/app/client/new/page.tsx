@@ -59,7 +59,7 @@ function renderBriefValue(value: unknown) {
   return <div className="text-xs text-[#212121] font-medium leading-relaxed break-words whitespace-pre-wrap">{strValue}</div>;
 }
 
-function BriefPreview({ brief, mode }: { brief: Brief; mode: "research" | "ab_test" }) {
+function BriefPreview({ brief, mode, onToggleMobile }: { brief: Brief; mode: "research" | "ab_test"; onToggleMobile?: () => void }) {
   const fields = mode === "ab_test"
     ? [
       { icon: FileText, label: "Başlık", value: brief.title },
@@ -85,10 +85,17 @@ function BriefPreview({ brief, mode }: { brief: Brief; mode: "research" | "ab_te
   return (
     <Card className="sticky top-6 shadow-sm border-[#d9d9dd] ">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-bold text-[#003c33] flex items-center gap-2">
-          <FileText size={14} />
-          Canlı Brief Özeti
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-bold text-[#003c33] flex items-center gap-2">
+            <FileText size={14} />
+            Canlı Brief Özeti
+          </CardTitle>
+          {onToggleMobile && (
+            <button onClick={onToggleMobile} className="lg:hidden text-xs text-[#003c33] font-bold flex items-center gap-1 bg-[#edfce9] px-2 py-1 rounded-md">
+              Sohbete Dön
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-2 mt-1">
           <div className="flex-1 h-1.5 bg-[#eeece7]  rounded-full overflow-hidden">
             <div
@@ -101,7 +108,7 @@ function BriefPreview({ brief, mode }: { brief: Brief; mode: "research" | "ab_te
       </CardHeader>
       <CardContent className="space-y-2.5">
         {fields.map(({ icon: Icon, label, value }) => (
-          <div key={label} className={`flex gap-2 p-2 rounded-lg transition-colors ${value ? "bg-[#edfce9]/50 " : "opacity-40"}`}>
+          <div key={label} className={`flex gap-2 p-2 rounded-lg transition-colors ${value ? "bg-[#edfce9]/50 " : "bg-transparent grayscale"}`}>
             <Icon size={13} className={value ? "text-[#ff7759] shrink-0 mt-0.5" : "text-[#93939f] shrink-0 mt-0.5"} />
             <div className="min-w-0 flex-1">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{label}</div>
@@ -126,6 +133,7 @@ export default function NewResearchWizard() {
 
   const [researchMode, setResearchMode] = useState<"research" | "ab_test">("research");
   const [stage, setStage] = useState<"mode" | "chat" | "personas" | "simulating">("mode");
+  const [showMobileBrief, setShowMobileBrief] = useState(false);
 
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -178,8 +186,9 @@ export default function NewResearchWizard() {
     setMessages(nextMessages);
     setLoading(true);
 
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000";
     try {
-      const res = await fetch("http://localhost:3000/api/client/intake", {
+      const res = await fetch(`${API_BASE}/api/client/intake`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -190,7 +199,14 @@ export default function NewResearchWizard() {
         }),
       });
 
-      if (!res.ok) throw new Error("Defne yanıt vermedi.");
+      if (!res.ok) {
+        let errorMsg = "Defne yanıt vermedi.";
+        try {
+          const errData = await res.json();
+          if (errData.detail) errorMsg = errData.detail;
+        } catch (e) {}
+        throw new Error(errorMsg);
+      }
       const data = await res.json();
 
       const reply: string = data.assistant_reply || "Anladım, devam edebiliriz.";
@@ -230,7 +246,7 @@ export default function NewResearchWizard() {
     
     const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
     try {
-      const res = await fetch("http://localhost:3000/api/client/studio/match-personas", {
+      const res = await fetch(`/api/client/studio/match-personas`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -260,7 +276,7 @@ export default function NewResearchWizard() {
     setStage("simulating");
     const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
     try {
-      const res = await fetch("http://localhost:3000/api/client/studio/simulate", {
+      const res = await fetch(`/api/client/studio/simulate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -491,7 +507,7 @@ export default function NewResearchWizard() {
       <div className="flex flex-col lg:flex-row gap-6 max-w-7xl w-full mx-auto flex-1 min-h-0">
 
         {/* ── LEFT: Chat Panel ── */}
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className={`flex-1 flex-col min-h-0 ${showMobileBrief ? 'hidden lg:flex' : 'flex'}`}>
           <div className="mb-4 shrink-0">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs gap-1 border-[#d9d9dd] ">
@@ -500,6 +516,14 @@ export default function NewResearchWizard() {
               </Badge>
               <button onClick={() => setStage("mode")} className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2">
                 Modu değiştir
+              </button>
+              <div className="flex-1" />
+              <button 
+                onClick={() => setShowMobileBrief(!showMobileBrief)} 
+                className="lg:hidden text-xs text-[#003c33] font-bold flex items-center gap-1 bg-[#edfce9] px-2 py-1 rounded-md"
+              >
+                <FileText size={12} />
+                {showMobileBrief ? "Sohbete Dön" : "Briefi Gör"}
               </button>
             </div>
             <h1 className="text-2xl font-extrabold tracking-tight mt-2">Defne ile Araştırma Sihirbazı</h1>
@@ -586,8 +610,8 @@ export default function NewResearchWizard() {
         </div>
 
         {/* ── RIGHT: Brief Preview ── */}
-        <div className="lg:w-80 xl:w-96 overflow-y-auto">
-          <BriefPreview brief={brief} mode={researchMode} />
+        <div className={`lg:w-80 xl:w-96 overflow-y-auto ${showMobileBrief ? 'block' : 'hidden lg:block'}`}>
+          <BriefPreview brief={brief} mode={researchMode} onToggleMobile={() => setShowMobileBrief(false)} />
         </div>
       </div>
     </div>

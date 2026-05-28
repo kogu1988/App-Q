@@ -351,7 +351,7 @@ export default function StudyDetailPage() {
     const fetchStudy = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/client/studies/${studyId}`);
+        const res = await fetch(`/api/client/studies/${studyId}`);
         if (!res.ok) {
           if (res.status === 404) {
             throw new Error("Araştırma bulunamadı.");
@@ -379,7 +379,7 @@ export default function StudyDetailPage() {
     if (!confirm("Bu araştırmayı arşivlemek istediğinize emin misiniz? Arşivlenen araştırmalar listede görünmez.")) return;
     setArchiving(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/client/studies/${studyId}/archive`, { method: "PUT" });
+      const res = await fetch(`/api/client/studies/${studyId}/archive`, { method: "PUT" });
       if (!res.ok) throw new Error();
       setIsArchived(true);
       toast.success("Araştırma arşivlendi.");
@@ -401,7 +401,7 @@ export default function StudyDetailPage() {
     const [pIdx, tIdx] = key.split("-").map(Number);
     const personaName = study?.interviews?.[pIdx]?.persona?.name || "unknown";
     try {
-      await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000") + "/api/client/feedback", {
+      await fetch("/api/client/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -426,7 +426,7 @@ export default function StudyDetailPage() {
     setSendingFollowUp(true);
     const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/client/studies/${studyId}/follow-up`, {
+      const res = await fetch(`/api/client/studies/${studyId}/follow-up`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -587,7 +587,8 @@ export default function StudyDetailPage() {
                 onClick={async () => {
                   const username = localStorage.getItem("appq_username");
                   try {
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/client/studies/${studyId}/pdf`, {
+                    const res = await fetch(`/api/client/studies/${studyId}/pdf`, {
+                      method: "POST",
                       headers: username ? { "X-Username": username } : {}
                     });
                     if (!res.ok) {

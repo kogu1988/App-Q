@@ -270,10 +270,7 @@ class OllamaResearchModel:
     @observe(as_type="generation")
     def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
         self.last_model_id = self.model_id
-        if "Defne" in system:
-            system = f"{INTAKE_POLICY}\n\n{system}"
-        else:
-            system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
+
             
         # 1. Check Cache (Skip semantic cache for Defne/Intake wizard to prevent loops)
         if "Defne" not in system:
@@ -342,10 +339,7 @@ class OllamaResearchModel:
     @observe(as_type="generation")
     def generate_stream(self, system: str, prompt: str, response_format: str | None = None):
         self.last_model_id = self.model_id
-        if "Defne" in system:
-            system = f"{INTAKE_POLICY}\n\n{system}"
-        else:
-            system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
+
             
         # 1. Check Cache (Skip semantic cache for Defne/Intake wizard to prevent loops)
         if "Defne" not in system:
@@ -476,10 +470,7 @@ class VLLMResearchModel:
     @observe(as_type="generation")
     def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
         self.last_model_id = self.model_id
-        if "Defne" in system:
-            system = f"{INTAKE_POLICY}\n\n{system}"
-        else:
-            system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
+
             
         if "Defne" not in system:
             cached_response = check_semantic_cache(prompt, system)
@@ -526,10 +517,7 @@ class VLLMResearchModel:
     @observe(as_type="generation")
     def generate_stream(self, system: str, prompt: str, response_format: str | None = None):
         self.last_model_id = self.model_id
-        if "Defne" in system:
-            system = f"{INTAKE_POLICY}\n\n{system}"
-        else:
-            system = f"{APP_Q_GENERATION_POLICY}\n\n{system}"
+
             
         if "Defne" not in system:
             cached_response = check_semantic_cache(prompt, system)

@@ -60,8 +60,7 @@ def extract_complete_brief(chat_history: list[dict[str, str]], current_brief: di
     )
     
     try:
-        response = model.generate(system_prompt, prompt)
-        response_text = response.text
+        response_text = model.generate(system_prompt, prompt)
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:
@@ -429,12 +428,12 @@ def classify_research_intent(prompt: str, model: ResearchModel) -> str:
     {"intent": "ab_test" | "research"}
     """
     try:
-        response = model.generate(
+        response_text = model.generate(
+            system=system_prompt,
             prompt=prompt,
-            system_instruction=system_prompt,
             response_format="json"
         )
-        data = json.loads(response.text)
+        data = json.loads(response_text)
         return data.get("intent", "research")
     except Exception as e:
         print(f"Intent classification failed: {e}")
@@ -456,8 +455,8 @@ def check_guardrails(text: str, model: Any) -> tuple[bool, str]:
         '{"is_safe": true/false, "reason": "İhlal varsa sebebi, yoksa boş bırak"}'
     )
     try:
-        response = model.generate(system_prompt, f"İncelenecek Metin:\n{text}")
-        response_text = response.text.strip()
+        response_text = model.generate(system_prompt, f"İncelenecek Metin:\n{text}")
+        response_text = response_text.strip()
         
         data = json.loads(response_text)
         return data.get("is_safe", True), data.get("reason", "")
@@ -541,13 +540,16 @@ def process_intake_chat(current_brief: Dict[str, Any], chat_history: List[Dict[s
     history_text = "\n".join([f"{m['role']}: {m['content']}" for m in updated_history[-4:]])
     prompt = f"Son Konuşmalar:\n{history_text}\n\nEksik bilgileri alacak sıradaki yanıtını yaz:"
     
-    try:
-        response = model.generate(system_prompt, prompt)
-        assistant_reply = response.text.strip()
-    except Exception as e:
-        logger.error(f"Error generating Defne reply: {e}")
-        assistant_reply = "Anlıyorum. Peki ürününüzün hedef kitlesi ve olası fiyatlandırması hakkında ne düşünüyorsunuz?"
-        
+    assistant_reply = None
+    for attempt in range(2):
+        try:
+            assistant_reply = model.generate(system_prompt, prompt).strip()
+            break
+        except Exception as e:
+            logger.error(f"Error generating Defne reply (attempt {attempt+1}): {e}")
+            if attempt == 1:
+                raise e
+
     return {
         "updated_brief": updated_brief,
         "assistant_reply": assistant_reply,

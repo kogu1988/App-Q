@@ -28,9 +28,8 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     const username = localStorage.getItem("appq_username") || "";
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
     const headers: Record<string, string> = username ? { "X-Username": username } : {};
-    fetch(`${apiBase}/api/client/studies`, { headers })
+    fetch(`/api/client/studies`, { headers })
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => { setStudies(data); setLoading(false); })
       .catch(() => setLoading(false));

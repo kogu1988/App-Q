@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+
 
 export interface ClientPlan {
   username: string;
@@ -55,7 +55,7 @@ export function useClientPlan() {
 
   useEffect(() => {
     const username = localStorage.getItem("appq_username") || "";
-    fetch(`${API_BASE}/api/client/me`, {
+    fetch(`/api/client/me`, {
       headers: username ? { "X-Username": username } : {},
     })
       .then((res) => (res.ok ? res.json() : null))

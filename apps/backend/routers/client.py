@@ -938,7 +938,7 @@ async def intake_chat(request: Request, data: IntakeChatRequest):
         return result
     except Exception:
         logger.error("intake_chat error for user=%s", getattr(data, 'user_message', '')[:40], exc_info=True)
-        raise HTTPException(status_code=500, detail="Servis geçici olarak kullanılamıyor.")
+        raise HTTPException(status_code=503, detail="Yapay Zeka servisi geçici olarak yoğun. Lütfen tekrar deneyin.")
 
 @router.get("/models")
 async def list_models():
