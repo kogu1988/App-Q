@@ -667,17 +667,17 @@ export default function StudyDetailPage() {
             )}
 
             {/* ── Sil Butonu + Onay Modalı ── */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteModalOpen(true)}
+              className="gap-2 text-red-600 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 transition-colors"
+            >
+              <Trash2 size={14} />
+              Sil
+            </Button>
+
             <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 text-red-600 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 transition-colors"
-                >
-                  <Trash2 size={14} />
-                  Sil
-                </Button>
-              </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <div className="flex items-center gap-3 mb-1">
