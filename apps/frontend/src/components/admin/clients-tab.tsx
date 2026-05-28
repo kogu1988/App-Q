@@ -157,6 +157,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
   };
 
   return (
+    <>
     <div className="mt-6 flex-1 outline-none">
       <div className="mb-6">
         <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -456,4 +457,6 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
+  );
+}
