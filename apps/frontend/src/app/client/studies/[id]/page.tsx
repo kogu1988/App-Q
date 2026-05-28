@@ -661,8 +661,14 @@ export default function StudyDetailPage() {
                     } catch (e) {
                       toast.error("İndirme işlemi başarısız oldu.");
                     }
-              </Button>
+                  }}
+                >
+                  <Download size={16} />
+                  PDF Raporu İndir
+                </Button>
+              )
             )}
+
 
 
             {/* ── Sil Butonu + Onay Modalı ── */}
