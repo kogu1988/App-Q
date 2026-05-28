@@ -948,18 +948,22 @@ async def match_personas(request: Request, data: dict, x_username: str | None = 
 @router.post("/intake")
 @limiter.limit("20/minute")
 async def intake_chat(request: Request, data: IntakeChatRequest):
-    """
-    (DEPRECATED) Eski çok turlu chat (Defne) sihirbazı.
-    Yerini /studio/simulate almıştır.
-    """
     try:
+        from packages.research_engine.database import get_system_config
         model = get_model_provider()
+        # wizard_prompt DB'den okunur — admin panelinden kod deploy'u olmadan güncellenebilir
+        try:
+            config = get_system_config()
+            db_wizard_prompt = config.get("wizard_prompt", "")
+        except Exception:
+            db_wizard_prompt = ""
         result = process_intake_chat(
             current_brief=data.current_brief,
             chat_history=data.chat_history,
             user_message=data.user_message,
             model=model,
-            app_mode=data.app_mode
+            app_mode=data.app_mode,
+            wizard_prompt=db_wizard_prompt,
         )
         return result
     except Exception:
