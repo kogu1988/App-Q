@@ -82,11 +82,27 @@ async def generating_and_reviewing_themes_node(state: GlobalResearchState) -> Di
         })
         
     updates = {"extracted_themes": themes}
-    
+
+    # Redis payload optimizasyonu: evidence_chain'leri kırp (max 3 item, quote max 150 char)
+    # Tam veri state'te kalır; frontend'e sadece sıkıştırılmış özet gider
+    def _slim_themes(themes: list) -> list:
+        slimmed = []
+        for t in themes:
+            slimmed.append({
+                "theme_id": t.get("theme_id"),
+                "title": t.get("title"),
+                "prevalence": t.get("prevalence"),
+                "evidence_chain": [
+                    {**ev, "quote": ev.get("quote", "")[:150]}
+                    for ev in t.get("evidence_chain", [])[:3]
+                ],
+            })
+        return slimmed
+
     temp_state = dict(state)
     temp_state.update(updates)
-    publish_live_status(temp_state, "themes_generated")
-    
+    publish_live_status({**temp_state, "extracted_themes": _slim_themes(themes)}, "themes_generated")
+
     return updates
 
 async def adversarial_quality_audit_node(state: GlobalResearchState) -> Dict[str, Any]:

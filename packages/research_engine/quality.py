@@ -197,12 +197,12 @@ def adversarial_review(report_dict: dict, model: object) -> dict:
     )
     try:
         response = model.generate(system, prompt)  # type: ignore[attr-defined]
-        # JSON parse denemesi
         import json as _json
-        start = response.find("{")
-        end = response.rfind("}")
-        if start != -1 and end != -1:
-            parsed = _json.loads(response[start:end + 1])
+        import re as _re
+        # Robust regex extraction — find/rfind patterned yanlış indeks sorununu engeller
+        match = _re.search(r'\{.*\}', response, _re.DOTALL)
+        if match:
+            parsed = _json.loads(match.group(0))
             return {"reviewed": True, **parsed}
         return {"reviewed": True, "raw": response}
     except Exception as exc:
