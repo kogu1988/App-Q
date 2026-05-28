@@ -8,7 +8,8 @@ from packages.research_engine.workflow import build_research_plan, generate_pers
 from packages.research_engine.analytics import synthesize_report
 from packages.research_engine.privacy import PrivacyMasker, PrivacyResearchModelWrapper
 from packages.research_engine.database import (
-    list_studies, load_study_payload, save_study, archive_study, save_feedback,
+    list_studies, load_study_payload, save_study, archive_study, delete_study, save_feedback,
+
     get_client_by_username, upgrade_client_plan, check_simulation_limit, 
     register_client_if_new, atomic_increment_simulation_count,
     count_user_non_ab_simulations
@@ -336,7 +337,38 @@ async def download_study_pdf(study_id: str, x_username: str | None = Header(defa
 @router.put("/studies/{study_id}/archive")
 async def archive_study_endpoint(study_id: str):
     archive_study(study_id)
-    return {"status": "success"}
+    return {"status": "archived"}
+
+
+@router.delete("/studies/{study_id}")
+async def delete_study_endpoint(
+    study_id: str,
+    x_username: str | None = Header(default=None),
+):
+    """Araştırmayı kalıcı olarak siler.
+
+    Sahiplik kontrolü: studies tablosunda username alanı ile eşleşme arananır.
+    Eşleşme bulunamazsa ya da bulu(nan study başka bir kullanıcıya aitse 404 döner.
+    """
+    from packages.research_engine.database import get_study
+
+    study = get_study(study_id)
+    if not study:
+        raise HTTPException(status_code=404, detail="Araştırma bulunamadı.")
+
+    # Sahiplik kontrolü — study'nin username alanı varsa eşleştir
+    owner = study.get("username") or study.get("created_by") or ""
+    if owner and x_username and owner != x_username:
+        raise HTTPException(
+            status_code=403,
+            detail="Bu araştırmayı silme yetkiniz yok.",
+        )
+
+    deleted = delete_study(study_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Araştırma bulunamadı ya da zaten silinmiş.")
+
+    return {"status": "deleted", "study_id": study_id}
 
 @router.post("/feedback")
 async def submit_feedback(data: FeedbackCreate):

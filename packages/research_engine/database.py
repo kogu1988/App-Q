@@ -633,6 +633,23 @@ def archive_study(study_id: str) -> None:
         )
 
 
+def delete_study(study_id: str) -> bool:
+    """Araştırmayı ve tüm ilişkili verileri kalıcı olarak siler.
+
+    Sıralama önemli: önce study_payloads ve feedbacks kaldırılır,
+    sonra studies satırı silinir (FK constraint).
+
+    Returns:
+        True  → silme başarılı
+        False → study_id bulunamadı
+    """
+    with get_db() as (conn, cur):
+        cur.execute("DELETE FROM study_payloads WHERE study_id = %s", (study_id,))
+        cur.execute("DELETE FROM feedbacks WHERE study_id = %s", (study_id,))
+        cur.execute("DELETE FROM studies WHERE id = %s", (study_id,))
+        return cur.rowcount > 0
+
+
 def update_pdf_status(study_id: str, status: str, error: str = "") -> None:
     with get_db() as (conn, cur):
         cur.execute(
