@@ -619,8 +619,9 @@ class OllamaRouterResearchModel:
         system_lower = system.lower()
         prompt_lower = prompt.lower()
         
-        # 1. Defne / Intake Wizard / Persona Generation -> Orchestrator (Kizagan)
-        if "defne" in system_lower or "araştırma mimarı" in system_lower or "intake" in system_lower or "persona üretici" in system_lower or "persona json" in system_lower:
+        # 1. Defne / Intake Wizard -> Orchestrator (Kizagan): Sokratik akıl yürütme & epistemik filtre
+        # NOT: Persona üretimi ve roleplay Trendyol'a (B2C) bırakıldı — dil tutarlılığı için
+        if "defne" in system_lower or "araştırma mimarı" in system_lower or "intake" in system_lower:
             return self.orchestrator_model_id, self.orchestrator_model
             
         # 2. Synthesis / Rapor Sentezi / B2B Analist -> Analyst (Asure-12B)

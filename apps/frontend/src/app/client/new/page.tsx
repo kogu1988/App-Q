@@ -561,7 +561,7 @@ export default function NewResearchWizard() {
                   </div>
                   <div className="px-4 py-3 bg-white  border border-[#d9d9dd]/60  rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
                     <Loader2 size={14} className="animate-spin text-[#ff7759]" />
-                    <span className="text-xs text-muted-foreground italic">Defne düşünüyor...</span>
+                    <span className="text-xs italic bg-[linear-gradient(110deg,var(--color-muted-foreground)_40%,var(--color-foreground)_50%,var(--color-muted-foreground)_60%)] bg-[length:200%_100%] bg-clip-text text-transparent animate-[shimmer_2s_linear_infinite]">Defne düşünüyor...</span>
                   </div>
                 </div>
               )}

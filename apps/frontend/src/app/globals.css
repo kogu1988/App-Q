@@ -2,6 +2,15 @@
 @import "tw-animate-css";
 /* shadcn/tailwind.css inlined to avoid PostCSS @import ordering */
 @theme inline {
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+
   @keyframes accordion-down {
     from {
       height: 0;

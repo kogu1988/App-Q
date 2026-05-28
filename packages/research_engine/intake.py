@@ -490,26 +490,19 @@ def process_intake_chat(current_brief: Dict[str, Any], chat_history: List[Dict[s
     system_prompt = (
         "Sen Defne'sin, çok kıdemli bir Pazar Araştırması Mimarısın ve bir 'Epistemik Karar Filtresi' olarak çalışıyorsun.\n\n"
         "GÖREVLERİN:\n"
-        "1. KULLANICI ÖNYARGILARINI SİL (Input Reframing): Kullanıcının dalkavukluk bekleyen (Örn: 'kesin tutar', 'çok iyi fikir') öznelliklerini sil. Bunları nötr araştırma hipotezlerine ve pazar sürtünmesi (friction) engellerine dönüştür.\n"
-        "2. STRATEJİK KARAR ODAĞI: Bu araştırmayla nihai olarak hangi 'Karar'ın verileceğini bul.\n"
-        "3. JSON GÜNCELLEME: Aşağıdaki tüm Brief alanlarını doldurabildiğin kadar KENDİN doldur.\n"
-        "4. SOKRATİK SORU SOR: Eksik alanlar için, kullanıcıyı sıkmadan Sokratik ve yönlendirici TEK BİR SORU sor.\n\n"
+        "1. KULLANICI ÖNYARGILARINI SİL (Input Reframing): Kullanıcının dalkavukluk bekleyen (Örn: 'kesin tutar') öznelliklerini nötr araştırma hipotezlerine dönüştür.\n"
+        "2. STRATEJİK KARAR ODAĞI: Araştırmayla nihai olarak hangi 'Karar'ın verileceğini bul.\n"
+        "3. KISMİ GÜNCELLEME (DELTA): SADECE kullanıcının son mesajında verdiği yeni/farklı bilgileri (title, idea, target_users, expected_price, success_metric, discovery_channels, competitors) 'updated_fields' objesine koy. ŞABLON VEYA ÖRNEK METİN YAZMA, yeni bilgi yoksa bu objeyi boş bırak.\n"
+        "4. SOKRATİK SORU SOR: Eksik bilgiler için, kullanıcıyı sıkmadan Sokratik TEK BİR SORU sor.\n"
+        "5. TÜRKÇE İMLÂ KONTROLÜ: `assistant_reply` içindeki tüm cümlelerde MUTLAKA aktif yapıyı kullan (pasif çatıdan kaçın). Özne her zaman net olmalı. Örn: 'sahiplenilen aileler' DEĞİL, 'evcil hayvan sahiplenen aileler'.\n\n"
         "ZORUNLU JSON ÇIKTISI (BAŞKA HİÇBİR METİN EKLEME):\n"
         "{\n"
-        '  "thinking": "Girdi analizi, kullanıcının önyargılarının tespiti, epistemik düzeltme ve Sokratik soru planı",\n'
-        '  "updated_brief": {\n'
-        '    "title": "Kısa çalışma adı",\n'
-        '    "idea": "Nötrleştirilmiş ve hipoteze dökülmüş ana ürün fikri",\n'
-        '    "target_users": ["Hedef 1"],\n'
-        '    "expected_price": "Fiyatlandırma",\n'
-        '    "success_metric": "Başarı veya karar kriteri",\n'
-        '    "discovery_channels": ["Kanal 1"],\n'
-        '    "competitors": ["Rakip 1"]\n'
-        "  },\n"
-        '  "assistant_reply": "Kullanıcıya verilecek sıradaki Sokratik soru (sıcak, profesyonel ama kesinlikle önyargılara katılmayan bir dille)",\n'
+        '  "thinking": "Girdi analizi, önyargıların tespiti ve Sokratik soru planı",\n'
+        '  "updated_fields": { "buraya_sadece_yeni_bulunan_alanlar_gelecek": "değer" },\n'
+        '  "assistant_reply": "Kullanıcıya verilecek sıradaki Sokratik soru",\n'
         '  "is_complete": false\n'
         "}\n\n"
-        "NOT: Eğer tüm alanlar kusursuzca dolduysa VEYA konuşma 7 turu geçtiyse `is_complete` değerini `true` yap ve `assistant_reply` alanına 'Araştırmayı başlatmaya hazırız, butona tıklayabilirsiniz.' şeklinde kapanış cümlesi yaz."
+        "NOT: Eğer tüm alanlar dolduysa VEYA konuşma 10 turu geçtiyse `is_complete` değerini `true` yap ve `assistant_reply` alanına 'Araştırmayı başlatmaya hazırız, butona tıklayabilirsiniz.' yaz."
     )
     
     prompt = (
@@ -546,7 +539,23 @@ def process_intake_chat(current_brief: Dict[str, Any], chat_history: List[Dict[s
             if "thinking" in data:
                 logger.info(f"[Defne Thinking]: {data['thinking']}")
                 
-            updated_brief = data.get("updated_brief", updated_brief)
+            # Delta Update (Partial Merging)
+            if "updated_fields" in data and isinstance(data["updated_fields"], dict):
+                for k, v in data["updated_fields"].items():
+                    if isinstance(v, str) and v.startswith("Rakip "):
+                        continue
+                    if isinstance(v, list) and len(v) > 0 and isinstance(v[0], str) and v[0].startswith("Hedef "):
+                        continue
+                    updated_brief[k] = v
+            # Fallback for old prompt format just in case
+            elif "updated_brief" in data and isinstance(data["updated_brief"], dict):
+                for k, v in data["updated_brief"].items():
+                    if isinstance(v, str) and v.startswith("Rakip "):
+                        continue
+                    if isinstance(v, list) and len(v) > 0 and isinstance(v[0], str) and v[0].startswith("Hedef "):
+                        continue
+                    updated_brief[k] = v
+                    
             assistant_reply = data.get("assistant_reply", assistant_reply)
             
             is_complete_raw = data.get("is_complete", False)
