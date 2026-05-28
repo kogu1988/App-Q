@@ -216,7 +216,7 @@ export default function NewResearchWizard() {
       setMessages(prev => [...prev, { role: "assistant", content: reply }]);
 
       // Detect ready signal
-      if (reply.includes("butona basabilirsin") || reply.includes("başlatmaya hazırım")) {
+      if (data.is_complete || reply.includes("butona tıklayarak") || reply.includes("başlatmaya hazırız") || reply.includes("butona basabilirsin") || reply.includes("başlatmaya hazırım")) {
         setIsReady(true);
       }
     } catch (err) {
