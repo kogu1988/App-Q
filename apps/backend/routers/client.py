@@ -899,25 +899,19 @@ async def match_personas(request: Request, data: dict, x_username: str | None = 
         try:
             matched = json.loads(text)
         except:
-            # Fallback: ilk 3 personayı dön
-            matched = [{"role": p["role_title"], "why": "Sistem önerisi"} for p in all_personas[:3]]
-            
+            matched = []            
         # For each matched role, find 1-2 sample personas from the pool to return for UI
         for m in matched:
             role_name = m.get("role", "")
             samples = [p for p in all_personas if p.get("role_title") == role_name or role_name in p.get("segment", "")]
             if not samples:
-                # Fallback to random if no exact match
-                samples = all_personas[:2]
+                samples = []
             m["samples"] = samples[:2]
             
         return {"matched_roles": matched}
     except Exception as e:
         logger.error(f"match-personas error: {e}")
-        # Fallback
-        all_personas = get_personas_pool()
-        matched = [{"role": p.get("role_title", "Tüketici"), "why": "Sistem önerisi", "samples": [p]} for p in all_personas[:3]] if all_personas else []
-        return {"matched_roles": matched}
+        raise HTTPException(status_code=500, detail="Persona eşleştirme sırasında bir hata oluştu.")
 
 @router.post("/intake")
 @limiter.limit("20/minute")

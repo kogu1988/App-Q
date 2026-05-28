@@ -1,7 +1,10 @@
 import json
 import re
+import logging
 from typing import Any
 from .models import ResearchModel
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_jaccard_similarity(str1: str, str2: str) -> float:
@@ -61,6 +64,9 @@ def extract_complete_brief(chat_history: list[dict[str, str]], current_brief: di
     
     try:
         response_text = model.generate(system_prompt, prompt)
+        if hasattr(response_text, "text"):
+            response_text = response_text.text
+            
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:
@@ -89,19 +95,8 @@ def extract_complete_brief(chat_history: list[dict[str, str]], current_brief: di
             
         return brief
     except Exception as e:
-        print(f"Fallback extraction failed: {e}")
-        fallback_brief = {**current_brief}
-        if not fallback_brief.get("title"):
-            fallback_brief["title"] = "Evcil Hayvan Takip Araştırması"
-        if not fallback_brief.get("expected_price"):
-            fallback_brief["expected_price"] = "Aylık abonelik"
-        if not fallback_brief.get("success_metric"):
-            fallback_brief["success_metric"] = "Kullanıcı memnuniyeti ve tavsiye etme oranı"
-        if not fallback_brief.get("discovery_channels") or len(fallback_brief.get("discovery_channels")) == 0:
-            fallback_brief["discovery_channels"] = ["sosyal medya", "arkadaş tavsiyesi"]
-        if not fallback_brief.get("respondent_types") or len(fallback_brief.get("respondent_types")) == 0:
-            fallback_brief["respondent_types"] = ["potential_customer"]
-        return fallback_brief
+        logger.error(f"Fallback extraction failed: {e}")
+        return {**current_brief}
 
 
 class DiscoveryLoopGuard:
