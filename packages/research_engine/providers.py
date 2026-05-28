@@ -582,20 +582,35 @@ class OllamaRouterResearchModel:
         )
 
     def choose_model(self, system: str, prompt: str) -> tuple[str, OllamaResearchModel]:
-        system_lower = system.lower()
-        prompt_lower = prompt.lower()
-        
-        # 1. Defne / Intake Wizard -> Orchestrator (Kizagan): Sokratik akıl yürütme & epistemik filtre
-        # NOT: Persona üretimi ve roleplay Trendyol'a (B2C) bırakıldı — dil tutarlılığı için
-        if "defne" in system_lower or "araştırma mimarı" in system_lower or "intake" in system_lower:
+        """Semantic routing ile doğru modeli seçer (god_doc.md §5).
+
+        Katmanlı karar:
+          Mod 1 → nomic-embed-text kosinüs benzerliği (<50ms)
+          Mod 2 → Qwen 0.5B niyet ayrıştırması (belirsiz girdiler)
+          Fallback → keyword eşleşmesi (her zaman güvende)
+        """
+        try:
+            from packages.research_engine.nodes.router import route as semantic_route
+            selected = semantic_route(system, prompt, base_url=self.b2c_model.base_url)
+        except Exception as exc:
+            logger.warning("SemanticRouter başarısız, keyword fallback: %s", exc)
+            selected = self._keyword_fallback(system, prompt)
+
+        if selected == "orchestrator":
             return self.orchestrator_model_id, self.orchestrator_model
-            
-        # 2. Synthesis / Rapor Sentezi / B2B Analist -> Analyst (Asure-12B)
-        if "sentez" in system_lower or "rapor sentezi" in system_lower or "b2b analist" in system_lower or "sentezleyici" in system_lower or "sentez" in prompt_lower or "analiz" in prompt_lower:
+        if selected == "synthesis":
             return self.b2b_model_id, self.b2b_model
-            
-        # 3. Persona Interview / Roleplay -> Actor (Trendyol-8B)
         return self.b2c_model_id, self.b2c_model
+
+    def _keyword_fallback(self, system: str, prompt: str) -> str:
+        """Acil keyword fallback — SemanticRouter tamamen çöktüğünde."""
+        sl = system.lower()
+        pl = prompt.lower()
+        if "defne" in sl or "araştırma mimarı" in sl or "intake" in sl:
+            return "orchestrator"
+        if any(kw in sl or kw in pl for kw in ["sentez", "rapor sentezi", "b2b analist", "analiz"]):
+            return "synthesis"
+        return "persona"
 
     def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
         model_id, model = self.choose_model(system, prompt)

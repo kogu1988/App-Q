@@ -9,7 +9,9 @@ from urllib3.util.retry import Retry
 from .database import get_db
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
-EMBEDDING_MODEL = "all-minilm"
+# god_doc.md §5: nomic-embed-text (768-dim) — all-minilm (384-dim) yerini alıyor
+# ai_semantic_cache tablosu temizlendi — yeni vektörler 768-boyutlu olacak
+EMBEDDING_MODEL = "nomic-embed-text"
 
 # Module-level session singleton — avoids a new TCP handshake per embedding call.
 # HTTPAdapter with retry: 3 attempts, exponential backoff (0.5, 1.0, 2.0 s).
@@ -57,10 +59,12 @@ def get_embedding(text: str) -> Optional[list[float]]:
         return None
 
 
-def check_semantic_cache(prompt: str, system: str = "", threshold: float = 0.09) -> Optional[str]:
+def check_semantic_cache(prompt: str, system: str = "", threshold: float = 0.15) -> Optional[str]:
     """
     Checks the semantic cache for a similar prompt.
     If the cosine distance is below the threshold, returns the cached LLM response.
+    Threshold 0.15: nomic-embed-text (768-dim) daha sıkı mesafeler üretir —
+    all-minilm için kullanılan 0.09 değerinden daha yüksek eşik gerekir.
     """
     full_prompt = f"{system}\n\n{prompt}".strip()
     prompt_hash = hashlib.sha256(full_prompt.encode("utf-8")).hexdigest()

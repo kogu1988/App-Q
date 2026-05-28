@@ -1,0 +1,7 @@
+FROM qwen2.5:0.5b
+
+# Routing görevi: deterministik, kısa, hızlı
+# Düşük temperature → tutarlı JSON çıktı
+PARAMETER temperature 0.1
+PARAMETER num_ctx 512
+PARAMETER num_predict 128
