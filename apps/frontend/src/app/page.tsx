@@ -477,9 +477,9 @@ export default function HomePage() {
           </div>
         </Reveal>
 
-        {/* Plan Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          {PLAN_META.map((plan, idx) => {
+        {/* Plan Cards — first 4 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          {PLAN_META.filter(p => p.name !== "Enterprise").map((plan, idx) => {
             const prices = PLAN_PRICES[plan.name];
             const isVariable = prices.monthly === null;
             const isAnnual = getBilling(plan.name) === "annual";
@@ -500,7 +500,7 @@ export default function HomePage() {
             return (
               <Reveal key={plan.name} delay={idx * 60}>
                 <div
-                  className={`relative rounded-[8px] border p-6 flex flex-col gap-4 h-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu ${plan.name === "Enterprise" ? "lg:col-span-4 lg:flex-row lg:items-center" : ""} ${plan.highlight
+                  className={`relative rounded-[8px] border p-6 flex flex-col gap-4 h-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu ${plan.highlight
                       ? "border-[#17171c] bg-[#17171c] text-white shadow-xl md:hover:border-[#ff7759] md:hover:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)] md:hover:scale-[1.01]"
                       : "border-[#d9d9dd] bg-white md:hover:border-[#ff7759]/50 md:hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.08)] md:hover:scale-[1.01]"
                     }`}
@@ -615,6 +615,35 @@ export default function HomePage() {
             );
           })}
         </div>
+
+        {/* Enterprise — full width banner below */}
+        {PLAN_META.filter(p => p.name === "Enterprise").map((plan, idx) => {
+          const prices = PLAN_PRICES[plan.name];
+          return (
+            <Reveal key={plan.name} delay={idx * 60}>
+              <div className="w-full rounded-[8px] border border-[#d9d9dd] bg-white p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-12">
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold mb-0.5">{plan.name}</h3>
+                  <p className="text-xs text-[#93939f]">{plan.description}</p>
+                  <ul className="flex flex-wrap gap-x-5 gap-y-1 mt-3">
+                    {plan.limits.map((limit) => (
+                      <li key={limit} className="flex items-center gap-1.5 text-xs text-[#616161]">
+                        <Check size={12} className="text-[#003c33] shrink-0" />
+                        {limit}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <a
+                  href={plan.ctaHref}
+                  className="shrink-0 px-6 py-2.5 rounded-lg text-sm font-semibold bg-[#17171c] text-white hover:bg-[#17171c]/85 transition-colors"
+                >
+                  {plan.cta}
+                </a>
+              </div>
+            </Reveal>
+          );
+        })}
 
         {/* Comparison table */}
         <Reveal>
