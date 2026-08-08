@@ -262,13 +262,13 @@ async def get_me(request: Request, x_username: str | None = Header(default=None)
 async def upgrade_plan(req: UpgradePlanRequest, x_username: str | None = Header(default=None)):
     """Kayıtlı kullanıcının planını yükseltir ve dönem sayacını sıfırlar."""
     if not x_username:
-        raise HTTPException(status_code=401, detail="X-Username header gerekli.")
+        raise HTTPException(status_code=401, detail="Oturum bilgisi eksik. Lütfen giriş yapın.")
 
     valid_plans = ["Free", "Flex", "Starter", "Pro", "Enterprise"]
     if req.new_plan not in valid_plans:
         raise HTTPException(status_code=400, detail=f"Geçersiz plan: {req.new_plan}")
     if req.billing_cycle not in ("monthly", "annual"):
-        raise HTTPException(status_code=400, detail="billing_cycle 'monthly' veya 'annual' olmalı.")
+        raise HTTPException(status_code=400, detail="Faturalama dönemi 'aylık' veya 'yıllık' olmalı.")
 
     upgrade_client_plan(x_username, req.new_plan, req.billing_cycle)
     _, config = _resolve_plan(x_username)
@@ -421,7 +421,7 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     try:
         payload = json.loads(payload_str)
     except:
-        raise HTTPException(status_code=500, detail="Veri formatı geçersiz.")
+        raise HTTPException(status_code=500, detail="Veri formatı geçersiz. Lütfen tekrar deneyin.")
         
     interviews = payload.get("interviews", [])
     
@@ -839,7 +839,7 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
         answer = response.strip()
     except Exception as e:
         logger.error(f"Follow up error: {e}")
-        raise HTTPException(status_code=500, detail="Cevap üretilemedi.")
+        raise HTTPException(status_code=500, detail="Cevap üretilemedi. Lütfen tekrar deneyin.")
         
     new_turn = {
         "question": data.question,
@@ -981,7 +981,7 @@ async def get_studio_simulation_status(task_id: str, x_username: str | None = He
         return response
     except Exception as e:
         logger.error(f"Error fetching task status {task_id}: {e}")
-        raise HTTPException(status_code=500, detail="Durum sorgulanamadı.")
+        raise HTTPException(status_code=500, detail="Görev durumu sorgulanamadı. Lütfen tekrar deneyin.")
 
 @router.post("/studio/match-personas")
 @limiter.limit("20/minute")
@@ -1083,7 +1083,7 @@ async def generate_ws_ticket(request: Request, x_username: str | None = Header(d
         return {"ticket": ticket, "expires_in": 10}
     except Exception as e:
         logger.error(f"Failed to generate WS ticket: {e}")
-        raise HTTPException(status_code=500, detail="Bilet üretilemedi.")
+        raise HTTPException(status_code=500, detail="Bağlantı bileti üretilemedi. Lütfen tekrar deneyin.")
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -1106,7 +1106,7 @@ async def ws_synthesis_status(websocket: WebSocket, research_id: str, ticket: st
         username = r_sync.get(ticket_key)
         
         if not username:
-            await websocket.close(code=1008, reason="Geçersiz veya süresi dolmuş bilet.")
+            await websocket.close(code=1008, reason="Bağlantı biletiniz geçersiz veya süresi dolmuş. Lütfen sayfayı yenileyin.")
             return
             
         # Delete ticket so it's single use

@@ -215,14 +215,14 @@ async def delete_persona(persona_id: str):
             break
             
     if not target:
-        raise HTTPException(status_code=404, detail="Persona bulunamadı")
+        raise HTTPException(status_code=404, detail="Persona bulunamadı.")
         
     if target.get("is_locked"):
         raise HTTPException(status_code=400, detail="Bu persona aktif veya tamamlanmış bir araştırmada yer aldığı için silinemez.")
         
     success = delete_persona_from_pool(persona_id)
     if not success:
-        raise HTTPException(status_code=500, detail="Silme işlemi gerçekleştirilemedi")
+        raise HTTPException(status_code=500, detail="Silme işlemi gerçekleştirilemedi. Lütfen tekrar deneyin.")
     return {"status": "success", "message": "Persona başarıyla silindi"}
 
 @router.get("/questions")
