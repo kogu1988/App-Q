@@ -692,11 +692,25 @@ def run_interviews_batch(
 
         # Batch interview — retry loop (DeepSeek JSON mode may rarely return empty)
         answers: dict[str, str] = {}
-        for attempt in range(2):
-            raw = model.generate(system_prompt, prompt, response_format="json")
+        batch_attempt = 0
+        max_batch_attempts = 2
+        
+        for batch_attempt in range(max_batch_attempts):
+            current_prompt = prompt
+            if batch_attempt > 0:
+                # Retry: sıkılaştırılmış prompt (god_doc.md §5 EWMA Tamir Protokolü mantığı)
+                current_prompt = prompt + (
+                    "\n\n[UYARI: ONCEKI YANITIN KALITE KONTROLUNDEN GECMEDI]\n"
+                    "- Asistan/yapay zeka oldugunu asla belli etme.\n"
+                    "- Tum sorulari birinci tekil sahis olarak, 2-4 cumleyle cevapla.\n"
+                    "- Turkiye gerceklerine bagli kal: TL, taksit, KVKK, kargo.\n"
+                    "- Eger skeptik bir karaktersen urunu elestirmekten ve reddetmekten cekinme.\n"
+                )
+            
+            raw = model.generate(system_prompt, current_prompt, response_format="json")
 
             if not raw or raw.strip() == "":
-                logger.warning(f"Batch empty response for {persona.name} (attempt {attempt+1}), retrying...")
+                logger.warning(f"Batch empty response for {persona.name} (attempt {batch_attempt+1}), retrying...")
                 continue
 
             try:
@@ -710,16 +724,37 @@ def run_interviews_batch(
                         if lbl and ans:
                             answers[lbl] = ans
                 if answers:
-                    break  # Başarılı parse
-                logger.warning(f"Batch parse yielded no answers for {persona.name} (attempt {attempt+1})")
+                    break
+                logger.warning(f"Batch parse yielded no answers for {persona.name} (attempt {batch_attempt+1})")
             except (json.JSONDecodeError, Exception) as e:
-                logger.warning(f"Batch parse failed for {persona.name} (attempt {attempt+1}): {e}")
+                logger.warning(f"Batch parse failed for {persona.name} (attempt {batch_attempt+1}): {e}")
 
-        # Build turns from parsed answers
+        # ── Bilimsel Kalite Kontrolü (Grounded Simulation §5) ──
         turns: List[InterviewTurn] = []
+        answers_list: list[str] = []  # Echo detection için sıralı cevaplar
+        total_flags = 0
+        critical_failures = 0
+        
         for sq in script:
             ans = answers.get(sq.label.upper(), "[Yanıt alınamadı]")
-            quality_flags = judge_answer_quality(persona, sq.question, ans)
+            quality_flags = list(judge_answer_quality(persona, sq.question, ans))
+            
+            # ── Intra-Persona Echo Detection (Jaccard, god_doc.md §5.3) ──
+            if len(answers_list) >= 1:
+                # Son cevapla şimdiki cevap arasında echo kontrolü
+                if detect_echo(ans, answers_list[-1]):
+                    quality_flags.append("echo_detected")
+            answers_list.append(ans)
+            
+            # ── Acquiescence Detection (god_doc.md §5.1) ──
+            from .quality import detect_acquiescence
+            if persona.stance in {"Skeptic", "Laggard"}:
+                if detect_acquiescence(persona.stance, [ans]):
+                    quality_flags.append("acquiescence_bias")
+            
+            total_flags += len(quality_flags)
+            if any(f in {"meta_tone", "visible_reasoning", "sycophancy_detected"} for f in quality_flags):
+                critical_failures += 1
 
             turns.append(InterviewTurn(
                 question=sq.question,
@@ -728,12 +763,30 @@ def run_interviews_batch(
                 model_id=getattr(model, "last_model_id", None),
                 quality_flags=quality_flags,
             ))
+        
+        # ── Batch Quality Score (Grounded Simulation §5 EWMA eşdeğeri) ──
+        answered_count = len([t for t in turns if t.answer != "[Yanıt alınamadı]"])
+        total_questions = len(script)
+        flag_rate = total_flags / max(total_questions, 1)
+        
+        # Kalite skoru: 1.0 = mükemmel, <0.5 = zayıf
+        quality_score = max(0.0, 1.0 - (flag_rate * 0.5) - (critical_failures * 0.15))
 
         consistency_notes = [
             f"Persona stance: {persona.stance}",
             f"Bilgi sınırı: {persona.knowledge_boundary}",
-            f"Batch interview — {len(turns)}/{len(script)} yanıt alındı",
+            f"Batch interview — {answered_count}/{total_questions} yanıt alındı",
+            f"Kalite skoru: {quality_score:.2f} | Flag sayısı: {total_flags} | Kritik hata: {critical_failures}",
         ]
+        
+        # Stance uyumluluk notu (Grounded Simulation §4.3)
+        if persona.stance == "Skeptic":
+            has_objection = any(
+                any(kw in t.answer.lower() for kw in ["güvenmiyorum", "şüphe", "risk", "pahalı", "kanıt", "itiraz", "emin değilim"])
+                for t in turns
+            )
+            if not has_objection:
+                consistency_notes.append("UYARI: Skeptic persona yeterince itiraz üretmedi — stance uyumsuzluğu.")
 
         interviews.append(PersonaInterview(
             persona=persona,
