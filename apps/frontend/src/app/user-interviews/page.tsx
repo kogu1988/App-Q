@@ -292,7 +292,7 @@ export default function UserInterviewsPage() {
               Ücretsiz Başlat (3 Günlük Deneme)
             </Link>
             <a
-              href="mailto:clarere@clarere.com?subject=Görüşme Platformu Demosu"
+              href="mailto:hiclarere@clarere.com?subject=Görüşme Platformu Demosu"
               className="w-full sm:w-auto px-6 py-3.5 rounded-full border border-white/20 hover:border-white text-white font-medium text-sm transition-all text-center"
               id="cta-mail-btn"
             >

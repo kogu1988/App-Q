@@ -52,7 +52,7 @@ export default function AgenciesPage() {
             Hemen Başla <ArrowRight size={14} />
           </Link>
           <a
-            href="mailto:clarere@clarere.com?subject=Ajans Talebi"
+            href="mailto:hiclarere@clarere.com?subject=Ajans Talebi"
             className="w-full sm:w-auto px-6 py-3.5 rounded-full border border-[#d9d9dd] hover:border-[#17171c] text-[#17171c] font-medium text-sm transition-all text-center"
             id="hero-cta-mail"
           >
@@ -286,7 +286,7 @@ export default function AgenciesPage() {
               Ücretsiz Başlat
             </Link>
             <a
-              href="mailto:clarere@clarere.com?subject=Ajans Demo Talebi"
+              href="mailto:hiclarere@clarere.com?subject=Ajans Demo Talebi"
               className="w-full sm:w-auto px-6 py-3.5 rounded-full border border-white/20 hover:border-white text-white font-medium text-sm transition-all text-center"
               id="cta-mail-btn"
             >

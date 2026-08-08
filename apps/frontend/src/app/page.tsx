@@ -31,7 +31,7 @@ function ContactForm() {
       toast.success("Mesajınız iletildi! En kısa sürede dönüş yapacağız.");
       setName(""); setEmail(""); setMessage("");
     } catch {
-      toast.error("Mesaj gönderilemedi. Lütfen clarere@clarere.com adresine e-posta atın.");
+      toast.error("Mesaj gönderilemedi. Lütfen hiclarere@clarere.com adresine e-posta atın.");
     } finally {
       setSending(false);
     }
@@ -167,7 +167,7 @@ const PLAN_META = [
     name: "Enterprise",
     description: "En karmaşık ihtiyaçlarınız için tamamen özelleştirilmiş çözümler.",
     cta: "Bize Ulaşın",
-    ctaHref: "mailto:clarere@clarere.com?subject=Enterprise Plan Talebi",
+    ctaHref: "mailto:hiclarere@clarere.com?subject=Enterprise Plan Talebi",
     highlight: false,
     hasBillingToggle: false,
     isOneTime: false,
@@ -767,7 +767,7 @@ export default function HomePage() {
           <Reveal>
             <p className="mono-label text-[#93939f] mb-3">İletişim</p>
             <h2 className="display-section text-[#17171c] mb-3">Bize Ulaşın</h2>
-            <p className="text-[#616161] mb-8">Sorularınız için clarere@clarere.com adresine her zaman yazabilir veya aşağıdaki formu doldurabilirsiniz.</p>
+            <p className="text-[#616161] mb-8">Sorularınız için hiclarere@clarere.com adresine her zaman yazabilir veya aşağıdaki formu doldurabilirsiniz.</p>
           </Reveal>
 
           <Reveal>

@@ -180,7 +180,7 @@ Free'de **paywall + buzlu önizleme.** Kullanıcı değeri görür → yükseltm
 
 ### İletişim
 
-- **Email:** clarere@clarere.com
+- **Email:** hiclarere@clarere.com
 - **Demo:** [github.com/kogu1988/App-Q](https://github.com/kogu1988/App-Q)
 
 ---

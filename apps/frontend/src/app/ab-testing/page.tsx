@@ -351,7 +351,7 @@ export default function ABTestingPage() {
               Ücretsiz Başla (3 Günlük Deneme)
             </Link>
             <a
-              href="mailto:clarere@clarere.com?subject=AB Test Demosu"
+              href="mailto:hiclarere@clarere.com?subject=AB Test Demosu"
               className="w-full sm:w-auto px-6 py-3.5 rounded-full border border-white/20 hover:border-white text-white font-medium text-sm transition-all text-center"
               id="cta-mail-btn"
             >

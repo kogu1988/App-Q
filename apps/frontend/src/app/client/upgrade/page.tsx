@@ -460,7 +460,7 @@ export default function UpgradePage() {
             </p>
           </div>
           <a
-            href="mailto:clarere@clarere.com?subject=Enterprise Plan Talebi"
+            href="mailto:hiclarere@clarere.com?subject=Enterprise Plan Talebi"
             className="px-5 py-2.5 rounded-xl bg-[#17171c] text-white text-xs font-semibold hover:opacity-85 transition-opacity shrink-0 w-full md:w-auto text-center"
           >
             İletişime Geç (₺51.000 / Ay)

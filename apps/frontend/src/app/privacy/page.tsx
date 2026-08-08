@@ -233,7 +233,7 @@ export default function PrivacyPage() {
             </p>
             <div className="p-5 border border-hairline rounded-sm bg-soft-stone mt-4">
               <p className="text-ink text-sm font-medium">Clarere Veri Güvenliği Ekibi</p>
-              <p className="text-body-muted text-xs mt-1">E-Posta: <a href="mailto:clarere@clarere.com" className="text-coral hover:underline font-semibold font-mono">clarere@clarere.com</a></p>
+              <p className="text-body-muted text-xs mt-1">E-Posta: <a href="mailto:hiclarere@clarere.com" className="text-coral hover:underline font-semibold font-mono">hiclarere@clarere.com</a></p>
             </div>
           </section>
 
