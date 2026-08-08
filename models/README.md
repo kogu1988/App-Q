@@ -1,95 +1,37 @@
 # Model Strategy
 
-Do not download large models until the MVP pipeline is working with the `mock` provider.
+Clarere uses **DeepSeek API** as the primary LLM provider via OpenAI-compatible client.
 
-## Candidate Direction
+## Current Setup
 
-Trendyol LLM candidates are relevant because App-Q targets Turkish market and e-commerce research. Before use, verify:
+| Rolle | Model | Effort |
+|-------|-------|--------|
+| **Intake (Defne)** | `deepseek-v4-flash` | Default |
+| **Interview (Persona)** | `deepseek-v4-flash` | Default |
+| **Synthesis (Report)** | `deepseek-v4-pro` | High (thinking mode) |
 
-- license
-- commercial usage terms
-- hardware requirements
-- context length
-- quantized availability
-- inference speed
-- Turkish reasoning quality
-- Turkish naturalness in client-facing outputs
-- persona consistency in longer interviews
-- quality of skeptical and price-sensitive answers
+## Environment
 
-## Current Local Hardware Target
-
-Development target:
-
-- RTX 4060
-- Intel i7
-- 32 GB RAM
-
-This is suitable for the App-Q local MVP if persona interviews run sequentially. Prefer 7B/8B quantized models first. Avoid loading multiple models at the same time.
-
-## Local Runtime Options
-
-- `transformers`: easiest for experimentation, heavier dependency footprint.
-- `llama.cpp` / GGUF: practical for quantized local inference.
-- `Ollama`: pragmatic local API wrapper for GGUF-based models.
-- `vLLM`: best for GPU server throughput.
-- private HTTP endpoint: cleanest integration once hosting is decided.
-
-## Suggested Local Sequence
-
-1. Keep using `mock` until the workflow is stable.
-2. Add an `ollama` provider adapter.
-3. Test with a small local model.
-4. Verify Trendyol LLM GGUF availability, license, and hardware fit.
-5. Create a local model alias such as `sentetik-tr-motor`.
-6. Route e-commerce research to Trendyol-oriented models and B2B/SaaS research to a more general model.
-
-## Ollama Mode
-
-Set:
-
-```powershell
-$env:APP_MODEL_PROVIDER="ollama"
-$env:APP_MODEL_ID="app-q-qwen7b"
-$env:OLLAMA_BASE_URL="http://127.0.0.1:11434"
+```env
+DEEPSEEK_API_KEY=sk-your-key-here
+DEEPSEEK_FLASH_MODEL=deepseek-v4-flash
+DEEPSEEK_PRO_MODEL=deepseek-v4-pro
 ```
 
-Check connectivity:
+## Key Features Enabled
 
-```powershell
-.\.venv\Scripts\python.exe scripts\check_ollama.py
+- **Thinking Mode:** Active by default on both models. Pro model always reasons at "high" effort or above.
+- **user_id Isolation:** Each request carries a sanitized user ID for KVCache separation and content safety.
+- **Context Caching:** DeepSeek's disk cache automatically caches common prompt prefixes — subsequent similar requests are faster and cheaper.
+- **JSON Output:** Used in batch interviews to structure persona answers.
+- **Rate Limits:** Flash = 2500 concurrent, Pro = 500 concurrent. Well above our needs (max 6 concurrent requests per research).
+
+## Provider Architecture
+
+```
+get_model_provider("flash")  → DeepSeekResearchModel(deepseek-v4-flash)
+get_model_provider("pro")    → DeepSeekResearchModel(deepseek-v4-pro)
+get_model_provider("intake") → DeepSeekResearchModel(deepseek-v4-flash)
 ```
 
-If Ollama is not running or the model alias does not exist, App-Q should fail with a readable provider error instead of crashing the UI.
-
-Create the tuned local Qwen alias:
-
-```powershell
-ollama pull qwen2.5:7b
-ollama create app-q-qwen7b -f models\ollama\app-q-qwen7b.Modelfile
-```
-
-Create the tuned local Trendyol alias:
-
-```powershell
-ollama pull hf.co/bartowski/Trendyol-LLM-8b-chat-v2.0-GGUF:Q4_K_M
-ollama create app-q-trendyol -f models\ollama\app-q-trendyol.Modelfile
-```
-
-## Turkish Quality Gate
-
-Before a model becomes the default provider, run `data/evals/turkish_quality_eval.jsonl` manually and score each answer.
-
-Minimum acceptable result:
-
-- no broken Turkish
-- no generic assistant tone
-- clear persona stance
-- concrete Turkey-market details
-- useful objection or recommendation
-
-Models that are fluent but too agreeable should not be used without the judge pass.
-
-## Model Provider Boundary
-
-The application should call `ResearchModel.generate(...)` and avoid provider-specific calls outside the model adapter.
+The factory function (`providers.py`) maps aliases to models. New model IDs can be set via environment variables without code changes.
