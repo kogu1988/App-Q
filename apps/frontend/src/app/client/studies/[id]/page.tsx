@@ -348,6 +348,7 @@ export default function StudyDetailPage() {
   const [pendingComment, setPendingComment] = useState<{ key: string; vote: number; text: string } | null>(null);
   const [followUpText, setFollowUpText] = useState("");
   const [sendingFollowUp, setSendingFollowUp] = useState(false);
+  const [synthesizing, setSynthesizing] = useState(false);
   const { plan: clientPlan } = useClientPlan();
 
   useEffect(() => {
@@ -607,6 +608,75 @@ export default function StudyDetailPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {/* Raporu Olustur — sadece henüz tamamlanmamıs arastirmalarda */}
+            {!isCompleted && interviews.length > 0 && (
+              <Button
+                className="w-full sm:w-auto gap-2 bg-[#003c33] hover:bg-[#003c33]/85 text-white font-semibold"
+                disabled={synthesizing}
+                onClick={async () => {
+                  setSynthesizing(true);
+                  const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
+                  try {
+                    const res = await fetch(`/api/client/synthesize`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        ...(username ? { "X-Username": username } : {}),
+                      },
+                      body: JSON.stringify({
+                        brief: brief || { title: metadata?.title || "", market: "TR", category: metadata?.category || "genel", context: "" },
+                        plan: plan || {},
+                        interviews: interviews,
+                        personas: personas,
+                      }),
+                    });
+                    if (!res.ok) throw new Error("Rapor olusturulamadi.");
+                    const report = await res.json();
+                    
+                    // Save report to study — spread report fields to top level
+                    const reportPayload = {
+                      brief, plan, personas, interviews,
+                      report_markdown: report.executive_summary?.join("\n") || "",
+                      findings: report.findings || [],
+                      action_items: report.action_items || [],
+                      recommendations: report.recommendations || [],
+                      limitations: report.limitations || [],
+                      pricing: report.pricing || null,
+                      van_westendorp: report.van_westendorp || null,
+                      brand_health: report.brand_health || null,
+                      pain_point_matrix: report.pain_point_matrix || [],
+                      ses_cross_tab: report.ses_cross_tab || [],
+                      research_quality: report.research_quality || null,
+                    };
+                    await fetch(`/api/client/studies`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        ...(username ? { "X-Username": username } : {}),
+                      },
+                      body: JSON.stringify({
+                        metadata: { ...metadata, has_report: true },
+                        payload: reportPayload,
+                      }),
+                    });
+                    
+                    toast.success("Rapor olusturuldu!");
+                    // Reload study data
+                    const updated = await fetch(`/api/client/studies/${studyId}`);
+                    if (updated.ok) setStudy(await updated.json());
+                    setActiveTab("report");
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Rapor olusturulamadi.");
+                  } finally {
+                    setSynthesizing(false);
+                  }
+                }}
+              >
+                {synthesizing ? <Loader2 size={16} className="animate-spin" /> : <TrendingUp size={16} />}
+                {synthesizing ? "Rapor Olusturuluyor..." : "Raporu Olustur"}
+              </Button>
+            )}
+
             {isCompleted && (
               clientPlan === "Free" ? (
                 <Button
