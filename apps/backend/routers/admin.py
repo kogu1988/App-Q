@@ -306,6 +306,26 @@ async def get_metrics():
         cur.execute("SELECT COUNT(*) AS error_count FROM audit_logs")
         error_count = cur.fetchone()["error_count"]
 
+        # Persona havuzu istatistikleri
+        cur.execute("SELECT COUNT(*) AS total FROM personas_pool")
+        persona_total = cur.fetchone()["total"]
+
+        cur.execute("""
+            SELECT name, stance, ses_group, usage_count, created_at
+            FROM personas_pool
+            ORDER BY usage_count DESC
+            LIMIT 10
+        """)
+        top_personas = [dict(r) for r in cur.fetchall()]
+
+        cur.execute("""
+            SELECT stance, COUNT(*) AS count
+            FROM personas_pool
+            GROUP BY stance
+            ORDER BY count DESC
+        """)
+        persona_stances = [dict(r) for r in cur.fetchall()]
+
     config = get_system_config()
     active_models = {
         "b2c": config.get("b2c_model", "—"),
@@ -331,6 +351,11 @@ async def get_metrics():
         },
         "categories": categories,
         "models":     active_models,
+        "persona_pool": {
+            "total": int(persona_total or 0),
+            "top_used": top_personas,
+            "stances": persona_stances,
+        },
     }
 
 

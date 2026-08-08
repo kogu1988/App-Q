@@ -14,7 +14,8 @@ def save_persona_to_pool(persona_dict: dict, embedding: list[float] = None) -> N
                 created_by, is_global, b2b_role, industry, company_size, b2b_company_type, b2b_decision_maker,
                 ses_group, respondent_type, settlement_type
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING
+            ON CONFLICT (id) DO UPDATE SET
+                usage_count = personas_pool.usage_count + 1
             """,
             (
                 persona_dict.get("id"),

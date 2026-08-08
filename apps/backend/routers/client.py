@@ -661,7 +661,18 @@ async def run_full_research(request: ResearchRequest, x_username: str | None = H
     # 3. Batch mülakat
     interviews = run_interviews_batch(brief, personas, model, plan.interview_script)
 
-    # 4. Atomik kota artırma
+    # 4. Personaları havuza kaydet (tekrar kullanım için)
+    from packages.research_engine.db_vectors import save_persona_to_pool
+    for p in personas:
+        try:
+            p_dict = asdict(p)
+            p_dict["created_by"] = x_username or "anonymous"
+            p_dict["is_global"] = True
+            save_persona_to_pool(p_dict, embedding=None)
+        except Exception:
+            pass  # Havuz kaydı kritik değil, sessizce geç
+
+    # 5. Atomik kota artırma
     if x_username:
         try:
             atomic_increment_simulation_count(x_username)

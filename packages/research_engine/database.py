@@ -190,6 +190,8 @@ def init_db() -> None:
             cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS ses_group TEXT DEFAULT 'C1';")
             cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS respondent_type TEXT DEFAULT 'potential_customer';")
             cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS settlement_type TEXT DEFAULT 'kentsel';")
+            # Usage tracking
+            cur.execute("ALTER TABLE personas_pool ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0;")
         except Exception as e:
             print(f"[DB] Migration warning for personas_pool: {e}")
 
