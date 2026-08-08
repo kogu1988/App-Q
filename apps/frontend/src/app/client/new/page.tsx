@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import {
   Loader2, Send, User, ChevronRight,
   FileText, Target, DollarSign, Layers,
-  FlaskConical, BarChart2, CheckCircle2
+  FlaskConical, BarChart2, CheckCircle2, Lock
 } from "lucide-react";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import Link from "next/link";
