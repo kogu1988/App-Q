@@ -1063,6 +1063,42 @@ async def intake_chat(request: Request, data: IntakeChatRequest, x_username: str
         logger.error("intake_chat error for user=%s", getattr(data, 'user_message', '')[:40], exc_info=True)
         raise HTTPException(status_code=503, detail="Yapay Zeka servisi geçici olarak yoğun. Lütfen tekrar deneyin.")
 
+@router.post("/contact")
+async def contact_form(data: dict):
+    """İletişim formu — mesajı DB'ye kaydeder."""
+    from packages.research_engine.database import get_db
+    from datetime import datetime
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip()
+    message = (data.get("message") or "").strip()
+    if not name or not email or not message:
+        raise HTTPException(status_code=400, detail="Tüm alanlar zorunludur.")
+    if len(message) > 2000:
+        raise HTTPException(status_code=400, detail="Mesaj 2000 karakterden uzun olamaz.")
+    try:
+        with get_db() as (conn, cur):
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS contact_messages (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                )
+                """
+            )
+            cur.execute(
+                "INSERT INTO contact_messages (name, email, message) VALUES (%s, %s, %s)",
+                (name, email, message),
+            )
+        logger.info(f"Contact form submitted by {name} <{email}>")
+        return {"status": "success", "message": "Mesajınız iletildi."}
+    except Exception as e:
+        logger.error(f"Contact form error: {e}")
+        raise HTTPException(status_code=500, detail="Mesaj kaydedilemedi. Lütfen clarere@clarere.com adresine e-posta atın.")
+
+
 @router.post("/ws/ticket")
 @limiter.limit("20/minute")
 async def generate_ws_ticket(request: Request, x_username: str | None = Header(default=None)):
