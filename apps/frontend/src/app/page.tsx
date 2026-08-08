@@ -9,6 +9,7 @@ import Logo from "@/components/logo";
 // ── Pricing config ──────────────────────────────────────────────────────────
 
 const PLAN_PRICES: Record<string, { monthly: number | null; annual: number | null }> = {
+  "Free": { monthly: 0, annual: 0 },
   "Research Pack": { monthly: 1990, annual: 1990 },
   "Starter": { monthly: 2690, annual: 2150 },
   "Pro": { monthly: 6790, annual: 5430 },
@@ -19,6 +20,22 @@ const PLAN_PRICES: Record<string, { monthly: number | null; annual: number | nul
 
 const PLAN_META = [
   {
+    name: "Free",
+    description: "Ücretsiz başlayın, fikrinizi test edin.",
+    cta: "Ücretsiz Başla",
+    ctaHref: "/client?plan=free",
+    highlight: false,
+    hasBillingToggle: false,
+    isOneTime: false,
+    limits: [
+      "2 araştırma hakkı",
+      "10 kişilik persona paneli",
+      "Adversarial kalite denetimi",
+      "Araştırma Bütünlük Endeksi (RFI)",
+      "Temel raporlama",
+    ],
+  },
+  {
     name: "Research Pack",
     description: "Taahhütsüz tek seferlik projeler için. Ödediğin kadar kullan.",
     cta: "Paket Satın Al",
@@ -27,11 +44,11 @@ const PLAN_META = [
     hasBillingToggle: false,
     isOneTime: true,
     limits: [
-      "2 araştırma — süre sınırı yok",
+      "3 araştırma — süre sınırı yok",
       "Kullanıcı mülakatları",
       "A/B testleri",
       "Mülakat taslağı iyileştirme",
-      "Araştırma başına sınırsız takip (probing)",
+      "Araştırma başına 3 takip sorusu",
       "Sınırsız 'Araştırmayla Konuş' sorgusu",
       "Kurumsal düzeyde araştırma raporu",
       "White-label (Markasız) raporlar",
@@ -91,16 +108,16 @@ const PLAN_META = [
 ];
 
 const FEATURES = [
-  { label: "Pazar Araştırması Modu", plans: [true, true, true, true] },
-  { label: "A/B Test Modu", plans: [true, true, true, true] },
-  { label: "Gerçek Zamanlı Streaming", plans: [true, true, true, true] },
-  { label: "PDF Rapor", plans: [true, true, true, true] },
-  { label: "Van Westendorp Analizi", plans: [true, true, true, true] },
-  { label: "B2B Persona Modu", plans: [false, false, true, true] },
-  { label: "Adversarial Review", plans: [true, true, true, true] },
-  { label: "Research Fidelity Index (RFI)", plans: [true, true, true, true] },
-  { label: "Marka Sağlığı Analizi", plans: [false, false, true, true] },
-  { label: "Özel Persona Havuzu", plans: [false, false, false, true] },
+  { label: "Pazar Araştırması Modu", plans: [true, true, true, true, true] },
+  { label: "A/B Test Modu", plans: [false, true, true, true, true] },
+  { label: "Gerçek Zamanlı Streaming", plans: [false, true, true, true, true] },
+  { label: "PDF Rapor", plans: [false, true, true, true, true] },
+  { label: "Van Westendorp Analizi", plans: [true, true, true, true, true] },
+  { label: "B2B Persona Modu", plans: [false, false, false, true, true] },
+  { label: "Adversarial Review", plans: [true, true, true, true, true] },
+  { label: "Research Fidelity Index (RFI)", plans: [true, true, true, true, true] },
+  { label: "Marka Sağlığı Analizi", plans: [false, false, false, true, true] },
+  { label: "Özel Persona Havuzu", plans: [false, false, false, false, true] },
   { label: "White-label Raporlar", plans: [true, false, true, true] },
   { label: "Audit Log", plans: [false, false, false, true] },
 ];

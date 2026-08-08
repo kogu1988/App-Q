@@ -683,7 +683,7 @@ async def stream_interviews(request: Request, body: dict, x_username: str | None
     brief_dict = body.get("brief", {})
 
     if not plan_dict or not personas_list:
-        raise HTTPException(status_code=400, detail="Missing plan or personas")
+        raise HTTPException(status_code=400, detail="Plan veya persona bilgisi eksik.")
 
     plan_type, _ = _resolve_plan(x_username)
     client = get_client_by_username(x_username) if x_username else None
