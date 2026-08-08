@@ -21,8 +21,8 @@ async def hypothesis_blind_simulation_node(state: GlobalResearchState) -> Dict[s
     objective_questions = objective_context.get("primary_research_questions", [])
     product_definition = objective_context.get("objective_product_context", state.get("sanitized_idea", ""))
     
-    # Hafif mülakat SLM motoru
-    interview_model = get_model_provider("app-q-kara-kumru")
+    # Mülakat modeli (DeepSeek Flash)
+    interview_model = get_model_provider("flash")
     simulated_transcripts = []
     
     # Donanım darboğazını (8GB VRAM) yönetmek adına mülakatları sıralı asenkron havuzda işliyoruz

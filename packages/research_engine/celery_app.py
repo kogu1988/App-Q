@@ -9,7 +9,7 @@ VALKEY_URL = os.getenv("VALKEY_URL", "redis://localhost:6379/0")
 
 # Initialize Celery app
 celery_app = Celery(
-    "app_q_tasks",
+    "clarere_tasks",
     broker=VALKEY_URL,
     backend=VALKEY_URL,
     include=["packages.research_engine.gateway"]  # We will put tasks in gateway.py or tasks.py

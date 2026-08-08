@@ -19,8 +19,19 @@ def main() -> None:
     sample_path = ROOT / "data" / "samples" / "first-brief.json"
     brief_data = json.loads(sample_path.read_text(encoding="utf-8"))
     brief = ResearchBrief(**brief_data)
-    provider = os.getenv("APP_MODEL_PROVIDER", "mock")
-    report = run_research(brief, get_model_provider(provider))
+    from packages.research_engine.workflow import build_research_plan, generate_personas, run_interviews_batch
+    from packages.research_engine.analytics import synthesize_report
+
+    model = get_model_provider("flash")
+
+    # 1. Plan
+    plan = build_research_plan(brief)
+    # 2. Personas
+    personas = generate_personas(brief)[:5]
+    # 3. Batch interviews
+    interviews = run_interviews_batch(brief, personas, model, plan.interview_script)
+    # 4. Synthesize report
+    report = synthesize_report(brief, plan, personas, interviews)
 
     output_path = ROOT / "data" / "outputs" / "sample-report.json"
     output_path.write_text(

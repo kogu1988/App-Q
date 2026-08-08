@@ -46,8 +46,8 @@ async def async_intake_and_reframing_node(state: GlobalResearchState) -> Dict[st
         logger.warning(f"Arama motoru entegrasyon hatası (SearXNG): {e}")
         search_context = "Arama yapılamadı."
 
-    # 2. Input Reframing Katmanı (Trendyol-7B-Chat Çağrısı)
-    model = get_model_provider("app-q-trendyol") # Yerel e-ticaret/dil uzmanı model
+    # 2. Input Reframing Katmanı (DeepSeek)
+    model = get_model_provider("flash")  # Hızlı model — input reframing
     system_prompt = "Sen UK AISI standartlarında bir Girdi Yeniden Çerçeveleme (Input Reframing) modelisin. Girdiyi analiz edip JSON formatında 'objective_product_context' ve 'primary_research_questions' alanlarını döndür."
     user_prompt = f"Brief Fikri: \"{sanitized_text}\"\n\nCanlı Pazar Verisi (Web Search):\n{search_context}\n\nMetni tüm öznel başarı inançlarından arındırıp, canlı pazar verisini de dikkate alarak nesnelleştir."
     

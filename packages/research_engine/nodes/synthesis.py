@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 async def initial_coding_node(state: GlobalResearchState) -> Dict[str, Any]:
     logger.info("Ajan 3: Braun & Clarke Aşama 2 - Atomik Kodlama Başlatıldı.")
     transcripts = state.get("transcripts", [])
-    synthesis_model = get_model_provider("app-q-trendyol-asure") # Yüksek komut uyumlu 12B model
+    synthesis_model = get_model_provider("pro")  # Derin analiz için Pro
     
     extracted_atomic_codes = []
     # HER BİR TRANSKRİPTİ LLM İLE ANALİZ ET, BOŞ BIRAKMA (BUG FIX)
@@ -108,8 +108,8 @@ async def generating_and_reviewing_themes_node(state: GlobalResearchState) -> Di
 async def adversarial_quality_audit_node(state: GlobalResearchState) -> Dict[str, Any]:
     logger.info("Ajan 3: UK AISI Standartlarında Çekişmeli Kalite Denetimi (Stage 6).")
     
-    # Akıl yürütme (Chain-of-Thought) yeteneğine sahip Kizagan modelinin JIT (Just-In-Time) olarak VRAM'e çağrılması
-    reasoning_model = get_model_provider("app-q-kizagan-e4b")
+    # Derin akıl yürütme (DeepSeek Pro)
+    reasoning_model = get_model_provider("pro")
     
     themes = state.get("extracted_themes", [])
     loops = state.get("adversarial_loops_count", 0) + 1

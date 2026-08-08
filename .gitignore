@@ -17,7 +17,7 @@ docs/
 App-Q.code-workspace
 
 # Yerel veri
-data/app_q.db
+data/clarere.db
 data/outputs/*
 !data/outputs/.gitkeep
 !data/outputs/README.md
@@ -28,7 +28,5 @@ data/studies/*
 !data/studies/.gitkeep
 models/*
 !models/README.md
-!models/ollama/
-!models/ollama/*.Modelfile
 *.log
 scratch/

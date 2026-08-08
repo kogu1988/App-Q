@@ -1,6 +1,0 @@
-FROM hf.co/mradermacher/Kizagan-E4B-Turkish-Reasoning-Model-i1-GGUF:Q4_K_M
-
-PARAMETER temperature 0.7
-PARAMETER num_ctx 4096
-PARAMETER min_p 0.02
-PARAMETER repeat_penalty 1.15

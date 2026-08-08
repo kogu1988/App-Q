@@ -2,7 +2,7 @@ services:
   # --- ASENKRON VERİ VE MESAJ KUYRUĞU KATMANI (REDIS) ---
   redis:
     image: redis:7.2-alpine
-    container_name: appq-redis
+    container_name: clarere-redis
     command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
     ports:
       - "4006:6379"
@@ -23,13 +23,13 @@ services:
   # --- SEMANTİK VE VEKTÖREL VERİTABANI KATMANI (PGVECTOR) ---
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: appq-postgres
+    container_name: clarere-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-appq_user}
+      POSTGRES_USER: ${POSTGRES_USER:-clarere_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD ortam degiskeni zorunlu}
-      POSTGRES_DB: ${POSTGRES_DB:-appq_db}
+      POSTGRES_DB: ${POSTGRES_DB:-clarere_db}
     ports:
-      - "4005:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     shm_size: 512mb
@@ -48,7 +48,7 @@ services:
   # --- META ARAMA MOTORU (SEARXNG) ---
   searxng:
     image: searxng/searxng:latest
-    container_name: appq-searxng
+    container_name: clarere-searxng
     ports:
       - "4003:8080"
     volumes:
@@ -63,11 +63,11 @@ services:
     restart: unless-stopped
 
   # --- MONOLİTİK FASTAPI AĞ API KATMANI ---
-  app-q-api:
+  clarere-api:
     build:
       context: .
       dockerfile: ./apps/backend/Dockerfile
-    container_name: app-q-api
+    container_name: clarere-api
     ports:
       - "4000:3000"
     env_file:
@@ -77,7 +77,6 @@ services:
       - REDIS_PORT=6379
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - VLLM_BASE_URL=http://appq-vllm:8000/v1
     depends_on:
       redis:
         condition: service_healthy
@@ -86,7 +85,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'
+          cpus: '2.0'
           memory: 2048M
     restart: unless-stopped
 
@@ -95,7 +94,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/backend/Dockerfile
-    container_name: appq-celery-worker
+    container_name: clarere-celery-worker
     command: celery -A packages.research_engine.celery_app worker --loglevel=info --concurrency=1
     env_file:
       - .env
@@ -104,7 +103,6 @@ services:
       - REDIS_PORT=6379
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - VLLM_BASE_URL=http://appq-vllm:8000/v1
       - VALKEY_URL=redis://redis:6379/0
     depends_on:
       redis:
@@ -114,37 +112,15 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'
-          memory: 4096M
+          cpus: '2.0'
+          memory: 2048M
     restart: unless-stopped
-
-  # --- YEREL DİL MODELİ (vLLM) --- optional profile ile baslatilir ---
-  vllm:
-    profiles: ["optional"]
-    image: vllm/vllm-openai:latest
-    container_name: appq-vllm
-    ports:
-      - "4004:8000"
-    volumes:
-      - vllm_models:/root/.cache/huggingface
-    command: --model Qwen/Qwen2.5-3B-Instruct --dtype bfloat16 --max-model-len 2048 --gpu-memory-utilization 0.65 --max-num-seqs 4
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-        limits:
-          cpus: '4.0'
-          memory: 8192M
-    restart: "no"
 
   # --- GOZLEMLENEBILIRLİK (LANGFUSE) --- optional profile ile baslatilir ---
   langfuse-server:
     profiles: ["optional"]
     image: langfuse/langfuse:2
-    container_name: appq-langfuse
+    container_name: clarere-langfuse
     depends_on:
       postgres:
         condition: service_healthy
@@ -153,10 +129,10 @@ services:
     ports:
       - "4002:3000"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-appq_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-appq_db}?schema=langfuse
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-clarere_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-clarere_db}?schema=langfuse
       - NEXTAUTH_URL=http://localhost:4002
-      - NEXTAUTH_SECRET=appq_super_secret_langfuse
-      - SALT=appq_salt_for_langfuse
+      - NEXTAUTH_SECRET=clarere_super_secret_langfuse
+      - SALT=clarere_salt_for_langfuse
     deploy:
       resources:
         limits:
@@ -167,5 +143,4 @@ services:
 volumes:
   redis_data:
   postgres_data:
-  vllm_models:
   searxng_data:

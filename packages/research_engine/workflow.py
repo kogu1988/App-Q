@@ -1,5 +1,7 @@
 from __future__ import annotations
+import json
 import logging
+import re
 import uuid
 from typing import Any, Generator, Dict, List, Optional
 
@@ -664,4 +666,110 @@ def run_interviews_stream(
         interviews.append(interview)
         yield ("persona_end", {"persona": persona, "interview": interview})
         
+    return interviews
+
+
+def run_interviews_batch(
+    brief: ResearchBrief,
+    personas: List[Persona],
+    model: ResearchModel,
+    interview_script: List[InterviewQuestion] | None = None,
+) -> List[PersonaInterview]:
+    """
+    Batch interview: her persona için TÜM soruları tek bir API çağrısında JSON array olarak alır.
+    Soru başına ayrı çağrı yapmaz — maliyet ve süre avantajı sağlar.
+    """
+    interviews: List[PersonaInterview] = []
+    script = interview_script or generate_interview_script(brief)
+
+    try:
+        config = get_system_config()
+        db_prompt = config.get("persona_interview_prompt")
+    except Exception:
+        logger.warning("system_config fetch failed (batch), using default persona prompt", exc_info=True)
+        db_prompt = None
+
+    # Soru listesini numaralı formata çevir
+    questions_block = ""
+    for i, sq in enumerate(script, start=1):
+        questions_block += f"{i}. [{sq.label}] {sq.question}\n"
+
+    for persona in personas:
+        system_prompt = db_prompt if db_prompt else build_elephant_system_prompt(persona)
+
+        turkey_context = get_turkey_behavior_context(persona, script[0])
+
+        prompt = (
+            f"[KİMLİĞİN]\n"
+            f"{persona.name}, {persona.age} yaş, {persona.city} — {persona.segment}\n"
+            f"Ekonomik Grup: {persona.ses_group} | Tutum: {persona.stance}\n"
+            f"Fiyat Hassasiyeti: {persona.price_sensitivity}/10 | Dijital Özgüven: {persona.digital_confidence}/10\n"
+            f"Katılımcı Tipi: {persona.respondent_type} | Yerleşim: {persona.settlement_type}\n"
+            f"Bağlam: {persona.context}\n"
+            f"Hedeflerin: {', '.join(persona.goals) if persona.goals else 'Belirtilmedi'}\n"
+            f"İtirazların: {', '.join(persona.objections) if persona.objections else 'Belirtilmedi'}\n"
+            f"{turkey_context}\n\n"
+            f"[ARAŞTIRMA KONUSU]\n"
+            f"{brief.idea}\n\n"
+            f"[SORULAR]\n"
+            f"{questions_block}\n"
+            f"[GÖREV]\n"
+            f"Yukarıdaki kimliğe girerek her soruyu 2-4 cümle ile yanıtla.\n"
+            f"- Birinci tekil şahıs kullan, Türkiye gerçeklerine bağlı kal (TL, taksit, KVKK).\n"
+            f"- Dürüst ol; ürünü beğenmek zorunda değilsin.\n"
+            f"- ZORUNLU: Yanıtını şu JSON dizisi olarak ver, başka hiçbir metin ekleme:\n"
+            f'[{{"label": "SORU_ETIKETI", "answer": "..."}}, ...]\n'
+        )
+
+        # Batch interview — retry loop (DeepSeek JSON mode may rarely return empty)
+        answers: dict[str, str] = {}
+        for attempt in range(2):
+            raw = model.generate(system_prompt, prompt, response_format="json")
+
+            if not raw or raw.strip() == "":
+                logger.warning(f"Batch empty response for {persona.name} (attempt {attempt+1}), retrying...")
+                continue
+
+            try:
+                clean = re.sub(r'```(?:json)?\s*|```', '', raw)
+                match = re.search(r'\[.*\]', clean, re.DOTALL)
+                if match:
+                    parsed = json.loads(match.group(0))
+                    for item in parsed:
+                        lbl = item.get("label", "").upper()
+                        ans = item.get("answer", "")
+                        if lbl and ans:
+                            answers[lbl] = ans
+                if answers:
+                    break  # Başarılı parse
+                logger.warning(f"Batch parse yielded no answers for {persona.name} (attempt {attempt+1})")
+            except (json.JSONDecodeError, Exception) as e:
+                logger.warning(f"Batch parse failed for {persona.name} (attempt {attempt+1}): {e}")
+
+        # Build turns from parsed answers
+        turns: List[InterviewTurn] = []
+        for sq in script:
+            ans = answers.get(sq.label.upper(), "[Yanıt alınamadı]")
+            quality_flags = judge_answer_quality(persona, sq.question, ans)
+
+            turns.append(InterviewTurn(
+                question=sq.question,
+                answer=ans,
+                tags=sq.tags or classify_question(sq.question),
+                model_id=getattr(model, "last_model_id", None),
+                quality_flags=quality_flags,
+            ))
+
+        consistency_notes = [
+            f"Persona stance: {persona.stance}",
+            f"Bilgi sınırı: {persona.knowledge_boundary}",
+            f"Batch interview — {len(turns)}/{len(script)} yanıt alındı",
+        ]
+
+        interviews.append(PersonaInterview(
+            persona=persona,
+            turns=turns,
+            consistency_notes=consistency_notes,
+        ))
+
     return interviews

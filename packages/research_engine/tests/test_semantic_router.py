@@ -1,8 +1,8 @@
 """
-Test: SemanticRouter — Mod 1 (nomic-embed) ve Mod 2 (Qwen 0.5B) routing doğrulaması
+Test: SemanticRouter — keyword fallback ve route validasyonu
 
-NOT: Bu testler Ollama çevrimiçi olduğunda tam çalışır.
-Ollama çevrimdışıysa keyword fallback testleri yine de geçer.
+DeepSeek API'ye geçişle beraber Ollama bağımlılığı kaldırıldı.
+Router sadece keyword fallback kullanıyor.
 """
 from packages.research_engine.nodes.router import (
     _keyword_fallback,

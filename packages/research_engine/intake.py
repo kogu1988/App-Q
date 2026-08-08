@@ -558,8 +558,6 @@ def process_intake_chat(current_brief: Dict[str, Any], chat_history: List[Dict[s
     for attempt in range(2):
         try:
             response_text = model.generate(system_prompt, prompt)
-            if hasattr(response_text, "text"):
-                response_text = response_text.text
                 
             if "```json" in response_text:
                 response_text = response_text.split("```json")[1].split("```")[0].strip()

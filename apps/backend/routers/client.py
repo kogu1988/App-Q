@@ -4,7 +4,7 @@ from dataclasses import asdict
 from pydantic import BaseModel
 from typing import Optional, List
 from fastapi.responses import StreamingResponse
-from packages.research_engine.workflow import build_research_plan, generate_personas, run_interviews_stream
+from packages.research_engine.workflow import build_research_plan, generate_personas, run_interviews_stream, run_interviews_batch
 from packages.research_engine.analytics import synthesize_report
 from packages.research_engine.privacy import PrivacyMasker, PrivacyResearchModelWrapper
 from packages.research_engine.database import (
@@ -138,6 +138,26 @@ class BriefRequest(BaseModel):
     questions: list[str] = []
     discovery_channels: list[str] = []
     respondent_types: list[str] = []
+
+class ResearchRequest(BaseModel):
+    """Adım 2: Plan + Persona + Mülakatları tek seferde başlatır."""
+    category: str
+    title: str = "Araştırma"
+    context: str  # brief fikri
+    brand: str = ""
+    budget: str = ""
+    target_users: list[str] = []
+    competitors: list[str] = []
+    expected_price: str | None = None
+    sales_channel: str | None = None
+    success_metric: str | None = None
+    questions: list[str] = []
+    discovery_channels: list[str] = []
+    respondent_types: list[str] = []
+    # Intake (Defne) tarafından doldurulan alanlar
+    intake_brief: dict = {}
+    # Kaç persona kullanılacağı
+    panel_size: int = 5
 
 class StudyPayload(BaseModel):
     metadata: dict
@@ -446,9 +466,9 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     prompt = f"Geçmiş:\n{history_text}\n\nYeni soru: {data.question}\nCevabın:"
     
     try:
-        model = get_model_provider()
+        model = get_model_provider("flash", user_id=x_username or "")
         response = model.generate(messages[0]["content"], prompt)
-        answer = response.text.strip()
+        answer = response.strip()
     except Exception as e:
         logger.error(f"Follow up error: {e}")
         raise HTTPException(status_code=500, detail="Cevap üretilemedi.")
@@ -550,7 +570,7 @@ async def create_plan(request: BriefRequest, x_username: str | None = Header(def
     
     # Reframing katmanı ile sübjektif girdileri nesnelleştir (Sycophancy Mitigation)
     try:
-        model = get_model_provider()
+        model = get_model_provider("flash", user_id=x_username or "")
         reframed = apply_input_reframing(brief, model)
         
         new_objective = reframed.get("objective_product_context", plan.objective)
@@ -595,6 +615,64 @@ async def generate_personas_from_plan(request: GeneratePersonasRequest, x_userna
     return {"personas": [asdict(p) for p in personas]}
 
 
+@router.post("/research")
+async def run_full_research(request: ResearchRequest, x_username: str | None = Header(default=None)):
+    """
+    Adım 2 — Birleşik Araştırma: Plan + Persona + Mülakat.
+    Brief'i alır; plan üretir, personaları oluşturur ve batch mülakatları çalıştırır.
+    Model: deepseek-v4-flash (hızlı/ucuz).
+    """
+    plan_type, _ = _resolve_plan(x_username)
+    client = get_client_by_username(x_username) if x_username else None
+    expired, reason = is_trial_expired(client)
+    if expired:
+        raise HTTPException(status_code=403, detail=reason)
+
+    from packages.research_engine.models import ResearchBrief
+
+    # Brief'i intake_brief (Defne çıktısı) veya doğrudan request'ten kur
+    brief_data = request.intake_brief or {}
+    brief = ResearchBrief(
+        title=brief_data.get("title") or request.title,
+        market="Türkiye",
+        category=request.category,
+        idea=brief_data.get("context") or brief_data.get("idea") or request.context,
+        target_users=brief_data.get("target_users") or request.target_users or [],
+        questions=brief_data.get("questions") or request.questions or [],
+        competitors=brief_data.get("competitors") or request.competitors or [],
+        expected_price=brief_data.get("expected_price") or request.expected_price,
+        sales_channel=brief_data.get("sales_channel") or request.sales_channel,
+        success_metric=brief_data.get("success_metric") or request.success_metric,
+        respondent_types=brief_data.get("respondent_types") or request.respondent_types or [],
+        discovery_channels=brief_data.get("discovery_channels") or request.discovery_channels or [],
+    )
+
+        # 1. Plan üret
+    model = get_model_provider("flash", user_id=x_username or "")
+    plan = build_research_plan(brief)
+
+    # 2. Persona üret
+    personas = generate_personas(brief)
+    max_p = get_max_personas(plan_type)
+    personas = personas[:max_p]
+
+    # 3. Batch mülakat
+    interviews = run_interviews_batch(brief, personas, model, plan.interview_script)
+
+    # 4. Atomik kota artırma
+    if x_username:
+        try:
+            atomic_increment_simulation_count(x_username)
+        except Exception:
+            logger.warning("Simulation count increment failed for %s", x_username, exc_info=True)
+
+    return {
+        "plan": asdict(plan),
+        "personas": [asdict(p) for p in personas],
+        "interviews": [asdict(iv) for iv in interviews],
+    }
+
+
 @router.post("/interviews/stream")
 @limiter.limit("30/minute")
 async def stream_interviews(request: Request, body: dict, x_username: str | None = Header(default=None)):
@@ -637,7 +715,7 @@ async def stream_interviews(request: Request, body: dict, x_username: str | None
     )
 
     # Wrap model with PrivacyMasker — masks PII + competitor brand names before LLM call
-    base_model = get_model_provider()
+    base_model = get_model_provider("flash", user_id=x_username or "")
     custom_keywords = brief_dict.get("competitors", [])  # mask competitor names
     masker = PrivacyMasker(custom_keywords=custom_keywords)
     model = PrivacyResearchModelWrapper(base_model, masker)
@@ -754,7 +832,7 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     prompt = f"Geçmiş:\n{history_text}\n\nYeni soru: {data.question}\nCevabın:"
     
     try:
-        model = get_model_provider()
+        model = get_model_provider("flash", user_id=x_username or "")
         response = model.generate(messages[0]["content"], prompt)
         answer = response.strip()
     except Exception as e:
@@ -807,7 +885,21 @@ async def synthesize(request: SynthesizeRequest, x_username: str | None = Header
     )
 
     r_plan = ResearchPlan(**request.plan)
-    p_interviews = [PersonaInterview(**i) for i in request.interviews]
+    # PersonaInterview icindeki nested dict'leri dogru objelere cevir
+    from packages.research_engine.models import InterviewTurn, Persona
+    raw_interviews = []
+    for i in request.interviews:
+        raw_turns = i.get("turns", [])
+        turns = [InterviewTurn(**t) for t in raw_turns]
+        raw_persona = i.get("persona", {})
+        persona = Persona(**raw_persona) if isinstance(raw_persona, dict) else raw_persona
+        pi = PersonaInterview(
+            persona=persona,
+            turns=turns,
+            consistency_notes=i.get("consistency_notes", []),
+        )
+        raw_interviews.append(pi)
+    p_interviews = raw_interviews
 
     # personas listesi varsa ilet (van_westendorp ve brand_health için gerekli)
     # SynthesizeRequest'e personas eklenmemişse boş liste ile devam et
@@ -919,9 +1011,8 @@ async def match_personas(request: Request, data: dict, x_username: str | None = 
             '[\n  {"role": "Rol Adı", "why": "Bu projeye neden uygun?"}\n]'
         )
         
-        model = get_model_provider()
-        response = model.generate(system, prompt)
-        text = response.text
+        model = get_model_provider("flash", user_id=x_username or "")
+        text = model.generate(system, prompt)
         
         # JSON parse (fallback safety)
         match = re.search(r'\[.*\]', text, re.DOTALL)
@@ -947,10 +1038,10 @@ async def match_personas(request: Request, data: dict, x_username: str | None = 
 
 @router.post("/intake")
 @limiter.limit("20/minute")
-async def intake_chat(request: Request, data: IntakeChatRequest):
+async def intake_chat(request: Request, data: IntakeChatRequest, x_username: str | None = Header(default=None)):
     try:
         from packages.research_engine.database import get_system_config
-        model = get_model_provider()
+        model = get_model_provider("flash", user_id=(x_username or "").strip() or "anonymous")
         # wizard_prompt DB'den okunur — admin panelinden kod deploy'u olmadan güncellenebilir
         try:
             config = get_system_config()
@@ -969,22 +1060,6 @@ async def intake_chat(request: Request, data: IntakeChatRequest):
     except Exception:
         logger.error("intake_chat error for user=%s", getattr(data, 'user_message', '')[:40], exc_info=True)
         raise HTTPException(status_code=503, detail="Yapay Zeka servisi geçici olarak yoğun. Lütfen tekrar deneyin.")
-
-@router.get("/models")
-async def list_models():
-    """Mevcut Ollama model listesini döner."""
-    from packages.research_engine.providers import discover_ollama_models
-    from packages.research_engine.database import get_system_config
-    try:
-        available = discover_ollama_models()
-        config = get_system_config()
-        return {
-            "available_models": available,
-            "active_b2c": config.get("b2c_model", ""),
-            "active_b2b": config.get("b2b_model", ""),
-        }
-    except Exception as e:
-        return {"available_models": [], "active_b2c": "", "active_b2b": "", "error": str(e)}
 
 @router.post("/ws/ticket")
 @limiter.limit("20/minute")

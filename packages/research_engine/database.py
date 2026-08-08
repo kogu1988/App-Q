@@ -19,16 +19,16 @@ logger = logging.getLogger(__name__)
 
 PG_HOST = os.getenv("POSTGRES_HOST", "localhost")
 PG_PORT = os.getenv("POSTGRES_PORT", "5433")
-PG_USER = os.getenv("POSTGRES_USER", "appq_user")
+PG_USER = os.getenv("POSTGRES_USER", "clarere_user")
 PG_PASS = os.getenv("POSTGRES_PASSWORD")
 if not PG_PASS:
     _app_env = os.getenv("APP_ENV", "development").lower()
     if _app_env == "production":
         raise RuntimeError("POSTGRES_PASSWORD env var zorunlu (production)")
     else:
-        PG_PASS = "appq_password"
+        PG_PASS = "clarere_password"
         logger.warning("POSTGRES_PASSWORD ayarlanmamış — geliştirme varsayılanı kullanılıyor")
-PG_DB = os.getenv("POSTGRES_DB", "appq_db")
+PG_DB = os.getenv("POSTGRES_DB", "clarere_db")
 
 # — Bağlantı Havuzu —
 _POOL_MIN = int(os.getenv("PG_POOL_MIN", "2"))
@@ -252,16 +252,27 @@ def init_db() -> None:
             )
             """
         )
-        # Performans indeksleri — sorgu pattern'lerine göre
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS curated_questions (
+                id SERIAL PRIMARY KEY,
+                question TEXT NOT NULL,
+                study_id TEXT,
+                research_title TEXT,
+                research_category TEXT,
+                purpose_context TEXT,
+                is_liked BOOLEAN DEFAULT TRUE,
+                created_at TEXT,
+                embedding vector(384)
+            )
+            """
+        )
+
+        # Performans indeksleri — sorgu pattern'lerine göre (tablo oluşturulduktan SONRA)
         try:
             cur.execute("CREATE INDEX IF NOT EXISTS idx_interview_responses_user ON interview_responses(username);")
-            # studies: liste sayfası sık sık updated_at DESC sıralar
             cur.execute("CREATE INDEX IF NOT EXISTS idx_studies_updated_at ON studies(updated_at DESC);")
-            # studies: archived=FALSE filtresi için partial index
             cur.execute("CREATE INDEX IF NOT EXISTS idx_studies_active ON studies(updated_at DESC) WHERE archived = FALSE OR archived IS NULL;")
-            # feedbacks: study bazlı filtreleme
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_feedbacks_study_id ON feedbacks(study_id);")
-            # personas_pool: role-based lookup (stance, segment)
             cur.execute("CREATE INDEX IF NOT EXISTS idx_personas_pool_stance ON personas_pool(stance);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_personas_pool_segment ON personas_pool(segment);")
         except Exception as e:
@@ -420,26 +431,27 @@ def init_db() -> None:
         _app_env = os.getenv("APP_ENV", "development").lower()
         if _app_env != "production":
             _now = datetime.now().isoformat()
+            _today = datetime.now().date().isoformat()
             _defaults = [
-                ("free",       "free@example.com",       "Free",       2,    50_000),
-                ("starter",    "starter@example.com",    "Starter",    10,   200_000),
-                ("pro",        "pro@example.com",        "Pro",        50,   1_000_000),
-                ("enterprise", "enterprise@example.com", "Enterprise", 9999, 50_000_000),
+                ("free",       "free@example.com",       "Free",       2,    100_000),
+                ("pro",        "pro@example.com",        "Pro",        9999, 9_999_999),
             ]
             for _uname, _email, _plan, _sims, _tokens in _defaults:
                 cur.execute("""
-                    INSERT INTO clients (username, created_at, email, plan_type, max_simulations, max_tokens)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    INSERT INTO clients (username, created_at, email, plan_type, max_simulations, max_tokens, billing_cycle, period_start, period_simulations)
+                    VALUES (%s, %s, %s, %s, %s, %s, 'monthly', %s, 0)
                     ON CONFLICT (username) DO UPDATE SET
                         email           = EXCLUDED.email,
                         plan_type       = EXCLUDED.plan_type,
                         max_simulations = EXCLUDED.max_simulations,
-                        max_tokens      = EXCLUDED.max_tokens
-                """, (_uname, _now, _email, _plan, _sims, _tokens))
+                        max_tokens      = EXCLUDED.max_tokens,
+                        billing_cycle   = EXCLUDED.billing_cycle,
+                        period_start    = EXCLUDED.period_start
+                """, (_uname, _now, _email, _plan, _sims, _tokens, _today))
         
         # Default system config
-        cur.execute("INSERT INTO system_config (key, value) VALUES ('b2c_model', 'Trendyol LLM (app-q-trendyol)') ON CONFLICT (key) DO NOTHING")
-        cur.execute("INSERT INTO system_config (key, value) VALUES ('b2b_model', 'Trendyol Asure 12B (app-q-asure)') ON CONFLICT (key) DO NOTHING")
+        cur.execute("INSERT INTO system_config (key, value) VALUES ('b2c_model', 'DeepSeek V4 Flash (deepseek-v4-flash)') ON CONFLICT (key) DO NOTHING")
+        cur.execute("INSERT INTO system_config (key, value) VALUES ('b2b_model', 'DeepSeek V4 Pro (deepseek-v4-pro)') ON CONFLICT (key) DO NOTHING")
         cur.execute("INSERT INTO system_config (key, value) VALUES ('pii_active', 'true') ON CONFLICT (key) DO NOTHING")
         cur.execute("INSERT INTO system_config (key, value) VALUES ('pii_terms', 'Trendyol, Hepsiburada, Amazon') ON CONFLICT (key) DO NOTHING")
         

@@ -39,9 +39,8 @@ def safe_name(value: str) -> str:
 
 
 def main() -> None:
-    provider = os.getenv("APP_MODEL_PROVIDER", "mock")
-    model_id = os.getenv("APP_MODEL_ID", "mock-research-model")
-    model = get_model_provider(provider)
+    model_id = os.getenv("DEEPSEEK_FLASH_MODEL", "deepseek-v4-flash")
+    model = get_model_provider("flash")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_path = OUTPUT_DIR / f"{safe_name(model_id)}.jsonl"
 
