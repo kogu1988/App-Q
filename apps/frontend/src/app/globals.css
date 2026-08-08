@@ -349,7 +349,6 @@
     align-items: center;
     font-size: 0.9375rem;
     font-weight: 400;
-    text-decoration: underline;
     text-underline-offset: 3px;
     transition: opacity 0.15s;
   }
