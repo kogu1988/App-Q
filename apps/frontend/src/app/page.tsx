@@ -407,7 +407,7 @@ export default function HomePage() {
               </Link>
               <a
                 href="#pricing"
-                className="btn-text-link text-white/75 no-underline text-sm relative group py-1"
+                className="btn-text-link text-white font-medium no-underline text-sm relative group py-1"
               >
                 Planları Gör
                 <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-coral transition-all duration-300 group-hover:w-full" />
