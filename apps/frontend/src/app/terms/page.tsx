@@ -185,7 +185,7 @@ export default function TermsPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-primary tracking-tight">18. Uyuşmazlıkların Çözümü ve Yetkili Mahkeme</h2>
             <p className="text-body-muted leading-relaxed text-sm">
-              <strong>Barışçıl Çözüm:</strong> Koşullardan doğabilecek tüm uyuşmazlıklarda öncelikle taraflar iyi niyetli bir çözüm için <a href="mailto:hi@clarere.com" className="text-coral hover:underline font-semibold font-mono">hi@clarere.com</a> adresine yazılı bildirim yaparak ortak bir noktada buluşmaya gayret edecektir.
+              <strong>Barışçıl Çözüm:</strong> Koşullardan doğabilecek tüm uyuşmazlıklarda öncelikle taraflar iyi niyetli bir çözüm için <a href="mailto:clarere@clarere.com" className="text-coral hover:underline font-semibold font-mono">clarere@clarere.com</a> adresine yazılı bildirim yaparak ortak bir noktada buluşmaya gayret edecektir.
             </p>
             <p className="text-body-muted leading-relaxed text-sm">
               <strong>Yetkili Mahkeme ve Kanun:</strong> 30 gün içerisinde barışçıl yollarla çözülemeyen uyuşmazlıkların giderilmesinde <strong>Türkiye Cumhuriyeti (T.C.) Yasaları</strong> geçerli olacak ve uyuşmazlıkların çözümünde münhasıran <strong>İstanbul (Çağlayan) Mahkemeleri ve İcra Daireleri</strong> yetkili kılınacaktır.
@@ -211,7 +211,7 @@ export default function TermsPage() {
             </p>
             <div className="p-5 border border-hairline rounded-sm bg-soft-stone mt-4">
               <p className="text-ink text-sm font-medium">Clarere Destek Ekibi</p>
-              <p className="text-body-muted text-xs mt-1">E-Posta: <a href="mailto:hi@clarere.com" className="text-coral hover:underline font-semibold font-mono">hi@clarere.com</a></p>
+              <p className="text-body-muted text-xs mt-1">E-Posta: <a href="mailto:clarere@clarere.com" className="text-coral hover:underline font-semibold font-mono">clarere@clarere.com</a></p>
             </div>
           </section>
 
