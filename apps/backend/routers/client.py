@@ -10,7 +10,7 @@ from packages.research_engine.privacy import PrivacyMasker, PrivacyResearchModel
 from packages.research_engine.database import (
     list_studies, load_study_payload, save_study, archive_study, delete_study, save_feedback,
 
-    get_client_by_username, upgrade_client_plan, check_simulation_limit, 
+    get_client_by_username, upgrade_client_plan, check_simulation_limit,
     register_client_if_new, atomic_increment_simulation_count,
     count_user_non_ab_simulations
 )
@@ -54,12 +54,12 @@ def is_trial_expired(client: dict | None) -> tuple[bool, str]:
                 created_at = datetime.fromisoformat(str(created_at_val))
             else:
                 created_at = datetime.strptime(str(created_at_val), "%Y-%m-%d")
-            
+
             if created_at.tzinfo is not None:
                 now = datetime.now(timezone.utc)
             else:
                 now = datetime.now()
-                
+
             elapsed = now - created_at
             if elapsed.days >= 3:
                 return True, "3 günlük ücretsiz deneme süreniz dolmuştur. Devam etmek için lütfen bir plan seçin."
@@ -404,69 +404,69 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     from packages.research_engine.providers import get_model_provider
     from packages.research_engine.plan_config import get_plan_config
     import json
-    
+
     # 1. Paket Limiti (Option A) Kontrolü
     plan_type, _ = _resolve_plan(x_username)
     plan_config = get_plan_config(plan_type)
     max_follow_ups = plan_config.get("max_follow_ups", 0)
-    
+
     study = get_study(study_id)
     if not study or "payload" not in study:
         raise HTTPException(status_code=404, detail="Araştırma bulunamadı.")
-        
+
     payload_str = study["payload"]
     if not payload_str:
         raise HTTPException(status_code=404, detail="Araştırma verisi boş.")
-        
+
     try:
         payload = json.loads(payload_str)
     except:
         raise HTTPException(status_code=500, detail="Veri formatı geçersiz. Lütfen tekrar deneyin.")
-        
+
     interviews = payload.get("interviews", [])
-    
+
     # 2. Mevcut Follow-up sayısını say (Global Counter)
     current_follow_ups = 0
     for inv in interviews:
         for t in inv.get("turns", []):
             if "FOLLOW-UP" in t.get("tags", []):
                 current_follow_ups += 1
-                
+
     if current_follow_ups >= max_follow_ups:
         raise HTTPException(status_code=403, detail=f"Paket limitinize ulaştınız (Maksimum {max_follow_ups} takip sorusu). Lütfen paketinizi yükseltin.")
 
     target_interview = None
     target_idx = -1
-    
+
     for i, inv in enumerate(interviews):
         if inv.get("persona", {}).get("id") == data.persona_id:
             target_interview = inv
             target_idx = i
             break
-            
+
     if not target_interview:
         raise HTTPException(status_code=404, detail="Persona mülakatı bulunamadı.")
-        
+
     persona = target_interview["persona"]
     turns = target_interview.get("turns", [])
-    
+
     # Reconstruct conversation
     messages = [
         {"role": "system", "content": f"Sen bir simülasyon personasısın. Adın {persona.get('name')}. Yaşın {persona.get('age')}. "
                                       f"Mesleğin {persona.get('role_title', 'Bilinmiyor')}. "
                                       f"Geçmiş sohbetine sadık kal ve sana sorulan ek soruya doğal, role uygun kısa bir cevap ver."}
     ]
-    
+
     for turn in turns:
         messages.append({"role": "user", "content": turn.get("question", "")})
         messages.append({"role": "assistant", "content": turn.get("answer", "")})
-        
+
     messages.append({"role": "user", "content": data.question})
-    
+
     # Format for the prompt
     history_text = "\n".join([f"{m['role']}: {m['content']}" for m in messages[-6:]])
     prompt = f"Geçmiş:\n{history_text}\n\nYeni soru: {data.question}\nCevabın:"
-    
+
     try:
         model = get_model_provider("flash", user_id=x_username or "")
         response = model.generate(messages[0]["content"], prompt)
@@ -474,21 +474,21 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     except Exception as e:
         logger.error(f"Follow up error: {e}")
         raise HTTPException(status_code=500, detail="Cevap üretilemedi.")
-        
+
     new_turn = {
         "question": data.question,
         "answer": answer,
         "tags": ["FOLLOW-UP"]
     }
-    
+
     # Update payload
     target_interview["turns"].append(new_turn)
     payload["interviews"][target_idx] = target_interview
-    
+
     # Save back
     from packages.research_engine.database import save_study
     save_study(study.get("metadata", {}), payload)
-    
+
     return {"status": "success", "turn": new_turn}
 
 @router.post("/studies")
@@ -569,15 +569,15 @@ async def create_plan(request: BriefRequest, x_username: str | None = Header(def
     from dataclasses import replace
 
     plan = build_research_plan(brief)
-    
+
     # Reframing katmanı ile sübjektif girdileri nesnelleştir (Sycophancy Mitigation)
     try:
         model = get_model_provider("flash", user_id=x_username or "")
         reframed = apply_input_reframing(brief, model)
-        
+
         new_objective = reframed.get("objective_product_context", plan.objective)
         new_questions = reframed.get("primary_research_questions", plan.interview_questions)
-        
+
         plan = replace(plan, objective=new_objective, interview_questions=new_questions)
     except Exception as e:
         print(f"Reframing katmanı başarısız: {e}")
@@ -763,32 +763,32 @@ async def stream_interviews(request: Request, body: dict, x_username: str | None
             model.free_memory()
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
-    
+
 @router.post("/studies/{study_id}/follow-up")
 async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str | None = Header(default=None)):
     """Belirli bir personaya ek soru sormak için kullanılır."""
     from packages.research_engine.database import get_study, save_study
     from packages.research_engine.providers import get_model_provider
-    
+
     plan_type, plan_config = _resolve_plan(x_username)
     client = get_client_by_username(x_username) if x_username else None
-    
+
     # 1. Deneme süresi kontrolü
     expired, reason = is_trial_expired(client)
     if expired:
         raise HTTPException(status_code=403, detail=reason)
-        
+
     # 2. Free planda engelle
     if plan_type == "Free":
         raise HTTPException(status_code=403, detail="Free planda takip sorusu sorulamaz. Lütfen planınızı yükseltin.")
-        
+
     study = get_study(study_id)
     if not study:
         raise HTTPException(status_code=404, detail="Araştırma bulunamadı.")
-        
+
     payload = load_study_payload(study_id, include_pdf=False)
     interviews = payload.get("interviews", [])
-    
+
     # 3. Starter plan follow-up limiti kontrolü (Maks 3 adet)
     max_follow_ups = plan_config.get("max_follow_ups", 9999)
     current_follow_ups = 0
@@ -796,10 +796,10 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
         for t in inv.get("turns", []):
             if "FOLLOW-UP" in t.get("tags", []):
                 current_follow_ups += 1
-                
+
     if current_follow_ups >= max_follow_ups:
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail=f"Starter plan limitinize ulaştınız (Maksimum {max_follow_ups} takip sorusu). Lütfen planınızı yükseltin."
         )
 
@@ -810,13 +810,13 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
             target_interview = inv
             target_idx = i
             break
-            
+
     if not target_interview:
         raise HTTPException(status_code=404, detail="Persona mülakatı bulunamadı.")
-        
+
     persona = target_interview["persona"]
     turns = target_interview.get("turns", [])
-    
+
     # Konuşma geçmişini kur
     messages = [
         {"role": "system", "content": f"Sen bir simülasyon personasısın. Adın {persona.get('name')}. Yaşın {persona.get('age')}. "
@@ -826,13 +826,13 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     for turn in turns:
         messages.append({"role": "user", "content": turn.get("question", "")})
         messages.append({"role": "assistant", "content": turn.get("answer", "")})
-        
+
     messages.append({"role": "user", "content": data.question})
-    
+
     # Modeli çağır
     history_text = "\n".join([f"{m['role']}: {m['content']}" for m in messages[-6:]])
     prompt = f"Geçmiş:\n{history_text}\n\nYeni soru: {data.question}\nCevabın:"
-    
+
     try:
         model = get_model_provider("flash", user_id=x_username or "")
         response = model.generate(messages[0]["content"], prompt)
@@ -840,23 +840,23 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     except Exception as e:
         logger.error(f"Follow up error: {e}")
         raise HTTPException(status_code=500, detail="Cevap üretilemedi. Lütfen tekrar deneyin.")
-        
+
     new_turn = {
         "question": data.question,
         "answer": answer,
         "tags": ["FOLLOW-UP"]
     }
-    
+
     # Payload güncelle
     target_interview["turns"].append(new_turn)
     payload["interviews"][target_idx] = target_interview
-    
+
     # Kaydet
     metadata = study
     save_study(metadata, payload)
-    
+
     return {"status": "success", "turn": new_turn}
-    
+
 @router.post("/synthesize")
 async def synthesize(request: SynthesizeRequest, x_username: str | None = Header(default=None)):
     plan_type, _ = _resolve_plan(x_username)
@@ -935,15 +935,15 @@ async def trigger_studio_simulation(request: Request, data: StudioSimulationRequ
         from packages.research_engine.gateway import ResearchInflowGateway
         from packages.research_engine.database import get_db
         from packages.research_engine.plan_config import get_plan_config
-        
+
         # get_db bağlamını gateway'e sunuyoruz
         gateway = ResearchInflowGateway(db_session=get_db)
         username = x_username or "anonymous"
-        
+
         plan_type, _ = _resolve_plan(username)
         plan_config = get_plan_config(plan_type)
         max_loops = plan_config.get("max_adversarial_loops", 1)
-        
+
         result = await gateway.trigger_simulation_triage(
             username=username,
             brief=data.brief,
@@ -964,20 +964,20 @@ async def get_studio_simulation_status(task_id: str, x_username: str | None = He
     """
     from celery.result import AsyncResult
     from packages.research_engine.celery_app import celery_app
-    
+
     try:
         task = AsyncResult(task_id, app=celery_app)
-        
+
         response = {
             "task_id": task_id,
             "status": task.status,  # PENDING, STARTED, SUCCESS, FAILURE
         }
-        
+
         if task.status == "SUCCESS":
             response["result"] = task.result
         elif task.status == "FAILURE":
             response["error"] = str(task.info)
-            
+
         return response
     except Exception as e:
         logger.error(f"Error fetching task status {task_id}: {e}")
@@ -995,16 +995,16 @@ async def match_personas(request: Request, data: dict, x_username: str | None = 
         from packages.research_engine.providers import get_model_provider
         import json
         import re
-        
+
         all_personas = get_personas_pool()
         if not all_personas:
             return {"matched_roles": []}
-            
+
         brief_text = json.dumps(data, ensure_ascii=False)
-        
+
         # Basit LLM eşleştirmesi: Havuzdaki rolleri verip en uygun 5 tanesini seçtiriyoruz.
         roles_context = "\n".join([f"- {p['role_title']}: {p['bio']}" for p in all_personas[:20]]) # İlk 20'yi alalım şimdilik
-        
+
         system = "Sen bir pazar araştırma uzmanısın. Görevin, verilen proje fikrine en uygun hedef kitle profillerini (rolleri) listeden seçmektir."
         prompt = (
             f"Proje Fikri:\n{brief_text}\n\n"
@@ -1012,19 +1012,19 @@ async def match_personas(request: Request, data: dict, x_username: str | None = 
             "Yukarıdaki listeden bu proje için en uygun 4-5 rolü seç. SADECE aşağıdaki gibi JSON dizisi döndür, başka hiçbir metin ekleme:\n"
             '[\n  {"role": "Rol Adı", "why": "Bu projeye neden uygun?"}\n]'
         )
-        
+
         model = get_model_provider("flash", user_id=x_username or "")
         text = model.generate(system, prompt)
-        
+
         # JSON parse (fallback safety)
         match = re.search(r'\[.*\]', text, re.DOTALL)
         if match:
             text = match.group(0)
-            
+
         try:
             matched = json.loads(text)
         except:
-            matched = []            
+            matched = []
         # For each matched role, find 1-2 sample personas from the pool to return for UI
         for m in matched:
             role_name = m.get("role", "")
@@ -1032,7 +1032,7 @@ async def match_personas(request: Request, data: dict, x_username: str | None = 
             if not samples:
                 samples = []
             m["samples"] = samples[:2]
-            
+
         return {"matched_roles": matched}
     except Exception as e:
         logger.error(f"match-personas error: {e}")
@@ -1096,7 +1096,7 @@ async def contact_form(data: dict):
         return {"status": "success", "message": "Mesajınız iletildi."}
     except Exception as e:
         logger.error(f"Contact form error: {e}")
-        raise HTTPException(status_code=500, detail="Mesaj kaydedilemedi. Lütfen clarere@clarere.com adresine e-posta atın.")
+        raise HTTPException(status_code=500, detail="Mesaj kaydedilemedi. Lütfen hiclarere@clarere.com adresine e-posta atın.")
 
 
 @router.post("/ws/ticket")
@@ -1108,7 +1108,7 @@ async def generate_ws_ticket(request: Request, x_username: str | None = Header(d
     import redis
     import os
     import uuid
-    
+
     VALKEY_URL = os.getenv("VALKEY_URL", "redis://localhost:6379/0")
     ticket = str(uuid.uuid4())
     username = x_username or "anonymous"
@@ -1132,19 +1132,19 @@ async def ws_synthesis_status(websocket: WebSocket, research_id: str, ticket: st
     import redis as sync_redis
     import os
     import asyncio
-    
+
     VALKEY_URL = os.getenv("VALKEY_URL", "redis://localhost:6379/0")
-    
+
     # Authenticate ticket
     try:
         r_sync = sync_redis.from_url(VALKEY_URL)
         ticket_key = f"ws_ticket:{ticket}"
         username = r_sync.get(ticket_key)
-        
+
         if not username:
             await websocket.close(code=1008, reason="Bağlantı biletiniz geçersiz veya süresi dolmuş. Lütfen sayfayı yenileyin.")
             return
-            
+
         # Delete ticket so it's single use
         r_sync.delete(ticket_key)
     except Exception as e:
@@ -1155,7 +1155,7 @@ async def ws_synthesis_status(websocket: WebSocket, research_id: str, ticket: st
     # Accept connection
     await websocket.accept()
     logger.info(f"WebSocket connected for synthesis {research_id}")
-    
+
     r_async = None
     pubsub = None
     try:
@@ -1163,12 +1163,12 @@ async def ws_synthesis_status(websocket: WebSocket, research_id: str, ticket: st
         pubsub = r_async.pubsub()
         channel = f"synthesis_status:{research_id}"
         await pubsub.subscribe(channel)
-        
+
         async for message in pubsub.listen():
             if message["type"] == "message":
                 data_str = message["data"].decode("utf-8")
                 await websocket.send_text(data_str)
-                
+
                 # Close if completed or failed
                 try:
                     payload = json.loads(data_str)
@@ -1188,4 +1188,3 @@ async def ws_synthesis_status(websocket: WebSocket, research_id: str, ticket: st
             await websocket.close()
         except:
             pass
-

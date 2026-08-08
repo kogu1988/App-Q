@@ -31,7 +31,7 @@ function ContactForm() {
       toast.success("Mesajınız iletildi! En kısa sürede dönüş yapacağız.");
       setName(""); setEmail(""); setMessage("");
     } catch {
-      toast.error("Mesaj gönderilemedi. Lütfen clarere@clarere.com adresine e-posta atın.");
+      toast.error("Mesaj gönderilemedi. Lütfen hiclarere@clarere.com adresine e-posta atın.");
     } finally {
       setSending(false);
     }
@@ -288,8 +288,8 @@ export default function HomePage() {
 
       <nav
         className={`fixed left-0 right-0 z-50 transition-all duration-300 mx-auto px-4 sm:px-6 ${
-          scrolled 
-            ? "top-4 max-w-6xl bg-white/85 backdrop-blur-md border border-hairline/70 rounded-full shadow-lg" 
+          scrolled
+            ? "top-4 max-w-6xl bg-white/85 backdrop-blur-md border border-hairline/70 rounded-full shadow-lg"
             : "top-0 max-w-full bg-transparent border-transparent rounded-none shadow-none"
         }`}
       >
@@ -437,7 +437,7 @@ export default function HomePage() {
       {/* ── MANIFESTO / BRAND STORY SECTION (ASIMETRIK SOL-SABIT AKIŞ) ───────── */}
       <section className="bg-white py-24 px-6 border-b border-[#d9d9dd] relative">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 md:gap-16">
-          
+
           {/* Left sticky column */}
           <div className="md:w-5/12 md:sticky md:top-28 self-start space-y-4">
             <p className="mono-label text-[#ff7759] uppercase tracking-wider text-xs">Manifesto</p>
@@ -446,10 +446,10 @@ export default function HomePage() {
             </h2>
             <div className="w-12 h-1 bg-[#ff7759] mt-6" />
           </div>
-          
+
           {/* Right scrolling narrative column */}
           <div className="md:w-7/12 space-y-12">
-            
+
             <Reveal>
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-[#17171c] tracking-tight">Sislerin Ötesinde Bir Fikir</h3>
@@ -490,7 +490,7 @@ export default function HomePage() {
                 </Link>
               </div>
             </Reveal>
-            
+
           </div>
         </div>
       </section>
@@ -565,10 +565,10 @@ export default function HomePage() {
                 ? `₺${prices.annual!.toLocaleString("tr-TR")}`
                 : `₺${prices.monthly!.toLocaleString("tr-TR")}`;
 
-            const periodDisplay = isVariable 
-              ? "" 
-              : plan.isOneTime 
-                ? " / paket" 
+            const periodDisplay = isVariable
+              ? ""
+              : plan.isOneTime
+                ? " / paket"
                 : "/ay";
 
             return (
@@ -590,8 +590,8 @@ export default function HomePage() {
                   {plan.isOneTime && (
                     <div
                       className={`absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase ${
-                        plan.highlight 
-                          ? "bg-white/10 text-white border border-white/20" 
+                        plan.highlight
+                          ? "bg-white/10 text-white border border-white/20"
                           : "bg-coral/10 text-coral border border-coral/20"
                       }`}
                     >
@@ -768,7 +768,7 @@ export default function HomePage() {
           <Reveal>
             <p className="mono-label text-[#93939f] mb-3">İletişim</p>
             <h2 className="display-section text-[#17171c] mb-3">Bize Ulaşın</h2>
-            <p className="text-[#616161] mb-8">Sorularınız için clarere@clarere.com adresine her zaman yazabilir veya aşağıdaki formu doldurabilirsiniz.</p>
+            <p className="text-[#616161] mb-8">Sorularınız için hiclarere@clarere.com adresine her zaman yazabilir veya aşağıdaki formu doldurabilirsiniz.</p>
           </Reveal>
 
           <Reveal>

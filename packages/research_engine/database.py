@@ -433,8 +433,11 @@ def init_db() -> None:
             _now = datetime.now().isoformat()
             _today = datetime.now().date().isoformat()
             _defaults = [
-                ("free",       "free@example.com",       "Free",       2,    100_000),
-                ("pro",        "pro@example.com",        "Pro",        9999, 9_999_999),
+                ("free",       "free@example.com",       "Free",       2,      100_000),
+                ("flex",       "flex@example.com",       "Flex",       3,      200_000),
+                ("starter",    "starter@example.com",    "Starter",    10,     500_000),
+                ("pro",        "pro@example.com",        "Pro",        9999,   9_999_999),
+                ("enterprise", "enterprise@example.com", "Enterprise", 9999,   9_999_999),
             ]
             for _uname, _email, _plan, _sims, _tokens in _defaults:
                 cur.execute("""
