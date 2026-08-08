@@ -125,7 +125,6 @@ const PLAN_META = [
       "Araştırma başına 3 takip sorusu",
       "Sınırsız 'Araştırmayla Konuş' sorgusu",
       "Kurumsal düzeyde araştırma raporu",
-      "White-label (Markasız) raporlar",
       "Rapor paylaşımı",
     ],
   },
