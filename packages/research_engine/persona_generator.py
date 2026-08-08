@@ -5,7 +5,6 @@ from .models import Persona
 from .db_vectors import save_persona_to_pool
 from .matrix import allocate_cohort_matrix, validate_stance_diversity
 from .workflow import persona_traits, persona_attributes, STANCE_PROFILE, neo_facets_from_traits
-from .caching import get_embedding
 
 def generate_and_save_personas(
     role_title: str,
@@ -104,11 +103,8 @@ def generate_and_save_personas(
             personas.append(p)
             
             if save_to_pool:
-                # Semantic embedding for the role string
-                embedding = get_embedding(role_title)
-                
-                # Save to pool
-                save_persona_to_pool(p.model_dump(), embedding=embedding)
+                # Embedding devre disi (Enterprise'ta geri gelecek)
+                save_persona_to_pool(p.model_dump(), embedding=None)
     except Exception as e:
         print("LLM Persona generation failed:", str(e))
 

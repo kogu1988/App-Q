@@ -356,43 +356,12 @@ def generate_personas_from_roles(brief: ResearchBrief, panel_roles: List[PanelRo
             )
             
         if needed_count > 0:
-            from packages.research_engine.caching import get_embedding
-            from packages.research_engine.database import get_similar_personas
+            # Embedding tabanli persona eslestirme devre disi (Enterprise'ta geri gelecek)
+            # Dogrudan yeni persona uret
+            pass
+            loaded_ids = {p.id for p in personas}
             
-            embedding = get_embedding(role.role)
-            if embedding:
-                similar_personas_dicts = get_similar_personas(embedding, limit=needed_count * 2)
-                loaded_ids = {p.id for p in personas}
-                
-                for s_data in similar_personas_dicts:
-                    if needed_count <= 0:
-                        break
-                    if s_data["id"] not in loaded_ids:
-                        personas.append(
-                            Persona(
-                                id=s_data["id"],
-                                name=s_data["name"],
-                                age=s_data["age"],
-                                city=s_data["city"],
-                                segment=s_data["segment"],
-                                role_title=s_data["role_title"],
-                                stance=s_data["stance"],
-                                price_sensitivity=s_data["price_sensitivity"],
-                                digital_confidence=s_data["digital_confidence"],
-                                context=s_data["context"],
-                                goals=s_data["goals"],
-                                objections=s_data["objections"],
-                                knowledge_boundary=s_data["knowledge_boundary"],
-                                country_code=s_data["country_code"],
-                                origin_country=s_data["origin_country"],
-                                bio=s_data["bio"],
-                                attributes=s_data["attributes"],
-                                traits=s_data["traits"],
-                                big_five=s_data.get("big_five", {})
-                            )
-                        )
-                        needed_count -= 1
-            
+            # Fallback: fresh persona generation
             while needed_count > 0:
                 index = len(personas)
                 fallback_stance = DEFAULT_STANCE_COHORT[index % len(DEFAULT_STANCE_COHORT)]

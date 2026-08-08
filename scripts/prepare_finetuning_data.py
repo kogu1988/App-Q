@@ -1,3 +1,9 @@
+"""
+[ENTERPRISE] Fine-tuning veri hazirlama.
+
+SU AN AKTIF DEGIL — DeepSeek API kullaniliyor.
+Enterprise asamasinda yerel model egitimi icin geri gelecek.
+"""
 import json
 import sys
 from pathlib import Path

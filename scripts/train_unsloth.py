@@ -1,6 +1,10 @@
 """
-App-Q Yerel Model Egitim Hatti (Unsloth QLoRA)
-RTX 4060 8GB VRAM icin ozel olarak optimize edilmistir.
+[ENTERPRISE] Yerel Model Egitim Hatti (Unsloth QLoRA)
+RTX 4060 8GB VRAM icin optimize edilmistir.
+
+SU AN AKTIF DEGIL — DeepSeek API kullaniliyor.
+Enterprise asamasinda yerel Turkce LLM fine-tuning icin geri gelecek.
+
 Kullanim: python train_unsloth.py
 """
 import os

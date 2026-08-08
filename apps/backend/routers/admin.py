@@ -166,18 +166,14 @@ async def generate_personas_endpoint(req: GeneratePersonaRequest):
 @router.post("/personas/bulk-add")
 async def bulk_add_personas(req: BulkAddPersonasRequest):
     from packages.research_engine.db_vectors import save_persona_to_pool
-    from packages.research_engine.caching import get_embedding
     import uuid
     
     saved_count = 0
     for p_dict in req.personas:
-        # Generate new ID if not present or keep existing draft ID
         if "id" not in p_dict or not p_dict["id"]:
             p_dict["id"] = f"p_{uuid.uuid4().hex[:8]}"
-            
-        role_title = p_dict.get("role_title", p_dict.get("segment", ""))
-        embedding = get_embedding(role_title)
-        save_persona_to_pool(p_dict, embedding=embedding)
+        # Embedding devre disi (Enterprise'ta geri gelecek)
+        save_persona_to_pool(p_dict, embedding=None)
         saved_count += 1
         
     return {"status": "success", "saved_count": saved_count}
@@ -197,16 +193,13 @@ async def get_random_persona_draft():
 @router.post("/personas/create")
 async def create_manual_persona(req: ManualPersonaCreate):
     from packages.research_engine.db_vectors import save_persona_to_pool
-    from packages.research_engine.caching import get_embedding
     import uuid
     
     p_id = f"p_{uuid.uuid4().hex[:8]}"
     p_dict = req.model_dump()
     p_dict["id"] = p_id
-    
-    role_title = req.role_title or req.segment
-    embedding = get_embedding(role_title)
-    save_persona_to_pool(p_dict, embedding=embedding)
+    # Embedding devre disi (Enterprise'ta geri gelecek)
+    save_persona_to_pool(p_dict, embedding=None)
     
     return {"status": "success", "persona_id": p_id, "persona": p_dict}
 
