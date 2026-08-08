@@ -59,3 +59,47 @@ GERÇEK İNSAN                     SENTETİK
 
 **Clarere = Bilimsel metodoloji + Türkiye odağı + 2 dakika + 0.25 TL.**
 Bu kombinasyonu yapan başka kimse yok.
+
+---
+
+## 🗳️ Siyasi Parti / Seçim Araştırması
+
+### Neden Clarere?
+
+Geleneksel anket şirketleri: 2-4 hafta, 100K+ TL, örneklem sorunu, sosyal beğeni yanlılığı (insanlar anketörlere gerçek fikrini söylemez).
+
+Clarere sentetik seçmen paneli:
+- **SES × Rogers × coğrafi dağılım** ile temsili panel
+- **ELEPHANT** sayesinde seçmenler "doğru cevabı" değil **gerçek fikrini** söyler
+- **2 dakikada** sonuç, araştırma başına **0.25 TL**
+- Parti programı, aday algısı, vaat testi, kriz senaryosu simülasyonu
+
+### Örnek Kullanım Senaryoları
+
+| Senaryo | Defne Brief Örneği |
+|---|---|
+| **Aday algısı** | "X partisinin belediye başkan adayı hakkında İstanbul'daki C2-DE seçmen ne düşünüyor?" |
+| **Vaat testi** | "Emekliye 5000 TL seyyanen zam vaadini 55+ seçmen nasıl karşılar?" |
+| **Kriz simülasyonu** | "Adayın geçmişteki X açıklaması seçmenin oy tercihini nasıl etkiler?" |
+| **Kararsız seçmen** | "İki parti arasında kararsız bir seçmenin kırılma noktası nedir?" |
+
+### Mevcut Altyapıda Gereken Değişiklik
+
+| Bileşen | Durum |
+|---|---|
+| SES × Rogers matrisi | ✅ Zaten var (AB/C1/C2/DE × 5 stance) |
+| Hofstede TR kültürel kalibrasyon | ✅ Zaten var |
+| Anti-dalkavukluk (ELEPHANT) | ✅ Kritik — seçmen gerçeği söylemeli |
+| Siyasi brief/intake prompt'u | ⚠️ Yeni wizard_prompt eklenmeli (admin panelden) |
+| Hassas içerik filtresi | ⚠️ Siyasi nefret söylemi için guardrail genişletilmeli |
+| Seçmen persona havuzu | ⚠️ TÜİK seçmen profilleriyle önceden oluşturulmalı |
+
+### Rakiplere Karşı Avantaj
+
+| | Geleneksel Anket | Clarere |
+|---|---|---|
+| Sosyal beğeni yanlılığı | ❌ Yüksek | ✅ ELEPHANT ile minimize |
+| Hız | 2-4 hafta | 2 dakika |
+| Maliyet | 100K+ TL | 0.25 TL |
+| Örneklem | Saha bağımlı | TÜİK oranlarına uygun matris |
+| Tekrar edilebilirlik | Düşük | Sonsuz (her seferinde yeni panel) |
