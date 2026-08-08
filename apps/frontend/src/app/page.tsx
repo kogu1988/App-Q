@@ -478,7 +478,7 @@ export default function HomePage() {
         </Reveal>
 
         {/* Plan Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-12">
           {PLAN_META.map((plan, idx) => {
             const prices = PLAN_PRICES[plan.name];
             const isVariable = prices.monthly === null;
