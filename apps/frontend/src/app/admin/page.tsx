@@ -317,7 +317,7 @@ export default function AdminPage() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-primary">Clarere Yönetici Paneli</h1>
-              <p className="text-sm text-muted-foreground">Sistem, Model ve Limit Yönetimi</p>
+              <p className="text-sm text-muted-foreground">Sistem, Kullanıcı ve İçerik Yönetimi</p>
             </div>
           </div>
         </header>

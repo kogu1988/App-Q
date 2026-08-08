@@ -332,14 +332,6 @@ export default function HomePage() {
               SSS
               <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-coral transition-all duration-300 group-hover:w-full" />
             </span>
-            <span
-              onClick={() => navigateTo("/admin")}
-              className={`text-sm transition-colors duration-300 hidden md:block hover:opacity-100 relative group py-1 cursor-pointer ${scrolled ? "text-muted-text" : "text-white/70"}`}
-              role="link"
-            >
-              Yönetim
-              <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-coral transition-all duration-300 group-hover:w-full" />
-            </span>
             <Link
               href="/client"
               className={`btn-pill-primary text-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu md:hover:scale-[1.02] md:active:scale-[0.98] ${

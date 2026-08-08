@@ -38,14 +38,12 @@ export function ConfigTab({
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-base">Model & Güvenlik Ayarları</CardTitle>
-          <CardDescription>B2C/B2B modelleri ve kişisel veri maskeleme yapılandırması.</CardDescription>
+          <CardTitle className="text-base">Güvenlik Ayarları</CardTitle>
+          <CardDescription>Kişisel veri maskeleme (KVKK) yapılandırması.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             {[
-              { key: "b2c_model", label: "B2C Modeli" },
-              { key: "b2b_model", label: "B2B Modeli" },
               { key: "pii_terms", label: "PII Maskeleme Terimleri (virgülle ayrılmış)" },
             ].map(({ key, label }) => (
               <div key={key} className="space-y-1.5">
