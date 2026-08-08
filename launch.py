@@ -52,12 +52,14 @@ print("  OK")
 
 # ── Backend ──
 print("\n[Backend] Port 4000...")
-# Kill any existing process on port 4000 (cleanup)
+# Kill any existing process on port 4000 (cleanup) — --reload spawns child, so use port-based kill
 subprocess.run("for /f \"tokens=5\" %a in ('netstat -ano ^| findstr :4000.*LISTENING') do taskkill /F /PID %a 2>nul",
                shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+time.sleep(1)  # Port serbest kalsın
+
 api = subprocess.Popen(
-    [sys.executable, "-m", "uvicorn", "apps.backend.main:app", "--host", "127.0.0.1", "--port", "4000"],
+    [sys.executable, "-m", "uvicorn", "apps.backend.main:app", "--host", "127.0.0.1", "--port", "4000", "--reload"],
     stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
 )
 
