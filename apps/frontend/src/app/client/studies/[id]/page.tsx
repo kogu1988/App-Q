@@ -1007,8 +1007,8 @@ export default function StudyDetailPage() {
                 </Card>
               )}
 
-              {/* RFI Card — Adversarial Review + Research Fidelity Index (Pro+) */}
-              <PlanGate currentPlan={clientPlan.plan_type} requiredPlan="Pro" featureName="Araştırma Bütünlüğü (RFI)">
+              {/* RFI Card — Research Fidelity Index (tüm planlarda açık) */}
+              <PlanGate currentPlan={clientPlan.plan_type} requiredPlan="Free" featureName="Araştırma Bütünlüğü (RFI)">
               {study?.research_quality && (
                 study.research_quality.warning_count !== undefined ||
                 study.research_quality.rfi !== undefined ||
