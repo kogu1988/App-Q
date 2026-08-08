@@ -25,7 +25,7 @@ const PLANS = [
     features: [
       "3 günlük ücretsiz deneme",
       "Toplam 2 adet araştırma hakkı",
-      "İstediğiniz kadar persona (maks 10)",
+      "10 kişilik persona paneli",
       "Persona sohbetlerini izleme",
       "Temel Rapor (Adversarial Review & RFI Skoru)",
     ],

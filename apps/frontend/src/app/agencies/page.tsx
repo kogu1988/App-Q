@@ -5,7 +5,7 @@ import Logo from "@/components/logo";
 
 export const metadata: Metadata = {
   title: "Ajanslar İçin Clarere | Sunum ve Strateji Gücü",
-  description: "ChatGPT'nin müşterinizin hedef kitlesi hakkında ne düşündüğünü sunmayı bırakın. 30 dakikada gerçekçi sentetik kitle araştırması yapın ve her sunuma (pitch) gerçek içgörülerle girin.",
+  description: "ChatGPT'nin müşterinizin hedef kitlesi hakkında ne düşündüğünü sunmayı bırakın. 2 dakikada gerçekçi sentetik kitle araştırması yapın ve her sunuma (pitch) gerçek içgörülerle girin.",
 };
 
 export default function AgenciesPage() {
@@ -39,7 +39,7 @@ export default function AgenciesPage() {
           ChatGPT&apos;nin müşterinizin hedef kitlesi hakkında ne düşündüğünü sunmayı bırakın.
         </h1>
         <p className="text-lg sm:text-xl text-[#616161] max-w-2xl mx-auto leading-relaxed mb-10">
-          30 dakikada yapılandırılmış bir kitle çalışması yapın ve her sunuma (pitch) gerçek kitle içgörülerinden elde edilen kanıtlarla girin.
+          2 dakikada yapılandırılmış bir kitle çalışması yapın ve her sunuma (pitch) gerçek kitle içgörülerinden elde edilen kanıtlarla girin.
         </p>
 
         {/* Action Buttons */}
@@ -71,7 +71,7 @@ export default function AgenciesPage() {
               Geleneksel pazar araştırmaları haftalar sürer ve binlerce liralık bütçe gerektirir. Bütçenin olmadığı veya zamanın kısıtlı olduğu durumlarda ajanslar genellikle jenerik ChatGPT çıktılarından devşirme yüzeysel stratejiler sunmak zorunda kalır.
             </p>
             <p className="text-[#17171c] font-semibold">
-              Clarere, bu kısır döngüyü kırarak 30 dakika içinde bilimsel altyapıya dayanan, alıntılanabilir sentetik mülakatlar ve A/B test raporları üretir.
+              Clarere, bu kısır döngüyü kırarak 2 dakika içinde bilimsel altyapıya dayanan, alıntılanabilir sentetik mülakatlar ve A/B test raporları üretir.
             </p>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function AgenciesPage() {
             <div className="w-10 h-10 rounded-[4px] bg-[#ff7759] flex items-center justify-center mb-6 shrink-0 text-[#ffffff]">
               <Clock size={20} />
             </div>
-            <h3 className="text-lg font-bold text-[#17171c] mb-3">30 Dakikalık Sprintler</h3>
+            <h3 className="text-lg font-bold text-[#17171c] mb-3">2 Dakikalık Sprintler</h3>
             <p className="text-sm text-[#616161] leading-relaxed flex-1">
               Pazartesi sabahı gelen ani bir brief için salı sabahına kadar kanıta dayalı, gerçek alıntılarla süslenmiş bir strateji belgesi oluşturun. Hızınızla rakiplerinizin günlerce süren araştırmalarını ekarte edin.
             </p>
@@ -155,7 +155,7 @@ export default function AgenciesPage() {
               <h3 className="text-base font-bold text-[#17171c]">Clarere Raporu ve Kritik İçgörüler</h3>
             </div>
             <p className="text-sm text-[#616161] leading-relaxed">
-              Clarere üzerinde 12 sentetik personadan oluşan pazar panelini kurarsınız. 30 dakika sonra rapor teslim edilir. Personaların cevaplarından kritik bir bulgu ortaya çıkar: <em className="text-[#17171c] font-semibold not-italic">&quot;Kullanıcılar için fitness özellik listelerinden ziyade, veri güvenliği sinyalleri satın almada 1. sıradadır.&quot;</em>
+              Clarere üzerinde 12 sentetik personadan oluşan pazar panelini kurarsınız. 2 dakika sonra rapor teslim edilir. Personaların cevaplarından kritik bir bulgu ortaya çıkar: <em className="text-[#17171c] font-semibold not-italic">&quot;Kullanıcılar için fitness özellik listelerinden ziyade, veri güvenliği sinyalleri satın almada 1. sıradadır.&quot;</em>
             </p>
           </div>
 

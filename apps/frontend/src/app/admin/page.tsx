@@ -1094,13 +1094,13 @@ export default function AdminPage() {
                       <div className="grid sm:grid-cols-3 gap-3">
                         {[
                           {
-                            label: "Orkestratör (Kızıgan e4b)",
+                            label: "Flash (DeepSeek V4)",
                             value: metrics.models.orchestrator,
                             color: "text-[#ff7759]",
                             bg: "bg-orange-50",
                           },
-                          { label: "Aktör (Trendyol-7B)", value: metrics.models.b2c, color: "text-[#003c33]", bg: "bg-[#edfce9]" },
-                          { label: "Analist (Asure-12B)", value: metrics.models.b2b, color: "text-[#1863dc]", bg: "bg-[#f1f5ff]" },
+                          { label: "Flash (B2C)", value: metrics.models.b2c, color: "text-[#003c33]", bg: "bg-[#edfce9]" },
+                          { label: "Pro (B2B)", value: metrics.models.b2b, color: "text-[#1863dc]", bg: "bg-[#f1f5ff]" },
                         ].map(m => (
                           <div key={m.label} className={`rounded-lg px-4 py-3 ${m.bg}`}>
                             <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-0.5">

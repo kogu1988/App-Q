@@ -304,7 +304,7 @@ export default function ABTestingPage() {
                 <td className="px-5 py-4 font-bold text-[#17171c]">Hız</td>
                 <td className="px-5 py-4 text-[#616161]">2-6 Hafta (Trafik bağımlı)</td>
                 <td className="px-5 py-4 text-[#616161]">3-10 Gün (İşe alım bağımlı)</td>
-                <td className="px-5 py-4 font-bold text-[#003c33] bg-[#edfce9]/40 border-l border-r border-[#003c33]/20">15-30 Dakika</td>
+                <td className="px-5 py-4 font-bold text-[#003c33] bg-[#edfce9]/40 border-l border-r border-[#003c33]/20">15-2 Dakika</td>
               </tr>
               <tr className="border-b border-[#f2f2f2] bg-[#fafafa]">
                 <td className="px-5 py-4 font-bold text-[#17171c]">Trafik Gereksinimi</td>

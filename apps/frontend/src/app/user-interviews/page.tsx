@@ -82,7 +82,7 @@ export default function UserInterviewsPage() {
       {/* 4 Steps Section */}
       <section className="max-w-5xl mx-auto px-6 py-20 border-b border-[#d9d9dd]">
         <div className="mb-12">
-          <span className="mono-label text-[#ff7759] uppercase tracking-wider text-xs font-semibold font-mono block mb-2">30 DAKİKADA RAPORA GİDEN YOL</span>
+          <span className="mono-label text-[#ff7759] uppercase tracking-wider text-xs font-semibold font-mono block mb-2">2 DAKİKADA RAPORA GİDEN YOL</span>
           <h2 className="text-3xl font-bold tracking-tight text-[#17171c]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
             4 adımda mülakat sürecinizi başlatın
           </h2>
@@ -204,7 +204,7 @@ export default function UserInterviewsPage() {
                 <td className="px-5 py-4 font-bold text-[#17171c]">Hız</td>
                 <td className="px-5 py-4 text-[#616161]">2-6 Hafta</td>
                 <td className="px-5 py-4 text-[#616161]">Günler / Haftalar</td>
-                <td className="px-5 py-4 font-bold text-[#003c33] bg-[#edfce9]/40 border-l border-r border-[#003c33]/20">30 Dakikanın Altında</td>
+                <td className="px-5 py-4 font-bold text-[#003c33] bg-[#edfce9]/40 border-l border-r border-[#003c33]/20">2 Dakikanın Altında</td>
               </tr>
               <tr className="border-b border-[#f2f2f2] bg-[#fafafa]">
                 <td className="px-5 py-4 font-bold text-[#17171c]">Maliyet</td>

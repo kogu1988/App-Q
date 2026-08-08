@@ -173,7 +173,7 @@ export default function B2BSaaSPage() {
               </tr>
               <tr className="border-b border-[#f2f2f2] bg-[#fafafa]">
                 <td className="px-5 py-4 font-bold text-[#17171c]">Hız</td>
-                <td className="px-5 py-4 font-bold text-[#003c33] bg-[#edfce9]/40 border-l border-r border-[#003c33]/20">Sorudan rapora sadece 30 dakika.</td>
+                <td className="px-5 py-4 font-bold text-[#003c33] bg-[#edfce9]/40 border-l border-r border-[#003c33]/20">Sorudan rapora sadece 2 dakika.</td>
               </tr>
               <tr className="bg-white">
                 <td className="px-5 py-4 font-bold text-[#17171c]">Maliyet Karşılaştırması</td>
@@ -206,7 +206,7 @@ export default function B2BSaaSPage() {
               },
               {
                 q: "Sprint döngüsüne entegre edilebilir mi?",
-                a: "Bir çalışma 30 dakikadan kısa sürdüğü için sprint planlama seanslarında veya ürün kararlarından hemen önce kullanılabilir.",
+                a: "Bir çalışma 2 dakikadan kısa sürdüğü için sprint planlama seanslarında veya ürün kararlarından hemen önce kullanılabilir.",
               },
             ].map(({ q, a }, i) => (
               <details key={i} className="group border-b border-[#d9d9dd] py-1">

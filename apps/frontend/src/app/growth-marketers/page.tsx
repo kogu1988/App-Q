@@ -176,7 +176,7 @@ export default function GrowthMarketersPage() {
               <tr className="border-b border-[#f2f2f2] bg-[#fafafa]">
                 <td className="px-5 py-4 font-bold text-[#17171c]">Hız</td>
                 <td className="px-5 py-4 text-[#616161]">İstatistiksel anlamlılık için 2-4 hafta</td>
-                <td className="px-5 py-4 font-bold text-[#003c33] bg-[#edfce9]/40 border-l border-r border-[#003c33]/20">Sonuçlar 30 dakikada hazır</td>
+                <td className="px-5 py-4 font-bold text-[#003c33] bg-[#edfce9]/40 border-l border-r border-[#003c33]/20">Sonuçlar 2 dakikada hazır</td>
               </tr>
               <tr className="bg-white">
                 <td className="px-5 py-4 font-bold text-[#17171c]">Kapasite</td>
