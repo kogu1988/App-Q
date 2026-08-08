@@ -678,14 +678,14 @@ export default function StudyDetailPage() {
             )}
 
             {isCompleted && (
-              clientPlan === "Free" ? (
+              !clientPlan?.features?.pdf_export ? (
                 <Button
                   variant="outline"
                   className="w-full sm:w-auto gap-2 text-slate-400 border-slate-200 cursor-not-allowed"
                   onClick={() =>
                     toast.error(
                       <div className="flex flex-col gap-1.5">
-                        <span className="font-semibold text-[13px]">PDF İndirme · Starter+ planı gerektirir</span>
+                        <span className="font-semibold text-[13px]">PDF İndirme · Flex+ planı gerektirir</span>
                         <span className="text-xs opacity-90">Bu özelliğe erişmek için planınızı yükseltin.</span>
                         <Link href="/client/upgrade" className="text-xs underline font-bold mt-1">Planı Yükselt →</Link>
                       </div>,
@@ -709,9 +709,10 @@ export default function StudyDetailPage() {
                       if (!res.ok) {
                         const errData = await res.json().catch(() => ({}));
                         if (errData?.detail?.code === "PLAN_GATE" || (typeof errData?.detail === "string" && errData.detail.includes("plan"))) {
+                          const required = errData?.detail?.required_plan || "Flex";
                           toast.error(
                             <div className="flex flex-col gap-1.5">
-                              <span className="font-semibold text-[13px]">PDF İndirme · Starter+ planı gerektirir</span>
+                              <span className="font-semibold text-[13px]">PDF İndirme · {required}+ planı gerektirir</span>
                               <span className="text-xs opacity-90">Bu özelliğe erişmek için planınızı yükseltin.</span>
                               <Link href="/client/upgrade" className="text-xs underline font-bold mt-1">Planı Yükselt →</Link>
                             </div>,
