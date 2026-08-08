@@ -142,3 +142,45 @@ python launch.py  # Tek tıkla. Backend :4000, Frontend :4001
 | Van Westendorp PSM | ✅ Algoritmik |
 | ACT-R bellek | ⚠️ Batch'te gerekmiyor (tek prompt) |
 | EWMA kalite takibi | ✅ Batch uyarlaması (skor + retry) |
+
+---
+
+## 🏭 Enterprise: Yerel Türkçe LLM Yol Haritası
+
+> DeepSeek API'den yerel modellere geçiş için referans. Şu an aktif değil.
+
+### Model Kaynakları
+
+| Model | Parametre | Uzmanlık | Lisans |
+|---|---|---|---|
+| **Kumru-7B** | 7B | Sıfırdan Türkçe, %38-98 daha az token | Açık Kaynak |
+| **Trendyol-LLM-8B** | 8B | E-ticaret, kişilik yorumlama | Apache-2.0 |
+| **Kizagan-E4B** | 4B etkin | Türkçe akıl yürütme (CoT) | Gemma |
+| **Trendyol-Asure-12B** | 12B | Çok modlu, yüksek talimat uyumu | Apache-2.0 |
+
+### Eğitim Pipeline
+
+```
+1. Veri toplama    → curated_questions (DB) + turkish_quality_eval.jsonl
+2. Veri hazırlama   → scripts/prepare_finetuning_data.py
+3. Fine-tuning      → scripts/train_unsloth.py (QLoRA, RTX 4060 8GB)
+4. GGUF dönüşümü   → llama.cpp / Ollama
+5. Modele alias     → Ollama Modelfile
+6. Adapter ekle     → providers.py'ye OllamaResearchModel geri dön
+```
+
+### Geçiş Adımları
+
+1. `curated_questions` tablosunu beğenilen sorularla doldur
+2. `scripts/prepare_finetuning_data.py` ile ShareGPT formatına çevir
+3. `scripts/train_unsloth.py` ile LoRA adapter üret
+4. GGUF'a dönüştür, Ollama'ya yükle
+5. `providers.py`'ye eski `OllamaResearchModel` adapter'ını geri ekle
+6. `APP_MODEL_PROVIDER=ollama` ile test et
+
+### Referans
+
+- `docs/god_doc.md` — Tam spesifikasyon + model karşılaştırma matrisi
+- `docs/Türkçe Ajan Modelleri Yerel Geliştirme Rehberi.md`
+- `docs/grounded_simulation.md` — Akademik makale (Bilal, 2026)
+- `data/evals/turkish_quality_eval.jsonl` — Kalite değerlendirme veri seti
