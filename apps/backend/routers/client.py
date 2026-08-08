@@ -43,15 +43,17 @@ def is_trial_expired(client: dict | None) -> tuple[bool, str]:
         return False, ""
 
     # 1. Check 3 days limit since created_at
-    created_at_str = client.get("created_at")
-    if created_at_str:
+    created_at_val = client.get("created_at")
+    if created_at_val:
         try:
             from datetime import datetime, timezone
-            # parse timezone-aware or naive iso format
-            if "T" in created_at_str:
-                created_at = datetime.fromisoformat(created_at_str)
+            # Handle both string and datetime objects
+            if isinstance(created_at_val, datetime):
+                created_at = created_at_val
+            elif "T" in str(created_at_val):
+                created_at = datetime.fromisoformat(str(created_at_val))
             else:
-                created_at = datetime.strptime(created_at_str, "%Y-%m-%d")
+                created_at = datetime.strptime(str(created_at_val), "%Y-%m-%d")
             
             if created_at.tzinfo is not None:
                 now = datetime.now(timezone.utc)
