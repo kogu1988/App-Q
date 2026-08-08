@@ -603,7 +603,7 @@ export default function HomePage() {
 
                   <Link
                     href={plan.ctaHref}
-                    className={`text-center text-sm font-medium py-2.5 rounded-full transition-colors ${plan.highlight
+                    className={`w-full flex items-center justify-center py-2.5 rounded-full text-sm font-semibold transition-colors ${plan.highlight
                         ? "bg-white text-[#17171c] hover:bg-white/90"
                         : "bg-[#17171c] text-white hover:opacity-85 btn-pill-primary"
                       }`}
@@ -621,7 +621,7 @@ export default function HomePage() {
           const prices = PLAN_PRICES[plan.name];
           return (
             <Reveal key={plan.name} delay={idx * 60}>
-              <div className="w-full rounded-[8px] border border-[#003c33]/20 bg-[#edfce9] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-12">
+              <div className="w-full rounded-[8px] border border-[#d9d9dd] bg-[#f5f4f1] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-12">
                 <div className="flex-1">
                   <h3 className="text-base font-semibold mb-0.5">{plan.name}</h3>
                   <p className="text-xs text-[#93939f]">{plan.description}</p>
