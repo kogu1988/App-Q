@@ -478,7 +478,7 @@ export default function HomePage() {
         </Reveal>
 
         {/* Plan Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           {PLAN_META.map((plan, idx) => {
             const prices = PLAN_PRICES[plan.name];
             const isVariable = prices.monthly === null;
@@ -500,7 +500,7 @@ export default function HomePage() {
             return (
               <Reveal key={plan.name} delay={idx * 60}>
                 <div
-                  className={`relative rounded-[8px] border p-6 flex flex-col gap-4 h-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu ${plan.highlight
+                  className={`relative rounded-[8px] border p-6 flex flex-col gap-4 h-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu ${plan.name === "Enterprise" ? "lg:col-span-4" : ""} ${plan.highlight
                       ? "border-[#17171c] bg-[#17171c] text-white shadow-xl md:hover:border-[#ff7759] md:hover:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)] md:hover:scale-[1.01]"
                       : "border-[#d9d9dd] bg-white md:hover:border-[#ff7759]/50 md:hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.08)] md:hover:scale-[1.01]"
                     }`}
