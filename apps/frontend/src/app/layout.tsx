@@ -22,7 +22,8 @@ export const metadata: Metadata = {
     "Gerçek kullanıcıya ihtiyaç duymadan, gerçek içgörüler elde edin. Clarere, sentetik personalarla anında kullanıcı mülakatı ve A/B testi yapmanızı sağlar.",
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/logo.svg", type: "image/svg+xml" },
+      { url: "/logo.ico", sizes: "32x32" },
     ],
   },
   keywords: [
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
     siteName: "Clarere",
     images: [
       {
-        url: "https://clarere.com/og-image.svg",
+        url: "/og-image.svg",
         width: 1200,
         height: 630,
         alt: "Clarere — Sentetik Pazar Araştırması Platformu",
@@ -58,7 +59,7 @@ export const metadata: Metadata = {
     title: "Clarere — Sentetik Pazar Araştırması",
     description:
       "Gerçek kullanıcıya ihtiyaç duymadan, gerçek içgörüler elde edin. Clarere, sentetik personalarla anında kullanıcı mülakatı ve A/B testi yapmanızı sağlar.",
-    images: ["https://clarere.com/og-image.svg"],
+    images: ["/og-image.svg"],
   },
   robots: {
     index: true,
