@@ -1641,7 +1641,7 @@ export default function StudyDetailPage() {
             ) : (
               <div className="space-y-6">
                 {/* Van Westendorp PSM Card (Starter+) */}
-                <PlanGate currentPlan={clientPlan.plan_type} requiredPlan="Starter" featureName="Van Westendorp Fiyat Analizi">
+                <PlanGate currentPlan={clientPlan.plan_type} requiredPlan="Free" featureName="Van Westendorp Fiyat Analizi">
                 {study?.van_westendorp && (
                   <Card className="shadow-sm border-[#e5e7eb] dark:border-[rgba(24,99,220,0.15)] overflow-hidden">
                     <CardHeader className="pb-3 bg-[#f1f5ff]/60 dark:bg-[#071829]/20">
