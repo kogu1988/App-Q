@@ -188,7 +188,7 @@ export default function GuidePage() {
                   <div className="p-6 border border-hairline rounded-sm bg-soft-stone">
                     <span className="mono-label text-coral block mb-2 font-semibold">YÜKSEK DOĞRULUK</span>
                     <p className="text-ink font-medium leading-relaxed">
-                      Clarere, uzman araştırma ekiplerinin aylar süren çalışmalarındaki kritik pazar bulgularının <strong className="text-primary">%86&apos;sını 30 dakikadan kısa sürede</strong> yakalar.
+                      Clarere, uzman araştırma ekiplerinin aylar süren çalışmalarındaki kritik pazar bulgularının <strong className="text-primary">%86'sını 2 dakikadan kısa sürede</strong> yakalar.
                     </p>
                   </div>
                   <div className="p-6 border border-hairline rounded-sm bg-soft-stone">

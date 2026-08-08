@@ -796,7 +796,7 @@ export default function HomePage() {
               },
               {
                 q: "Yapay zeka ile kullanıcı araştırması nasıl çalışır?",
-                a: "Clarere gibi modern bir kullanıcı araştırma platformunda, yapay zeka araştırması katılımcı bulma ihtiyacını ortadan kaldırır. Araştırma hedeflerinizi ve hedef kitlenizi tanımlarsınız ve yapay zeka bu profillerle eşleşen sentetik personalar oluşturur. Platform daha sonra bu personalarla yapılandırılmış görüşmeleri veya açılış sayfası testlerini simüle eder. Yapay zeka yaklaşık 30 dakika içinde bu konuşmaları eyleme dönüştürülebilir içgörüler halinde sentezleyerek ortak temaları, itirazları ve dil kalıplarını belirler.",
+                a: "Clarere gibi modern bir kullanıcı araştırma platformunda, yapay zeka araştırması katılımcı bulma ihtiyacını ortadan kaldırır. Araştırma hedeflerinizi ve hedef kitlenizi tanımlarsınız ve yapay zeka bu profillerle eşleşen sentetik personalar oluşturur. Platform daha sonra bu personalarla yapılandırılmış görüşmeleri simüle eder. Yapay zeka yaklaşık 2 dakika içinde bu konuşmaları eyleme dönüştürülebilir içgörüler halinde sentezleyerek ortak temaları, itirazları ve dil kalıplarını belirler.",
               },
               {
                 q: "Clarere, kullanıcı görüşmelerinin yerini alabilir mi?",
@@ -804,7 +804,7 @@ export default function HomePage() {
               },
               {
                 q: "Ne kadar sürede sonuç alabilirim?",
-                a: "Katılımcıları bulmanın ve programlamanın 2-3 hafta sürebildiği geleneksel araştırmaların aksine, Clarere genellikle 30 dakikadan daha kısa bir sürede içgörülerin tam bir sentezini sunar. Bu durum, onu yapay zeka destekli bir kullanıcı araştırma platformu kullanarak araştırma yürütmenin en hızlı yollarından biri yapmaktadır.",
+                a: "Katılımcıları bulmanın ve programlamanın 2-3 hafta sürebildiği geleneksel araştırmaların aksine, Clarere genellikle 2 dakikadan daha kısa bir sürede içgörülerin tam bir sentezini sunar. Bu durum, onu yapay zeka destekli bir kullanıcı araştırma platformu kullanarak araştırma yürütmenin en hızlı yollarından biri yapmaktadır.",
               },
               {
                 q: "Metodoloji ne kadar güvenilir?",
@@ -816,7 +816,7 @@ export default function HomePage() {
               },
               {
                 q: "Ücretsiz plan ne kadar süre kullanılabilir?",
-                a: "Ücretsiz plan süresiz kullanılabilir; aylık 2 simülasyon ve 50.000 token ile sınırlıdır. Kart bilgisi gerekmez.",
+                a: "Ücretsiz plan süresiz kullanılabilir; aylık 2 araştırma hakkı ve 10 kişilik persona paneli ile sınırlıdır. Kart bilgisi gerekmez.",
               },
             ].map(({ q, a }, i) => (
               <Reveal key={i} delay={i * 40}>
