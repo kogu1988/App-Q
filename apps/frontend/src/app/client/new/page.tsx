@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Loader2, Send, User, ChevronRight,
-  FileText, Target, DollarSign, Layers,
+  FileText, Target, Users, DollarSign, Layers,
   FlaskConical, BarChart2, CheckCircle2, Lock
 } from "lucide-react";
 import { useClientPlan } from "@/hooks/use-client-plan";
