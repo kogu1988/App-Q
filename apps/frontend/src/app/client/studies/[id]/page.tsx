@@ -397,7 +397,7 @@ export default function StudyDetailPage() {
 
   const handleDelete = async () => {
     setDeleting(true);
-    const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
+    const username = typeof window !== "undefined" ? localStorage.getItem("clarere_username") : null;
     try {
       const res = await fetch(`/api/client/studies/${studyId}`, {
         method: "DELETE",
@@ -451,7 +451,7 @@ export default function StudyDetailPage() {
   const handleFollowUp = async (personaId: string) => {
     if (!followUpText.trim()) return;
     setSendingFollowUp(true);
-    const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
+    const username = typeof window !== "undefined" ? localStorage.getItem("clarere_username") : null;
     try {
       const res = await fetch(`/api/client/studies/${studyId}/follow-up`, {
         method: "POST",
@@ -615,7 +615,7 @@ export default function StudyDetailPage() {
                 disabled={synthesizing}
                 onClick={async () => {
                   setSynthesizing(true);
-                  const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
+                  const username = typeof window !== "undefined" ? localStorage.getItem("clarere_username") : null;
                   try {
                     const res = await fetch(`/api/client/synthesize`, {
                       method: "POST",
@@ -700,7 +700,7 @@ export default function StudyDetailPage() {
                 <Button 
                   className="w-full sm:w-auto btn-pill-primary gap-2"
                   onClick={async () => {
-                    const username = localStorage.getItem("appq_username");
+                    const username = localStorage.getItem("clarere_username");
                     try {
                       const res = await fetch(`/api/client/studies/${studyId}/pdf`, {
                         method: "GET",
@@ -726,7 +726,7 @@ export default function StudyDetailPage() {
                       const url = window.URL.createObjectURL(blob);
                       const a = document.createElement("a");
                       a.href = url;
-                      a.download = `AppQ-Rapor-${studyId}.pdf`;
+                      a.download = `Clarere-Rapor-${studyId}.pdf`;
                       document.body.appendChild(a);
                       a.click();
                       a.remove();

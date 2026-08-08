@@ -1,3 +1,3 @@
-"""App-Q research engine."""
+"""Clarere research engine."""
 
 __all__ = []

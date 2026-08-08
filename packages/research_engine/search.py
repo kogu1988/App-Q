@@ -18,7 +18,7 @@ class SearXNGRetriever:
         url = f"{self.base_url}/search?q={urllib.parse.quote(query)}&format=json"
         
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "AppQ-Research-Agent/1.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "Clarere-Research-Agent/1.0"})
             with urllib.request.urlopen(req, timeout=15) as response:
                 data = json.loads(response.read().decode("utf-8"))
                 

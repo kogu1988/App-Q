@@ -143,7 +143,7 @@ export default function UpgradePage() {
   const handleUpgrade = async () => {
     if (!selected) return;
     setUpgrading(true);
-    const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
+    const username = typeof window !== "undefined" ? localStorage.getItem("clarere_username") : null;
     if (!username) {
       toast.error("Kullanıcı oturumu bulunamadı.");
       setUpgrading(false);

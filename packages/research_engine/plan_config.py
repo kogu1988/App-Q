@@ -1,5 +1,5 @@
 """
-plan_config.py — App-Q Plan Katmanı Feature Gate Konfigürasyonu
+plan_config.py — Clarere Plan Katmanı Feature Gate Konfigürasyonu
 
 Her plan için:
   - max_personas      : Bir araştırmadaki maksimum persona sayısı

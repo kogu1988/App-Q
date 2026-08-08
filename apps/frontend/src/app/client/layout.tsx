@@ -19,7 +19,7 @@ function SidebarStudiesWidget() {
   const [studies, setStudies] = useState<SidebarStudy[]>([]);
 
   useEffect(() => {
-    const username = localStorage.getItem("appq_username") || "";
+    const username = localStorage.getItem("clarere_username") || "";
     const headers: Record<string, string> = username ? { "X-Username": username } : {};
     fetch(`/api/client/studies`, { headers })
       .then((r) => (r.ok ? r.json() : []))
@@ -164,7 +164,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
 
   useEffect(() => {
-    const username = localStorage.getItem("appq_username");
+    const username = localStorage.getItem("clarere_username");
     const timer = setTimeout(() => {
       if (!username) {
         setShowModal(true);
@@ -176,7 +176,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }, []);
 
   function handleLogout() {
-    localStorage.removeItem("appq_username");
+    localStorage.removeItem("clarere_username");
     window.location.href = "/";
   }
 

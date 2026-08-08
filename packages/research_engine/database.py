@@ -70,7 +70,7 @@ def get_db(register_pgvector=True):
             # Set Local RLS Session Variable for B2B Isolation
             tenant_id = current_tenant_var.get()
             if tenant_id:
-                cur.execute("SELECT set_config('appq.current_tenant', %s, true)", (tenant_id,))
+                cur.execute("SELECT set_config('clarere.current_tenant', %s, true)", (tenant_id,))
             yield conn, cur
         conn.commit()
     except Exception:
@@ -204,7 +204,7 @@ def init_db() -> None:
                         SELECT 1 FROM pg_policies WHERE policyname = 'tenant_isolation_policy' AND tablename = 'personas_pool'
                     ) THEN
                         CREATE POLICY tenant_isolation_policy ON personas_pool
-                        USING (created_by = current_setting('appq.current_tenant', true) OR is_global = TRUE);
+                        USING (created_by = current_setting('clarere.current_tenant', true) OR is_global = TRUE);
                     END IF;
                 END
                 $$;
@@ -487,7 +487,7 @@ def init_db() -> None:
             "NOT: Eğer tüm alanlar dolduysa VEYA konuşma 10 turu geçtiyse `is_complete` değerini `true` yap ve `assistant_reply` alanına 'Araştırmayı başlatmaya hazırız, butona tıklayabilirsiniz.' yaz."
         )
         default_persona = (
-            "Sen App-Q araştırma panelindeki sentetik bir personasın. Rolünün özelliklerine, yaşına, "
+            "Sen Clarere araştırma panelindeki sentetik bir personasın. Rolünün özelliklerine, yaşına, "
             "yaşadığı şehre ve fiyat hassasiyetine tamamen uygun hareket et. Bir yapay zeka olduğunu asla söyleme. "
             "Birinci şahıstan konuş, gerçek bir insan gibi samimi ve doğrudan cevap ver. Türkiye pazarının yerel "
             "dinamiklerini (kargo, taksit, KVKK, komisyon vb.) göz önünde bulundur."

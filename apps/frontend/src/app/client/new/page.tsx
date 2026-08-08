@@ -245,7 +245,7 @@ export default function NewResearchWizard() {
     }
     
     setStage("simulating");
-    const username = typeof window !== "undefined" ? localStorage.getItem("appq_username") : null;
+    const username = typeof window !== "undefined" ? localStorage.getItem("clarere_username") : null;
     
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000";

@@ -27,7 +27,7 @@ export default function ClientDashboard() {
   const { plan: clientPlan } = useClientPlan();
 
   useEffect(() => {
-    const username = localStorage.getItem("appq_username") || "";
+    const username = localStorage.getItem("clarere_username") || "";
     const headers: Record<string, string> = username ? { "X-Username": username } : {};
     fetch(`/api/client/studies`, { headers })
       .then((r) => (r.ok ? r.json() : []))

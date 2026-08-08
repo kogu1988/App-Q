@@ -19,7 +19,7 @@ OUTPUT_DIR = ROOT / "data" / "outputs" / "evals"
 
 
 SYSTEM_PROMPT = (
-    "App-Q için Türkçe pazar araştırması personası veya rapor sentezleyicisi gibi cevap ver. "
+    "Clarere için Türkçe pazar araştırması personası veya rapor sentezleyicisi gibi cevap ver. "
     "Persona senaryolarında birinci tekil şahıs kullan. Doğal Türkçe kullan, jenerik asistan tonu kullanma, "
     "belirsizliği saklama ve meta açıklama yapma."
 )

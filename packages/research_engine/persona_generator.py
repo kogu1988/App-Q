@@ -35,7 +35,7 @@ def generate_and_save_personas(
             f"Extroversion ({bf.get('extroversion')}), Agreeableness ({bf.get('agreeableness')}), Neuroticism ({bf.get('neuroticism')})\n\n"
         )
 
-    system = "Sen App-Q için dinamik persona üreticisisin. İstenilen rolünde, Türkiye pazarında inandırıcı, spesifik bir persona JSON'u üret. JSON dışında hiçbir şey yazma."
+    system = "Sen Clarere için dinamik persona üreticisisin. İstenilen rolünde, Türkiye pazarında inandırıcı, spesifik bir persona JSON'u üret. JSON dışında hiçbir şey yazma."
     prompt = (
         f"Kategori: {category}\n"
         f"Pazar: {market}\n"
@@ -143,7 +143,7 @@ def generate_random_persona_draft(model) -> dict:
     respondent_types = ["potential_customer", "competitor_user", "individual_user"]
     selected_respondent_type = random.choice(respondent_types)
     
-    system = "Sen App-Q için dinamik persona üreticisisin. Tamamen rastgele, inandırıcı ve Türkiye pazarına uygun bir tüketici profili üret. JSON dışında hiçbir şey yazma."
+    system = "Sen Clarere için dinamik persona üreticisisin. Tamamen rastgele, inandırıcı ve Türkiye pazarına uygun bir tüketici profili üret. JSON dışında hiçbir şey yazma."
     prompt = (
         f"Lütfen MÜTLAKA şu temel arketip etrafında şekillenen bir profil üret: **{selected_seed}**.\n"
         f"DİKKAT! Bu kişinin yaşı: **{random_age}**.\n"

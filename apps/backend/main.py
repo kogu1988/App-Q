@@ -31,8 +31,8 @@ from packages.research_engine.database import current_tenant_var  # noqa: E402
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 app = FastAPI(
-    title="App-Q Backend API",
-    description="FastAPI backend for App-Q Research Engine with integrated SSE and WebSockets Spec",
+    title="Clarere Backend API",
+    description="FastAPI backend for Clarere Research Engine",
     version="1.0.0"
 )
 
@@ -57,7 +57,7 @@ if _raw_origins:
 elif _app_env == "production":
     raise RuntimeError(
         "Production ortamında ALLOWED_ORIGINS env var zorunludur. "
-        "Örnek: ALLOWED_ORIGINS=https://app.appq.io"
+        "Örnek: ALLOWED_ORIGINS=https://clarere.com"
     )
 else:
     _allowed_origins = ["*"]  # Sadece development

@@ -1,4 +1,4 @@
-# App-Q Research Rules
+# Clarere Research Rules
 
 - Treat synthetic research as directional insight.
 - Never claim statistical representation.

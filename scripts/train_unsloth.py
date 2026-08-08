@@ -107,7 +107,7 @@ def main():
     trainer_stats = trainer.train()
     
     # Model kaydet
-    output_dir = ROOT / "models" / "app-q-llama3-8b-lora"
+    output_dir = ROOT / "models" / "clarere-llama3-8b-lora"
     output_dir.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(str(output_dir))
     tokenizer.save_pretrained(str(output_dir))

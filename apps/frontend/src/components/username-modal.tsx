@@ -56,7 +56,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
       }
 
       // Başarılı: localStorage'a kaydet
-      localStorage.setItem("appq_username", value);
+      localStorage.setItem("clarere_username", value);
       onComplete(value);
     } catch {
       setError("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");

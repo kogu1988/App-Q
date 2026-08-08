@@ -273,7 +273,7 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <title>{escape(report_json.get('title', 'App-Q Research Report'))}</title>
+  <title>{escape(report_json.get('title', 'Clarere Research Report'))}</title>
   <style>
     :root {{
       --ink: #2f2a24;
@@ -439,8 +439,8 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
 <body>
   <main class="page">
     <div class="topbar">
-      <div class="brand">App-Q Research</div>
-      <div class="badge">Local Synthetic Study</div>
+      <div class="brand">Clarere Research</div>
+      <div class="badge">Synthetic Study</div>
     </div>
 
     <section class="hero">
@@ -492,7 +492,7 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
 
     <div class="locked">
       <div><strong>Evidence chain preview</strong><br><span>Findings below connect claims to persona quotes.</span></div>
-      <div>App-Q</div>
+      <div>Clarere</div>
     </div>
 
     <h2>Critical Findings</h2>

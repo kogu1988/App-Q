@@ -35,7 +35,7 @@ def main():
             "conversations": [
                 {
                     "from": "system",
-                    "value": "Sen App-Q pazar arastirmasi sisteminin akilli soru asistanisin. Sana verilen baglama ve arastirma fikrine en uygun, derinlikli ve itiraz yakalayici pazar arastirmasi sorusunu uret."
+                    "value": "Sen Clarere pazar arastirmasi sisteminin akilli soru asistanisin. Sana verilen baglama ve arastirma fikrine en uygun, derinlikli ve itiraz yakalayici pazar arastirmasi sorusunu uret."
                 },
                 {
                     "from": "human",

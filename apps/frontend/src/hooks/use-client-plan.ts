@@ -54,7 +54,7 @@ export function useClientPlan() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const username = localStorage.getItem("appq_username") || "";
+    const username = localStorage.getItem("clarere_username") || "";
     fetch(`/api/client/me`, {
       headers: username ? { "X-Username": username } : {},
     })
