@@ -1291,27 +1291,33 @@ export default function AdminPage() {
                   )}
 
                   {/* ── Persona Havuzu ── */}
-                  {metrics.persona_pool && metrics.persona_pool.total > 0 && (
+                  {metrics.persona_pool && (
                     <Card>
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-bold">Persona Havuzu ({metrics.persona_pool.total} persona)</CardTitle>
+                        <CardTitle className="text-sm font-bold">Persona Havuzu ({metrics.persona_pool.total || 0} persona)</CardTitle>
                         <CardDescription>En çok kullanılan personalar ve stance dağılımı.</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-2">
-                          {metrics.persona_pool.top_used.filter((p: any) => p.usage_count > 0).slice(0, 5).map((p: any) => (
-                            <div key={p.name} className="flex items-center justify-between text-sm">
-                              <span className="font-medium">{p.name} <span className="text-xs text-muted-foreground">({p.stance}, {p.ses_group})</span></span>
-                              <Badge variant="secondary" className="text-xs">{p.usage_count} kullanım</Badge>
+                        {metrics.persona_pool.total > 0 ? (
+                          <>
+                            <div className="space-y-2">
+                              {metrics.persona_pool.top_used.filter((p: any) => p.usage_count > 0).slice(0, 5).map((p: any) => (
+                                <div key={p.name} className="flex items-center justify-between text-sm">
+                                  <span className="font-medium">{p.name} <span className="text-xs text-muted-foreground">({p.stance}, {p.ses_group})</span></span>
+                                  <Badge variant="secondary" className="text-xs">{p.usage_count} kullanım</Badge>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                        {metrics.persona_pool.stances.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-3">
-                            {metrics.persona_pool.stances.map((s: any) => (
-                              <Badge key={s.stance} variant="outline" className="text-[10px]">{s.stance}: {s.count}</Badge>
-                            ))}
-                          </div>
+                            {metrics.persona_pool.stances.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-3">
+                                {metrics.persona_pool.stances.map((s: any) => (
+                                  <Badge key={s.stance} variant="outline" className="text-[10px]">{s.stance}: {s.count}</Badge>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-4">Henüz persona bulunmuyor. İlk araştırma sonrası otomatik eklenecek.</p>
                         )}
                       </CardContent>
                     </Card>
