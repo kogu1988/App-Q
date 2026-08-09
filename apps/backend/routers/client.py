@@ -1070,9 +1070,9 @@ async def intake_chat(request: Request, data: IntakeChatRequest, x_username: str
             wizard_prompt=db_wizard_prompt,
         )
         return result
-    except Exception:
-        logger.error("intake_chat error for user=%s", getattr(data, 'user_message', '')[:40], exc_info=True)
-        raise HTTPException(status_code=503, detail="Yapay Zeka servisi geçici olarak yoğun. Lütfen tekrar deneyin.")
+    except Exception as e:
+        logger.error("intake_chat error for user=%s: %s", getattr(data, 'user_message', '')[:40], e, exc_info=True)
+        raise HTTPException(status_code=503, detail=f"Yapay Zeka servisi geçici olarak yoğun. Hata: {str(e)[:100]}")
 
 @router.post("/contact")
 async def contact_form(data: dict):

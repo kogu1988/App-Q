@@ -60,7 +60,6 @@ time.sleep(1)  # Port serbest kalsın
 
 api = subprocess.Popen(
     [sys.executable, "-m", "uvicorn", "apps.backend.main:app", "--host", "127.0.0.1", "--port", "4000", "--reload"],
-    stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
 )
 
 for _ in range(10):
@@ -92,7 +91,6 @@ if not os.path.exists("node_modules"):
 
 fe = subprocess.Popen(
     ["cmd", "/c", "npx next dev -p 4001"],
-    stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
 )
 
 print("  Bekleniyor (ilk derleme 30sn surer)...")
