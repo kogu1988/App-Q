@@ -10,6 +10,10 @@ import sys
 import os
 from pathlib import Path
 
+# .env dosyasini yukle — subprocess ile baslatilsa bile calisir
+from dotenv import load_dotenv
+load_dotenv()
+
 # Yapısal loglama — tüm alt paketler ve LangGraph worker'ları bu ortak konfigürasyonu kullanır
 logging.basicConfig(
     level=logging.INFO,
