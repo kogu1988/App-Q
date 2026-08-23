@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { FileText } from "lucide-react";
 import { useClientPlan } from "@/hooks/use-client-plan";
+import { getAuthHeaders } from "@/lib/auth";
 
 interface Study {
   id: string;
@@ -27,8 +28,7 @@ export default function ClientDashboard() {
   const { plan: clientPlan } = useClientPlan();
 
   useEffect(() => {
-    const username = localStorage.getItem("clarere_username") || "";
-    const headers: Record<string, string> = username ? { "X-Username": username } : {};
+    const headers = getAuthHeaders();
     fetch(`/api/client/studies`, { headers })
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => { setStudies(data); setLoading(false); })

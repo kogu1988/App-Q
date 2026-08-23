@@ -48,7 +48,7 @@ const DEFAULT_PLAN: ClientPlan = {
 
 /**
  * Mevcut kullanıcının plan bilgisini /api/client/me endpoint'inden çeker.
- * X-Username header'ı localStorage'daki "username" değerinden okunur.
+ * Auth: JWT Bearer token (varsa) veya X-Username (getAuthHeaders fallback).
  */
 export function useClientPlan() {
   const [plan, setPlan] = useState<ClientPlan>(DEFAULT_PLAN);

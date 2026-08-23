@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useClientPlan } from "@/hooks/use-client-plan";
+import { getAuthHeaders } from "@/lib/auth";
 import { toast } from "sonner";
 import {
   Check, Zap, ArrowLeft, CreditCard, Shield,
@@ -154,7 +155,7 @@ export default function UpgradePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Username": username,
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({ new_plan: selected, billing_cycle: billing }),
       });

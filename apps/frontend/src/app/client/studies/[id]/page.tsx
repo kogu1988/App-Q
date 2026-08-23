@@ -40,6 +40,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { PlanGate } from "@/components/plan-gate";
 import { useClientPlan } from "@/hooks/use-client-plan";
+import { getAuthHeaders } from "@/lib/auth";
 
 // Interface definitions matching the backend Pydantic models
 interface Persona {
@@ -578,7 +579,7 @@ export default function StudyDetailPage() {
     try {
       const res = await fetch(`/api/client/studies/${studyId}`, {
         method: "DELETE",
-        headers: username ? { "X-Username": username } : {},
+        headers: getAuthHeaders(),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -634,7 +635,7 @@ export default function StudyDetailPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(username ? { "X-Username": username } : {}),
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({ persona_id: personaId, question: followUpText })
       });
@@ -823,7 +824,7 @@ export default function StudyDetailPage() {
                       method: "POST",
                       headers: {
                         "Content-Type": "application/json",
-                        ...(username ? { "X-Username": username } : {}),
+                        ...getAuthHeaders(),
                       },
                       body: JSON.stringify({
                         brief: brief || { title: metadata?.title || "", market: "TR", category: metadata?.category || "genel", context: "" },
@@ -854,7 +855,7 @@ export default function StudyDetailPage() {
                       method: "POST",
                       headers: {
                         "Content-Type": "application/json",
-                        ...(username ? { "X-Username": username } : {}),
+                        ...getAuthHeaders(),
                       },
                       body: JSON.stringify({
                         metadata: { ...metadata, has_report: true },
@@ -906,7 +907,7 @@ export default function StudyDetailPage() {
                     try {
                       const res = await fetch(`/api/client/studies/${studyId}/pdf`, {
                         method: "GET",
-                        headers: username ? { "X-Username": username } : {}
+                        headers: getAuthHeaders()
                       });
                       if (!res.ok) {
                         const errData = await res.json().catch(() => ({}));

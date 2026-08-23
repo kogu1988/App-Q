@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { getAuthHeaders } from "@/lib/auth";
 import {
   Loader2, Send, User, ChevronRight,
   FileText, Target, Users, DollarSign, Layers,
@@ -253,7 +254,7 @@ export default function NewResearchWizard() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(username ? { "X-Username": username } : {}),
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({
           category: brief.category || "genel",
@@ -284,7 +285,7 @@ export default function NewResearchWizard() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(username ? { "X-Username": username } : {}),
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({
           metadata: {

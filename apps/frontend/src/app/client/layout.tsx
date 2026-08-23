@@ -7,6 +7,7 @@ import { Menu, X, LogOut, User, Zap, ArrowUpRight, FileText } from "lucide-react
 import { UsernameModal } from "@/components/username-modal";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import Logo from "@/components/logo";
+import { getAuthHeaders } from "@/lib/auth";
 
 interface SidebarStudy {
   id: string;
@@ -19,8 +20,7 @@ function SidebarStudiesWidget() {
   const [studies, setStudies] = useState<SidebarStudy[]>([]);
 
   useEffect(() => {
-    const username = localStorage.getItem("clarere_username") || "";
-    const headers: Record<string, string> = username ? { "X-Username": username } : {};
+    const headers = getAuthHeaders();
     fetch(`/api/client/studies`, { headers })
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => {
