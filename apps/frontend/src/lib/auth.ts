@@ -14,3 +14,15 @@ export function getAuthHeaders(): Record<string, string> {
   }
   return {};
 }
+
+/**
+ * Admin API auth header'ı — localStorage'daki admin anahtarını gönderir.
+ */
+export function getAdminHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const key = localStorage.getItem("clarere_admin_key");
+  if (key) {
+    return { "X-Admin-Key": key };
+  }
+  return {};
+}

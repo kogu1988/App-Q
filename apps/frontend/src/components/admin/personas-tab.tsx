@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
+import { getAdminHeaders } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -308,7 +309,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
   const handleGenerateDraft = async () => {
     setGeneratingDraft(true);
     try {
-      const res = await fetch("/api/admin/personas/draft");
+      const res = await fetch("/api/admin/personas/draft", { headers: getAdminHeaders() });
       if (!res.ok) throw new Error();
       const data = await res.json();
       const draft = data.draft;
@@ -376,7 +377,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
 
       const res = await fetch("/api/admin/personas/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAdminHeaders() },
         body: JSON.stringify(payload),
       });
 
@@ -424,6 +425,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
     try {
       const res = await fetch(`/api/admin/personas/${personaId}`, {
         method: "DELETE",
+        headers: getAdminHeaders(),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));

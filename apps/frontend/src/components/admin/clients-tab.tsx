@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { getAdminHeaders } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -94,7 +95,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
     try {
       const res = await fetch("/api/admin/clients", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAdminHeaders() },
         body: JSON.stringify(clientForm),
       });
       if (!res.ok) throw new Error();
@@ -121,7 +122,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
     try {
       const res = await fetch(`/api/admin/clients/${username}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAdminHeaders() },
         body: JSON.stringify({
           email: editForm.email || "",
           plan_type: editForm.plan_type || "Free",
@@ -144,7 +145,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
   const deleteClient = async (username: string) => {
     setDeletingClient(true);
     try {
-      const res = await fetch(`/api/admin/clients/${username}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/clients/${username}`, { method: "DELETE", headers: getAdminHeaders() });
       if (!res.ok) throw new Error();
       toast.success("Danışan silindi.");
       setDeleteTarget(null);

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { getAdminHeaders } from "@/lib/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -209,6 +210,7 @@ export default function AdminPage() {
   const [savingConfig, setSavingConfig] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
+  const [adminKey, setAdminKey] = useState(() => typeof window !== "undefined" ? (localStorage.getItem("clarere_admin_key") || "") : "");
 
   // Edit question purpose states
   const [editingQuestion, setEditingQuestion] = useState<number | null>(null);
@@ -218,12 +220,12 @@ export default function AdminPage() {
 
   const fetchAll = useCallback(() => {
     Promise.all([
-      fetch("/api/admin/config").then(r => r.json()),
-      fetch("/api/admin/clients").then(r => r.json()),
-      fetch("/api/admin/personas").then(r => r.json()),
-      fetch("/api/admin/audit_logs").then(r => r.json()),
-      fetch("/api/admin/questions").then(r => r.json()),
-      fetch("/api/admin/feedbacks").then(r => r.json()),
+      fetch("/api/admin/config", { headers: getAdminHeaders() }).then(r => r.json()),
+      fetch("/api/admin/clients", { headers: getAdminHeaders() }).then(r => r.json()),
+      fetch("/api/admin/personas", { headers: getAdminHeaders() }).then(r => r.json()),
+      fetch("/api/admin/audit_logs", { headers: getAdminHeaders() }).then(r => r.json()),
+      fetch("/api/admin/questions", { headers: getAdminHeaders() }).then(r => r.json()),
+      fetch("/api/admin/feedbacks", { headers: getAdminHeaders() }).then(r => r.json()),
     ])
       .then(([conf, cli, pers, lg, qs, fbs]) => {
         setConfig(conf);
@@ -251,7 +253,7 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/admin/config", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAdminHeaders() },
         body: JSON.stringify({ key, value }),
       });
       if (!res.ok) throw new Error();
@@ -267,7 +269,7 @@ export default function AdminPage() {
   // ── Question Management ─────────────────────────────────────────────────────
   const toggleLike = async (id: number, current: boolean) => {
     try {
-      await fetch(`/api/admin/questions/${id}/like?is_liked=${!current}`, { method: "PUT" });
+      await fetch(`/api/admin/questions/${id}/like?is_liked=${!current}`, { method: "PUT", headers: getAdminHeaders() });
       setQuestions(prev => prev.map(q => (q.id === id ? { ...q, is_liked: !current } : q)));
       toast.success("Beğeni güncellendi.");
     } catch {
@@ -277,7 +279,7 @@ export default function AdminPage() {
 
   const savePurpose = async (id: number) => {
     try {
-      await fetch(`/api/admin/questions/${id}/purpose?purpose=${encodeURIComponent(editPurpose)}`, { method: "PUT" });
+      await fetch(`/api/admin/questions/${id}/purpose?purpose=${encodeURIComponent(editPurpose)}`, { method: "PUT", headers: getAdminHeaders() });
       setQuestions(prev => prev.map(q => (q.id === id ? { ...q, purpose_context: editPurpose } : q)));
       setEditingQuestion(null);
       toast.success("Amaç güncellendi.");
@@ -289,7 +291,7 @@ export default function AdminPage() {
   const deleteQuestion = async (id: number) => {
     setDeletingQuestion(true);
     try {
-      await fetch(`/api/admin/questions/${id}`, { method: "DELETE" });
+      await fetch(`/api/admin/questions/${id}`, { method: "DELETE", headers: getAdminHeaders() });
       setQuestions(prev => prev.filter(q => q.id !== id));
       toast.success("Soru silindi.");
       setDeleteQuestionTarget(null);
@@ -325,6 +327,25 @@ export default function AdminPage() {
               <p className="text-sm text-muted-foreground">Sistem, Kullanıcı ve İçerik Yönetimi</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="password"
+              value={adminKey}
+              onChange={(e) => setAdminKey(e.target.value)}
+              placeholder="Admin anahtarı"
+              className="w-48 px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+            <Button
+              onClick={() => {
+                localStorage.setItem("clarere_admin_key", adminKey.trim());
+                toast.success("Admin anahtarı kaydedildi.");
+              }}
+              variant="outline"
+              size="sm"
+            >
+              Kaydet
+            </Button>
+          </div>
         </header>
 
         <Tabs defaultValue="clients" orientation="vertical" className="flex flex-col md:flex-row gap-6 w-full">
@@ -359,7 +380,7 @@ export default function AdminPage() {
               onClick={() => {
                 if (!schemas) {
                   setSchemasLoading(true);
-                  fetch("/api/admin/schemas")
+                  fetch("/api/admin/schemas", { headers: getAdminHeaders() })
                     .then(r => r.json())
                     .then(d => {
                       setSchemas(d);
@@ -380,7 +401,7 @@ export default function AdminPage() {
               onClick={() => {
                 if (!metrics && !metricsLoading) {
                   setMetricsLoading(true);
-                  fetch("/api/admin/metrics")
+                  fetch("/api/admin/metrics", { headers: getAdminHeaders() })
                     .then(r => r.json())
                     .then(d => setMetrics(d))
                     .catch(() => toast.error("Metrikler yüklenemedi."))
@@ -847,7 +868,7 @@ export default function AdminPage() {
                                   try {
                                     await fetch("/api/admin/schemas/brief-defaults", {
                                       method: "PUT",
-                                      headers: { "Content-Type": "application/json" },
+                                      headers: { "Content-Type": "application/json", ...getAdminHeaders() },
                                       body: JSON.stringify({ [key]: el.value }),
                                     });
                                     toast.success(`${label} kaydedildi.`);
@@ -936,7 +957,7 @@ export default function AdminPage() {
                                 try {
                                   await fetch("/api/admin/schemas/interview-questions", {
                                     method: "PUT",
-                                    headers: { "Content-Type": "application/json" },
+                                    headers: { "Content-Type": "application/json", ...getAdminHeaders() },
                                     body: JSON.stringify({ questions: draftQuestions.filter(Boolean) }),
                                   });
                                   setSchemas(prev =>
