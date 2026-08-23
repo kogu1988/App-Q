@@ -1132,6 +1132,14 @@ async def synthesize(request: SynthesizeRequest, x_username: str | None = Header
     from dataclasses import asdict
     report_dict = asdict(report)
 
+    # Tam markdown raporu üret (PDF/HTML export + frontend gösterimi için)
+    try:
+        from packages.research_engine.reporting import render_markdown
+        report_dict["report_markdown"] = render_markdown(report)
+    except Exception as e:
+        logger.warning(f"report_markdown üretilemedi: {e}")
+        report_dict["report_markdown"] = "\n".join(f"- {i}" for i in report.executive_summary)
+
     # research_quality her plan için hesaplanır; Pro+ kontrolü yok —
     # frontend PlanGate ile gösterimi kısıtlıyor
     return report_dict

@@ -838,7 +838,7 @@ export default function StudyDetailPage() {
                     // Save report to study — spread report fields to top level
                     const reportPayload = {
                       brief, plan, personas, interviews,
-                      report_markdown: report.executive_summary?.join("\n") || "",
+                      report_markdown: report.report_markdown || report.executive_summary?.join("\n") || "",
                       findings: report.findings || [],
                       action_items: report.action_items || [],
                       recommendations: report.recommendations || [],
