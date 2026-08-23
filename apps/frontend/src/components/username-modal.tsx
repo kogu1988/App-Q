@@ -14,6 +14,7 @@ function isValidUsername(v: string) {
 
 export function UsernameModal({ onComplete }: UsernameModalProps) {
   const [value, setValue] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
@@ -37,8 +38,30 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
       return;
     }
 
+    if (password && password.length < 6) {
+      setError("Parola en az 6 karakter olmalı.");
+      return;
+    }
+
     setLoading(true);
     try {
+      // 1. JWT kayıt (parola verildiyse) → access token sakla
+      if (password) {
+        const authRes = await fetch(`/api/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: value, password }),
+        });
+        if (!authRes.ok) {
+          const data = await authRes.json().catch(() => ({}));
+          setError(data.detail || "Kayıt başarısız.");
+          return;
+        }
+        const authData = await authRes.json();
+        localStorage.setItem("clarere_token", authData.access_token);
+      }
+
+      // 2. Kullanıcı + plan (geriye dönük uyumluluk; ?plan= yükseltmesi)
       const res = await fetch(`/api/client/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,7 +102,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
           <h2 className="text-xl font-bold tracking-tight">Hoş geldiniz</h2>
           <p className="text-sm text-muted-foreground">
             Devam etmek için bir kullanıcı adı seçin.{" "}
-            <span className="text-foreground/70">Kayıt veya e-posta gerektirmez.</span>
+            <span className="text-foreground/70">Parola opsiyoneldir — güvenli JWT girişi için belirleyin.</span>
           </p>
         </div>
 
@@ -117,6 +140,23 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
             )}
             <p className="text-[11px] text-muted-foreground">
               2–20 karakter · harf, rakam, _ veya -
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="password-input" className="text-sm font-medium">
+              Parola <span className="text-muted-foreground/70 font-normal">(opsiyonel)</span>
+            </label>
+            <input
+              id="password-input"
+              type="password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(""); }}
+              placeholder="••••••"
+              className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              En az 6 karakter. Boş bırakırsanız oturum kimliğiyle devam edersiniz.
             </p>
           </div>
 

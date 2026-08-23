@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getAuthHeaders } from "@/lib/auth";
 
 
 
@@ -54,9 +55,8 @@ export function useClientPlan() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const username = localStorage.getItem("clarere_username") || "";
     fetch(`/api/client/me`, {
-      headers: username ? { "X-Username": username } : {},
+      headers: getAuthHeaders(),
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
