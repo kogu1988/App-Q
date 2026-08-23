@@ -154,20 +154,21 @@ Kümülatif frekans eğrilerinin matematiksel kesişimleri ile:
 
 ## Plan Katmanları
 
-| Özellik | Free | Starter | Pro | Enterprise |
-|---------|:----:|:-------:|:---:|:----------:|
-| Aylık araştırma | 2 | 10 | Sınırsız | Sınırsız |
-| Persona sayısı | 10 | 10 | 10 | Sınırsız |
-| Streaming SSE | — | ✓ | ✓ | ✓ |
-| PDF export | — | ✓ | ✓ | ✓ |
-| SES cross-tab | — | ✓ | ✓ | ✓ |
-| A/B Test modu | — | ✓ | ✓ | ✓ |
-| B2B modu | — | — | ✓ | ✓ |
-| Adversarial review | ✓ | ✓ | ✓ | ✓ |
-| Brand health analizi | — | — | ✓ | ✓ |
-| White-label | — | — | ✓ | ✓ |
-| Özel persona havuzu | — | — | — | ✓ |
-| Multi-user org | — | — | — | ✓ |
+| Özellik | Free | Flex | Starter | Pro | Enterprise |
+|---------|:----:|:----:|:-------:|:---:|:----------:|
+| Aylık araştırma | 2 | 3 | 10 | Sınırsız | Sınırsız |
+| Persona sayısı | 10 | 10 | 10 | 10 | Sınırsız |
+| Streaming SSE | — | ✓ | ✓ | ✓ | ✓ |
+| PDF export | — | ✓ | ✓ | ✓ | ✓ |
+| SES cross-tab | — | ✓ | ✓ | ✓ | ✓ |
+| A/B Test modu | — | ✓ | ✓ | ✓ | ✓ |
+| B2B modu | — | — | — | ✓ | ✓ |
+| Adversarial review | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Brand health analizi | — | — | — | ✓ | ✓ |
+| White-label | — | — | — | ✓ | ✓ |
+| Özel persona havuzu | — | — | — | — | ✓ |
+| Multi-user org | — | — | — | — | ✓ |
+| Fine-tuning export | — | — | — | — | ✓ |
 
 ---
 
