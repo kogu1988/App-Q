@@ -428,6 +428,11 @@ def init_db() -> None:
             cur.execute("UPDATE clients SET period_start = %s WHERE period_start IS NULL;", (datetime.now().date().isoformat(),))
         except Exception as e:
             print(f"[DB] Billing migration warning: {e}")
+        # Auth migration (JWT password hashing)
+        try:
+            cur.execute("ALTER TABLE clients ADD COLUMN IF NOT EXISTS password_hash TEXT;")
+        except Exception as e:
+            print(f"[DB] Auth migration warning: {e}")
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS system_config (
@@ -1095,6 +1100,18 @@ def register_client_if_new(username: str, email: str = "") -> tuple[dict, bool]:
         return dict(row) if row else {"username": username, "plan_type": "Free"}, True
 
 
+def set_client_password(username: str, password_hash: str) -> None:
+    """Kullanıcının parola hash'ini kaydeder (JWT auth)."""
+    with get_db() as (conn, cur):
+        cur.execute("UPDATE clients SET password_hash = %s WHERE username = %s", (password_hash, username))
+
+
+def get_client_password_hash(username: str) -> str | None:
+    """Kullanıcının parola hash'ini döner (yoksa None)."""
+    with get_db() as (conn, cur):
+        cur.execute("SELECT password_hash FROM clients WHERE username = %s", (username,))
+        row = cur.fetchone()
+        return row["password_hash"] if row and row.get("password_hash") else None
 
 
 def log_ai_rationale(prompt_hash: str, model_id: str, thinking_text: str, response_text: str) -> None:

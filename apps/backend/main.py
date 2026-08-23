@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 # Routers import katmanı — stream router'ını asenkron ağ hattına ekliyoruz
-from apps.backend.routers import admin, client  # noqa: E402
+from apps.backend.routers import admin, client, auth  # noqa: E402
 from packages.research_engine.routers import stream  # noqa: E402
 from packages.research_engine.database import current_tenant_var  # noqa: E402
 
@@ -92,6 +92,7 @@ async def tenant_isolation_middleware(request: Request, call_next):
 # --- STANDART REST ROUTER KAYITLARI ---
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(client.router, prefix="/api/client", tags=["Client"])
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 
 # --- REALTİME STREAMING & WEBSOCKET ROUTER KAYDI (MÜHÜRLENEN KATMAN) ---
 # stream.router kendi içinde "/api/v1/stream" prefix'ini ve "/ws" soket yollarını barındırır.
