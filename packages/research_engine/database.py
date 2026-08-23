@@ -17,6 +17,14 @@ current_tenant_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
 logger = logging.getLogger(__name__)
 
 
+def get_current_username() -> str | None:
+    """Mevcut request'in çözümlenmiş kullanıcı adını döner (JWT veya X-Username).
+
+    Tenant middleware'i tarafından set edilen current_tenant_var'ı okur.
+    """
+    return current_tenant_var.get()
+
+
 PG_HOST = os.getenv("POSTGRES_HOST", "localhost")
 PG_PORT = os.getenv("POSTGRES_PORT", "5433")
 PG_USER = os.getenv("POSTGRES_USER", "clarere_user")

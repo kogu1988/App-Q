@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Response, Query, Header, Request
+from fastapi import APIRouter, HTTPException, Response, Query, Header, Request, Depends
 import logging
 from dataclasses import asdict
 from pydantic import BaseModel
@@ -12,7 +12,7 @@ from packages.research_engine.database import (
     get_findings, get_finding_detail, save_findings,
     get_client_by_username, upgrade_client_plan, check_simulation_limit,
     register_client_if_new, atomic_increment_simulation_count,
-    count_user_non_ab_simulations, count_chat_messages
+    count_user_non_ab_simulations, count_chat_messages, get_current_username
 )
 from packages.research_engine.db_vectors import (
     get_personas_pool, save_persona_to_pool
@@ -381,7 +381,7 @@ class RegisterRequest(BaseModel):
 
 @router.get("/me")
 @limiter.limit("60/minute")
-async def get_me(request: Request, x_username: str | None = Header(default=None)):
+async def get_me(request: Request, x_username: str | None = Depends(get_current_username)):
     """Mevcut kullanıcının plan bilgisini döner."""
     plan_type, config = _resolve_plan(x_username)
     client = get_client_by_username(x_username) if x_username else None
@@ -415,7 +415,7 @@ async def get_me(request: Request, x_username: str | None = Header(default=None)
 
 
 @router.post("/upgrade-plan")
-async def upgrade_plan(req: UpgradePlanRequest, x_username: str | None = Header(default=None)):
+async def upgrade_plan(req: UpgradePlanRequest, x_username: str | None = Depends(get_current_username)):
     """Kayıtlı kullanıcının planını yükseltir ve dönem sayacını sıfırlar."""
     if not x_username:
         raise HTTPException(status_code=401, detail="Oturum bilgisi eksik. Lütfen giriş yapın.")
@@ -482,7 +482,7 @@ async def get_study(study_id: str):
 @router.get("/studies/{study_id}/findings")
 async def get_findings_endpoint(
     study_id: str,
-    x_username: str | None = Header(default=None),
+    x_username: str | None = Depends(get_current_username),
 ):
     """Bir araştırmaya ait tüm bulguları kanıt sayılarıyla döner."""
     try:
@@ -515,7 +515,7 @@ async def get_findings_endpoint(
 async def get_finding_detail_endpoint(
     study_id: str,
     finding_id: int,
-    x_username: str | None = Header(default=None),
+    x_username: str | None = Depends(get_current_username),
 ):
     """Tek bir bulgunun tüm kanıt alıntılarıyla birlikte detayını döner."""
     try:
@@ -561,7 +561,7 @@ async def get_finding_detail_endpoint(
 # ---------------------------------------------------------------------------
 
 @router.get("/studies/{study_id}/pdf")
-async def download_study_pdf(study_id: str, x_username: str | None = Header(default=None)):
+async def download_study_pdf(study_id: str, x_username: str | None = Depends(get_current_username)):
     plan_type, _ = _resolve_plan(x_username)
     _require_feature(plan_type, "pdf_export")
 
@@ -610,7 +610,7 @@ async def archive_study_endpoint(study_id: str):
 @router.delete("/studies/{study_id}")
 async def delete_study_endpoint(
     study_id: str,
-    x_username: str | None = Header(default=None),
+    x_username: str | None = Depends(get_current_username),
 ):
     """Araştırmayı kalıcı olarak siler.
 
@@ -643,7 +643,7 @@ async def submit_feedback(data: FeedbackCreate):
     return {"status": "success"}
 
 @router.post("/studies")
-async def create_or_update_study(data: StudyPayload, x_username: str | None = Header(default=None)):
+async def create_or_update_study(data: StudyPayload, x_username: str | None = Depends(get_current_username)):
     study_id = data.metadata.get("id", "")
     # Org bağlamı (multi-user paylaşımı) — org üyesiyse çalışmayı org'a bağla
     if x_username and not data.metadata.get("org_id"):
@@ -732,7 +732,7 @@ async def create_persona(persona: PersonaCreate):
     return {"status": "success"}
 
 @router.post("/plan")
-async def create_plan(request: BriefRequest, x_username: str | None = Header(default=None)):
+async def create_plan(request: BriefRequest, x_username: str | None = Depends(get_current_username)):
     plan_type, _ = _resolve_plan(x_username)
     client = get_client_by_username(x_username) if x_username else None
     expired, reason = is_trial_expired(client)
@@ -786,7 +786,7 @@ async def create_plan(request: BriefRequest, x_username: str | None = Header(def
     return plan
 
 @router.post("/personas/generate")
-async def generate_personas_from_plan(request: GeneratePersonasRequest, x_username: str | None = Header(default=None)):
+async def generate_personas_from_plan(request: GeneratePersonasRequest, x_username: str | None = Depends(get_current_username)):
     plan_type, _ = _resolve_plan(x_username)
     from packages.research_engine.models import ResearchBrief
 
@@ -819,7 +819,7 @@ async def generate_personas_from_plan(request: GeneratePersonasRequest, x_userna
 
 
 @router.post("/research")
-async def run_full_research(request: ResearchRequest, x_username: str | None = Header(default=None)):
+async def run_full_research(request: ResearchRequest, x_username: str | None = Depends(get_current_username)):
     """
     Adım 2 — Birleşik Araştırma: Plan + Persona + Mülakat.
     Brief'i alır; plan üretir, personaları oluşturur ve batch mülakatları çalıştırır.
@@ -889,7 +889,7 @@ async def run_full_research(request: ResearchRequest, x_username: str | None = H
 
 @router.post("/interviews/stream")
 @limiter.limit("30/minute")
-async def stream_interviews(request: Request, body: dict, x_username: str | None = Header(default=None)):
+async def stream_interviews(request: Request, body: dict, x_username: str | None = Depends(get_current_username)):
     plan_dict = body.get("plan")
     personas_list = body.get("personas")
     brief_dict = body.get("brief", {})
@@ -977,7 +977,7 @@ async def stream_interviews(request: Request, body: dict, x_username: str | None
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.post("/studies/{study_id}/follow-up")
-async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str | None = Header(default=None)):
+async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str | None = Depends(get_current_username)):
     """Belirli bir personaya ek soru sormak için kullanılır."""
     from packages.research_engine.database import get_study, save_study
     from packages.research_engine.providers import get_model_provider
@@ -1070,7 +1070,7 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     return {"status": "success", "turn": new_turn}
 
 @router.post("/synthesize")
-async def synthesize(request: SynthesizeRequest, x_username: str | None = Header(default=None)):
+async def synthesize(request: SynthesizeRequest, x_username: str | None = Depends(get_current_username)):
     plan_type, _ = _resolve_plan(x_username)
 
     # B2B modu Pro+ gerektirir
@@ -1152,7 +1152,7 @@ async def research_chat(
     study_id: str,
     data: dict,
     request: Request,
-    x_username: str | None = Header(default=None),
+    x_username: str | None = Depends(get_current_username),
 ):
     """
     Tamamlanmış bir araştırma raporu hakkında soru-cevap.
@@ -1285,7 +1285,7 @@ async def research_chat(
 
 @router.post("/studio/simulate")
 @limiter.limit("20/minute")
-async def trigger_studio_simulation(request: Request, data: StudioSimulationRequest, x_username: str | None = Header(default=None)):
+async def trigger_studio_simulation(request: Request, data: StudioSimulationRequest, x_username: str | None = Depends(get_current_username)):
     """
     Research Studio: Tek turlu simülasyon başlatma endpoint'i.
     Gateway üzerinden geçip doğrudan Celery kuyruğuna aktarır.
@@ -1317,7 +1317,7 @@ async def trigger_studio_simulation(request: Request, data: StudioSimulationRequ
         raise HTTPException(status_code=500, detail="Simülasyon kuyruğa alınırken hata oluştu.")
 
 @router.get("/studio/status/{task_id}")
-async def get_studio_simulation_status(task_id: str, x_username: str | None = Header(default=None)):
+async def get_studio_simulation_status(task_id: str, x_username: str | None = Depends(get_current_username)):
     """
     Celery task durumunu döner. Frontend polling için kullanılır.
     """
@@ -1344,7 +1344,7 @@ async def get_studio_simulation_status(task_id: str, x_username: str | None = He
 
 @router.post("/studio/match-personas")
 @limiter.limit("20/minute")
-async def match_personas(request: Request, data: dict, x_username: str | None = Header(default=None)):
+async def match_personas(request: Request, data: dict, x_username: str | None = Depends(get_current_username)):
     """
     Brief'e (veya idea'ya) uygun veritabanındaki hazır personaları eşleştirip önerir.
     Kullanıcıya 'hangi persona grubundan kaç tane istersiniz' diye sormak için kullanılır.
@@ -1399,7 +1399,7 @@ async def match_personas(request: Request, data: dict, x_username: str | None = 
 
 @router.post("/intake")
 @limiter.limit("20/minute")
-async def intake_chat(request: Request, data: IntakeChatRequest, x_username: str | None = Header(default=None)):
+async def intake_chat(request: Request, data: IntakeChatRequest, x_username: str | None = Depends(get_current_username)):
     try:
         from packages.research_engine.database import get_system_config
         model = get_model_provider("flash", user_id=(x_username or "").strip() or "anonymous")
@@ -1460,7 +1460,7 @@ async def contact_form(data: dict):
 
 @router.post("/ws/ticket")
 @limiter.limit("20/minute")
-async def generate_ws_ticket(request: Request, x_username: str | None = Header(default=None)):
+async def generate_ws_ticket(request: Request, x_username: str | None = Depends(get_current_username)):
     """
     Generates a 10-second single-use ticket for WebSocket authentication.
     """
