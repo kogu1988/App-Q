@@ -9,8 +9,6 @@ import io
 import logging
 from typing import Optional
 
-import markdown as md_lib
-
 logger = logging.getLogger(__name__)
 
 # ── Inline CSS for the PDF ────────────────────────────────────────────────────
@@ -170,10 +168,11 @@ def generate_pdf_from_markdown(
         PDF as bytes, or None if conversion fails.
     """
     try:
+        import markdown as md_lib
         from xhtml2pdf import pisa
     except ImportError:
         logger.error(
-            "xhtml2pdf is not installed. Run: pip install xhtml2pdf"
+            "markdown veya xhtml2pdf kurulu değil. Run: pip install -r requirements.txt"
         )
         return None
 
