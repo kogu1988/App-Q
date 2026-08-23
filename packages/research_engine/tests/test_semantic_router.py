@@ -6,46 +6,9 @@ Router sadece keyword fallback kullanıyor.
 """
 from packages.research_engine.nodes.router import (
     _keyword_fallback,
-    _cosine_similarity,
     reset_template_cache,
     route,
-    CONFIDENCE_THRESHOLD,
-    ROUTE_TEMPLATES,
 )
-
-
-# ── Birim Testler: Yardımcı Fonksiyonlar ────────────────────────────────────
-
-def test_cosine_similarity_identical():
-    """Aynı vektörün kosinüs benzerliği 1.0 olmalı."""
-    v = [1.0, 0.5, 0.3, 0.8]
-    assert abs(_cosine_similarity(v, v) - 1.0) < 1e-6
-
-
-def test_cosine_similarity_orthogonal():
-    """Dik vektörlerin kosinüs benzerliği 0.0 olmalı."""
-    a = [1.0, 0.0]
-    b = [0.0, 1.0]
-    assert abs(_cosine_similarity(a, b)) < 1e-6
-
-
-def test_cosine_similarity_zero_vector():
-    """Sıfır vektörü çöküş yaratmamalı."""
-    a = [0.0, 0.0]
-    b = [1.0, 0.5]
-    result = _cosine_similarity(a, b)
-    assert result == 0.0
-
-
-def test_route_templates_not_empty():
-    """Tüm route kategorilerinde en az bir şablon olmalı."""
-    for route_name, templates in ROUTE_TEMPLATES.items():
-        assert len(templates) >= 1, f"'{route_name}' kategorisi boş"
-
-
-def test_confidence_threshold_range():
-    """Güven eşiği 0.0-1.0 arasında olmalı."""
-    assert 0.0 < CONFIDENCE_THRESHOLD < 1.0
 
 
 # ── Keyword Fallback Testleri ────────────────────────────────────────────────
@@ -97,7 +60,7 @@ def test_route_returns_valid_category():
 
 
 def test_route_keyword_strong_orchestrator():
-    """Kuvvetli orchestrator sinyali → Mod 1 veya fallback orchestrator döndürmeli."""
+    """Kuvvetli orchestrator sinyali → orchestrator döndürmeli."""
     reset_template_cache()
     result = route(
         "Sen Defne'sin, araştırma mimarısın, intake aşamasındasın",

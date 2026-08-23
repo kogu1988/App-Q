@@ -21,12 +21,20 @@ import {
   ThumbsDown,
   ListTodo,
   Lock,
-  Trash2
+  Trash2,
+  Search,
+  Globe,
+  Send,
+  Ship,
+  GitBranch,
+  AlertTriangle,
+  Zap
 } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -51,13 +59,7 @@ interface Persona {
   ses_group?: string;
   respondent_type?: string;
   settlement_type?: string;
-  big_five?: {
-    openness: number;
-    conscientiousness: number;
-    extroversion: number;
-    agreeableness: number;
-    neuroticism: number;
-  };
+  big_five?: Record<string, number>;
 }
 
 interface InterviewTurn {
@@ -93,11 +95,14 @@ interface StudyDetail {
     quality_summary?: string;
   };
   brief?: {
-    category: string;
     title: string;
-    context: string;
-    brand: string;
-    budget: string;
+    market?: string;
+    category?: string;
+    idea?: string;
+    expected_price?: string;
+    target_users?: string[];
+    competitors?: string[];
+    success_metric?: string;
   };
   plan?: ResearchPlan;
   personas?: Persona[];
@@ -160,6 +165,164 @@ interface StudyDetail {
     validity_threshold?: number;
     interpretation?: string;
   };
+  findings?: Array<{
+    id: number;
+    title: string;
+    category: string;
+    summary: string;
+    confidence: number;
+    implication: string;
+    supporting_count: number;
+    refuting_count: number;
+    neutral_count: number;
+    contradiction_score: number;
+    decision_signal: string;
+    evidence?: Array<{
+      persona_id: string;
+      persona_name: string;
+      stance: string;
+      question: string;
+      quote: string;
+      sentiment: string;
+    }>;
+  }>;
+  decision_items?: Array<{
+    signal: string;
+    title: string;
+    confidence: number;
+    supporting_count: number;
+    refuting_count: number;
+    evidence_summary: string;
+    recommended_action: string;
+  }>;
+  external_evidence?: Array<{
+    finding_title: string;
+    source_title: string;
+    source_url: string;
+    snippet: string;
+    relevance: string;
+  }>;
+}
+
+// ──────────────── Decision Signal Config ────────────────
+const DECISION_CONFIG: Record<string, { icon: React.ComponentType<{ size?: number; className?: string }>; color: string; bg: string; label: string }> = {
+  SHIP: { icon: Ship, color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", label: "SHIP" },
+  ITERATE: { icon: GitBranch, color: "text-amber-700", bg: "bg-amber-50 border-amber-200", label: "ITERATE" },
+  INVESTIGATE: { icon: AlertTriangle, color: "text-sky-700", bg: "bg-sky-50 border-sky-200", label: "ARAŞTIR" },
+  KILL: { icon: Trash2, color: "text-red-700", bg: "bg-red-50 border-red-200", label: "KILL" },
+};
+
+// ──────────────── Finding Card Component ────────────────
+function FindingCard({ finding, dc, DcIcon, confPct, barColor }: {
+  finding: NonNullable<StudyDetail["findings"]>[number];
+  dc: typeof DECISION_CONFIG[string];
+  DcIcon: React.ComponentType<{ size?: number; className?: string }>;
+  confPct: number;
+  barColor: string;
+}) {
+  const [showEvidence, setShowEvidence] = useState(false);
+
+  return (
+    <Card className="shadow-sm border-slate-200/60 hover:border-[#003c33]/30 transition-colors">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <CardTitle className="text-base">{finding.title}</CardTitle>
+              <Badge className={`text-[10px] font-bold ${dc.bg} ${dc.color}`}>
+                <DcIcon size={12} className="mr-1 inline" />
+                {dc.label}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1.5">{finding.summary}</p>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-0">
+        {/* Confidence Bar */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-medium text-slate-600">Güven Skoru</span>
+            <span className="font-bold text-slate-800">%{confPct}</span>
+          </div>
+          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${barColor}`}
+              style={{ width: `${confPct}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Support / Refute counts */}
+        <div className="flex items-center gap-4 text-xs">
+          <span className="flex items-center gap-1 text-emerald-600 font-medium">
+            <ThumbsUp size={12} />
+            Destekleyen: {finding.supporting_count} persona
+          </span>
+          <span className="flex items-center gap-1 text-red-500 font-medium">
+            <ThumbsDown size={12} />
+            İtiraz: {finding.refuting_count}
+          </span>
+          {finding.neutral_count > 0 && (
+            <span className="text-muted-foreground">
+              Nötr: {finding.neutral_count}
+            </span>
+          )}
+        </div>
+
+        {/* Contradiction Score */}
+        {finding.contradiction_score > 0 && (
+          <div className="flex items-center gap-2 p-2 rounded-md bg-amber-50 border border-amber-200 text-xs text-amber-700">
+            <AlertTriangle size={14} />
+            <span>Çelişki Skoru: {(finding.contradiction_score * 100).toFixed(0)}% — bu bulgu persona grupları arasında görüş ayrılığı içeriyor.</span>
+          </div>
+        )}
+
+        {/* Evidence Quotes (collapsible) */}
+        {finding.evidence && finding.evidence.length > 0 && (
+          <div className="border-t border-border pt-3">
+            <button
+              onClick={() => setShowEvidence(!showEvidence)}
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#1863dc] hover:text-[#1863dc]/80 transition-colors"
+            >
+              <MessageSquare size={12} />
+              Kanıt Alıntıları ({finding.evidence.length})
+              <span className="text-[10px]">{showEvidence ? "▲" : "▼"}</span>
+            </button>
+            {showEvidence && (
+              <div className="space-y-2 mt-2">
+                {finding.evidence.slice(0, 3).map((ev, ei) => (
+                  <div key={ei} className="flex gap-2 p-2.5 bg-slate-50 rounded-lg border border-border/60 text-xs">
+                    <div className="shrink-0">
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        ev.stance === "Champion" ? "bg-emerald-100 text-emerald-700" :
+                        ev.stance === "Skeptic" ? "bg-amber-100 text-amber-700" :
+                        ev.stance === "Blocker" ? "bg-red-100 text-red-700" :
+                        "bg-slate-100 text-slate-600"
+                      }`}>{ev.stance}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-slate-800">{ev.persona_name}</span>
+                      <span className="text-muted-foreground ml-1">({ev.sentiment})</span>
+                      <p className="italic text-slate-600 mt-0.5 line-clamp-2">&ldquo;{ev.quote}&rdquo;</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Implication */}
+        {finding.implication && (
+          <div className="border-t border-border pt-3">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Çıkarım</span>
+            <p className="text-xs text-slate-600 leading-relaxed">{finding.implication}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 // ──────────────── Channel Discovery Bar Chart ────────────────
@@ -335,7 +498,7 @@ export default function StudyDetailPage() {
   const [study, setStudy] = useState<StudyDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"summary" | "personas" | "script" | "interviews" | "report">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "personas" | "script" | "interviews" | "findings" | "report">("summary");
   const [selectedPersonaIdx, setSelectedPersonaIdx] = useState<number>(0);
   const [archiving, setArchiving] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
@@ -349,6 +512,9 @@ export default function StudyDetailPage() {
   const [followUpText, setFollowUpText] = useState("");
   const [sendingFollowUp, setSendingFollowUp] = useState(false);
   const [synthesizing, setSynthesizing] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [sendingChat, setSendingChat] = useState(false);
   const { plan: clientPlan } = useClientPlan();
 
   useEffect(() => {
@@ -366,6 +532,17 @@ export default function StudyDetailPage() {
         }
         const data = await res.json();
         setStudy(data);
+        
+        // Fetch findings if report is available
+        if (data.metadata?.has_report) {
+          try {
+            const findingsRes = await fetch(`/api/client/studies/${studyId}/findings`);
+            if (findingsRes.ok) {
+              const findingsData = await findingsRes.json();
+              setStudy(prev => prev ? { ...prev, findings: findingsData.findings || [], decision_items: findingsData.decision_items || [] } : prev);
+            }
+          } catch { /* findings optional */ }
+        }
         
         // Default to report tab if it's already generated and completed
         if (data.metadata?.has_report) {
@@ -481,6 +658,31 @@ export default function StudyDetailPage() {
       toast.error("Soru sorulurken bir hata oluştu.");
     } finally {
       setSendingFollowUp(false);
+    }
+  };
+
+  const sendChat = async () => {
+    if (!chatInput.trim() || sendingChat) return;
+    const question = chatInput.trim();
+    setChatMessages(prev => [...prev, { role: "user", content: question }]);
+    setChatInput("");
+    setSendingChat(true);
+    try {
+      const res = await fetch(`/api/client/studies/${studyId}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages(prev => [...prev, { role: "assistant", content: data.answer || data.response || "" }]);
+      } else {
+        setChatMessages(prev => [...prev, { role: "assistant", content: "Yanıt alınamadı. Lütfen tekrar deneyin." }]);
+      }
+    } catch {
+      setChatMessages(prev => [...prev, { role: "assistant", content: "Bir hata oluştu. Lütfen tekrar deneyin." }]);
+    } finally {
+      setSendingChat(false);
     }
   };
 
@@ -726,7 +928,7 @@ export default function StudyDetailPage() {
                       const url = window.URL.createObjectURL(blob);
                       const a = document.createElement("a");
                       a.href = url;
-                      a.download = `Clarere-Rapor-${studyId}.pdf`;
+                      a.download = `${clientPlan.features.white_label ? "Research-Rapor" : "Clarere-Rapor"}-${studyId}.pdf`;
                       document.body.appendChild(a);
                       a.click();
                       a.remove();
@@ -806,7 +1008,7 @@ export default function StudyDetailPage() {
       </div>
 
       {/* 🔮 Interactive Tabs Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 bg-slate-100/80 /60 p-1.5 rounded-xl border border-border">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-2 bg-slate-100/80 /60 p-1.5 rounded-xl border border-border">
         <button 
           onClick={() => setActiveTab("summary")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
@@ -856,6 +1058,18 @@ export default function StudyDetailPage() {
         </button>
 
         <button 
+          onClick={() => setActiveTab("findings")}
+          className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
+            activeTab === "findings" 
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
+              : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
+          }`}
+        >
+          <Search size={16} />
+          Kanıt Zinciri
+        </button>
+
+        <button 
           onClick={() => setActiveTab("report")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "report" 
@@ -887,17 +1101,17 @@ export default function StudyDetailPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="p-3.5 bg-slate-50 border border-border rounded-lg">
                       <span className="text-xs font-semibold text-muted-foreground block uppercase">Marka / Ürün</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-100">{brief?.brand || "Belirtilmemiş"}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">{brief?.title || metadata?.title || "Belirtilmemiş"}</span>
                     </div>
                     <div className="p-3.5 bg-slate-50 border border-border rounded-lg">
-                      <span className="text-xs font-semibold text-muted-foreground block uppercase">Bütçe / Panel</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-100">{brief?.budget || "Standart"}</span>
+                      <span className="text-xs font-semibold text-muted-foreground block uppercase">Fiyat</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">{brief?.expected_price || "Belirtilmedi"}</span>
                     </div>
                   </div>
                   <div className="space-y-1.5">
                     <span className="text-xs font-semibold text-muted-foreground uppercase block">Araştırma Problemi (Brief Context)</span>
                     <p className="text-slate-700 text-sm leading-relaxed bg-slate-50/50 /50 border border-border/60 p-4 rounded-xl">
-                      {brief?.context || "Brief bağlamı girilmemiş."}
+                      {brief?.idea || "Brief bağlamı girilmemiş."}
                     </p>
                   </div>
                 </CardContent>
@@ -1175,11 +1389,11 @@ export default function StudyDetailPage() {
                             <>
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Büyük Beşli (Big Five)</span>
                               {[
-                                { label: "Açıklık (Openness)", value: persona.big_five.openness, color: "bg-sky-500" },
-                                { label: "Sorumluluk (Conscientiousness)", value: persona.big_five.conscientiousness, color: "bg-blue-500" },
-                                { label: "Dışadönüklük (Extroversion)", value: persona.big_five.extroversion, color: "bg-orange-500" },
-                                { label: "Uyumluluk (Agreeableness)", value: persona.big_five.agreeableness, color: "bg-teal-500" },
-                                { label: "Duygusal Denge (Neuroticism)", value: persona.big_five.neuroticism, color: "bg-rose-500" },
+                                { label: "Açıklık (Openness)",      value: persona.big_five?.Openness      ?? persona.big_five?.openness      ?? 50, color: "bg-sky-500" },
+                                { label: "Sorumluluk (Conscientiousness)", value: persona.big_five?.Conscientiousness ?? persona.big_five?.conscientiousness ?? 50, color: "bg-blue-500" },
+                                { label: "Dışadönüklük (Extraversion)",    value: persona.big_five?.Extraversion    ?? persona.big_five?.extraversion    ?? 50, color: "bg-orange-500" },
+                                { label: "Uyumluluk (Agreeableness)",      value: persona.big_five?.Agreeableness   ?? persona.big_five?.agreeableness   ?? 50, color: "bg-teal-500" },
+                                { label: "Duygusal Denge (Neuroticism)",   value: persona.big_five?.Neuroticism     ?? persona.big_five?.neuroticism     ?? 50, color: "bg-rose-500" },
                               ].map(trait => (
                                 <div key={trait.label} className="space-y-1">
                                   <div className="flex justify-between text-[10px] font-semibold">
@@ -1577,6 +1791,73 @@ export default function StudyDetailPage() {
           </div>
         )}
 
+        {/* ==================== Tab: Findings (Kanıt Zinciri) ==================== */}
+        {activeTab === "findings" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Kanıt Zinciri ve Karar Katmanı</h2>
+              <p className="text-muted-foreground text-sm">Mülakatlardan çıkarılan bulgular, kanıt alıntıları ve karar sinyalleri.</p>
+            </div>
+
+            {(!study?.findings || study.findings.length === 0) ? (
+              <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-xl">
+                <p>Bu araştırmaya ait kanıt zinciri verisi bulunamadı.</p>
+                <p className="text-xs mt-2 text-muted-foreground/70">Sentez raporu oluşturulduktan sonra bulgular ve kanıt zinciri burada görüntülenecektir.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Decision Items Summary */}
+                {study?.decision_items && study.decision_items.length > 0 && (
+                  <Card className="shadow-sm border-[#003c33]/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Zap size={18} className="text-amber-500" />
+                        Karar Önerileri
+                      </CardTitle>
+                      <CardDescription>Kanıt zincirinden türetilen aksiyon önerileri.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {study.decision_items.map((di, i) => {
+                        const dc = DECISION_CONFIG[di.signal] || DECISION_CONFIG.INVESTIGATE;
+                        const DcIcon = dc.icon;
+                        return (
+                          <div key={i} className={`flex items-start gap-3 p-3 rounded-lg border ${dc.bg}`}>
+                            <DcIcon size={16} className={`shrink-0 mt-0.5 ${dc.color}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-sm text-slate-800">{di.title}</span>
+                                <Badge className={`text-[10px] ${dc.bg} ${dc.color}`}>{dc.label}</Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">{di.recommended_action}</p>
+                              <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                                <span>Güven: %{Math.round(di.confidence * 100)}</span>
+                                <span className="text-emerald-600">Destekleyen: {di.supporting_count}</span>
+                                <span className="text-red-500">İtiraz: {di.refuting_count}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Findings List */}
+                {study.findings.map((finding) => {
+                  const dc = DECISION_CONFIG[finding.decision_signal] || DECISION_CONFIG.INVESTIGATE;
+                  const DcIcon = dc.icon;
+                  const confPct = Math.round(finding.confidence * 100);
+                  const barColor = confPct >= 75 ? "bg-emerald-500" : confPct >= 50 ? "bg-amber-500" : "bg-red-500";
+
+                  return (
+                    <FindingCard key={finding.id} finding={finding} dc={dc} DcIcon={DcIcon} confPct={confPct} barColor={barColor} />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ==================== Tab 4: Synthesis Report ==================== */}
         {activeTab === "report" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -1590,52 +1871,38 @@ export default function StudyDetailPage() {
                 Bu araştırma henüz tamamlanmamış veya nihai sentez raporu üretilmemiş.
               </div>
             ) : clientPlan.plan_type === "Free" ? (
-              <div className="relative rounded-2xl overflow-hidden min-h-[500px]">
-                {/* Blurred Content */}
-                <div className="filter blur-xl pointer-events-none select-none opacity-20 space-y-6">
-                  {study?.van_westendorp && (
-                    <Card className="shadow-sm border-indigo-100 dark:border-indigo-900/30 overflow-hidden">
-                      <CardContent className="p-6">
-                        <div className="h-40 bg-slate-100 rounded-lg animate-pulse" />
-                      </CardContent>
-                    </Card>
-                  )}
-                  {study?.channel_map && study.channel_map.length > 0 && (
-                    <Card className="shadow-sm border-emerald-100/30">
-                      <CardContent className="p-6">
-                        <div className="h-40 bg-slate-100 rounded-lg animate-pulse" />
-                      </CardContent>
-                    </Card>
-                  )}
-                  <Card className="shadow-sm">
-                    <CardContent className="p-6 sm:p-10">
-                      <p className="font-semibold text-slate-400">Rapor yükleniyor...</p>
-                      <div className="space-y-2 mt-4">
-                        <div className="h-4 bg-slate-200 rounded w-3/4 animate-pulse" />
-                        <div className="h-4 bg-slate-200 rounded w-5/6 animate-pulse" />
-                        <div className="h-4 bg-slate-200 rounded w-2/3 animate-pulse" />
+              <div className="space-y-4">
+                {/* Teaser: Executive Summary clearly visible */}
+                {study.report_markdown && (
+                  <Card className="shadow-sm border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/10">
+                    <CardContent className="p-5">
+                      <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase mb-2">Önizleme</p>
+                      <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed line-clamp-4">
+                        {study.report_markdown.split('\n').slice(0, 8).map((line, i) => <p key={i} className="my-1">{line}</p>)}
                       </div>
                     </CardContent>
                   </Card>
-                </div>
-
-                {/* Paywall Overlay */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-background/50 backdrop-blur-[6px] rounded-2xl text-center z-10">
-                  <div className="max-w-md p-8 bg-white dark:bg-slate-900 rounded-2xl border-2 border-[#17171c] shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
-                    <div className="mx-auto w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center border border-amber-200">
-                      <Lock className="text-amber-800" size={20} />
+                )}
+                {/* Blurred full report + gradient CTA */}
+                <div className="relative rounded-2xl overflow-hidden border border-slate-200">
+                  <div className="filter blur-md pointer-events-none select-none opacity-20 p-6 space-y-4">
+                    {study.report_markdown && study.report_markdown.split('\n').slice(8, 30).map((line, i) => (
+                      <div key={i} className="h-3 bg-slate-400 rounded" style={{width: `${70 + Math.random()*30}%`}} />
+                    ))}
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-6 pt-24"
+                    style={{background: "linear-gradient(to top, white 0%, white 50%, transparent 100%)"}}>
+                    <div className="text-center space-y-3 max-w-sm px-4">
+                      <Lock className="mx-auto text-amber-600" size={18} />
+                      <h3 className="text-base font-black text-slate-800">Raporun Tamamını Gör</h3>
+                      <p className="text-xs text-muted-foreground">Fiyat analizi, kanıt zinciri ve karar önerileri seni bekliyor.</p>
+                      <Link href="/client/upgrade" className="inline-flex w-full">
+                        <Button className="w-full bg-[#003c33] hover:bg-[#003c33]/90 text-white font-semibold rounded-xl py-2.5 text-sm">
+                          Planı Yükselt →
+                        </Button>
+                      </Link>
+                      <p className="text-[10px] text-muted-foreground">İlk 2 araştırma ücretsiz · Kredi kartı gerekmez</p>
                     </div>
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-black text-[#17171c]">Sentez Raporu · Starter+ planı gerektirir</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Bu özelliğe erişmek için planınızı yükseltin. İlk 3 gün ve 2 araştırma ücretsiz — kredi kartı gerekmez.
-                      </p>
-                    </div>
-                    <Link href="/client/upgrade" className="inline-flex w-full">
-                      <Button className="w-full bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl py-2.5 text-xs">
-                        Planı Yükselt →
-                      </Button>
-                    </Link>
                   </div>
                 </div>
               </div>
@@ -1763,6 +2030,101 @@ export default function StudyDetailPage() {
                 <Card className="shadow-sm">
                   <CardContent className="p-6 sm:p-10 prose prose-slate max-w-none dark:prose-invert">
                     {renderMarkdown(study.report_markdown)}
+                  </CardContent>
+                </Card>
+
+                {/* External Evidence Verification */}
+                {study?.external_evidence && study.external_evidence.length > 0 && (
+                  <Card className="shadow-sm border-[#003c33]/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Globe size={16} className="text-[#1863dc]" />
+                        Harici Kanıt Doğrulaması
+                      </CardTitle>
+                      <CardDescription>Açık web ve literatür taraması ile bulguların teyit edilmesi.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {study.external_evidence.map((ev, i) => (
+                        <div key={i} className="flex gap-3 items-start p-3 bg-slate-50 rounded-lg border border-border/60">
+                          <Globe size={14} className="shrink-0 mt-0.5 text-slate-400" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-sm text-slate-800">{ev.source_title}</span>
+                              <Badge variant="outline" className="text-[10px]">{ev.relevance}</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{ev.snippet}</p>
+                            {ev.source_url && (
+                              <a href={ev.source_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#1863dc] hover:underline mt-1 inline-block">
+                                Kaynağa Git →
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Research Copilot Chat */}
+                <Card className="shadow-sm border-[#003c33]/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <MessageSquare size={16} className="text-[#1863dc]" />
+                      Research Copilot
+                    </CardTitle>
+                    <CardDescription>Raporla ilgili sorular sorun</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3 max-h-60 overflow-y-auto mb-3">
+                      {chatMessages.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-3">
+                          Rapordaki bulgular, personalar veya öneriler hakkında soru sorabilirsiniz.
+                        </p>
+                      )}
+                      {chatMessages.map((msg, i) => (
+                        <div
+                          key={i}
+                          className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                        >
+                          <div
+                            className={`max-w-[85%] p-2.5 rounded-xl text-xs leading-relaxed ${
+                              msg.role === "user"
+                                ? "bg-[#1863dc] text-white rounded-br-sm"
+                                : "bg-slate-100 text-slate-700 rounded-bl-sm"
+                            }`}
+                          >
+                            {msg.content}
+                          </div>
+                        </div>
+                      ))}
+                      {sendingChat && (
+                        <div className="flex justify-start">
+                          <div className="bg-slate-100 text-slate-400 p-2.5 rounded-xl rounded-bl-sm text-xs">
+                            <Loader2 size={14} className="animate-spin inline mr-1.5" />
+                            Düşünüyor...
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
+                        placeholder="Örn: Skeptikler neden reddetti?"
+                        className="text-sm"
+                        disabled={sendingChat}
+                      />
+                      <Button
+                        onClick={sendChat}
+                        disabled={!chatInput.trim() || sendingChat}
+                        size="sm"
+                        className="shrink-0"
+                      >
+                        {sendingChat ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                        <span className="ml-1.5 hidden sm:inline">Gönder</span>
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </div>

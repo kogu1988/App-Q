@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json
 import logging
+import random
 import re
 import uuid
 from typing import Any, Generator, Dict, List, Optional
@@ -39,6 +40,11 @@ from packages.research_engine.nodes.sycophancy import (
     build_elephant_system_prompt,
     judge_answer_quality,
     handle_zero_sum_bet,
+)
+from packages.research_engine.nodes.probe import (
+    should_probe,
+    generate_probe_question,
+    jaccard_similarity,
 )
 
 logger = logging.getLogger(__name__)
@@ -159,22 +165,49 @@ def generate_interview_script(
     all_questions = get_question_collection()
     
     if not all_questions:
-        return [
+        cat_text = f"{category} ürünü" if category != "genel" else "bu ürün/hizmet"
+        price_text = expected_price if expected_price not in ("önerilecek fiyat/paket",) else "belirtilen fiyat"
+        fallback = [
             InterviewQuestion(
                 id="q_context",
                 label="CONTEXT",
-                question=f"{category} bağlamında bugün bu problemi nasıl yaşıyorsun? Son yaşadığın somut bir örneği anlatır mısın?",
+                question=f"{cat_text} bağlamında bugün bu problemi nasıl yaşıyorsun? Son yaşadığın somut bir örneği anlatır mısın?",
                 reason="Pain point'i soyut fikir yerine gerçek olay üzerinden yakalamak.",
                 tags=["pain_point"],
             ),
             InterviewQuestion(
+                id="q_value",
+                label="VALUE",
+                question=f"Bu ürünün sana sağlayacağı en büyük fayda ne olurdu? Hangi özellik seni en çok heyecanlandırır?",
+                reason="Değer algısını ve kullanıcı beklentilerini ölçmek.",
+                tags=["value"],
+            ),
+            InterviewQuestion(
+                id="q_objection",
+                label="OBJECTION",
+                question=f"Bu ürünü kullanmaktan seni alıkoyacak en büyük engel ne olurdu?",
+                reason="Satın alma bariyerlerini ve itirazları tespit etmek.",
+                tags=["objection"],
+            ),
+            InterviewQuestion(
                 id="q_pricing",
                 label="PRICING",
-                question=f"{expected_price} için ödeme yapmayı düşünür müsün? Hangi fiyat aralığı makul, hangi nokta pahalı gelir?",
+                question=f"Bu ürün için aylık ne kadar ödemeyi kabul edersin? Hangi fiyattan sonra 'bu çok pahalı' dersin?",
                 reason="Türkiye pazarı için fiyat eşiğini ve paketleme sinyalini almak.",
                 tags=["pricing"],
-            )
+            ),
+            InterviewQuestion(
+                id="q_alternatives",
+                label="ALTERNATIVES",
+                question=f"Şu anda bu ihtiyacını nasıl karşılıyorsun? Hangi alternatifleri kullanıyorsun?",
+                reason="Mevcut rakipleri ve switching maliyetini öğrenmek.",
+                tags=["positioning"],
+            ),
         ]
+        # Sprint 5 — A/B varyant karşılaştırma sorusu
+        if brief.variant_a and brief.variant_b:
+            fallback.append(build_ab_comparison_question(brief))
+        return fallback
 
     liked_questions = [q for q in all_questions if q.get("is_liked")]
     if not liked_questions:
@@ -186,9 +219,9 @@ def generate_interview_script(
         tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
         if not tags:
             tags = ["value"]
-            
+
         q_text = q["question"].replace("{category}", category).replace("{expected_price}", expected_price)
-        
+
         script.append(
             InterviewQuestion(
                 id=f"q_db_{i}",
@@ -198,8 +231,64 @@ def generate_interview_script(
                 tags=tags,
             )
         )
-        
+
+    # Sprint 5 — A/B varyant karşılaştırma sorusu
+    if brief.variant_a and brief.variant_b:
+        script.append(build_ab_comparison_question(brief))
+
     return script
+
+
+def build_ab_comparison_question(brief: ResearchBrief) -> InterviewQuestion:
+    """
+    Creates an A/B comparison question that presents both variants
+    with randomized labels (neutral names like "Seçenek 1" and "Seçenek 2")
+    and asks the persona to compare them.
+
+    The actual randomization per persona happens in _format_ab_question()
+    during interview execution, using persona index as seed for reproducibility.
+    """
+    return InterviewQuestion(
+        id="q_ab_test",
+        label="AB_TEST",
+        question=(
+            "Şimdi sana iki farklı ürün anlatacağım. İkisini de dikkatlice dinle ve "
+            "hangisini tercih edeceğini söyle.\n\n"
+            "{first_label}: {first_variant}\n\n"
+            "{second_label}: {second_variant}\n\n"
+            "Hangisini tercih edersin? Neden?"
+        ),
+        reason="A/B varyant testi — kör karşılaştırma",
+        tags=["positioning", "value"],
+    )
+
+
+def _format_ab_question(brief: ResearchBrief, persona_index: int) -> tuple[str, str]:
+    """
+    Randomized A/B question per persona.
+    Uses persona_index as seed for reproducible randomization.
+
+    Returns (formatted_question_text, mapping_note) where mapping_note
+    encodes which variant was presented as Seçenek 1 and which as Seçenek 2.
+    """
+    rng = random.Random(persona_index)
+    if rng.random() > 0.5:
+        first_variant = brief.variant_a
+        second_variant = brief.variant_b
+        mapping = "AB_MAP:A_AS_1"  # Variant A = Seçenek 1, Variant B = Seçenek 2
+    else:
+        first_variant = brief.variant_b
+        second_variant = brief.variant_a
+        mapping = "AB_MAP:A_AS_2"  # Variant A = Seçenek 2, Variant B = Seçenek 1
+
+    question_text = (
+        "Şimdi sana iki farklı ürün anlatacağım. İkisini de dikkatlice dinle ve "
+        "hangisini tercih edeceğini söyle.\n\n"
+        f"Seçenek 1: {first_variant}\n\n"
+        f"Seçenek 2: {second_variant}\n\n"
+        "Hangisini tercih edersin? Neden?"
+    )
+    return question_text, mapping
 
 
 def build_research_plan(
@@ -284,26 +373,67 @@ def generate_personas(brief: ResearchBrief, panel_roles: List[PanelRole] | None 
         return generate_personas_from_roles(brief, panel_roles, model)
 
     market = brief.market or "Türkiye"
-    return [
-        Persona(
-            id="p1",
-            name="Elif",
-            age=34,
-            city="İstanbul",
-            segment="KOBİ e-ticaret marka sahibi",
-            role_title="Growth Odaklı Kurucu",
-            stance="Champion",
-            price_sensitivity=7,
-            digital_confidence=8,
-            context=f"{market} pazarında hızlı büyümek isteyen satıcı.",
-            goals=["Ürün mesajını hızla test etmek"],
-            objections=["Raporun gerçek müşteri davranışını temsil etmemesi"],
-            knowledge_boundary="Kendi satış operasyonu hakkında konuşabilir.",
-            bio="Pazaryeri ve kendi sitesi arasında büyümeye çalışan marka sahibi.",
-            attributes=persona_attributes("KOBİ e-ticaret marka sahibi", "Champion", 7, 8),
-            traits=persona_traits(1, "Champion", 7, 8),
-        )
+    from .matrix import allocate_cohort_matrix
+    
+    allocations = allocate_cohort_matrix(5)
+    
+    # Stance diversity zorlaması: en az 3 farklı stance + Skeptic
+    present = set(a["stance"] for a in allocations)
+    if len(present) < 5:
+        target = ["Innovator", "EarlyAdopter", "Mainstream", "Laggard", "Skeptic"]
+        for i in range(min(5, len(allocations))):
+            allocations[i]["stance"] = target[i]
+    
+    personas: List[Persona] = []
+    
+    SES_SEGMENTS = {
+        "AB": ["Üst Düzey Yönetici", "Beyaz Yaka Profesyonel", "Girişimci"],
+        "C1": ["Orta Düzey Uzman", "KOBİ Çalışanı", "Serbest Çalışan"],
+        "C2": ["Esnaf", "Teknisyen", "Mavi Yaka Ustabaşı"],
+        "DE": ["Öğrenci", "Emekli", "Yarı Zamanlı Çalışan"],
+    }
+    NAMES = ["Ahmet", "Ayşe", "Mehmet", "Zeynep", "Mustafa"]
+    CITIES = ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya"]
+    CONTEXTS = [
+        f"{market} pazarında yeni ürünleri denemeye açık.",
+        f"{market} pazarında fiyat-performans odaklı.",
+        f"{market} pazarında güvenilir çözümler arıyor.",
+        f"{market} pazarında mevcut alternatifleri değerlendiriyor.",
+        f"{market} pazarında yeniliklere temkinli yaklaşıyor.",
     ]
+    
+    for idx, alloc in enumerate(allocations):
+        stance = alloc["stance"]
+        ses = alloc.get("ses_group", "C1")
+        ps = 3 + (idx % 7)
+        dc = 4 + (idx % 6)
+        tr = persona_traits(idx + 1, stance, ps, dc)
+        segment = SES_SEGMENTS.get(ses, SES_SEGMENTS["C1"])[idx % 3]
+        
+        personas.append(Persona(
+            id=f"p{idx + 1}",
+            name=NAMES[idx],
+            age=25 + (idx * 7) % 30,
+            city=CITIES[idx],
+            segment=segment,
+            role_title=segment,
+            stance=stance,
+            price_sensitivity=ps,
+            digital_confidence=dc,
+            context=CONTEXTS[idx],
+            goals=["Ürünün faydasını değerlendirmek", "Fiyat-performans dengesini anlamak"],
+            objections=["Değer önerisinin belirsizliği", "Alternatiflerin varlığı"],
+            knowledge_boundary="Kendi deneyim ve alışkanlıkları hakkında konuşabilir.",
+            bio=f"{segment} olarak {market} pazarında {stance} tutumuna sahip.",
+            attributes=persona_attributes(segment, stance, ps, dc),
+            traits=tr,
+            big_five=tr,
+            ses_group=ses,
+            diffusion_stage=STANCE_PROFILE.get(stance, {}).get("tr_description", ""),
+            neo_facets=neo_facets_from_traits(tr, stance),
+        ))
+    
+    return personas
 
 
 def generate_personas_from_roles(brief: ResearchBrief, panel_roles: List[PanelRole], model: ResearchModel | None = None) -> List[Persona]:
@@ -429,8 +559,8 @@ def run_interviews(
         logger.warning("system_config fetch failed, using default persona prompt", exc_info=True)
         db_prompt = None
 
-    for persona in personas:
-        original_system = db_prompt if db_prompt else build_elephant_system_prompt(persona)
+    for persona_idx, persona in enumerate(personas):
+        original_system = db_prompt if db_prompt else build_elephant_system_prompt(persona, brief.hypothesis_blind)
         base_system = original_system
         ewma_score = 1.0  # EWMA başlangıç skoru (god_doc.md §5)
 
@@ -440,13 +570,37 @@ def run_interviews(
             f"Persona stance: {persona.stance}",
             f"Bilgi sınırı: {persona.knowledge_boundary}",
         ]
+        total_probes = 0  # Sprint 3: max 3 probes per interview
 
         for script_question in script:
+            # Sprint 5 — A/B soru metnini kişiye özel randomize et
+            question_text = script_question.question
+            if script_question.label == "AB_TEST" and brief.variant_a and brief.variant_b:
+                question_text, ab_mapping = _format_ab_question(brief, persona_idx)
+                consistency_notes.append(ab_mapping)
+
             # 1. ACT-R Episodic Memory
             turn_memory = calculate_act_r_memory_prompt(turns, script_question)
 
             # 2. Turkey-specific local reflexes
             turkey_context = get_turkey_behavior_context(persona, script_question)
+
+            # ── Hypothesis-Blind Context (Grounded Simulation §4.3) ──
+            research_context_block = ""
+            if brief.hypothesis_blind:
+                product_desc = brief.idea or f"{brief.category} kategorisinde bir ürün"
+                research_context_block = (
+                    f"[BAĞLAM]\n"
+                    f"Şu ürün/hizmet hakkında görüşlerin sorulacak:\n"
+                    f"{product_desc}\n\n"
+                    f"Sana sorulan soruları kendi deneyimlerine ve alışkanlıklarına göre yanıtla.\n"
+                    f"Bu ürün hakkında ne düşündüğünü bilmek istiyoruz; doğru/yanlış cevap yok.\n\n"
+                )
+            else:
+                research_context_block = (
+                    f"[ARAŞTIRMA KONUSU]\n"
+                    f"{brief.idea}\n\n"
+                )
 
             prompt = (
                 f"Dijital özgüven: {persona.digital_confidence}/10\n"
@@ -458,12 +612,13 @@ def run_interviews(
                 f"Bilgi sınırı: {persona.knowledge_boundary}\n"
                 f"{turn_memory}"
                 f"{turkey_context}\n"
+                f"{research_context_block}"
                 f"Soru etiketi: {script_question.label}\n"
-                f"Soru: {script_question.question}\n"
+                f"Soru: {question_text}\n"
                 "Kısa, somut ve Türkiye pazarı gerçeklerine uygun cevap ver."
             )
             answer = model.generate(base_system, prompt)
-            quality_flags = judge_answer_quality(persona, script_question.question, answer)
+            quality_flags = judge_answer_quality(persona, question_text, answer)
 
             # 3. ELEPHANT & Zero-Sum Bet check
             answer, quality_flags = handle_zero_sum_bet(
@@ -471,18 +626,55 @@ def run_interviews(
             )
 
             # 4. Echo Detection (god_doc.md §5 EWMA Tamir Protokolü)
-            if detect_echo(answer, script_question.question):
+            if detect_echo(answer, question_text):
                 quality_flags = list(quality_flags) + ["echo_detected"]
 
             turns.append(
                 InterviewTurn(
-                    question=script_question.question,
+                    question=question_text,
                     answer=answer,
-                    tags=script_question.tags or classify_question(script_question.question),
+                    tags=script_question.tags or classify_question(question_text),
                     model_id=getattr(model, "last_model_id", None),
                     quality_flags=quality_flags,
                 )
             )
+
+            # ── Sprint 3: Adaptive Probe Engine ──
+            if total_probes < 3 and should_probe(answer, script_question.label):
+                total_probes += 1
+                probe_question = generate_probe_question(
+                    answer, question_text, persona.stance
+                )
+                probe_prompt = (
+                    f"{prompt}\n\n"
+                    f"[TAKİP SORUSU — Araştırmacı soruyor]\n"
+                    f"{probe_question}\n"
+                    "Bu takip sorusuna kimliğine sadık kalarak, kısa ve somut cevap ver."
+                )
+                probe_answer = model.generate(base_system, probe_prompt)
+
+                # Probe quality guard: discard if too similar to original (Jaccard > 0.7)
+                sim = jaccard_similarity(answer, probe_answer)
+                if sim <= 0.7:
+                    probe_flags = judge_answer_quality(persona, probe_question, probe_answer)
+                    turns.append(
+                        InterviewTurn(
+                            question=probe_question,
+                            answer=probe_answer,
+                            tags=script_question.tags or classify_question(script_question.question),
+                            model_id=getattr(model, "last_model_id", None),
+                            quality_flags=probe_flags,
+                            is_probe=True,
+                        )
+                    )
+                    consistency_notes.append(
+                        f"Probe ({total_probes}/3) — Jaccard: {sim:.2f}"
+                    )
+                else:
+                    total_probes -= 1  # Don't count discarded probe against limit
+                    consistency_notes.append(
+                        f"Probe discarded — Jaccard too high: {sim:.2f}"
+                    )
 
             # 5. EWMA Tamir Protokolü (god_doc.md §5)
             turn_quality = calculate_turn_quality(quality_flags)
@@ -520,8 +712,8 @@ def run_interviews_stream(
         logger.warning("system_config fetch failed (stream), using default persona prompt", exc_info=True)
         db_prompt = None
         
-    for persona in personas:
-        original_system = db_prompt if db_prompt else build_elephant_system_prompt(persona)
+    for persona_idx, persona in enumerate(personas):
+        original_system = db_prompt if db_prompt else build_elephant_system_prompt(persona, brief.hypothesis_blind)
         base_system = original_system
         ewma_score = 1.0
 
@@ -531,8 +723,15 @@ def run_interviews_stream(
             f"Persona stance: {persona.stance}",
             f"Bilgi sınırı: {persona.knowledge_boundary}",
         ]
+        total_probes = 0  # Sprint 3: max 3 probes per interview
         
         for script_question in script:
+            # Sprint 5 — A/B soru metnini kişiye özel randomize et
+            question_text = script_question.question
+            if script_question.label == "AB_TEST" and brief.variant_a and brief.variant_b:
+                question_text, ab_mapping = _format_ab_question(brief, persona_idx)
+                consistency_notes.append(ab_mapping)
+
             yield ("question_start", {"persona": persona, "question": script_question})
             
             for attempt in range(max_retries + 1):
@@ -548,6 +747,22 @@ def run_interviews_stream(
                 # 2. Turkey-specific local reflexes
                 turkey_context = get_turkey_behavior_context(persona, script_question)
 
+                # ── Hypothesis-Blind Context (Grounded Simulation §4.3) ──
+                if brief.hypothesis_blind:
+                    product_desc = brief.idea or f"{brief.category} kategorisinde bir ürün"
+                    research_context_block = (
+                        f"[BAĞLAM]\n"
+                        f"Şu ürün/hizmet hakkında görüşlerin sorulacak:\n"
+                        f"{product_desc}\n\n"
+                        f"Sana sorulan soruları kendi deneyimlerine ve alışkanlıklarına göre yanıtla.\n"
+                        f"Bu ürün hakkında ne düşündüğünü bilmek istiyoruz; doğru/yanlış cevap yok.\n\n"
+                    )
+                else:
+                    research_context_block = (
+                        f"[ARAŞTIRMA KONUSU]\n"
+                        f"{brief.idea}\n\n"
+                    )
+
                 prompt = (
                     f"[KİMLİĞİN]\n"
                     f"{persona.name}, {persona.age} yaş, {persona.city} — {persona.segment}\n"
@@ -560,10 +775,9 @@ def run_interviews_stream(
                     f"Bilgi Sınırın: {persona.knowledge_boundary}\n"
                     f"{turn_memory}"
                     f"{turkey_context}\n\n"
-                    f"[ARAŞTIRMA KONUSU]\n"
-                    f"{brief.idea}\n\n"
+                    f"{research_context_block}"
                     f"[SORU — {script_question.label}]\n"
-                    f"{script_question.question}\n\n"
+                    f"{question_text}\n\n"
                     f"[GÖREV]\n"
                     f"Yukarıdaki kimliğine girerek bu soruyu yanıtla.\n"
                     f"- 2-4 cümle, somut, birinci tekil şahıs.\n"
@@ -581,7 +795,7 @@ def run_interviews_stream(
                     full_answer = model.generate(system, prompt)
                     yield ("chunk", {"text": full_answer})
                 
-                quality_flags = judge_answer_quality(persona, script_question.question, full_answer)
+                quality_flags = judge_answer_quality(persona, question_text, full_answer)
 
                 # 3. ELEPHANT & Zero-Sum Bet check & repair ( pricing check at attempt 0 )
                 if attempt == 0:
@@ -602,17 +816,63 @@ def run_interviews_stream(
                 
                 if not critical_failure or attempt == max_retries:
                     # 4. Echo Detection (god_doc.md §5 EWMA Tamir Protokolü)
-                    if detect_echo(full_answer, script_question.question):
+                    if detect_echo(full_answer, question_text):
                         quality_flags = list(quality_flags) + ["echo_detected"]
 
                     turn = InterviewTurn(
-                        question=script_question.question,
+                        question=question_text,
                         answer=full_answer,
-                        tags=script_question.tags or classify_question(script_question.question),
+                        tags=script_question.tags or classify_question(question_text),
                         model_id=getattr(model, "last_model_id", None),
                         quality_flags=quality_flags,
                     )
                     turns.append(turn)
+
+                    # ── Sprint 3: Adaptive Probe Engine ──
+                    if total_probes < 3 and should_probe(full_answer, script_question.label):
+                        total_probes += 1
+                        probe_question = generate_probe_question(
+                            full_answer, question_text, persona.stance
+                        )
+                        yield ("probe_start", {"persona": persona, "probe": probe_question})
+
+                        probe_prompt = (
+                            f"{prompt}\n\n"
+                            f"[TAKİP SORUSU — Araştırmacı soruyor]\n"
+                            f"{probe_question}\n"
+                            "Bu takip sorusuna kimliğine sadık kalarak, kısa ve somut cevap ver."
+                        )
+                        probe_answer = ""
+                        if hasattr(model, "generate_stream"):
+                            for chunk in model.generate_stream(system, probe_prompt):
+                                probe_answer += chunk
+                                yield ("chunk", {"text": chunk})
+                        else:
+                            probe_answer = model.generate(system, probe_prompt)
+                            yield ("chunk", {"text": probe_answer})
+
+                        # Probe quality guard: discard if too similar to original (Jaccard > 0.7)
+                        sim = jaccard_similarity(full_answer, probe_answer)
+                        if sim <= 0.7:
+                            probe_flags = judge_answer_quality(persona, probe_question, probe_answer)
+                            probe_turn = InterviewTurn(
+                                question=probe_question,
+                                answer=probe_answer,
+                                tags=script_question.tags or classify_question(script_question.question),
+                                model_id=getattr(model, "last_model_id", None),
+                                quality_flags=probe_flags,
+                                is_probe=True,
+                            )
+                            turns.append(probe_turn)
+                            consistency_notes.append(
+                                f"Probe ({total_probes}/3) — Jaccard: {sim:.2f}"
+                            )
+                            yield ("probe_end", {"persona": persona, "turn": probe_turn})
+                        else:
+                            total_probes -= 1  # Don't count discarded probe against limit
+                            consistency_notes.append(
+                                f"Probe discarded — Jaccard too high: {sim:.2f}"
+                            )
 
                     # Kademeli Bellek Özetleme: her 10 turda tetiklenir (god_doc.md §5)
                     mem_summary = summarize_turns_if_needed(turns)
@@ -658,15 +918,44 @@ def run_interviews_batch(
         logger.warning("system_config fetch failed (batch), using default persona prompt", exc_info=True)
         db_prompt = None
 
-    # Soru listesini numaralı formata çevir
-    questions_block = ""
-    for i, sq in enumerate(script, start=1):
-        questions_block += f"{i}. [{sq.label}] {sq.question}\n"
+    # Soru listesini numaralı formata çevir (AB_TEST hariç — kişiye özel aşağıda)
+    non_ab_questions = [sq for sq in script if sq.label != "AB_TEST"]
+    has_ab = any(sq.label == "AB_TEST" for sq in script) and brief.variant_a and brief.variant_b
 
-    for persona in personas:
-        system_prompt = db_prompt if db_prompt else build_elephant_system_prompt(persona)
+    for persona_idx, persona in enumerate(personas):
+        system_prompt = db_prompt if db_prompt else build_elephant_system_prompt(persona, brief.hypothesis_blind)
+
+        # Sprint 5 — A/B soru metnini kişiye özel randomize et (batch için)
+        ab_question_text: str | None = None
+        ab_mapping: str | None = None
+        if has_ab:
+            ab_question_text, ab_mapping = _format_ab_question(brief, persona_idx)
+
+        # Soru bloğunu kişiye özel oluştur (AB sorusu varsa ekle)
+        questions_block = ""
+        for i, sq in enumerate(non_ab_questions, start=1):
+            questions_block += f"{i}. [{sq.label}] {sq.question}\n"
+        if ab_question_text:
+            ab_num = len(non_ab_questions) + 1
+            questions_block += f"{ab_num}. [AB_TEST] {ab_question_text}\n"
 
         turkey_context = get_turkey_behavior_context(persona, script[0])
+
+        # ── Hypothesis-Blind Context (Grounded Simulation §4.3) ──
+        if brief.hypothesis_blind:
+            product_desc = brief.idea or f"{brief.category} kategorisinde bir ürün"
+            research_context_block = (
+                f"[BAĞLAM]\n"
+                f"Şu ürün/hizmet hakkında görüşlerin sorulacak:\n"
+                f"{product_desc}\n\n"
+                f"Sana sorulan soruları kendi deneyimlerine ve alışkanlıklarına göre yanıtla.\n"
+                f"Bu ürün hakkında ne düşündüğünü bilmek istiyoruz; doğru/yanlış cevap yok.\n\n"
+            )
+        else:
+            research_context_block = (
+                f"[ARAŞTIRMA KONUSU]\n"
+                f"{brief.idea}\n\n"
+            )
 
         prompt = (
             f"[KİMLİĞİN]\n"
@@ -678,8 +967,7 @@ def run_interviews_batch(
             f"Hedeflerin: {', '.join(persona.goals) if persona.goals else 'Belirtilmedi'}\n"
             f"İtirazların: {', '.join(persona.objections) if persona.objections else 'Belirtilmedi'}\n"
             f"{turkey_context}\n\n"
-            f"[ARAŞTIRMA KONUSU]\n"
-            f"{brief.idea}\n\n"
+            f"{research_context_block}"
             f"[SORULAR]\n"
             f"{questions_block}\n"
             f"[GÖREV]\n"
@@ -707,7 +995,7 @@ def run_interviews_batch(
                     "- Eger skeptik bir karaktersen urunu elestirmekten ve reddetmekten cekinme.\n"
                 )
             
-            raw = model.generate(system_prompt, current_prompt, response_format="json")
+            raw = model.generate(system_prompt, current_prompt)
 
             if not raw or raw.strip() == "":
                 logger.warning(f"Batch empty response for {persona.name} (attempt {batch_attempt+1}), retrying...")
@@ -725,7 +1013,7 @@ def run_interviews_batch(
                             answers[lbl] = ans
                 if answers:
                     break
-                logger.warning(f"Batch parse yielded no answers for {persona.name} (attempt {batch_attempt+1})")
+                logger.warning(f"Batch parse yielded no answers for {persona.name} (attempt {batch_attempt+1}), raw[:200]={raw[:200]}")
             except (json.JSONDecodeError, Exception) as e:
                 logger.warning(f"Batch parse failed for {persona.name} (attempt {batch_attempt+1}): {e}")
 
@@ -736,8 +1024,10 @@ def run_interviews_batch(
         critical_failures = 0
         
         for sq in script:
+            # Sprint 5 — A/B sorusu için kişiye özel metni kullan
+            sq_question = ab_question_text if (sq.label == "AB_TEST" and ab_question_text) else sq.question
             ans = answers.get(sq.label.upper(), "[Yanıt alınamadı]")
-            quality_flags = list(judge_answer_quality(persona, sq.question, ans))
+            quality_flags = list(judge_answer_quality(persona, sq_question, ans))
             
             # ── Intra-Persona Echo Detection (Jaccard, god_doc.md §5.3) ──
             if len(answers_list) >= 1:
@@ -757,9 +1047,9 @@ def run_interviews_batch(
                 critical_failures += 1
 
             turns.append(InterviewTurn(
-                question=sq.question,
+                question=sq_question,
                 answer=ans,
-                tags=sq.tags or classify_question(sq.question),
+                tags=sq.tags or classify_question(sq_question),
                 model_id=getattr(model, "last_model_id", None),
                 quality_flags=quality_flags,
             ))
@@ -778,6 +1068,8 @@ def run_interviews_batch(
             f"Batch interview — {answered_count}/{total_questions} yanıt alındı",
             f"Kalite skoru: {quality_score:.2f} | Flag sayısı: {total_flags} | Kritik hata: {critical_failures}",
         ]
+        if ab_mapping:
+            consistency_notes.append(ab_mapping)
         
         # Stance uyumluluk notu (Grounded Simulation §4.3)
         if persona.stance == "Skeptic":

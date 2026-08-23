@@ -1,0 +1,332 @@
+[
+  {
+    "id": "tr-ecommerce-grocery-001",
+    "name": "Online Market Alışverişi — İstanbul",
+    "brief": "İstanbul'da 25-45 yaş arası çalışan profesyoneller için online market alışveriş platformu fikri. Teslimat 30 dakika, minimum sepet 150 TL. Rakip: Getir, Yemeksepeti Market.",
+    "human_findings": [
+      {
+        "title": "Teslimat süresi en kritik satın alma kriteri",
+        "summary": "Kullanıcılar 30 dakikadan uzun teslimatı kabul etmiyor. Getir ile kıyaslama yapılıyor.",
+        "category": "pain_point"
+      },
+      {
+        "title": "Minimum sepet tutarı 150 TL çok yüksek",
+        "summary": "Özellikle bekar çalışanlar için 150 TL alt limit caydırıcı. 75-100 TL aralığı öneriliyor.",
+        "category": "pricing"
+      },
+      {
+        "title": "Taze ürün kalitesi güven sorunu",
+        "summary": "Meyve-sebze ve et ürünlerinde tazelik garantisi isteniyor. 'Seçici' özelliği talep ediliyor.",
+        "category": "risk"
+      },
+      {
+        "title": "Abonelik modeli ilgi çekiyor",
+        "summary": "Aylık sabit ücretle sınırsız teslimat modeli, sık kullanıcılar için cazip.",
+        "category": "value"
+      },
+      {
+        "title": "Marka bilinirliği sorunu",
+        "summary": "Yeni bir platforma güvenmek için ilk 3 siparişte indirim veya referans programı bekleniyor.",
+        "category": "positioning"
+      },
+      {
+        "title": "Uygulama kullanılabilirliği kritik",
+        "summary": "Özellikle 35+ yaş grubu için basit arayüz şart. Kategori gezinmesi kolay olmalı.",
+        "category": "pain_point"
+      }
+    ],
+    "llm_findings": [
+      {
+        "title": "Hızlı teslimat en önemli öncelik",
+        "summary": "30 dakika altı teslimat, kullanıcıların platform tercihinde belirleyici faktör.",
+        "category": "pain_point"
+      },
+      {
+        "title": "Sepet alt limiti kullanıcıları bölüyor",
+        "summary": "150 TL minimum sepet, yalnız yaşayanlar ve öğrenciler için engel oluşturuyor. Esnek limit öneriliyor.",
+        "category": "pricing"
+      },
+      {
+        "title": "Gıda güvenliği ve tazelik endişesi",
+        "summary": "Kullanıcılar paketli olmayan gıdalarda tazelik garantisi istiyor.",
+        "category": "risk"
+      },
+      {
+        "title": "Sadakat programı talebi",
+        "summary": "Düzenli kullanıcılar için puan biriktirme veya cashback sistemi isteniyor.",
+        "category": "value"
+      },
+      {
+        "title": "Uygulama performansı şikayeti",
+        "summary": "Yavaş yüklenen uygulamalar kullanıcı kaybına neden oluyor. Hızlı ve sade arayüz şart.",
+        "category": "pain_point"
+      }
+    ],
+    "critical": [
+      "Teslimat süresi en kritik satın alma kriteri",
+      "Taze ürün kalitesi güven sorunu"
+    ],
+    "contradictions": [
+      [
+        "Minimum sepet tutarı 150 TL çok yüksek",
+        "Abonelik modeli ilgi çekiyor"
+      ]
+    ]
+  },
+  {
+    "id": "tr-saas-crm-002",
+    "name": "KOBİ CRM Yazılımı — Anadolu",
+    "brief": "Anadolu'daki 10-50 çalışanlı KOBİ'ler için Türkçe CRM. Aylık kullanıcı başı 199 TL. Rakip: Paraşüt, Logo, MicroCRM.",
+    "human_findings": [
+      {
+        "title": "Türkçe arayüz ve Türkçe destek zorunlu",
+        "summary": "İngilizce CRM kullanan KOBİ'ler personel eğitiminde zorlanıyor. Tam Türkçe çözüm büyük avantaj.",
+        "category": "value"
+      },
+      {
+        "title": "Mevcut muhasebe yazılımıyla entegrasyon şart",
+        "summary": "Logo, Paraşüt gibi yaygın muhasebe programlarıyla entegre çalışmayan CRM tercih edilmiyor.",
+        "category": "pain_point"
+      },
+      {
+        "title": "Fiyat hassasiyeti yüksek",
+        "summary": "199 TL/kullanıcı fiyatı 10+ kullanıcılı firmalarda aylık maliyeti yükseltiyor. Kademeli fiyatlandırma bekleniyor.",
+        "category": "pricing"
+      },
+      {
+        "title": "Mobil erişim kritik",
+        "summary": "Saha ekibi olan firmalar mobil uygulama olmadan CRM'i kullanmıyor.",
+        "category": "pain_point"
+      },
+      {
+        "title": "Veri güvenliği ve KVKK uyumu",
+        "summary": "Müşteri verilerinin Türkiye'de saklanması ve KVKK uyumluluğu kurumsal müşteriler için ön koşul.",
+        "category": "risk"
+      }
+    ],
+    "llm_findings": [
+      {
+        "title": "Tam Türkçe CRM çözümü güçlü farklılaştırıcı",
+        "summary": "KOBİ'ler İngilizce arayüz ve destekten kaçınıyor. Türkçe çözüm rekabet avantajı sağlıyor.",
+        "category": "value"
+      },
+      {
+        "title": "Logo/Paraşüt entegrasyonu olmazsa olmaz",
+        "summary": "Muhasebe entegrasyonu olmayan CRM pazarda tutunamıyor. API ve hazır konnektör talep ediliyor.",
+        "category": "pain_point"
+      },
+      {
+        "title": "Saha ekibi için mobil uygulama gerekiyor",
+        "summary": "Sahada çalışan personel tablet/telefondan müşteri kaydı girebilmeli.",
+        "category": "pain_point"
+      }
+    ],
+    "critical": [
+      "Mevcut muhasebe yazılımıyla entegrasyon şart",
+      "Veri güvenliği ve KVKK uyumu"
+    ],
+    "contradictions": [
+      [
+        "Fiyat hassasiyeti yüksek",
+        "Türkçe arayüz ve Türkçe destek zorunlu"
+      ]
+    ]
+  },
+  {
+    "id": "tr-edtech-language-003",
+    "name": "İngilizce Konuşma Pratiği Uygulaması",
+    "brief": "Türkiye'de İngilizce öğrenenler için AI destekli konuşma pratiği uygulaması. Aylık 249 TL. Hedef: 18-35 yaş.",
+    "human_findings": [
+      {
+        "title": "Konuşma kaygısı en büyük bariyer",
+        "summary": "Kullanıcılar AI ile konuşmayı 'yargılanmama' avantajı olarak görüyor. Gerçek insanla konuşmaktan çekiniyorlar.",
+        "category": "pain_point"
+      },
+      {
+        "title": "Telaffuz düzeltme özelliği bekleniyor",
+        "summary": "Sadece konuşma değil, anlık telaffuz geri bildirimi isteniyor. Aksan düzeltme talebi yüksek.",
+        "category": "value"
+      },
+      {
+        "title": "Fiyat Duolingo ile kıyaslanıyor",
+        "summary": "249 TL/ay, Duolingo Plus 99 TL'ye karşı pahalı bulunuyor. İlk ay ücretsiz deneme kritik.",
+        "category": "pricing"
+      },
+      {
+        "title": "Türkçe dilbilgisi açıklamaları gerekli",
+        "summary": "Sadece İngilizce değil, hataların Türkçe açıklaması isteniyor. 'Neden yanlış?' sorusunun cevabı.",
+        "category": "value"
+      }
+    ],
+    "llm_findings": [
+      {
+        "title": "AI ile konuşma pratiği özgüven artırıyor",
+        "summary": "Kullanıcılar AI karşısında hata yapma korkusu olmadan pratik yapabiliyor.",
+        "category": "pain_point"
+      },
+      {
+        "title": "Anlık geri bildirim en çok istenen özellik",
+        "summary": "Telaffuz ve dilbilgisi hatalarında anında düzeltme, uygulamanın temel değer önerisi.",
+        "category": "value"
+      },
+      {
+        "title": "Rekabetçi fiyat baskısı",
+        "summary": "Ücretsiz alternatifler (Duolingo) karşısında fiyatlandırma zorluğu yaşanıyor.",
+        "category": "pricing"
+      },
+      {
+        "title": "Gamification motivasyonu artırıyor",
+        "summary": "Rozetler, seviyeler ve günlük hedefler kullanıcı bağlılığını artırıyor.",
+        "category": "value"
+      }
+    ],
+    "critical": [
+      "Konuşma kaygısı en büyük bariyer",
+      "Fiyat Duolingo ile kıyaslanıyor"
+    ],
+    "contradictions": []
+  },
+  {
+    "id": "tr-health-wellness-004",
+    "name": "Online Diyetisyen Platformu",
+    "brief": "Türkiye geneli online diyetisyen ve beslenme danışmanlığı platformu. Seans başı 350 TL, aylık paket 900 TL.",
+    "human_findings": [
+      {
+        "title": "Yüz yüze güven ilişkisi online'a taşınamıyor",
+        "summary": "Kullanıcılar diyetisyenle fiziksel teması tercih ediyor. Online'da güven inşası zor.",
+        "category": "objection"
+      },
+      {
+        "title": "Diyetisyen sertifikası ve uzmanlık kanıtı şart",
+        "summary": "Sahte diyetisyen korkusu nedeniyle diploma ve sertifika doğrulaması isteniyor.",
+        "category": "risk"
+      },
+      {
+        "title": "Kişiselleştirme beklentisi yüksek",
+        "summary": "Hazır diyet listeleri değil, kan tahlili ve yaşam tarzına göre özelleştirilmiş program isteniyor.",
+        "category": "value"
+      },
+      {
+        "title": "Fiyat yüz yüze diyetisyene göre avantajlı",
+        "summary": "350 TL seans fiyatı, klinik diyetisyen 500-800 TL'ye kıyasla uygun bulunuyor.",
+        "category": "pricing"
+      },
+      {
+        "title": "Takip ve motivasyon sistemi talep ediliyor",
+        "summary": "Sadece seans değil, WhatsApp/uygulama üzerinden günlük takip ve motivasyon mesajları bekleniyor.",
+        "category": "value"
+      }
+    ],
+    "llm_findings": [
+      {
+        "title": "Online diyetisyene güven bariyeri",
+        "summary": "Kullanıcılar fiziksel muayene olmadan diyetisyene güvenmekte zorlanıyor.",
+        "category": "objection"
+      },
+      {
+        "title": "Uzmanlık doğrulaması kritik",
+        "summary": "Diyetisyenlerin Sağlık Bakanlığı onaylı sertifikalarının platformda görünür olması gerekiyor.",
+        "category": "risk"
+      },
+      {
+        "title": "Kişiye özel beslenme programı zorunlu",
+        "summary": "Hazır şablonlar kullanıcılar tarafından hemen fark ediliyor ve güven kaybına yol açıyor.",
+        "category": "value"
+      },
+      {
+        "title": "Online fiyat avantajı",
+        "summary": "Yüz yüze diyetisyene göre %30-40 daha uygun fiyat, platformun ana çekim noktası.",
+        "category": "pricing"
+      },
+      {
+        "title": "Sürekli iletişim ve takip beklentisi",
+        "summary": "Haftalık check-in ve günlük motivasyon mesajları kullanıcı memnuniyetini artırıyor.",
+        "category": "value"
+      },
+      {
+        "title": "Kilo verme garantisi talebi",
+        "summary": "Kullanıcılar sonuç garantisi istiyor. '3 ayda 10 kilo' gibi vaatler çekici bulunuyor.",
+        "category": "objection"
+      }
+    ],
+    "critical": [
+      "Yüz yüze güven ilişkisi online'a taşınamıyor",
+      "Diyetisyen sertifikası ve uzmanlık kanıtı şart"
+    ],
+    "contradictions": [
+      [
+        "Fiyat yüz yüze diyetisyene göre avantajlı",
+        "Yüz yüze güven ilişkisi online'a taşınamıyor"
+      ]
+    ]
+  },
+  {
+    "id": "tr-fintech-bnpl-005",
+    "name": "BNPL (Şimdi Al Sonra Öde) — Genç Kullanıcılar",
+    "brief": "18-30 yaş arası gençler için BNPL (Buy Now Pay Later) hizmeti. 3 taksit, vade farksız. E-ticaret sitelerine entegre.",
+    "human_findings": [
+      {
+        "title": "Kredi kartı olmayan gençler için çözüm",
+        "summary": "Kredi kartı alamayan üniversite öğrencileri için BNPL büyük fırsat. Alternatif ödeme yöntemi.",
+        "category": "value"
+      },
+      {
+        "title": "Borç sarmalı ve finansal okuryazarlık riski",
+        "summary": "Genç kullanıcılar taksitleri biriktirip ödeyememe riski taşıyor. Harcama limiti ve uyarı sistemi şart.",
+        "category": "risk"
+      },
+      {
+        "title": "BDDK ve yasal regülasyon belirsizliği",
+        "summary": "BNPL henüz net regülasyona tabi değil. Gelecekteki yasal değişiklikler iş modelini tehdit edebilir.",
+        "category": "risk"
+      },
+      {
+        "title": "E-ticaret entegrasyonu kolaylığı",
+        "summary": "Trendyol, Hepsiburada gibi platformlara kolay entegre olabilen çözüm tercih ediliyor.",
+        "category": "pain_point"
+      },
+      {
+        "title": "Vade farksız olması en büyük çekim noktası",
+        "summary": "Kredi kartı taksitlerindeki vade farkına kıyasla vade farksız BNPL çok cazip.",
+        "category": "value"
+      }
+    ],
+    "llm_findings": [
+      {
+        "title": "Kredi kartsız gençlere ulaşım",
+        "summary": "BNPL, kredi kartı penetrasyonunun düşük olduğu genç segmentte büyüme fırsatı sunuyor.",
+        "category": "value"
+      },
+      {
+        "title": "Aşırı borçlanma tehlikesi",
+        "summary": "Kullanıcılar birden fazla BNPL hizmetini aynı anda kullanarak borç yükünü artırabiliyor.",
+        "category": "risk"
+      },
+      {
+        "title": "Regülasyon riski iş modelini tehdit ediyor",
+        "summary": "BDDK'nın BNPL'ye yönelik düzenleme getirmesi bekleniyor. Lisans zorunluluğu gelebilir.",
+        "category": "risk"
+      },
+      {
+        "title": "Pazaryeri entegrasyonu büyüme şartı",
+        "summary": "Büyük pazaryerleriyle anlaşma yapamayan BNPL oyuncuları ölçeklenemiyor.",
+        "category": "pain_point"
+      },
+      {
+        "title": "Vade farksız model kullanıcı çekiyor",
+        "summary": "Faizsiz taksit imkanı, fiyat hassasiyeti yüksek genç kullanıcılar için birincil tercih sebebi.",
+        "category": "value"
+      }
+    ],
+    "critical": [
+      "Borç sarmalı ve finansal okuryazarlık riski",
+      "BDDK ve yasal regülasyon belirsizliği"
+    ],
+    "contradictions": [
+      [
+        "Vade farksız olması en büyük çekim noktası",
+        "Borç sarmalı ve finansal okuryazarlık riski"
+      ]
+    ]
+  }
+]

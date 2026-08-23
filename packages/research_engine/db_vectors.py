@@ -205,6 +205,32 @@ def delete_from_question_collection(question_id: int) -> None:
     with get_db() as (conn, cur):
         cur.execute("DELETE FROM curated_questions WHERE id = %s", (question_id,))
 
+def export_finetuning_data(liked_only: bool = True) -> str:
+    """Curated soruları ShareGPT/JSONL formatında fine-tuning verisi olarak dışa aktarır.
+
+    Her satır bir ShareGPT kaydı içerir (Unsloth/Axolotl uyumlu):
+      {"conversations": [{"from": "human", "value": "<talimat>"}, {"from": "gpt", "value": "<soru>"}]}
+    """
+    questions = get_question_collection()
+    if liked_only:
+        questions = [q for q in questions if q.get("is_liked")]
+    lines: list[str] = []
+    for q in questions:
+        category = q.get("research_category") or "Genel"
+        purpose = q.get("purpose_context") or "Hedef kitle içgörüsü toplamak"
+        instruction = (
+            f"Bir pazar araştırması mülakat sorusu yaz. "
+            f"Kategori: {category}. Amaç: {purpose}."
+        )
+        record = {
+            "conversations": [
+                {"from": "human", "value": instruction},
+                {"from": "gpt", "value": q.get("question", "")},
+            ]
+        }
+        lines.append(json.dumps(record, ensure_ascii=False))
+    return "\n".join(lines)
+
 def cluster_atomic_codes(codes: list[dict], threshold: float = 0.15) -> list[list[dict]]:
     """
     Clusters atomic codes using PostgreSQL pgvector cosine distance.

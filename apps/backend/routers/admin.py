@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, Header, Response
 from pydantic import BaseModel
 from typing import Optional, List
 import os
@@ -242,6 +242,63 @@ async def update_purpose(question_id: int, purpose: str):
 @router.delete("/questions/{question_id}")
 async def delete_question(question_id: int):
     delete_from_question_collection(question_id)
+    return {"status": "success"}
+
+@router.get("/fine-tuning/export")
+async def export_finetuning_endpoint():
+    """Beğenilmiş curated soruları ShareGPT JSONL formatında dışa aktarır (Enterprise fine-tuning verisi)."""
+    from packages.research_engine.db_vectors import export_finetuning_data
+    data = export_finetuning_data(liked_only=True)
+    if not data:
+        raise HTTPException(status_code=404, detail="Dışa aktarılacak beğenilmiş soru bulunamadı.")
+    return Response(
+        content=data,
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": "attachment; filename=clarere-finetuning.jsonl"},
+    )
+
+
+# ─── Multi-User Organizations (Enterprise) ────────────────────────────────────
+
+class OrgCreate(BaseModel):
+    org_id: str
+    name: str
+    plan_type: str = "Enterprise"
+    owner_username: str = ""
+
+class OrgMemberAdd(BaseModel):
+    org_id: str
+    username: str
+    role: str = "member"
+
+@router.get("/organizations")
+async def list_organizations_endpoint():
+    from packages.research_engine.db_org import list_organizations
+    return list_organizations()
+
+@router.post("/organizations")
+async def create_organization_endpoint(org: OrgCreate):
+    from packages.research_engine.db_org import create_organization
+    create_organization(org.org_id, org.name, org.plan_type, org.owner_username)
+    return {"status": "success", "org_id": org.org_id}
+
+@router.get("/organizations/{org_id}/members")
+async def list_organization_members_endpoint(org_id: str):
+    from packages.research_engine.db_org import list_organization_members
+    return list_organization_members(org_id)
+
+@router.post("/organizations/members")
+async def add_organization_member_endpoint(member: OrgMemberAdd):
+    from packages.research_engine.db_org import add_organization_member
+    add_organization_member(member.org_id, member.username, member.role)
+    return {"status": "success"}
+
+@router.delete("/organizations/{org_id}/members/{username}")
+async def remove_organization_member_endpoint(org_id: str, username: str):
+    from packages.research_engine.db_org import remove_organization_member
+    removed = remove_organization_member(org_id, username)
+    if not removed:
+        raise HTTPException(status_code=404, detail="Üye bulunamadı.")
     return {"status": "success"}
 
 

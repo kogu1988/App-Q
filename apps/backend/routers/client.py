@@ -9,10 +9,10 @@ from packages.research_engine.analytics import synthesize_report
 from packages.research_engine.privacy import PrivacyMasker, PrivacyResearchModelWrapper
 from packages.research_engine.database import (
     list_studies, load_study_payload, save_study, archive_study, delete_study, save_feedback,
-
+    get_findings, get_finding_detail, save_findings,
     get_client_by_username, upgrade_client_plan, check_simulation_limit,
     register_client_if_new, atomic_increment_simulation_count,
-    count_user_non_ab_simulations
+    count_user_non_ab_simulations, count_chat_messages
 )
 from packages.research_engine.db_vectors import (
     get_personas_pool, save_persona_to_pool
@@ -101,6 +101,171 @@ def _require_feature(plan_type: str, feature: str) -> None:
             },
         )
 
+
+# ── Sprint 4: Research Copilot ──
+
+def build_research_context(report: dict) -> str:
+    """
+    Araştırma raporundan LLM için kompakt ama zengin bağlam metni oluşturur.
+
+    İçerik:
+      - Yönetici özeti
+      - Her bulgu (kanıt alıntılarıyla birlikte)
+      - Persona özetleri (stance, segment, SES)
+      - Fiyatlandırma içgörüleri
+      - Stance dağılımı
+    """
+    parts: list[str] = []
+
+    # 1. Executive Summary
+    exec_summary = report.get("executive_summary")
+    if exec_summary:
+        parts.append("=== YÖNETİCİ ÖZETİ ===")
+        if isinstance(exec_summary, list):
+            for item in exec_summary:
+                parts.append(f"• {item}")
+        else:
+            parts.append(str(exec_summary))
+
+    # 2. Findings with evidence (öncelikle enhanced_findings, yoksa findings)
+    findings = report.get("enhanced_findings") or report.get("findings") or []
+    if findings:
+        parts.append("\n=== BULGULAR ===")
+        for i, f in enumerate(findings, 1):
+            title = f.get("title", "Bulgular")
+            category = f.get("category", "")
+            summary = f.get("summary", "")
+            implication = f.get("implication", "")
+            confidence = f.get("confidence", 0)
+            decision = f.get("decision_signal", "")
+
+            parts.append(f"\nBulgu {i}: {title}")
+            parts.append(f"  Kategori: {category} | Güven: {confidence:.0%}")
+            parts.append(f"  Özet: {summary}")
+            if implication:
+                parts.append(f"  Çıkarım: {implication}")
+            if decision:
+                parts.append(f"  Karar Sinyali: {decision}")
+
+            # Evidence quotes
+            evidence = f.get("evidence", [])
+            if evidence:
+                parts.append("  Kanıtlar:")
+                for ev in evidence:
+                    pname = ev.get("persona_name", "?")
+                    stance = ev.get("stance", "")
+                    quote = ev.get("quote", "")
+                    sentiment = ev.get("sentiment", "")
+                    question = ev.get("source_question", ev.get("question", ""))
+                    ses = ev.get("ses_group", "")
+                    label_parts = [pname]
+                    if stance:
+                        label_parts.append(stance)
+                    if ses:
+                        label_parts.append(ses)
+                    label = ", ".join(label_parts)
+                    sentiment_tag = f" [{sentiment}]" if sentiment else ""
+                    parts.append(f"    {label}{sentiment_tag}: \"{quote}\"")
+                    if question:
+                        parts.append(f"      → Soru: {question}")
+
+            # Contradiction info (enhanced findings)
+            supp = f.get("supporting_count")
+            ref = f.get("refuting_count")
+            neu = f.get("neutral_count")
+            contra = f.get("contradiction_score")
+            if supp is not None or ref is not None:
+                parts.append(f"  Destek: {supp or 0} | Karşı: {ref or 0} | Nötr: {neu or 0} | Çelişki: {contra or 0:.2f}")
+
+    # 3. Persona summaries
+    personas = report.get("personas") or []
+    if personas:
+        parts.append("\n=== PERSONALAR ===")
+        for p in personas:
+            name = p.get("name", "?")
+            age = p.get("age", "?")
+            city = p.get("city", "?")
+            stance = p.get("stance", "?")
+            segment = p.get("segment", "?")
+            ses = p.get("ses_group", "")
+            context = p.get("context", "")
+            goals = p.get("goals", [])
+            objections = p.get("objections", [])
+            price_sens = p.get("price_sensitivity", 5)
+            resp_type = p.get("respondent_type", "")
+
+            label_parts = [name]
+            if stance:
+                label_parts.append(stance)
+            if ses:
+                label_parts.append(ses)
+            if resp_type:
+                label_parts.append(resp_type)
+            label = ", ".join(label_parts)
+
+            parts.append(f"\n  {label} — {age} yaş, {city}, {segment} segment")
+            parts.append(f"    Fiyat Hassasiyeti: {price_sens}/10")
+            if context:
+                parts.append(f"    Bağlam: {context}")
+            if goals:
+                parts.append(f"    Hedefler: {'; '.join(goals)}")
+            if objections:
+                parts.append(f"    İtirazlar: {'; '.join(objections)}")
+
+    # 4. Pricing insights
+    pricing = report.get("pricing")
+    if pricing and isinstance(pricing, dict):
+        parts.append("\n=== FİYATLANDIRMA ===")
+        ar = pricing.get("acceptable_range", "")
+        rp = pricing.get("resistance_points", [])
+        ps = pricing.get("packaging_suggestion", "")
+        if ar:
+            parts.append(f"  Kabul Edilebilir Aralık: {ar}")
+        if rp:
+            parts.append(f"  Direnç Noktaları: {'; '.join(rp)}")
+        if ps:
+            parts.append(f"  Paketleme Önerisi: {ps}")
+        # Van Westendorp
+        vw = report.get("van_westendorp")
+        if vw and isinstance(vw, dict):
+            opp = vw.get("opp")
+            ar_vw = vw.get("acceptable_range")
+            if opp:
+                parts.append(f"  Van Westendorp OPP: {opp} TL")
+            if ar_vw:
+                parts.append(f"  Van Westendorp Aralık: {ar_vw}")
+
+    # 5. Stance distribution overview
+    stances: dict[str, int] = {}
+    for p in personas:
+        s = p.get("stance", "")
+        if s:
+            stances[s] = stances.get(s, 0) + 1
+    if stances:
+        parts.append("\n=== STANCE DAĞILIMI ===")
+        for stance, count in sorted(stances.items()):
+            parts.append(f"  {stance}: {count} persona")
+
+    # 6. Segment breakdown
+    seg_break = report.get("segment_breakdown")
+    if seg_break and isinstance(seg_break, dict):
+        parts.append("\n=== SEGMENT KIRILIMI ===")
+        for seg, info in seg_break.items():
+            if isinstance(info, dict):
+                parts.append(f"  {seg}: {info}")
+            else:
+                parts.append(f"  {seg}: {info}")
+
+    # 7. Limitations (for honesty)
+    limitations = report.get("limitations") or []
+    if limitations:
+        parts.append("\n=== ARAŞTIRMA KISITLARI ===")
+        for lim in limitations:
+            parts.append(f"  • {lim}")
+
+    return "\n".join(parts)
+
+
 class StudioSimulationRequest(BaseModel):
     brief: str
     category: str
@@ -167,15 +332,6 @@ class StudyPayload(BaseModel):
 
 class PersonaSearch(BaseModel):
     query: str
-
-class FollowUpRequest(BaseModel):
-    persona_id: str
-    question: str
-    age: int
-    city: str
-    segment: str
-    stance: str
-    price_sensitivity: int
 
 class PersonaCreate(BaseModel):
     name: str
@@ -318,6 +474,92 @@ async def get_studies(include_archived: bool = Query(False)):
 async def get_study(study_id: str):
     return load_study_payload(study_id, include_pdf=False)
 
+
+# ---------------------------------------------------------------------------
+# Sprint 1 — Evidence Chain (Kanıt Zinciri) API
+# ---------------------------------------------------------------------------
+
+@router.get("/studies/{study_id}/findings")
+async def get_findings_endpoint(
+    study_id: str,
+    x_username: str | None = Header(default=None),
+):
+    """Bir araştırmaya ait tüm bulguları kanıt sayılarıyla döner."""
+    try:
+        findings = get_findings(study_id)
+        if findings:
+            return {"study_id": study_id, "findings": findings}
+
+        # Fallback: eski çalışmalar için report_json'dan bulguları çıkar
+        payload = load_study_payload(study_id, include_pdf=False)
+        report_json_str = payload.get("report_json")
+        if not report_json_str:
+            return {"study_id": study_id, "findings": []}
+
+        import json as _json
+        try:
+            report = _json.loads(report_json_str) if isinstance(report_json_str, str) else report_json_str
+        except (_json.JSONDecodeError, TypeError):
+            return {"study_id": study_id, "findings": []}
+
+        # enhanced_findings varsa onu, yoksa findings kullan
+        raw_findings = report.get("enhanced_findings") or report.get("findings") or []
+        return {"study_id": study_id, "findings": raw_findings}
+
+    except Exception as e:
+        logger.error(f"Error fetching findings for study {study_id}: {e}")
+        raise HTTPException(status_code=500, detail="Bulgular alınırken bir hata oluştu.")
+
+
+@router.get("/studies/{study_id}/findings/{finding_id}")
+async def get_finding_detail_endpoint(
+    study_id: str,
+    finding_id: int,
+    x_username: str | None = Header(default=None),
+):
+    """Tek bir bulgunun tüm kanıt alıntılarıyla birlikte detayını döner."""
+    try:
+        finding = get_finding_detail(study_id, finding_id)
+        if finding:
+            return {"study_id": study_id, "finding": finding}
+
+        # Fallback: eski çalışmalar için report_json'dan ara
+        payload = load_study_payload(study_id, include_pdf=False)
+        report_json_str = payload.get("report_json")
+        if not report_json_str:
+            raise HTTPException(status_code=404, detail="Bulgu bulunamadı.")
+
+        import json as _json
+        try:
+            report = _json.loads(report_json_str) if isinstance(report_json_str, str) else report_json_str
+        except (_json.JSONDecodeError, TypeError):
+            raise HTTPException(status_code=404, detail="Bulgu bulunamadı.")
+
+        raw_findings = report.get("enhanced_findings") or report.get("findings") or []
+
+        # finding_id 1-bazlı (normal findings listesi) veya DB id'ye göre ara
+        target = None
+        for i, f in enumerate(raw_findings):
+            fid = f.get("id", i + 1)
+            if fid == finding_id:
+                target = f
+                break
+
+        if not target:
+            raise HTTPException(status_code=404, detail="Bulgu bulunamadı.")
+
+        return {"study_id": study_id, "finding": target}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching finding detail for study {study_id}, finding {finding_id}: {e}")
+        raise HTTPException(status_code=500, detail="Bulgu detayı alınırken bir hata oluştu.")
+
+# ---------------------------------------------------------------------------
+# End Sprint 1
+# ---------------------------------------------------------------------------
+
 @router.get("/studies/{study_id}/pdf")
 async def download_study_pdf(study_id: str, x_username: str | None = Header(default=None)):
     plan_type, _ = _resolve_plan(x_username)
@@ -337,7 +579,9 @@ async def download_study_pdf(study_id: str, x_username: str | None = Header(defa
 
     # On-the-fly: Markdown → HTML → PDF (no DB write needed)
     from packages.research_engine.pdf_generator import generate_pdf_from_markdown
-    pdf_bytes = generate_pdf_from_markdown(report_markdown, title=title, study_id=study_id)
+    from packages.research_engine.plan_config import get_brand_name
+    brand = get_brand_name(plan_type)
+    pdf_bytes = generate_pdf_from_markdown(report_markdown, title=title, study_id=study_id, brand_name=brand)
 
     if not pdf_bytes:
         raise HTTPException(
@@ -345,11 +589,12 @@ async def download_study_pdf(study_id: str, x_username: str | None = Header(defa
             detail="PDF oluşturulurken bir hata oluştu. Lütfen tekrar deneyin."
         )
 
+    filename = f"{brand}-Report-{study_id}.pdf" if brand else f"Research-Report-{study_id}.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"attachment; filename=Clarere-Report-{study_id}.pdf",
+            "Content-Disposition": f"attachment; filename={filename}",
             "Access-Control-Expose-Headers": "Content-Disposition",
         },
     )
@@ -397,104 +642,60 @@ async def submit_feedback(data: FeedbackCreate):
     save_feedback(data.username, data.study_id, data.item_type, data.item_id, data.vote, data.comment)
     return {"status": "success"}
 
-@router.post("/studies/{study_id}/follow-up")
-async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str | None = Header(default=None)):
-    """Belirli bir personaya ek soru sormak için kullanılır."""
-    from packages.research_engine.database import get_study
-    from packages.research_engine.providers import get_model_provider
-    from packages.research_engine.plan_config import get_plan_config
-    import json
-
-    # 1. Paket Limiti (Option A) Kontrolü
-    plan_type, _ = _resolve_plan(x_username)
-    plan_config = get_plan_config(plan_type)
-    max_follow_ups = plan_config.get("max_follow_ups", 0)
-
-    study = get_study(study_id)
-    if not study or "payload" not in study:
-        raise HTTPException(status_code=404, detail="Araştırma bulunamadı.")
-
-    payload_str = study["payload"]
-    if not payload_str:
-        raise HTTPException(status_code=404, detail="Araştırma verisi boş.")
-
-    try:
-        payload = json.loads(payload_str)
-    except:
-        raise HTTPException(status_code=500, detail="Veri formatı geçersiz. Lütfen tekrar deneyin.")
-
-    interviews = payload.get("interviews", [])
-
-    # 2. Mevcut Follow-up sayısını say (Global Counter)
-    current_follow_ups = 0
-    for inv in interviews:
-        for t in inv.get("turns", []):
-            if "FOLLOW-UP" in t.get("tags", []):
-                current_follow_ups += 1
-
-    if current_follow_ups >= max_follow_ups:
-        raise HTTPException(status_code=403, detail=f"Paket limitinize ulaştınız (Maksimum {max_follow_ups} takip sorusu). Lütfen paketinizi yükseltin.")
-
-    target_interview = None
-    target_idx = -1
-
-    for i, inv in enumerate(interviews):
-        if inv.get("persona", {}).get("id") == data.persona_id:
-            target_interview = inv
-            target_idx = i
-            break
-
-    if not target_interview:
-        raise HTTPException(status_code=404, detail="Persona mülakatı bulunamadı.")
-
-    persona = target_interview["persona"]
-    turns = target_interview.get("turns", [])
-
-    # Reconstruct conversation
-    messages = [
-        {"role": "system", "content": f"Sen bir simülasyon personasısın. Adın {persona.get('name')}. Yaşın {persona.get('age')}. "
-                                      f"Mesleğin {persona.get('role_title', 'Bilinmiyor')}. "
-                                      f"Geçmiş sohbetine sadık kal ve sana sorulan ek soruya doğal, role uygun kısa bir cevap ver."}
-    ]
-
-    for turn in turns:
-        messages.append({"role": "user", "content": turn.get("question", "")})
-        messages.append({"role": "assistant", "content": turn.get("answer", "")})
-
-    messages.append({"role": "user", "content": data.question})
-
-    # Format for the prompt
-    history_text = "\n".join([f"{m['role']}: {m['content']}" for m in messages[-6:]])
-    prompt = f"Geçmiş:\n{history_text}\n\nYeni soru: {data.question}\nCevabın:"
-
-    try:
-        model = get_model_provider("flash", user_id=x_username or "")
-        response = model.generate(messages[0]["content"], prompt)
-        answer = response.strip()
-    except Exception as e:
-        logger.error(f"Follow up error: {e}")
-        raise HTTPException(status_code=500, detail="Cevap üretilemedi.")
-
-    new_turn = {
-        "question": data.question,
-        "answer": answer,
-        "tags": ["FOLLOW-UP"]
-    }
-
-    # Update payload
-    target_interview["turns"].append(new_turn)
-    payload["interviews"][target_idx] = target_interview
-
-    # Save back
-    from packages.research_engine.database import save_study
-    save_study(study.get("metadata", {}), payload)
-
-    return {"status": "success", "turn": new_turn}
-
 @router.post("/studies")
-async def create_or_update_study(data: StudyPayload):
+async def create_or_update_study(data: StudyPayload, x_username: str | None = Header(default=None)):
+    study_id = data.metadata.get("id", "")
+    # Org bağlamı (multi-user paylaşımı) — org üyesiyse çalışmayı org'a bağla
+    if x_username and not data.metadata.get("org_id"):
+        try:
+            from packages.research_engine.db_org import get_user_org_id
+            data.metadata["org_id"] = get_user_org_id(x_username) or ""
+        except Exception:
+            data.metadata["org_id"] = ""
     save_study(data.metadata, data.payload)
-    return {"status": "success", "id": data.metadata.get("id")}
+
+    # Sprint 1 — Kanıt zincirini DB'ye kaydet (varsa)
+    try:
+        report_json_str = data.payload.get("report_json")
+        if report_json_str:
+            import json as _json
+            report = _json.loads(report_json_str) if isinstance(report_json_str, str) else report_json_str
+            enhanced = report.get("enhanced_findings")
+            if enhanced and study_id:
+                from packages.research_engine.models import EnhancedFinding, Evidence
+                # EnhancedFindings dict'ten objeye dönüştür
+                findings_objs = []
+                for ef_dict in enhanced:
+                    evidence_objs = []
+                    for ev in ef_dict.get("evidence", []):
+                        evidence_objs.append(Evidence(
+                            persona_id=ev.get("persona_id", ""),
+                            persona_name=ev.get("persona_name", ""),
+                            stance=ev.get("stance", "Mainstream"),
+                            quote=ev.get("quote", ""),
+                            source_question=ev.get("source_question", ""),
+                        ))
+                    f_obj = EnhancedFinding(
+                        title=ef_dict.get("title", ""),
+                        category=ef_dict.get("category", "pain_point"),
+                        summary=ef_dict.get("summary", ""),
+                        confidence=ef_dict.get("confidence", 0.5),
+                        evidence=evidence_objs,
+                        implication=ef_dict.get("implication", ""),
+                        supporting_count=ef_dict.get("supporting_count", 0),
+                        refuting_count=ef_dict.get("refuting_count", 0),
+                        neutral_count=ef_dict.get("neutral_count", 0),
+                        contradiction_score=ef_dict.get("contradiction_score", 0.0),
+                        decision_signal=ef_dict.get("decision_signal", "INVESTIGATE"),
+                        segment_breakdown=ef_dict.get("segment_breakdown", {}),
+                    )
+                    findings_objs.append(f_obj)
+                save_findings(study_id, findings_objs)
+                logger.info(f"Saved {len(findings_objs)} enhanced findings for study {study_id}")
+    except Exception as e:
+        logger.warning(f"Failed to save findings for study {study_id}: {e}")
+
+    return {"status": "success", "id": study_id}
 
 @router.get("/personas")
 async def list_personas():
@@ -934,6 +1135,145 @@ async def synthesize(request: SynthesizeRequest, x_username: str | None = Header
     # research_quality her plan için hesaplanır; Pro+ kontrolü yok —
     # frontend PlanGate ile gösterimi kısıtlıyor
     return report_dict
+
+
+# ── Sprint 4: Research Copilot Chat ──
+
+@router.post("/studies/{study_id}/chat")
+async def research_chat(
+    study_id: str,
+    data: dict,
+    request: Request,
+    x_username: str | None = Header(default=None),
+):
+    """
+    Tamamlanmış bir araştırma raporu hakkında soru-cevap.
+
+    Kullanıcı araştırma verisine dayalı sorular sorabilir:
+      - "Skeptikler neden reddetti?"
+      - "Hangi segment ödemeye en yatkın?"
+      - "Sadece çelişkili kanıtları göster."
+
+    Copilot SADECE araştırma verisine dayanarak yanıt verir, halüsinasyon yapmaz.
+    Yanıtlar persona adı ve alıntı ile referanslandırılır.
+    """
+    from packages.research_engine.providers import get_model_provider
+    from packages.research_engine.database import get_db
+
+    question = (data.get("question") or "").strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Soru zorunludur.")
+
+    # ── Plan ve kota kontrolü ──
+    plan_type, plan_cfg = _resolve_plan(x_username)
+    max_queries = plan_cfg.get("max_talk_to_research", 0)
+
+    if max_queries == 0:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "PLAN_GATE",
+                "feature": "talk_to_research",
+                "current_plan": plan_type,
+                "required_plan": "Flex",
+                "message": "Research Copilot özelliği mevcut planınızda bulunmuyor.",
+            },
+        )
+
+    used_queries = count_chat_messages(study_id)
+    if max_queries < 9999 and used_queries >= max_queries:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "QUOTA_EXCEEDED",
+                "feature": "talk_to_research",
+                "used": used_queries,
+                "limit": max_queries,
+                "message": f"Bu araştırma için soru limitine ulaştınız ({used_queries}/{max_queries}).",
+            },
+        )
+
+    # ── Araştırma verisini yükle ──
+    with get_db() as (conn, cur):
+        cur.execute("SELECT report_json FROM study_payloads WHERE study_id = %s", (study_id,))
+        row = cur.fetchone()
+        if not row or not row["report_json"]:
+            raise HTTPException(status_code=404, detail="Çalışma bulunamadı veya rapor henüz oluşturulmamış.")
+
+        report = json.loads(row["report_json"])
+
+        # Son 10 mesajı yükle (chat history)
+        cur.execute(
+            "SELECT role, content FROM research_chat_messages WHERE study_id = %s ORDER BY created_at DESC LIMIT 10",
+            (study_id,)
+        )
+        history_rows = list(cur.fetchall())
+
+    # ── Bağlam ve sistem prompt'u oluştur ──
+    context = build_research_context(report)
+
+    system_prompt = (
+        "Sen Clarere Research Copilot'sun. Görevin tamamlanmış bir pazar araştırması "
+        "raporu hakkında kullanıcının sorularını yanıtlamak.\n\n"
+        "KURALLAR:\n"
+        "- SADECE aşağıda verilen ARAŞTIRMA VERİSİNE dayanarak yanıt ver. Halüsinasyon yapma, uydurma.\n"
+        "- Veride olmayan bir bilgiyi asla söyleme. Emin değilsen 'Bu konuda araştırma verisinde yeterli bilgi yok' de.\n"
+        "- Bir bulgudan veya kanıttan bahsederken MUTLAKA ilgili persona adını, stance'ını, SES grubunu ve alıntısını belirt.\n"
+        "  Format: Ahmet (Skeptic, C1): \"Alıntı metni...\"\n"
+        "- Bu verinin sentetik olduğunu ve gerçek kullanıcı araştırması yerine geçmediğini unutma.\n"
+        "  Kullanıcıya gerektiğinde bunu hatırlat.\n"
+        "- Kullanıcı sorduğunda: karşıt görüşleri karşılaştır, segment farklarını göster, en güçlü itirazları sırala.\n"
+        "- Çelişkili kanıtları özellikle vurgula — bunlar en değerli içgörülerdir.\n"
+        "- Yanıtlarında yapılandırılmış, net ve profesyonel ol. Gereksiz uzatma.\n"
+        "- Türkçe yanıt ver. Samimi ama profesyonel bir ton kullan.\n\n"
+        f"ARAŞTIRMA VERİSİ:\n{context}"
+    )
+
+    # ── Mesaj geçmişini prompt'a göm (DeepSeek generate sadece system+user destekler) ──
+    history_prompt = ""
+    if history_rows:
+        history_parts: list[str] = []
+        for h in reversed(history_rows):
+            role_label = "Kullanıcı" if h["role"] == "user" else "Copilot"
+            history_parts.append(f"[{role_label}]: {h['content']}")
+        history_prompt = (
+            "\n\nÖNCEKİ KONUŞMA (referans için):\n"
+            + "\n".join(history_parts)
+            + "\n\nYENİ SORU: "
+        )
+
+    user_prompt = f"{history_prompt}{question}"
+
+    # ── DeepSeek Pro ile yanıt üret ──
+    safe_user_id = (x_username or "").strip() or "anonymous"
+    model = get_model_provider("pro", user_id=safe_user_id)
+
+    try:
+        answer = model.generate(system_prompt, user_prompt)
+    except Exception as e:
+        logger.error(f"Research copilot LLM call failed for study {study_id}: {e}")
+        raise HTTPException(status_code=502, detail="Yapay zeka yanıtı alınamadı. Lütfen tekrar deneyin.")
+    finally:
+        model.free_memory()
+
+    # ── Mesajları kaydet ──
+    with get_db() as (conn, cur):
+        cur.execute(
+            "INSERT INTO research_chat_messages (study_id, role, content) VALUES (%s, %s, %s)",
+            (study_id, "user", question)
+        )
+        cur.execute(
+            "INSERT INTO research_chat_messages (study_id, role, content) VALUES (%s, %s, %s)",
+            (study_id, "assistant", answer)
+        )
+
+    return {
+        "answer": answer,
+        "study_id": study_id,
+        "queries_used": used_queries + 1,
+        "queries_limit": max_queries if max_queries < 9999 else None,
+    }
+
 
 @router.post("/studio/simulate")
 @limiter.limit("20/minute")

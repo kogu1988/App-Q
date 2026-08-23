@@ -167,3 +167,12 @@ def get_max_personas(plan_type: str) -> int:
 def get_min_plan_for_feature(feature: str) -> str:
     """Bir özellik için minimum plan adını döner."""
     return FEATURE_MIN_PLAN.get(feature, "Enterprise")
+
+
+def get_brand_name(plan_type: str) -> str:
+    """Planın white-label olup olmadığına göre marka adını döndürür.
+
+    White-label planlarda (Pro/Enterprise) boş string döner — müşteri kendi
+    markasını kullanır ve çıktılarda "Clarere" ibaresi gizlenir.
+    """
+    return "" if has_feature(plan_type, "white_label") else "Clarere"

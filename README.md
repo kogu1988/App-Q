@@ -361,10 +361,12 @@ pytest packages/research_engine/tests/test_van_westendorp.py -v
 | `test_stance_diversity.py` | Shannon entropy, validate_stance_diversity, Skeptic garantisi | 23 |
 | `test_ewma_echo.py` | detect_echo, calculate_ewma, echo_drift_audit | 23 |
 | `test_van_westendorp.py` | PSM kesişim hesabı | 22 |
-| `test_semantic_router.py` | Keyword fallback, route validasyonu | 14 |
+| `test_intake.py` | Input reframing, Jaccard, loop detection, turn limit | 15 |
 | `test_workflow.py` | ELEPHANT prompt, agreeableness kalibrasyonu | 14 |
-| `test_quality.py` | Bias detection, acquiescence, meta-tone | 14 |
-| **Toplam** | | **110** |
+| `test_quality.py` | Bias detection, acquiescence, meta-tone, research_quality | 14 |
+| `test_semantic_router.py` | Keyword fallback, route validasyonu | 12 |
+| `test_grounded.py` | ACT-R bellek, S-O-R sepet terk, Big Five | 3 |
+| **Toplam** | | **126** |
 
 ---
 

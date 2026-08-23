@@ -1,13 +1,17 @@
 from typing import List, Any, Tuple
 from packages.research_engine.nodes.culture import HOFSTEDE_TURKEY_PROMPT
 
-def build_elephant_system_prompt(persona: Any) -> str:
+def build_elephant_system_prompt(persona: Any, hypothesis_blind: bool = True) -> str:
     """ELEPHANT çerçevesi anti-dalkavukluk sistem promptu üretir.
     Agreeableness < 40 → güçlü red izni (Skeptic/Laggard)
     Agreeableness 40-65 → standart (Mainstream)
     Agreeableness > 65 → ek uyarı (Innovator/EarlyAdopter)
     Neuroticism > 65 → kaygılı, fiyat/risk endişeli yanıt stili
     Openness > 70 → keşifçi, yenilik açık; Openness < 40 → kanıtlanmış çözüm tercihli
+
+    hypothesis_blind=True → persona araştırma hipotezini görmez,
+    sadece kendi profili ve nötr bağlamla yanıt verir.
+
     Kaynak: Akademik Sentez Raporu §Sütun 4 — arXiv:2602.23971
     Grounded Simulation §4.3 — facet-driven response-style enforcement
     """
@@ -86,7 +90,13 @@ def build_elephant_system_prompt(persona: Any) -> str:
     else:
         openness_note = ""
 
-    return base + stance_directive + neuroticism_note + openness_note + HOFSTEDE_TURKEY_PROMPT
+    return base + stance_directive + neuroticism_note + openness_note + HOFSTEDE_TURKEY_PROMPT + (
+        "\n[HİPOTEZ-KÖRÜ MÜLAKAT]\n"
+        "Bu araştırmanın amacını veya hipotezini bilmiyorsun. Sana sadece sorular sorulacak.\n"
+        "Araştırmacının ne duymak istediğini tahmin etmeye çalışma — sadece kendi deneyimlerine\n"
+        "ve alışkanlıklarına göre dürüstçe cevap ver. Bilmediğin bir şeyi biliyormuş gibi yapma."
+        if hypothesis_blind else ""
+    )
 
 
 def judge_answer_quality(persona: Any, question: str, answer: str) -> List[str]:

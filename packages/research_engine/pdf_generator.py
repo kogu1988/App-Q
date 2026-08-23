@@ -156,6 +156,7 @@ def generate_pdf_from_markdown(
     markdown_text: str,
     title: str = "Clarere Research Report",
     study_id: Optional[str] = None,
+    brand_name: str = "Clarere",
 ) -> Optional[bytes]:
     """
     Convert a markdown research report to PDF bytes.
@@ -183,7 +184,7 @@ def generate_pdf_from_markdown(
     )
 
     # 2. Build header block
-    subtitle = f"Rapor ID: {study_id}" if study_id else "Clarere AI Arastirma Platformu"
+    subtitle = f"Rapor ID: {study_id}" if study_id else (f"{brand_name} AI Arastirma Platformu" if brand_name else "Pazar Arastirma Raporu")
     header_html = f"""
     <div class="report-header">
         <p class="report-header-title">{title}</p>

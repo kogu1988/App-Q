@@ -10,6 +10,10 @@
 Türkiye odaklı sentetik persona pazar araştırma platformu. DeepSeek API (Flash + Pro) ile çalışır.
 Marka: **Clarere** | İletişim: **hiclarere@clarere.com**
 
+> **Son güncelleme (2026-08-10):** Articos Parity tamamlandı. 8 sprint'te Evidence Chain, Hypothesis-Blind, Adaptive Probe, Research Copilot, A/B Testing, Web Corroboration, Decision Layer ve RFI Benchmark eklendi. Backend 14 dosya, Frontend 1 dosya (2153 satır).
+
+> **Stabilizasyon (2026-08):** Duplicate `follow-up` endpoint + `FollowUpRequest` temizlendi (frontend 422/404 bug'ı). `test_semantic_router.py` bayat Ollama import'ları düzeltildi (süit koleksiyonunu engelliyordu → 126 test yeşil). `run_benchmark.py` Windows cp1254 emoji çökmesi giderildi. `.env.example` DeepSeek/Clarere'ye göre yeniden yazıldı, `run_backend.py` port 4000, App-Q kalıntıları temizlendi.
+
 ## 🏗️ Mimari (3 Aşamalı API)
 
 ```
@@ -43,7 +47,7 @@ python launch.py  # Tek tıkla. Backend :4000, Frontend :4001
 | `providers.py` | `DeepSeekResearchModel` + `get_model_provider()` | LLM değişikliği |
 | `workflow.py` | `build_research_plan()`, `generate_personas()`, `run_interviews_batch()` | Araştırma akışı |
 | `models.py` | Tüm dataclass'lar (ResearchBrief, Persona, vb.) | Veri modeli değişikliği |
-| `intake.py` | `process_intake_chat()` — Defne chatbot | Defne davranışı |
+| `intake.py` | `process_intake_chat()` — Defne chatbot (Articos-tarzı hızlı akış, 3-5 tur) | Defne davranışı |
 | `analytics.py` | `synthesize_report()` + Van Westendorp | Rapor değişikliği |
 | `matrix.py` | Rogers×SES kohort matrisi, stance diversity | Persona dağılımı |
 | `quality.py` | Kalite fonksiyonları (EWMA, echo, bias, acquiescence) | Kalite kontrolü |
@@ -61,14 +65,17 @@ python launch.py  # Tek tıkla. Backend :4000, Frontend :4001
 | `persona_generator.py` | Admin için LLM ile persona üretimi | Admin panel |
 | `synthesis_pipeline.py` | LangGraph tabanlı tematik sentez pipeline | Async sentez |
 
+| `benchmark.py` | Clarere RFI — 6 metrikli validasyon benchmark'ı (Sprint 8) | Kalite ölçümü |
+
 ### LangGraph Nodes (`packages/research_engine/nodes/`)
 
 | Dosya | Görev |
 |---|---|
-| `sycophancy.py` | ELEPHANT anti-dalkavukluk prompt + `judge_answer_quality()` |
+| `sycophancy.py` | ELEPHANT anti-dalkavukluk + hypothesis_blind parametresi |
 | `culture.py` | Hofstede TR, SES profilleri, taksit/BDDK lojistiği |
 | `memory.py` | ACT-R bilişsel bellek modeli |
-| `router.py` | Keyword-based routing (basitleştirildi, geriye dönük uyumluluk) |
+| `router.py` | Keyword-based routing |
+| `probe.py` | Adaptive Probe Engine — kanıt arayan takip soruları (Sprint 3) |
 
 ### Frontend (`apps/frontend/`)
 
@@ -98,6 +105,8 @@ python launch.py  # Tek tıkla. Backend :4000, Frontend :4001
 | `start.bat` | `python launch.py` wrapper |
 | `SUNUM.md` | 14 slidelık yatırımcı sunumu |
 | `MEMORY.md` | Bu dosya |
+| `scripts/run_benchmark.py` | RFI benchmark runner (Sprint 8) |
+| `data/evals/rfi_benchmark_samples.json` | 5 Türkiye pazarı benchmark senaryosu (Sprint 8) |
 
 ---
 
@@ -109,10 +118,19 @@ python launch.py  # Tek tıkla. Backend :4000, Frontend :4001
 4. **Thinking Mode** — DeepSeek varsayılanı, `temperature` KULLANILMAZ. `reasoning_content` ayrı alanda gelir
 5. **`user_id`** — DeepSeek isolation için `[a-zA-Z0-9_-]+` regex ile sanitize
 6. **3 aşamalı flow** — Her aşama ayrı endpoint, model kafası karışmasın diye
-7. **Enterprise feature'lar** — Yerel LLM fine-tuning, embedding, persona havuzu eşleştirme (ileride)
-8. **Tüm App-Q referansları Clarere olarak değiştirildi** — localStorage, PDF adı, API title, prompt'lar
-9. **5 demo kullanıcı** — free, flex, starter, pro, enterprise (development modunda)
-10. **Free plan upsell** — Paywall (blur + Lock), "Planı Yükselt →" CTA
+7. **Defne hızlı akış (Articos tarzı)** — Sokratik tek soru yerine 2 sorulu hızlı toplama + özet + onay. Max 5 tur. Prompt hem `intake.py` hardcoded fallback'te hem `database.py` DB default'unda güncellendi. ⚠️ DB'de `ON CONFLICT DO NOTHING` olduğu için mevcut DB'yi sıfırlamadan (`docker compose down -v && docker compose up -d`) yeni prompt aktif olmaz.
+8. **Enterprise feature'lar** — Yerel LLM fine-tuning, embedding, persona havuzu eşleştirme (ileride)
+9. **Tüm App-Q referansları Clarere olarak değiştirildi** — localStorage, PDF adı, API title, prompt'lar
+10. **5 demo kullanıcı** — free, flex, starter, pro, enterprise (development modunda)
+11. **Free plan upsell** — Paywall (blur + Lock), "Planı Yükselt →" CTA
+12. **Evidence Chain (Sprint 1)** — Her bulgu persona → soru → alıntı → destek/karşı zinciriyle DB'ye kaydedilir. `research_findings` + `research_evidence` tabloları. `build_evidence_graph()` ile otomatik sentiment sınıflandırması.
+13. **Hypothesis-Blind Interviews (Sprint 2)** — Persona araştırma hipotezini GÖRMEZ. `brief.hypothesis_blind=True` varsayılan. Sadece kategorik bağlam + sorular.
+14. **Adaptive Probe Engine (Sprint 3)** — Cevaba göre kanıt arayan takip soruları. `nodes/probe.py`. Max 1 probe/soru, 3 probe/mülakat. Jaccard guard.
+15. **Research Copilot (Sprint 4)** — `POST /studies/{id}/chat` endpoint. DeepSeek Pro ile araştırma raporuyla sohbet. Plan limitli (Free: 0, Starter: 3).
+16. **A/B Variant Testing (Sprint 5)** — Kör karşılaştırma (Seçenek 1/2), randomized exposure, segment-level kazanan analizi.
+17. **Web Corroboration (Sprint 6)** — Sentetik bulguları web kanıtıyla destekleme. SearXNG + mock fallback. TÜAD/Statista referansları.
+18. **Decision Layer (Sprint 7)** — Her bulgu SHIP/ITERATE/INVESTIGATE/KILL sinyali taşır. Executive decision summary raporda.
+19. **Validation Benchmark (Sprint 8)** — Clarere RFI. `benchmark.py`. 6 metrik (recall, precision, critical recall, FPR, segment accuracy, contradiction). 5 örnek senaryo.
 
 ---
 
@@ -142,6 +160,25 @@ python launch.py  # Tek tıkla. Backend :4000, Frontend :4001
 | Van Westendorp PSM | ✅ Algoritmik |
 | ACT-R bellek | ⚠️ Batch'te gerekmiyor (tek prompt) |
 | EWMA kalite takibi | ✅ Batch uyarlaması (skor + retry) |
+
+---
+
+## 🏢 Enterprise SaaS Özellik Durumu
+
+| Özellik | Min Plan | Durum |
+|---|---|---|
+| A/B Test | Flex | ✅ `client.py` + `analytics.py` |
+| B2B modu | Pro | ✅ `intake.py` + `analytics.py` |
+| Brand health | Pro | ✅ `build_brand_health_summary` |
+| SES cross-tab | Flex | ✅ `build_ses_cross_tab` |
+| Custom personas | Enterprise | ✅ `db_vectors.py` + admin |
+| Audit log | Enterprise | ✅ admin `/audit_logs` |
+| Streaming / PDF export | Flex | ✅ |
+| White-label | Pro | ✅ client nav + PDF filename (backend + frontend); `render_report_html` ölü kod |
+| Fine-tuning export | Enterprise | ✅ `db_vectors.export_finetuning_data` + admin `/fine-tuning/export` |
+| Multi-user org | Enterprise | ✅ org/member CRUD (`db_org.py`) + studies RLS (tenant + org paylaşımı); DB testi gerekli |
+
+> ⚠️ Üç enterprise özelliği kod seviyesinde tamamlandı. `multi_user` RLS'i (`studies_tenant_policy`, `clarere.current_org`) gerçek DB'de test edilmeli: `docker compose up -d` + `python launch.py`.
 
 ---
 

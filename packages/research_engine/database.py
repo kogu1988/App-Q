@@ -71,6 +71,14 @@ def get_db(register_pgvector=True):
             tenant_id = current_tenant_var.get()
             if tenant_id:
                 cur.execute("SELECT set_config('clarere.current_tenant', %s, true)", (tenant_id,))
+                # Organizasyon bağlamı (multi-user paylaşımı)
+                try:
+                    cur.execute(
+                        "SELECT set_config('clarere.current_org', COALESCE((SELECT org_id FROM organization_members WHERE username = %s LIMIT 1), ''), true)",
+                        (tenant_id,),
+                    )
+                except Exception:
+                    pass  # org tablosu henüz yoksa sessizce geç
             yield conn, cur
         conn.commit()
     except Exception:
@@ -214,6 +222,56 @@ def init_db() -> None:
         except Exception as e:
             print(f"[DB] RLS Migration warning for personas_pool: {e}")
 
+        # Çok kullanıcılı organizasyon (multi_user) — Enterprise özelliği
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS organizations (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                plan_type TEXT NOT NULL DEFAULT 'Enterprise',
+                created_at TEXT
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS organization_members (
+                org_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+                username TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'member',
+                created_at TEXT,
+                PRIMARY KEY (org_id, username)
+            )
+            """
+        )
+
+        # Studies tenancy migration (multi-user RLS — tenant + org paylaşımı)
+        try:
+            cur.execute("ALTER TABLE studies ADD COLUMN IF NOT EXISTS created_by TEXT;")
+            cur.execute("ALTER TABLE studies ADD COLUMN IF NOT EXISTS org_id TEXT;")
+            cur.execute("ALTER TABLE studies ENABLE ROW LEVEL SECURITY;")
+            cur.execute(
+                """
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM pg_policies WHERE policyname = 'studies_tenant_policy' AND tablename = 'studies'
+                    ) THEN
+                        CREATE POLICY studies_tenant_policy ON studies
+                        USING (
+                            created_by = current_setting('clarere.current_tenant', true)
+                            OR created_by IS NULL
+                            OR created_by = ''
+                            OR org_id = current_setting('clarere.current_org', true)
+                        );
+                    END IF;
+                END
+                $$;
+                """
+            )
+        except Exception as e:
+            print(f"[DB] Studies RLS migration warning: {e}")
+
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS ai_semantic_cache (
@@ -269,6 +327,59 @@ def init_db() -> None:
             )
             """
         )
+
+        # Sprint 1 — Evidence Chain tabloları
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS research_findings (
+                id SERIAL PRIMARY KEY,
+                study_id TEXT REFERENCES studies(id) ON DELETE CASCADE,
+                title TEXT NOT NULL,
+                category TEXT,
+                summary TEXT,
+                confidence FLOAT,
+                implication TEXT,
+                supporting_count INTEGER DEFAULT 0,
+                refuting_count INTEGER DEFAULT 0,
+                neutral_count INTEGER DEFAULT 0,
+                contradiction_score FLOAT DEFAULT 0,
+                decision_signal TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS research_evidence (
+                id SERIAL PRIMARY KEY,
+                finding_id INTEGER REFERENCES research_findings(id) ON DELETE CASCADE,
+                persona_id TEXT,
+                persona_name TEXT,
+                stance TEXT,
+                question TEXT,
+                quote TEXT,
+                sentiment TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+            """
+        )
+
+        # Sprint 4 — Research Copilot chat messages
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS research_chat_messages (
+                id SERIAL PRIMARY KEY,
+                study_id TEXT REFERENCES studies(id) ON DELETE CASCADE,
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+            """
+        )
+        try:
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_chat_messages_study ON research_chat_messages(study_id, created_at);")
+        except Exception as e:
+            print(f"[DB] Index migration warning for research_chat_messages: {e}")
 
         # Performans indeksleri — sorgu pattern'lerine göre (tablo oluşturulduktan SONRA)
         try:
@@ -462,31 +573,36 @@ def init_db() -> None:
         
         # Default Prompts
         default_wizard = (
-            "Sen Defne'sin, çok kıdemli bir Pazar Araştırması Mimarısın ve bir 'Epistemik Karar Filtresi' olarak çalışıyorsun.\n\n"
-            "GÖREVLERİN:\n"
-            "1. KULLANICI ÖNYARGILARINI SİL (Input Reframing): Dalkavukluk bekleyen ('kesin tutar' gibi) öznelikleri nötr araştırma hipotezlerine dönüştür.\n"
-            "2. STRATEJİK KARAR ODAĞI: Araştırmayla nihai olarak hangi 'Karar'ın verileceğini bul.\n"
-            "3. KISMİ GÜNCELLEME (DELTA): SADECE kullanıcının son mesajında verdiği yeni/farklı bilgileri (title, idea, target_users, expected_price, success_metric, discovery_channels, competitors) 'updated_fields' objesine koy. ŞABLON VEYA ÖRNEK METİN YAZMA, yeni bilgi yoksa bu objeyi boş bırak.\n"
-            "4. SOKRATİK SORU SOR: Eksik bilgiler için bir seferde YALNIZCA TEK soru sor. Birden fazla soru sormak yasaktır.\n\n"
-            "ZORUNLU DİL VE ÜSLUP KURALLARI (İhlal edilemez):\n"
-            "- Samimi, akıcı Türkçe kullan. Çeviri kokan veya danışmanlık jargonu olan kelimeler kullanma: 'spesifik', 'yaşam evresi', 'ekosistem', 'acı nokta', 'vertikal' gibi ifadeler yasaktır.\n"
-            "- Doğal alternatifler: 'spesifik' → 'belirli', 'yaşam evresi' → 'hayatın hangi dönemindeki', 'acı nokta' → 'en çok zorlayan şey'.\n"
-            "- Örnek verirken MUTLAKA kullanıcının anlattığı ürün/sektörle ilgili örnekler seç. Alakasız demografi veya sektör örneği verme.\n"
-            "- Kullanıcının belirttiği hedef kitleyi (örn: 'aileler ve çiftler') daraltma veya değiştirme. Zaten söylediklerini tekrar sor, onay al.\n\n"
-            "PİYASA BİLGİSİ YOKSA FALLBACK KURALI:\n"
-            "- Kullanıcı 'piyasayı bilmiyorum', 'rakip duymadım', 'uygulama kullanan görmedim' gibi bir şey söylerse → rakiplerden veya piyasa boşluğundan bahsetme.\n"
-            "- Bunun yerine kullanıcının kendi deneyimine veya çevresindeki gözlemlerine yönel.\n\n"
-            "HEDEF KİTLE KURALI:\n"
-            "- Kullanıcının söylediği hedef kitle tanımını değiştirme, sadece daha iyi anlamak için sor.\n"
-            "- Kullanıcı 'aileler ve çiftler' dediyse, senin cevabında yalnızca 'çiftler' deme — iki grubu da koru.\n\n"
+            "Sen Defne'sin, kıdemli bir Pazar Araştırması Mimarısın. Amacın kullanıcının iş fikrini hızlıca anlayıp araştırmaya hazır hale getirmek.\n\n"
+            "AŞAMALI AKIŞ (SIRAYLA UYGULA):\n\n"
+            "AŞAMA 1 — BİLGİ TOPLAMA (ilk 2-3 tur):\n"
+            "- Kullanıcı fikrini anlattıktan sonra, brief'te halen EKSİK olan kritik alanları sor.\n"
+            "- Kritik alanlar: idea (ürün/hizmet), target_users (hedef kitle), expected_price (fiyat beklentisi), success_metric (başarı kriteri).\n"
+            "- Bir seferde 2 soru sorabilirsin; örneğin 'Hedef kitlen kim, hangi fiyat aralığı düşünüyorsun?' gibi. Ama 2'den fazla sorma.\n\n"
+            "AŞAMA 2 — ÖZET VE ONAY (tüm kritik alanlar dolduğunda):\n"
+            "- Brief'in tamamını maddeler halinde özetle.\n"
+            "- Kullanıcıya 'Bu özet doğru mu? Araştırmayı başlatabilir miyiz?' diye sor.\n"
+            "- Bu aşamada is_complete'i HENÜZ true yapma, kullanıcının onayını bekle.\n\n"
+            "AŞAMA 3 — TAMAMLAMA (kullanıcı onay verdiğinde):\n"
+            "- Kullanıcı 'evet', 'tamam', 'doğru', 'başlat', 'hazırım' gibi bir onay verirse → is_complete: true yap.\n"
+            "- assistant_reply: 'Harika! Araştırmayı başlatmaya hazırız. Aşağıdaki butona tıklayarak başlayabilirsiniz.'\n\n"
+            "KISMİ GÜNCELLEME (DELTA):\n"
+            "- SADECE kullanıcının son mesajında verdiği yeni bilgileri 'updated_fields' objesine koy.\n"
+            "- Yeni bilgi yoksa updated_fields boş obje {} olsun.\n"
+            "- Şablon metin veya örnek yazma; sadece kullanıcının gerçek verdiği bilgileri al.\n\n"
+            "DİL KURALLARI (KESİNLİKLE UY):\n"
+            "- Samimi, akıcı, gündelik Türkçe kullan.\n"
+            "- Şu kelimeler YASAK: 'spesifik', 'acı nokta', 'ekosistem', 'vertikal', 'yaşam evresi', 'konumlandırma'.\n"
+            "- Kullanıcının anlattığı ürün/sektörle ilgili örnekler ver.\n"
+            "- Kullanıcının belirttiği hedef kitleyi daraltma veya değiştirme.\n\n"
+            "MAKSİMUM TUR: Konuşma 5 turu geçtiyse zorla is_complete: true yap.\n\n"
             "ZORUNLU JSON ÇIKTISI (BAŞKA HİÇBİR METİN EKLEME):\n"
             "{\n"
-            '  "thinking": "Girdi analizi, önyargıların tespiti ve Sokratik soru planı",\n'
-            '  "updated_fields": { "buraya_sadece_yeni_bulunan_alanlar_gelecek": "değer" },\n'
-            '  "assistant_reply": "Kullanıcıya verilecek sıradaki Sokratik soru",\n'
+            '  "thinking": "Kullanıcının ne anlattığı, hangi alanların dolduğu, hangilerinin eksik olduğu",\n'
+            '  "updated_fields": { "alan_adi": "kullanıcının verdiği gerçek değer" },\n'
+            '  "assistant_reply": "Kullanıcıya gösterilecek mesaj",\n'
             '  "is_complete": false\n'
-            "}\n\n"
-            "NOT: Eğer tüm alanlar dolduysa VEYA konuşma 10 turu geçtiyse `is_complete` değerini `true` yap ve `assistant_reply` alanına 'Araştırmayı başlatmaya hazırız, butona tıklayabilirsiniz.' yaz."
+            "}"
         )
         default_persona = (
             "Sen Clarere araştırma panelindeki sentetik bir personasın. Rolünün özelliklerine, yaşına, "
@@ -521,13 +637,17 @@ def init_db() -> None:
 
 def save_study(metadata: dict, payload: dict) -> str:
     study_id = metadata["id"]
+    # Tenant + org bilgisi (multi-user RLS için)
+    created_by = current_tenant_var.get() or metadata.get("created_by") or metadata.get("username") or ""
+    org_id = metadata.get("org_id") or ""
     with get_db() as (conn, cur):
         cur.execute(
             """
             INSERT INTO studies (
                 id, title, market, category, created_at, updated_at, archived, has_report, has_pdf,
-                pdf_status, pdf_error, quality_score, quality_grade, quality_summary, brief_hash, roles_hash, cache_status
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                pdf_status, pdf_error, quality_score, quality_grade, quality_summary, brief_hash, roles_hash, cache_status,
+                created_by, org_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET
                 title = EXCLUDED.title,
                 market = EXCLUDED.market,
@@ -563,6 +683,8 @@ def save_study(metadata: dict, payload: dict) -> str:
                 metadata.get("brief_hash"),
                 metadata.get("roles_hash"),
                 metadata.get("cache_status"),
+                created_by,
+                org_id,
             ),
         )
 
@@ -753,6 +875,18 @@ def get_feedbacks() -> list[dict]:
         cur.execute("SELECT * FROM feedbacks ORDER BY id DESC")
         return [dict(row) for row in cur.fetchall()]
 
+
+
+
+def count_chat_messages(study_id: str) -> int:
+    """Bir araştırma için toplam kullanıcı (user rolü) chat mesaj sayısını döner."""
+    with get_db() as (conn, cur):
+        cur.execute(
+            "SELECT COUNT(*) as cnt FROM research_chat_messages WHERE study_id = %s AND role = 'user'",
+            (study_id,)
+        )
+        row = cur.fetchone()
+        return row["cnt"] if row else 0
 
 
 def count_user_non_ab_simulations(username: str) -> int:
@@ -978,6 +1112,130 @@ def log_ai_rationale(prompt_hash: str, model_id: str, thinking_text: str, respon
             )
     except Exception as e:
         logger.error(f"Failed to log AI rationale: {e}")
+
+
+def save_findings(study_id: str, findings: list) -> list[dict]:
+    """Bir araştırmaya ait EnhancedFinding listesini research_findings ve
+    research_evidence tablolarına kaydeder. Dönen listede her finding'in DB id'si bulunur."""
+    saved: list[dict] = []
+    with get_db() as (conn, cur):
+        # Eski bulguları ve kanıtları temizle (idempotent yeniden kayıt)
+        cur.execute(
+            "DELETE FROM research_findings WHERE study_id = %s", (study_id,)
+        )
+        for f in findings:
+            cur.execute(
+                """
+                INSERT INTO research_findings (
+                    study_id, title, category, summary, confidence, implication,
+                    supporting_count, refuting_count, neutral_count,
+                    contradiction_score, decision_signal
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (
+                    study_id,
+                    f.title,
+                    f.category,
+                    f.summary,
+                    f.confidence,
+                    f.implication,
+                    getattr(f, "supporting_count", 0),
+                    getattr(f, "refuting_count", 0),
+                    getattr(f, "neutral_count", 0),
+                    getattr(f, "contradiction_score", 0.0),
+                    getattr(f, "decision_signal", "INVESTIGATE"),
+                ),
+            )
+            finding_row = cur.fetchone()
+            if not finding_row:
+                continue
+            finding_id = finding_row["id"]
+            finding_dict = {
+                "id": finding_id,
+                "title": f.title,
+                "category": f.category,
+                "summary": f.summary,
+                "confidence": f.confidence,
+                "implication": f.implication,
+                "supporting_count": getattr(f, "supporting_count", 0),
+                "refuting_count": getattr(f, "refuting_count", 0),
+                "neutral_count": getattr(f, "neutral_count", 0),
+                "contradiction_score": getattr(f, "contradiction_score", 0.0),
+                "decision_signal": getattr(f, "decision_signal", "INVESTIGATE"),
+            }
+
+            # Kanıtları kaydet
+            for ev in f.evidence:
+                sentiment = getattr(ev, "sentiment", "neutral")
+                cur.execute(
+                    """
+                    INSERT INTO research_evidence (
+                        finding_id, persona_id, persona_name, stance,
+                        question, quote, sentiment
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        finding_id,
+                        ev.persona_id,
+                        ev.persona_name,
+                        ev.stance,
+                        ev.source_question,
+                        ev.quote,
+                        sentiment,
+                    ),
+                )
+            saved.append(finding_dict)
+    return saved
+
+
+def get_findings(study_id: str) -> list[dict]:
+    """Bir araştırmaya ait tüm bulguları (kanıt sayılarıyla birlikte) döner."""
+    with get_db() as (conn, cur):
+        cur.execute(
+            """
+            SELECT id, title, category, summary, confidence, implication,
+                   supporting_count, refuting_count, neutral_count,
+                   contradiction_score, decision_signal, created_at
+            FROM research_findings
+            WHERE study_id = %s
+            ORDER BY id
+            """,
+            (study_id,),
+        )
+        rows = cur.fetchall()
+        return [dict(row) for row in rows]
+
+
+def get_finding_detail(study_id: str, finding_id: int) -> dict | None:
+    """Tek bir bulgunun tüm kanıt alıntılarıyla birlikte detayını döner."""
+    with get_db() as (conn, cur):
+        cur.execute(
+            """
+            SELECT id, title, category, summary, confidence, implication,
+                   supporting_count, refuting_count, neutral_count,
+                   contradiction_score, decision_signal, created_at
+            FROM research_findings
+            WHERE study_id = %s AND id = %s
+            """,
+            (study_id, finding_id),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        finding = dict(row)
+        cur.execute(
+            """
+            SELECT id, persona_id, persona_name, stance, question, quote, sentiment, created_at
+            FROM research_evidence
+            WHERE finding_id = %s
+            ORDER BY id
+            """,
+            (finding_id,),
+        )
+        evidence_rows = cur.fetchall()
+        finding["evidence"] = [dict(ev) for ev in evidence_rows]
+        return finding
 
 
 # Initial DB setup

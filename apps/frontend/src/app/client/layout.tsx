@@ -160,6 +160,8 @@ function SidebarPlanWidget() {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { plan } = useClientPlan();
+  const brandName = plan.features.white_label ? "Panel" : "Clarere";
   const [showModal, setShowModal] = useState(false);
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
 
@@ -196,7 +198,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-sidebar">
         <Link href="/" className="flex items-center gap-2">
           <Logo size={32} strokeColor="#17171c" />
-          <span className="font-semibold tracking-tight text-lg">Clarere</span>
+          <span className="font-semibold tracking-tight text-lg">{brandName}</span>
         </Link>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -216,7 +218,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
           <Link href="/" className="flex items-center gap-2">
             <Logo size={32} strokeColor="#17171c" />
-            <span className="font-semibold tracking-tight text-lg">Clarere</span>
+            <span className="font-semibold tracking-tight text-lg">{brandName}</span>
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}

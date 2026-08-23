@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal, Protocol
+from typing import Literal, Protocol, Any
 
 
 ResearchStage = Literal["briefing", "persona_design", "interview", "synthesis"]
@@ -104,6 +104,8 @@ class ResearchBrief:
     respondent_types: list[RespondentType] = field(default_factory=list)
     # Hedef kitle için öncelikli keşif kanalları
     discovery_channels: list[str] = field(default_factory=list)
+    # Hipotez körü mülakat: persona'ya araştırma hipotezi gösterilmez
+    hypothesis_blind: bool = True
 
 
 @dataclass(frozen=True)
@@ -186,6 +188,7 @@ class InterviewTurn:
     tags: list[FindingCategory] = field(default_factory=list)
     model_id: str | None = None
     quality_flags: list[str] = field(default_factory=list)
+    is_probe: bool = False
 
 
 @dataclass(frozen=True)
@@ -212,6 +215,10 @@ class Evidence:
     stance: PersonaStance
     quote: str
     source_question: str
+    sentiment: str = "neutral"  # Sprint 1 — supporting / refuting / neutral
+
+
+DecisionSignal = Literal["SHIP", "ITERATE", "INVESTIGATE", "KILL"]
 
 
 @dataclass(frozen=True)
@@ -222,6 +229,27 @@ class Finding:
     confidence: float
     evidence: list[Evidence]
     implication: str
+
+
+@dataclass
+class EnhancedFinding:
+    """Kanıt zinciri (Evidence Chain) ile zengilestirilmiş bulgu.
+
+    Her bulguya ait destekleyen/karşı çıkan/nötr persona sayıları,
+    çelişki skoru ve karar sinyalini içerir.
+    """
+    title: str
+    category: FindingCategory
+    summary: str
+    confidence: float
+    evidence: list[Evidence]
+    implication: str
+    supporting_count: int = 0
+    refuting_count: int = 0
+    neutral_count: int = 0
+    contradiction_score: float = 0.0
+    decision_signal: DecisionSignal = "INVESTIGATE"
+    segment_breakdown: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -248,6 +276,29 @@ class VanWestendorpInsight:
     acceptable_range: tuple[float, float]   # Kabul edilebilir fiyat aralığı (PMC, PME)
     currency: str = "TL"
     methodology_note: str = "Van Westendorp PSM — Sentetik mülakat yanıtlarından çıkarılan heuristik fiyat aralıkları."
+
+
+@dataclass(frozen=True)
+class DecisionItem:
+    """Karar katmanı öğesi — her bulgu için SHIP/ITERATE/INVESTIGATE/KILL tavsiyesi."""
+    signal: str  # SHIP, ITERATE, INVESTIGATE, KILL
+    title: str
+    confidence: float
+    supporting_count: int
+    refuting_count: int
+    evidence_summary: str
+    recommended_action: str
+
+
+@dataclass(frozen=True)
+class ExternalEvidence:
+    """Web'den elde edilen dış kanıt (Sprint 6 — Web Corroboration)."""
+    finding_title: str
+    source_title: str
+    source_url: str
+    snippet: str
+    relevance: str  # 'high', 'medium', 'low'
+    confidence_boost: float = 0.0  # Bu kanıtın bulgu güvenine katkısı (0.0–0.15)
 
 
 @dataclass(frozen=True)
@@ -278,6 +329,15 @@ class ResearchReport:
     channel_map: list[dict] = field(default_factory=list)
     # Araştırma bütünlüğü puanı (Grounded Simulation RFI metriği)
     research_quality: dict | None = None
+    # Sprint 1 — Kanıt zinciri ile zenginleştirilmiş bulgular
+    enhanced_findings: list = field(default_factory=list)
+    segment_breakdown: dict = field(default_factory=dict)
+    # Sprint 6 — Web doğrulama (dış kanıtlar)
+    external_evidence: list[ExternalEvidence] = field(default_factory=list)
+    # Sprint 8 — RFI benchmark karşılaştırma notu (insan bulgularıyla kıyaslandığında)
+    rfi_benchmark_note: str = ""
+    # Sprint 7 — Karar katmanı öğeleri
+    decision_items: list[DecisionItem] = field(default_factory=list)
 
 
 class ResearchModel(Protocol):
