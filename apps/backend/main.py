@@ -77,15 +77,26 @@ app.add_middleware(
 @app.middleware("http")
 async def tenant_isolation_middleware(request: Request, call_next):
     """
-    Tüm request'lerde X-Username header'ını yakalayıp contextvars içine atar.
-    Bu sayede database.py içindeki get_db() çağrıldığında RLS (Row-Level Security)
-    için gerekli olan tenant bilgisi veritabanına aktarılır.
+    Tenant'ı belirler (öncelik sırasıyla):
+      1. JWT: `Authorization: Bearer <token>` → doğrula → `sub` claim'i
+      2. Fallback: `X-Username` header (geriye dönük uyumluluk)
+    Tenant bilgisi database.py get_db() içinde RLS için kullanılır.
     """
-    username = request.headers.get("x-username")
-    if username:
-        current_tenant_var.set(username)
-    else:
-        current_tenant_var.set(None)
+    username = None
+
+    # 1. JWT doğrulaması
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.lower().startswith("bearer "):
+        from packages.research_engine.jwt_utils import extract_username
+        token = auth_header[7:].strip()
+        if token:
+            username = extract_username(token)
+
+    # 2. Fallback: X-Username header
+    if not username:
+        username = request.headers.get("x-username")
+
+    current_tenant_var.set(username)
     response = await call_next(request)
     return response
 
