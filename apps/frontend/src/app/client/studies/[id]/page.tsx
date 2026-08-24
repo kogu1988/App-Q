@@ -524,7 +524,7 @@ export default function StudyDetailPage() {
     const fetchStudy = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/client/studies/${studyId}`);
+        const res = await fetch(`/api/client/studies/${studyId}`, { headers: getAuthHeaders() });
         if (!res.ok) {
           if (res.status === 404) {
             throw new Error("Araştırma bulunamadı.");
@@ -537,7 +537,7 @@ export default function StudyDetailPage() {
         // Fetch findings if report is available
         if (data.metadata?.has_report) {
           try {
-            const findingsRes = await fetch(`/api/client/studies/${studyId}/findings`);
+            const findingsRes = await fetch(`/api/client/studies/${studyId}/findings`, { headers: getAuthHeaders() });
             if (findingsRes.ok) {
               const findingsData = await findingsRes.json();
               setStudy(prev => prev ? { ...prev, findings: findingsData.findings || [], decision_items: findingsData.decision_items || [] } : prev);
@@ -562,7 +562,7 @@ export default function StudyDetailPage() {
   const handleArchive = async () => {
     setArchiving(true);
     try {
-      const res = await fetch(`/api/client/studies/${studyId}/archive`, { method: "PUT" });
+      const res = await fetch(`/api/client/studies/${studyId}/archive`, { method: "PUT", headers: getAuthHeaders() });
       if (!res.ok) throw new Error();
       setIsArchived(true);
       toast.success("Araştırma arşivlendi.");
@@ -866,7 +866,7 @@ export default function StudyDetailPage() {
                     
                     toast.success("Rapor olusturuldu!");
                     // Reload study data
-                    const updated = await fetch(`/api/client/studies/${studyId}`);
+                    const updated = await fetch(`/api/client/studies/${studyId}`, { headers: getAuthHeaders() });
                     if (updated.ok) setStudy(await updated.json());
                     setActiveTab("report");
                   } catch (err) {
