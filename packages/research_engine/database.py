@@ -38,6 +38,10 @@ if not PG_PASS:
         logger.warning("POSTGRES_PASSWORD ayarlanmamış — geliştirme varsayılanı kullanılıyor")
 PG_DB = os.getenv("POSTGRES_DB", "clarere_db")
 
+# App bağlantısı — RLS'yi uygulayan superuser OLMAYAN rol (tenant izolasyonu için)
+APP_DB_USER = os.getenv("APP_DB_USER", "clarere_app")
+APP_DB_PASS = os.getenv("APP_DB_PASSWORD", PG_PASS or "clarere_password")
+
 # — Bağlantı Havuzu —
 _POOL_MIN = int(os.getenv("PG_POOL_MIN", "2"))
 _POOL_MAX = int(os.getenv("PG_POOL_MAX", "10"))
@@ -64,10 +68,32 @@ def _get_pool() -> pg_pool.ThreadedConnectionPool:
     return _pool
 
 
+_app_pool: pg_pool.ThreadedConnectionPool | None = None
+
+
+def _get_app_pool() -> pg_pool.ThreadedConnectionPool:
+    """App bağlantı havuzu — RLS'ye tabi, superuser olmayan rol."""
+    global _app_pool
+    if _app_pool is None or _app_pool.closed:
+        with _pool_lock:
+            if _app_pool is None or _app_pool.closed:
+                _app_pool = pg_pool.ThreadedConnectionPool(
+                    minconn=_POOL_MIN,
+                    maxconn=_POOL_MAX,
+                    host=PG_HOST,
+                    port=PG_PORT,
+                    user=APP_DB_USER,
+                    password=APP_DB_PASS,
+                    dbname=PG_DB,
+                )
+                logger.info(f"App bağlantı havuzu oluşturuldu (user={APP_DB_USER})")
+    return _app_pool
+
+
 @contextmanager
 def get_db(register_pgvector=True):
-    """Havuzdan bir bağlantı odiğneç ve işlem sonrası geri verir."""
-    conn = _get_pool().getconn()
+    """App bağlantısı (RLS'ye tabi rol) ve işlem sonrası geri verir."""
+    conn = _get_app_pool().getconn()
     if register_pgvector:
         try:
             register_vector(conn)
@@ -82,11 +108,36 @@ def get_db(register_pgvector=True):
                 # Organizasyon bağlamı (multi-user paylaşımı)
                 try:
                     cur.execute(
-                        "SELECT set_config('clarere.current_org', COALESCE((SELECT org_id FROM organization_members WHERE username = %s LIMIT 1), ''), true)",
+                        "SELECT set_config('clarere.current_org', m.org_id, true) FROM organization_members m WHERE m.username = %s LIMIT 1",
                         (tenant_id,),
                     )
                 except Exception:
                     pass  # org tablosu henüz yoksa sessizce geç
+            else:
+                # Anon: tenant/org ayarlarını açıkça sıfırla (havuzdan kalıntı değer kalmasın)
+                try:
+                    cur.execute("RESET clarere.current_tenant; RESET clarere.current_org;")
+                except Exception:
+                    pass
+            yield conn, cur
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        _get_app_pool().putconn(conn)
+
+@contextmanager
+def get_admin_db(register_pgvector=False):
+    """Superuser bağlantısı — init_db/migration için (RLS'yi bypass eder)."""
+    conn = _get_pool().getconn()
+    if register_pgvector:
+        try:
+            register_vector(conn)
+        except Exception:
+            pass
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             yield conn, cur
         conn.commit()
     except Exception:
@@ -95,8 +146,37 @@ def get_db(register_pgvector=True):
     finally:
         _get_pool().putconn(conn)
 
+
+def _ensure_app_role(cur) -> None:
+    """RLS'ye tabi, superuser olmayan app rolünü oluşturur ve yetkilendirir.
+
+    PostgreSQL superuser'ları RLS'yi bypass eder; tenant izolasyonunun
+    fiilen çalışması için app bu rol (clarere_app) üzerinden bağlanmalı.
+    """
+    from psycopg2 import sql as psql
+    cur.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'clarere_app') THEN
+                CREATE ROLE clarere_app LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB;
+            END IF;
+        END
+        $$;
+        """
+    )
+    cur.execute(
+        psql.SQL("ALTER ROLE clarere_app WITH LOGIN PASSWORD {}").format(psql.Literal(APP_DB_PASS))
+    )
+    cur.execute("GRANT USAGE ON SCHEMA public TO clarere_app;")
+    cur.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO clarere_app;")
+    cur.execute("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO clarere_app;")
+    cur.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO clarere_app;")
+    cur.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO clarere_app;")
+
+
 def init_db() -> None:
-    with get_db(register_pgvector=False) as (conn, cur):
+    with get_admin_db(register_pgvector=False) as (conn, cur):
         # Create extension for pgvector
         cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
         conn.commit()
@@ -214,6 +294,7 @@ def init_db() -> None:
         # Row-Level Security (RLS) for personas_pool (B2B Isolation)
         try:
             cur.execute("ALTER TABLE personas_pool ENABLE ROW LEVEL SECURITY;")
+            cur.execute("ALTER TABLE personas_pool FORCE ROW LEVEL SECURITY;")
             # Sadece kendi oluşturduğu personalar VEYA global olanları görebilir/kullanabilir
             cur.execute("""
                 DO $$
@@ -258,23 +339,15 @@ def init_db() -> None:
             cur.execute("ALTER TABLE studies ADD COLUMN IF NOT EXISTS created_by TEXT;")
             cur.execute("ALTER TABLE studies ADD COLUMN IF NOT EXISTS org_id TEXT;")
             cur.execute("ALTER TABLE studies ENABLE ROW LEVEL SECURITY;")
+            cur.execute("ALTER TABLE studies FORCE ROW LEVEL SECURITY;")
+            cur.execute("DROP POLICY IF EXISTS studies_tenant_policy ON studies;")
             cur.execute(
                 """
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1 FROM pg_policies WHERE policyname = 'studies_tenant_policy' AND tablename = 'studies'
-                    ) THEN
-                        CREATE POLICY studies_tenant_policy ON studies
-                        USING (
-                            created_by = current_setting('clarere.current_tenant', true)
-                            OR created_by IS NULL
-                            OR created_by = ''
-                            OR org_id = current_setting('clarere.current_org', true)
-                        );
-                    END IF;
-                END
-                $$;
+                CREATE POLICY studies_tenant_policy ON studies
+                USING (
+                    created_by = current_setting('clarere.current_tenant', true)
+                    OR (org_id IS NOT NULL AND org_id = current_setting('clarere.current_org', true))
+                )
                 """
             )
         except Exception as e:
@@ -647,12 +720,15 @@ def init_db() -> None:
         cur.execute("INSERT INTO system_config (key, value) VALUES ('persona_interview_prompt', %s) ON CONFLICT (key) DO NOTHING", (default_persona,))
         cur.execute("INSERT INTO system_config (key, value) VALUES ('synthesis_prompt', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (default_synthesis,))
 
+        # App rolü (superuser olmayan, RLS'ye tabi) oluştur + yetkilendir
+        _ensure_app_role(cur)
+
 
 def save_study(metadata: dict, payload: dict) -> str:
     study_id = metadata["id"]
     # Tenant + org bilgisi (multi-user RLS için)
     created_by = current_tenant_var.get() or metadata.get("created_by") or metadata.get("username") or ""
-    org_id = metadata.get("org_id") or ""
+    org_id = metadata.get("org_id") or None
     with get_db() as (conn, cur):
         cur.execute(
             """
