@@ -872,6 +872,17 @@ def load_study_payload(study_id: str, include_pdf: bool = False) -> dict:
             if include_pdf:
                 payload["report_pdf"] = row.get("report_pdf")
 
+            # report_json'ı üst seviyeye yay — frontend structured kartları
+            # (van_westendorp, ses_cross_tab, brand_health, research_quality,
+            # channel_map, findings, decision_items vb.) doğrudan study.<alan>
+            # olarak okur; brief/plan/personas/interviews ayrı saklandığı için ezilmez.
+            _report_json = payload.get("report_json")
+            if isinstance(_report_json, dict):
+                for _k, _v in _report_json.items():
+                    if _k in ("plan", "personas", "interviews", "title"):
+                        continue
+                    payload.setdefault(_k, _v)
+
         study = get_study(study_id)
         if study:
             payload["metadata"] = study
