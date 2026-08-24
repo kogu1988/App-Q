@@ -143,7 +143,7 @@ async def generate_personas_endpoint(req: GeneratePersonaRequest):
     from packages.research_engine.persona_generator import generate_and_save_personas
     from packages.research_engine.providers import get_model_provider
     
-    model = get_model_provider()
+    model = get_model_provider("persona")
     
     personas = generate_and_save_personas(
         role_title=req.role_title,
@@ -183,7 +183,7 @@ async def get_random_persona_draft():
     from packages.research_engine.persona_generator import generate_random_persona_draft
     from packages.research_engine.providers import get_model_provider
     
-    model = get_model_provider()
+    model = get_model_provider("persona")
     
     draft = generate_random_persona_draft(model)
     if not draft:

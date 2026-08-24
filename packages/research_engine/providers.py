@@ -25,6 +25,10 @@ DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 DEEPSEEK_FLASH_MODEL = os.getenv("DEEPSEEK_FLASH_MODEL", "deepseek-v4-flash")
 DEEPSEEK_PRO_MODEL = os.getenv("DEEPSEEK_PRO_MODEL", "deepseek-v4-pro")
 
+# — OpenRouter config (deneme/trial model) —
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "stealth/ox-alpha")
+
 
 class ModelProviderError(RuntimeError):
     """Raised when the configured model provider cannot respond."""
@@ -185,6 +189,65 @@ class DeepSeekResearchModel:
         pass  # Cloud API — no local memory to free
 
 
+class OpenRouterModel:
+    """OpenRouter adapter — OpenAI-compatible client (trial/deneme model)."""
+
+    def __init__(self, model_id: str | None = None, api_key: str | None = None, user_id: str = "") -> None:
+        self.model_id = model_id or OPENROUTER_MODEL
+        self.last_model_id = self.model_id
+        self.user_id = user_id
+
+        api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
+        if not api_key:
+            raise ModelProviderError("OPENROUTER_API_KEY env var zorunlu.")
+
+        self.api_key = api_key
+
+        try:
+            from openai import OpenAI
+            self.client = OpenAI(api_key=api_key, base_url=OPENROUTER_BASE_URL)
+        except ImportError:
+            self.client = None
+            logger.error("openai package not found. OpenRouter adapter will fail.")
+
+    @observe(as_type="generation")
+    def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
+        self.last_model_id = self.model_id
+
+        if not self.client:
+            raise ModelProviderError("OpenAI client not initialized. Install openai package.")
+
+        kwargs: dict = {
+            "model": self.model_id,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": 8192,
+        }
+
+        if response_format == "json":
+            kwargs["response_format"] = {"type": "json_object"}
+
+        try:
+            response = self.client.chat.completions.create(**kwargs)
+        except Exception as exc:
+            raise ModelProviderError(f"OpenRouter API çağrısı başarısız ({self.model_id}): {exc}") from exc
+
+        content = response.choices[0].message.content or ""
+
+        if response_format == "json":
+            content = clean_json_output(content)
+
+        return content
+
+    def generate_stream(self, system: str, prompt: str, response_format: str | None = None):
+        raise ModelProviderError("OpenRouter stream desteklenmiyor (persona üretimi stream kullanmaz).")
+
+    def free_memory(self) -> None:
+        pass  # Cloud API — no local memory to free
+
+
 def get_model_provider(provider: str | None = None, user_id: str = "") -> ResearchModel:
     """
     Factory for model providers.
@@ -197,10 +260,19 @@ def get_model_provider(provider: str | None = None, user_id: str = "") -> Resear
     user_id: DeepSeek user_id isolation (KVCache, content safety, scheduling).
              Yalnizca [a-zA-Z0-9_-] karakterleri — otomatik temizlenir.
     """
-    flash_aliases = {None, "flash", "intake", "persona", "interview", "plan"}
+    flash_aliases = {None, "flash", "intake", "interview", "plan"}
     pro_aliases = {"pro", "synthesis", "report"}
+    persona_aliases = {"persona"}
 
     provider = (provider or "").lower()
+
+    # DeepSeek user_id regex: [a-zA-Z0-9\-_]+, max 512 char
+    import re
+    safe_user_id = re.sub(r'[^a-zA-Z0-9\-_]', '', (user_id or "").strip())[:64] or "anonymous"
+
+    # Persona üretimi → OpenRouter ox-alpha (deneme/trial model)
+    if provider in persona_aliases:
+        return OpenRouterModel(user_id=safe_user_id)
 
     if provider in flash_aliases or provider == "":
         model_id = DEEPSEEK_FLASH_MODEL
@@ -208,10 +280,6 @@ def get_model_provider(provider: str | None = None, user_id: str = "") -> Resear
         model_id = DEEPSEEK_PRO_MODEL
     else:
         model_id = provider
-
-    # DeepSeek user_id regex: [a-zA-Z0-9\-_]+, max 512 char
-    import re
-    safe_user_id = re.sub(r'[^a-zA-Z0-9\-_]', '', (user_id or "").strip())[:64] or "anonymous"
 
     api_key = os.getenv("DEEPSEEK_API_KEY", "")
     return DeepSeekResearchModel(model_id=model_id, api_key=api_key, user_id=safe_user_id)
