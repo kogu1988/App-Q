@@ -101,24 +101,17 @@ def get_db(register_pgvector=True):
             pass  # extension might not be created yet
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Set Local RLS Session Variable for B2B Isolation
-            tenant_id = current_tenant_var.get()
-            if tenant_id:
-                cur.execute("SELECT set_config('clarere.current_tenant', %s, true)", (tenant_id,))
-                # Organizasyon bağlamı (multi-user paylaşımı)
-                try:
-                    cur.execute(
-                        "SELECT set_config('clarere.current_org', m.org_id, true) FROM organization_members m WHERE m.username = %s LIMIT 1",
-                        (tenant_id,),
-                    )
-                except Exception:
-                    pass  # org tablosu henüz yoksa sessizce geç
-            else:
-                # Anon: tenant/org ayarlarını açıkça sıfırla (havuzdan kalıntı değer kalmasın)
-                try:
-                    cur.execute("RESET clarere.current_tenant; RESET clarere.current_org;")
-                except Exception:
-                    pass
+            # RLS Session değişkenlerini HER istekte set et (anon dahil) — havuzdan kalıntı değer kalmasın
+            tenant_id = current_tenant_var.get() or ""
+            cur.execute("SELECT set_config('clarere.current_tenant', %s, true)", (tenant_id,))
+            # Organizasyon bağlamı (multi-user paylaşımı) — üye değilse '' (boş)
+            try:
+                cur.execute(
+                    "SELECT set_config('clarere.current_org', COALESCE((SELECT org_id FROM organization_members WHERE username = %s LIMIT 1), ''), true)",
+                    (tenant_id,),
+                )
+            except Exception:
+                cur.execute("SELECT set_config('clarere.current_org', '', true)")
             yield conn, cur
         conn.commit()
     except Exception:
@@ -346,7 +339,7 @@ def init_db() -> None:
                 CREATE POLICY studies_tenant_policy ON studies
                 USING (
                     created_by = current_setting('clarere.current_tenant', true)
-                    OR (org_id IS NOT NULL AND org_id = current_setting('clarere.current_org', true))
+                    OR (org_id IS NOT NULL AND org_id <> '' AND org_id = current_setting('clarere.current_org', true))
                 )
                 """
             )
