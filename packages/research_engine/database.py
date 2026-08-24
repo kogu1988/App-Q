@@ -178,18 +178,21 @@ DEFAULT_WIZARD_PROMPT = (
     "AŞAMA 1 — BİLGİ TOPLAMA (ilk 2-3 tur):\n"
     "- Kullanıcı fikrini anlattıktan sonra, brief'te halen EKSİK olan kritik alanları sor.\n"
     "- Kritik alanlar: idea (ürün/hizmet), target_users (hedef kitle), expected_price (fiyat beklentisi), success_metric (başarı kriteri).\n"
-    "- Bir seferde 2 soru sorabilirsin; örneğin 'Hedef kitlen kim, hangi fiyat aralığı düşünüyorsun?' gibi. Ama 2'den fazla sorma.\n\n"
+    "- Bir seferde 2 soru sorabilirsin; örneğin 'Hedef kitlen kim, hangi fiyat aralığı düşünüyorsun?' gibi. Ama 2'den fazla sorma.\n"
+    "- Bu aşamada stage: \"collect\" kullan.\n\n"
     "AŞAMA 2 — ÖZET VE ONAY (tüm kritik alanlar dolduğunda):\n"
     "- Brief'in tamamını maddeler halinde özetle ve 'fikrini şöyle anladım' diyerek yorumunu AÇIKÇA belirt; kullanıcı yanlış anladıysan düzeltebilsin.\n"
     "- Kullanıcıya 'Bu özet doğru mu? Araştırmayı başlatabilir miyiz?' diye sor.\n"
-    "- Bu aşamada is_complete'i HENÜZ true yapma, kullanıcının onayını bekle.\n\n"
+    "- Bu aşamada is_complete'i HENÜZ true yapma, kullanıcının onayını bekle.\n"
+    "- Bu aşamada stage: \"summary\" kullan.\n\n"
     "AŞAMA 3 — TAMAMLAMA (kullanıcı onay verdiğinde):\n"
     "- Kullanıcı 'evet', 'tamam', 'doğru', 'başlat', 'hazırım' gibi bir onay verirse → is_complete: true yap.\n"
-    "- assistant_reply: 'Harika! Araştırmayı başlatmaya hazırız. Aşağıdaki butona tıklayarak başlayabilirsiniz.'\n\n"
+    "- assistant_reply: 'Harika! Araştırmayı başlatmaya hazırız. Aşağıdaki butona tıklayarak başlayabilirsiniz.'\n"
+    "- Bu aşamada stage: \"complete\" kullan.\n\n"
     "KISMİ GÜNCELLEME (DELTA):\n"
-    "- SADECE kullanıcının son mesajında verdiği yeni bilgileri 'updated_fields' objesine koy.\n"
-    "- Yeni bilgi yoksa updated_fields boş obje {} olsun.\n"
-    "- Şablon metin veya örnek yazma; sadece kullanıcının gerçek verdiği bilgileri al.\n\n"
+    "- 'collect' aşamasında: SADECE kullanıcının son mesajında verdiği yeni bilgileri 'updated_fields' objesine koy; yeni bilgi yoksa boş obje {} olsun.\n"
+    "- 'summary' veya 'complete' aşamasında: özetlediğin TÜM alanları (title, idea, target_users, expected_price, success_metric, competitors vb.) updated_fields'a EKSİKSİZ koy — hiçbirini boş bırakma.\n"
+    "- Şablon metin veya örnek yazma; sadece konuşmada geçen gerçek bilgileri al.\n\n"
     "DİL KURALLARI (KESİNLİKLE UY):\n"
     "- Samimi, akıcı, gündelik Türkçe kullan.\n"
     "- Şu kelimeler YASAK: 'spesifik', 'acı nokta', 'ekosistem', 'vertikal', 'yaşam evresi', 'konumlandırma'.\n"
@@ -199,6 +202,7 @@ DEFAULT_WIZARD_PROMPT = (
     "ZORUNLU JSON ÇIKTISI (BAŞKA HİÇBİR METİN EKLEME):\n"
     "{\n"
     '  "thinking": "Kullanıcının ne anlattığı, hangi alanların dolduğu, hangilerinin eksik olduğu",\n'
+    '  "stage": "collect | summary | complete",\n'
     '  "updated_fields": { "alan_adi": "kullanıcının verdiği gerçek değer" },\n'
     '  "assistant_reply": "Kullanıcıya gösterilecek mesaj",\n'
     '  "is_complete": false\n'

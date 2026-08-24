@@ -576,7 +576,19 @@ def process_intake_chat(current_brief: Dict[str, Any], chat_history: List[Dict[s
                 is_complete = is_complete_raw.lower() == "true"
             else:
                 is_complete = bool(is_complete_raw)
-                
+
+            # Özet/tamamlama aşamasında tüm brief'i sohbet geçmişinden yeniden çıkar:
+            # delta güncellemesi tek başına bazı alanları (title, expected_price vb.)
+            # eksik bırakabiliyor çünkü LLM bunları yalnızca özet metnine yazabiliyor.
+            stage = data.get("stage", "")
+            if stage in ("summary", "complete") or is_complete:
+                try:
+                    extracted = extract_complete_brief(updated_history, updated_brief, model)
+                    if extracted:
+                        updated_brief = extracted
+                except Exception as e:
+                    logger.error(f"Complete brief extraction failed: {e}")
+
             break
         except Exception as e:
             logger.error(f"Error generating Defne reply (attempt {attempt+1}): {e}")
