@@ -190,11 +190,14 @@ export default function NewResearchWizard() {
     setMessages(nextMessages);
     setLoading(true);
 
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000";
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
     try {
       const res = await fetch(`${API_BASE}/api/client/intake`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
         body: JSON.stringify({
           current_brief: brief,
           chat_history: nextMessages.map(m => ({ role: m.role, content: m.content })),
@@ -249,7 +252,7 @@ export default function NewResearchWizard() {
     const username = typeof window !== "undefined" ? localStorage.getItem("clarere_username") : null;
     
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000";
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
       const res = await fetch(`${API_BASE}/api/client/research`, {
         method: "POST",
         headers: {
