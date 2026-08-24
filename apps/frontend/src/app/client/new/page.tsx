@@ -111,7 +111,7 @@ function BriefPreview({ brief, mode, onToggleMobile }: { brief: Brief; mode: "re
               style={{ width: `${pct}%` }}
             />
           </div>
-          <span className="text-xs font-bold text-[#ff7759] /80 tabular-nums">{pct}%</span>
+          <span className="text-xs font-bold text-[#ff7759]/80 tabular-nums">{pct}%</span>
         </div>
       </CardHeader>
       <CardContent className="space-y-2.5">

@@ -34,7 +34,7 @@ function SidebarStudiesWidget() {
 
   return (
     <div className="pt-4 mt-2 border-t border-border/50">
-      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-3">
+      <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] mb-2 px-3">
         Son Araştırmalar
       </h4>
       <div className="flex flex-col gap-0.5">
@@ -99,7 +99,7 @@ function SidebarPlanWidget() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <Zap size={12} className={isNearLimit ? "text-amber-500" : "text-muted-foreground"} />
-          <span className="text-[11px] font-semibold text-muted-foreground">Plan</span>
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Plan</span>
         </div>
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${planColor.bg} ${planColor.text}`}>
           {plan.plan_type}
@@ -132,7 +132,7 @@ function SidebarPlanWidget() {
           </p>
         </div>
       ) : (
-        <p className="text-[11px] text-[#003c33] font-semibold">Sinirsiz araştırma</p>
+        <p className="text-[11px] text-[#003c33] dark:text-[#edfce9] font-semibold">Sınırsız araştırma</p>
       )}
 
       {/* Period reset */}
@@ -203,7 +203,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="p-2 border border-border rounded-md hover:bg-sidebar-accent transition-colors"
-          aria-label="Toggle menu"
+          aria-label="Menüyü aç/kapat"
         >
           {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -223,7 +223,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           <button
             onClick={() => setSidebarOpen(false)}
             className="md:hidden p-1 border border-border rounded-md hover:bg-sidebar-accent transition-colors"
-            aria-label="Close menu"
+            aria-label="Menüyü kapat"
           >
             <X size={16} />
           </button>
@@ -236,7 +236,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             onClick={() => setSidebarOpen(false)}
             className="px-3 py-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm font-medium transition-colors"
           >
-            Dashboard
+            Panel
           </Link>
           <Link
             href="/client/new"

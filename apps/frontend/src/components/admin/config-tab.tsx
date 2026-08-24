@@ -52,7 +52,7 @@ export function ConfigTab({
                   <Input
                     id={`config-${key}`}
                     defaultValue={config[key] || ""}
-                    className="flex-1 text-foreground bg-background"
+                    className="min-w-0 flex-1 text-foreground bg-background"
                   />
                   <Button
                     size="sm"
@@ -99,7 +99,7 @@ export function ConfigTab({
         <CardHeader>
           <CardTitle className="text-base">Sistem Prompt Editörleri</CardTitle>
           <CardDescription>
-            Araştırma sihirbazı, persona mülakat ve sentez raporu için LLM system promptları.
+            Araştırma sihirbazı, persona mülakat ve sentez raporu için LLM sistem promptları.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -114,7 +114,7 @@ export function ConfigTab({
                 id={`prompt-${key}`}
                 defaultValue={config[key] || ""}
                 rows={8}
-                className="text-sm font-mono bg-[#f5f4f1] text-slate-800 flex-1 resize-none"
+                className="text-sm font-mono bg-[#f5f4f1] text-[#212121] flex-1 resize-none"
               />
               <div className="flex justify-end pt-2">
                 <Button
@@ -124,7 +124,7 @@ export function ConfigTab({
                     const el = document.getElementById(`prompt-${key}`) as HTMLTextAreaElement;
                     if (el) saveConfig(key, el.value);
                   }}
-                  className="gap-2 bg-[#ff7759] text-[#edfce9] hover:bg-[#ff7759]/90 w-full"
+                  className="gap-2 bg-[#ff7759] text-white hover:opacity-85 w-full"
                 >
                   {savingConfig === key ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                   Promptu Kaydet

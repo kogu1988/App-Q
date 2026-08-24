@@ -41,27 +41,27 @@ export default function ClientDashboard() {
         <div className="p-5 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-3 shadow-sm animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-2">
             <span className="text-base">⚠️</span>
-            <p className="text-sm font-black text-amber-900">Trial Expired (Deneme Süreniz Doldu)</p>
+            <p className="text-sm font-black text-amber-900">Deneme Süreniz Doldu</p>
           </div>
           <p className="text-xs text-amber-800 leading-relaxed max-w-3xl">
-            Every plan comes with a 3-day free trial and 2 free researches — no credit card required. You get access to the platform so you can run real research and see the output before committing.
+            Her plan 3 günlük ücretsiz deneme ve 2 ücretsiz araştırma içerir — kredi kartı gerekmez. Karar vermeden önce platformu deneyimler, gerçek bir araştırma yürütür ve çıktıyı görürsünüz.
           </p>
           <p className="text-xs text-amber-800 leading-relaxed max-w-3xl">
-            After 3 days or 2 researches (whichever comes first), you’ll be asked to choose a plan. Your research reports and data stay accessible for 30 days — after that, access is limited. Pick a plan to keep everything unlocked.
+            3 gün veya 2 araştırma (hangisi önce gelirse) sonunda bir plan seçmeniz istenir. Raporlarınız ve verileriniz 30 gün boyunca erişilebilir kalır; sonrasında erişim kısıtlanır. Her şeyi açık tutmak için bir plan seçin.
           </p>
           <div className="pt-1">
             <Link href="/client/upgrade">
               <Button size="sm" className="bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl text-xs px-4">
-                Upgrade Now / Plan Seç →
+                Plan Seç →
               </Button>
             </Link>
           </div>
         </div>
       )}
 
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight text-[#17171c] dark:text-white">Kontrol Paneli</h1>
+        <p className="text-[#616161] dark:text-[#93939f] text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>
       </div>
 
       {/* ── PRESET SHARP CARBON GLOW CARD ────────────────────────────────────── */}
@@ -93,9 +93,9 @@ export default function ClientDashboard() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">Yükleniyor...</div>
+            <div className="text-center py-8 text-[#616161] dark:text-[#93939f] text-sm">Yükleniyor...</div>
           ) : studies.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg">
+            <div className="text-center py-12 text-[#616161] dark:text-[#93939f] border border-dashed border-border rounded-lg">
               Henüz bir araştırma bulunmuyor. Yeni bir araştırma başlatın.
             </div>
           ) : (
@@ -115,12 +115,12 @@ export default function ClientDashboard() {
                     <TableRow key={study.id}>
                       <TableCell className="font-medium">{study.title || "İsimsiz Proje"}</TableCell>
                       <TableCell>{study.category || "-"}</TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-[#616161] dark:text-[#93939f]">
                         {new Date(study.updated_at).toLocaleDateString("tr-TR")}
                       </TableCell>
                       <TableCell>
                         {study.has_report ? (
-                          <Badge variant="default" className="bg-green-600 hover:bg-green-700">Tamamlandı</Badge>
+                          <Badge variant="default" className="bg-[#003c33] text-white dark:bg-[#edfce9] dark:text-[#003c33]">Tamamlandı</Badge>
                         ) : (
                           <Badge variant="secondary">Taslak</Badge>
                         )}

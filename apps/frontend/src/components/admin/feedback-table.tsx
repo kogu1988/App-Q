@@ -58,8 +58,8 @@ export function FeedbackTable({ feedbacks }: { feedbacks: FeedbackItem[] }) {
                         ? "bg-emerald-600 text-white"
                         : v === "dislike"
                         ? "bg-red-500 text-white"
-                        : "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900"
-                      : "bg-card text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
+                        : "bg-[#17171c] text-white dark:bg-[#e5e7eb] dark:text-[#17171c]"
+                      : "bg-card text-muted-foreground hover:bg-[#eeece7] dark:hover:bg-[#2c2c33]"
                   }`}
                 >
                   {v === "all" ? (
@@ -105,12 +105,12 @@ export function FeedbackTable({ feedbacks }: { feedbacks: FeedbackItem[] }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-[11px] uppercase tracking-wide">Tarih</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wide">Kullanıcı</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wide">Araştırma</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wide">Tür</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wide">Oy</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wide">Yorum</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Tarih</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Kullanıcı</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Araştırma</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Tür</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Oy</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Yorum</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -148,7 +148,7 @@ export function FeedbackTable({ feedbacks }: { feedbacks: FeedbackItem[] }) {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="max-w-xs">
+                      <TableCell className="max-w-xs min-w-0">
                         {hasComment ? (
                           <span
                             className="inline-block text-xs bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40 rounded-md px-2 py-0.5 max-w-[200px] truncate"

@@ -224,7 +224,7 @@ function FindingCard({ finding, dc, DcIcon, confPct, barColor }: {
   const [showEvidence, setShowEvidence] = useState(false);
 
   return (
-    <Card className="shadow-sm border-slate-200/60 hover:border-[#003c33]/30 transition-colors">
+    <Card className="shadow-sm border-[#d9d9dd]/60 hover:border-[#003c33]/30 transition-colors">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
@@ -243,10 +243,10 @@ function FindingCard({ finding, dc, DcIcon, confPct, barColor }: {
         {/* Confidence Bar */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-medium text-slate-600">Güven Skoru</span>
-            <span className="font-bold text-slate-800">%{confPct}</span>
+            <span className="font-medium text-[#616161]">Güven Skoru</span>
+            <span className="font-bold text-[#212121]">%{confPct}</span>
           </div>
-          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-2 w-full bg-[#eeece7] rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-700 ${barColor}`}
               style={{ width: `${confPct}%` }}
@@ -293,19 +293,19 @@ function FindingCard({ finding, dc, DcIcon, confPct, barColor }: {
             {showEvidence && (
               <div className="space-y-2 mt-2">
                 {finding.evidence.slice(0, 3).map((ev, ei) => (
-                  <div key={ei} className="flex gap-2 p-2.5 bg-slate-50 rounded-lg border border-border/60 text-xs">
+                  <div key={ei} className="flex gap-2 p-2.5 bg-[#f5f4f1] rounded-lg border border-border/60 text-xs">
                     <div className="shrink-0">
                       <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         ev.stance === "Champion" ? "bg-emerald-100 text-emerald-700" :
                         ev.stance === "Skeptic" ? "bg-amber-100 text-amber-700" :
                         ev.stance === "Blocker" ? "bg-red-100 text-red-700" :
-                        "bg-slate-100 text-slate-600"
+                        "bg-[#eeece7] text-[#616161]"
                       }`}>{ev.stance}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="font-semibold text-slate-800">{ev.persona_name}</span>
+                      <span className="font-semibold text-[#212121]">{ev.persona_name}</span>
                       <span className="text-muted-foreground ml-1">({ev.sentiment})</span>
-                      <p className="italic text-slate-600 mt-0.5 line-clamp-2">&ldquo;{ev.quote}&rdquo;</p>
+                      <p className="italic text-[#616161] mt-0.5 line-clamp-2">&ldquo;{ev.quote}&rdquo;</p>
                     </div>
                   </div>
                 ))}
@@ -318,7 +318,7 @@ function FindingCard({ finding, dc, DcIcon, confPct, barColor }: {
         {finding.implication && (
           <div className="border-t border-border pt-3">
             <span className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Çıkarım</span>
-            <p className="text-xs text-slate-600 leading-relaxed">{finding.implication}</p>
+            <p className="text-xs text-[#616161] leading-relaxed">{finding.implication}</p>
           </div>
         )}
       </CardContent>
@@ -335,8 +335,8 @@ function ChannelBarChart({ data }: { data: NonNullable<StudyDetail["channel_map"
     <div className="space-y-2.5">
       {data.map((row, i) => (
         <div key={row.channel} className="flex items-center gap-3">
-          <span className="text-xs font-medium text-slate-600 w-40 shrink-0 truncate">{row.channel}</span>
-          <div className="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden">
+          <span className="text-xs font-medium text-[#616161] w-40 shrink-0 truncate">{row.channel}</span>
+          <div className="flex-1 bg-[#eeece7] rounded-full h-2.5 overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{ width: `${(row.count / maxCount) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }}
@@ -426,7 +426,7 @@ function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendorp"]> }
               stroke="#e2e8f0" strokeWidth="1"
             />
             <text x={PAD.left - 6} y={PAD.top + innerH * (1 - t / 100) + 4} textAnchor="end"
-              className="fill-slate-400" fontSize="10">{t}%</text>
+              className="fill-[#93939f]" fontSize="10">{t}%</text>
           </g>
         ))}
 
@@ -436,7 +436,7 @@ function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendorp"]> }
             <line x1={xScale(v)} y1={PAD.top + innerH} x2={xScale(v)} y2={PAD.top + innerH + 4}
               stroke="#cbd5e1" strokeWidth="1" />
             <text x={xScale(v)} y={PAD.top + innerH + 16} textAnchor="middle"
-              className="fill-slate-400" fontSize="10">{v.toLocaleString("tr-TR")} ₺</text>
+              className="fill-[#93939f]" fontSize="10">{v.toLocaleString("tr-TR")} ₺</text>
           </g>
         ))}
 
@@ -483,7 +483,7 @@ function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendorp"]> }
               <line x1="0" y1="5" x2="24" y2="5" stroke={l.color} strokeWidth="2"
                 strokeDasharray={l.dash || undefined} />
             </svg>
-            <span className="text-slate-600 ">{l.label}</span>
+            <span className="text-[#616161] ">{l.label}</span>
           </div>
         ))}
       </div>
@@ -695,13 +695,13 @@ export default function StudyDetailPage() {
     return lines.map((line, idx) => {
       // Headers
       if (line.startsWith("### ")) {
-        return <h4 key={idx} className="text-lg font-semibold text-slate-800 dark:text-slate-100 mt-5 mb-2">{line.replace("### ", "")}</h4>;
+        return <h4 key={idx} className="text-lg font-semibold text-[#212121] dark:text-[#e5e7eb] mt-5 mb-2">{line.replace("### ", "")}</h4>;
       }
       if (line.startsWith("## ")) {
-        return <h3 key={idx} className="text-xl font-bold text-slate-800 dark:text-slate-100 mt-6 mb-3 border-b pb-1 border-slate-200 dark:border-slate-800">{line.replace("## ", "")}</h3>;
+        return <h3 key={idx} className="text-xl font-bold text-[#212121] dark:text-[#e5e7eb] mt-6 mb-3 border-b pb-1 border-[#d9d9dd] dark:border-[rgba(255,255,255,0.1)]">{line.replace("## ", "")}</h3>;
       }
       if (line.startsWith("# ")) {
-        return <h2 key={idx} className="text-2xl font-black text-slate-900 dark:text-white mt-8 mb-4">{line.replace("# ", "")}</h2>;
+        return <h2 key={idx} className="text-2xl font-black text-[#17171c] dark:text-white mt-8 mb-4">{line.replace("# ", "")}</h2>;
       }
 
       // Bullet points
@@ -709,7 +709,7 @@ export default function StudyDetailPage() {
         const cleanText = line.trim().replace(/^[-*]\s+/, "");
         // Highlight bold elements inside bullet points
         return (
-          <li key={idx} className="list-disc pl-2 ml-5 text-slate-600 leading-relaxed my-1">
+          <li key={idx} className="list-disc pl-2 ml-5 text-[#616161] leading-relaxed my-1">
             {parseBoldText(cleanText)}
           </li>
         );
@@ -718,7 +718,7 @@ export default function StudyDetailPage() {
       // Blockquotes / Warnings
       if (line.startsWith("> ")) {
         return (
-          <div key={idx} className="border-l-4 border-[#1863dc] pl-4 py-2 bg-[#f1f5ff]/40 dark:bg-[#071829]/20 rounded-r-md text-slate-700 italic my-4">
+          <div key={idx} className="border-l-4 border-[#1863dc] pl-4 py-2 bg-[#f1f5ff]/40 dark:bg-[#071829]/20 rounded-r-md text-[#616161] italic my-4">
             {line.replace("> ", "")}
           </div>
         );
@@ -728,7 +728,7 @@ export default function StudyDetailPage() {
       if (line.trim() === "") return <div key={idx} className="h-2" />;
 
       return (
-        <p key={idx} className="text-slate-600 leading-relaxed my-3">
+        <p key={idx} className="text-[#616161] leading-relaxed my-3">
           {parseBoldText(line)}
         </p>
       );
@@ -741,7 +741,7 @@ export default function StudyDetailPage() {
     return parts.map((part, index) => {
       // Every odd element is bold
       if (index % 2 === 1) {
-        return <strong key={index} className="font-semibold text-slate-900 dark:text-slate-100">{part}</strong>;
+        return <strong key={index} className="font-semibold text-[#17171c] dark:text-[#e5e7eb]">{part}</strong>;
       }
       return part;
     });
@@ -789,11 +789,11 @@ export default function StudyDetailPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="bg-slate-100 text-slate-600 text-xs font-semibold">
+              <Badge variant="outline" className="bg-[#eeece7] text-[#616161] text-xs font-semibold">
                 {metadata?.category || "Genel"}
               </Badge>
               {isCompleted ? (
-                <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 text-xs">
+                <Badge className="bg-[#003c33] hover:bg-[#003c33]/85 text-white flex items-center gap-1 text-xs">
                   <CheckCircle2 size={12} />
                   Tamamlandı
                 </Badge>
@@ -801,7 +801,7 @@ export default function StudyDetailPage() {
                 <Badge variant="secondary" className="text-xs">Taslak</Badge>
               )}
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-3xl font-extrabold tracking-tight text-[#17171c] dark:text-white">
               {metadata?.title || "İsimsiz Simülasyon"}
             </h1>
             <p className="text-muted-foreground text-sm flex items-center gap-1.5">
@@ -884,7 +884,7 @@ export default function StudyDetailPage() {
               !clientPlan?.features?.pdf_export ? (
                 <Button
                   variant="outline"
-                  className="w-full sm:w-auto gap-2 text-slate-400 border-slate-200 cursor-not-allowed"
+                  className="w-full sm:w-auto gap-2 text-[#93939f] border-[#d9d9dd] cursor-not-allowed"
                   onClick={() =>
                     toast.error(
                       <div className="flex flex-col gap-1.5">
@@ -964,12 +964,12 @@ export default function StudyDetailPage() {
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/40 shrink-0">
                       <Trash2 size={18} className="text-red-600 dark:text-red-400" />
                     </div>
-                    <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white">
+                    <DialogTitle className="text-lg font-bold text-[#17171c] dark:text-white">
                       Araştırmayı Sil
                     </DialogTitle>
                   </div>
-                  <DialogDescription className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed pl-[52px]">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">&ldquo;{metadata?.title || "Bu araştırma"}&rdquo;</span>{" "}
+                  <DialogDescription className="text-sm text-[#616161] dark:text-[#93939f] leading-relaxed pl-[52px]">
+                    <span className="font-semibold text-[#212121] dark:text-[#e5e7eb]">&ldquo;{metadata?.title || "Bu araştırma"}&rdquo;</span>{" "}
                     listeden kaldırılacak ve bir daha göremeyeceksiniz.
                   </DialogDescription>
                 </DialogHeader>
@@ -1009,13 +1009,13 @@ export default function StudyDetailPage() {
       </div>
 
       {/* 🔮 Interactive Tabs Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-2 bg-slate-100/80 /60 p-1.5 rounded-xl border border-border">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-2 bg-[#eeece7] dark:bg-[#212121] p-1.5 rounded-xl border border-[#d9d9dd] dark:border-[rgba(255,255,255,0.1)]">
         <button 
           onClick={() => setActiveTab("summary")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "summary" 
-              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
-              : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-[#d9d9dd]" 
+              : "text-[#616161] hover:text-[#17171c] hover:bg-[#d9d9dd]/40 dark:text-[#93939f] dark:hover:text-white dark:hover:bg-[#2c2c33]"
           }`}
         >
           <FileText size={16} />
@@ -1026,8 +1026,8 @@ export default function StudyDetailPage() {
           onClick={() => setActiveTab("personas")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "personas" 
-              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
-              : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-[#d9d9dd]" 
+              : "text-[#616161] hover:text-[#17171c] hover:bg-[#d9d9dd]/40 dark:text-[#93939f] dark:hover:text-white dark:hover:bg-[#2c2c33]"
           }`}
         >
           <Users size={16} />
@@ -1038,8 +1038,8 @@ export default function StudyDetailPage() {
           onClick={() => setActiveTab("script")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "script" 
-              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
-              : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-[#d9d9dd]" 
+              : "text-[#616161] hover:text-[#17171c] hover:bg-[#d9d9dd]/40 dark:text-[#93939f] dark:hover:text-white dark:hover:bg-[#2c2c33]"
           }`}
         >
           <ListTodo size={16} />
@@ -1050,8 +1050,8 @@ export default function StudyDetailPage() {
           onClick={() => setActiveTab("interviews")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "interviews" 
-              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
-              : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-[#d9d9dd]" 
+              : "text-[#616161] hover:text-[#17171c] hover:bg-[#d9d9dd]/40 dark:text-[#93939f] dark:hover:text-white dark:hover:bg-[#2c2c33]"
           }`}
         >
           <MessageSquare size={16} />
@@ -1062,8 +1062,8 @@ export default function StudyDetailPage() {
           onClick={() => setActiveTab("findings")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "findings" 
-              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
-              : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-[#d9d9dd]" 
+              : "text-[#616161] hover:text-[#17171c] hover:bg-[#d9d9dd]/40 dark:text-[#93939f] dark:hover:text-white dark:hover:bg-[#2c2c33]"
           }`}
         >
           <Search size={16} />
@@ -1074,8 +1074,8 @@ export default function StudyDetailPage() {
           onClick={() => setActiveTab("report")}
           className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
             activeTab === "report" 
-              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-slate-200/50 /50" 
-              : "text-muted-foreground hover:text-foreground hover:bg-slate-200/40 dark:hover:bg-slate-800/40"
+              ? "bg-white text-[#1863dc] dark:text-[#4c6ee6] shadow-sm border border-[#d9d9dd]" 
+              : "text-[#616161] hover:text-[#17171c] hover:bg-[#d9d9dd]/40 dark:text-[#93939f] dark:hover:text-white dark:hover:bg-[#2c2c33]"
           }`}
         >
           <TrendingUp size={16} />
@@ -1100,18 +1100,18 @@ export default function StudyDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-3.5 bg-slate-50 border border-border rounded-lg">
+                    <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg">
                       <span className="text-xs font-semibold text-muted-foreground block uppercase">Marka / Ürün</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-100">{brief?.title || metadata?.title || "Belirtilmemiş"}</span>
+                      <span className="font-bold text-[#212121] dark:text-[#e5e7eb]">{brief?.title || metadata?.title || "Belirtilmemiş"}</span>
                     </div>
-                    <div className="p-3.5 bg-slate-50 border border-border rounded-lg">
+                    <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg">
                       <span className="text-xs font-semibold text-muted-foreground block uppercase">Fiyat</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-100">{brief?.expected_price || "Belirtilmedi"}</span>
+                      <span className="font-bold text-[#212121] dark:text-[#e5e7eb]">{brief?.expected_price || "Belirtilmedi"}</span>
                     </div>
                   </div>
                   <div className="space-y-1.5">
                     <span className="text-xs font-semibold text-muted-foreground uppercase block">Araştırma Problemi (Brief Context)</span>
-                    <p className="text-slate-700 text-sm leading-relaxed bg-slate-50/50 /50 border border-border/60 p-4 rounded-xl">
+                    <p className="text-[#616161] text-sm leading-relaxed bg-[#f5f4f1]/50 border border-border/60 p-4 rounded-xl">
                       {brief?.idea || "Brief bağlamı girilmemiş."}
                     </p>
                   </div>
@@ -1128,7 +1128,7 @@ export default function StudyDetailPage() {
                     {plan.objective && (
                       <div className="space-y-1.5">
                         <span className="text-xs font-semibold text-muted-foreground uppercase block">Ana Araştırma Hedefi</span>
-                        <p className="text-slate-800 text-sm font-medium bg-slate-50 /50 p-4 rounded-xl border border-border">
+                        <p className="text-[#212121] text-sm font-medium bg-[#f5f4f1] p-4 rounded-xl border border-border">
                           {plan.objective}
                         </p>
                       </div>
@@ -1141,7 +1141,7 @@ export default function StudyDetailPage() {
                           {plan.assumptions.map((ass: string, i: number) => (
                             <div key={i} className="flex gap-2 p-3 bg-[#f1f5ff]/30 dark:bg-[#071829]/10 border border-[#e5e7eb]/50 dark:border-[rgba(24,99,220,0.1)] rounded-lg text-sm">
                               <span className="font-bold text-[#1863dc] dark:text-[#4c6ee6]">#{i + 1}</span>
-                              <span className="text-slate-700 ">{ass}</span>
+                              <span className="text-[#616161] ">{ass}</span>
                             </div>
                           ))}
                         </div>
@@ -1162,13 +1162,13 @@ export default function StudyDetailPage() {
                   <CardContent className="space-y-4">
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-black text-emerald-600 dark:text-emerald-400">{metadata.quality_score}</span>
-                      <span className="text-slate-400 font-semibold text-xl">/100</span>
-                      <Badge className="ml-2 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 hover:bg-emerald-50 border border-emerald-200 /40">
+                      <span className="text-[#93939f] font-semibold text-xl">/100</span>
+                      <Badge className="ml-2 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 hover:bg-emerald-50 border border-emerald-200">
                         Sınıf: {metadata.quality_grade || "A"}
                       </Badge>
                     </div>
                     {metadata.quality_summary && (
-                      <p className="text-slate-600 text-xs leading-relaxed border-t border-border pt-3">
+                      <p className="text-[#616161] text-xs leading-relaxed border-t border-border pt-3">
                         {metadata.quality_summary}
                       </p>
                     )}
@@ -1243,8 +1243,8 @@ export default function StudyDetailPage() {
                   const flags = rq.flags ?? [];
                   const adversarialSummary = rq.interpretation ?? rq.summary ?? "";
 
-                  const rfiColor = rfi === null ? "text-slate-400" : rfi >= 0.80 ? "text-emerald-600 dark:text-emerald-400" : rfi >= 0.65 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
-                  const borderColor = rfi === null ? "border-l-slate-300" : rfi >= 0.80 ? "border-l-emerald-500" : rfi >= 0.65 ? "border-l-amber-500" : "border-l-red-500";
+                  const rfiColor = rfi === null ? "text-[#93939f]" : rfi >= 0.80 ? "text-emerald-600 dark:text-emerald-400" : rfi >= 0.65 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
+                  const borderColor = rfi === null ? "border-l-[#d9d9dd]" : rfi >= 0.80 ? "border-l-emerald-500" : rfi >= 0.65 ? "border-l-amber-500" : "border-l-red-500";
                   const COMPONENT_COLORS: Record<string, string> = {
                     PGR: "#6366f1", CNS: "#0ea5e9", AC: "#22c55e",
                     PR: "#f97316", PCal: "#ec4899", CRA: "#f59e0b",
@@ -1261,7 +1261,7 @@ export default function StudyDetailPage() {
                           Araştırma Bütünlüğü (RFI)
                           <Badge
                             className={valid
-                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 /40"
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200"
                               : "bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400 border border-red-200 dark:border-red-900/40"}
                           >
                             {valid ? "Geçerli" : "Eşik Altı"}
@@ -1273,7 +1273,7 @@ export default function StudyDetailPage() {
                         {rfi !== null && (
                           <div className="flex items-baseline gap-2">
                             <span className={`text-4xl font-black ${rfiColor}`}>{(rfi * 100).toFixed(1)}</span>
-                            <span className="text-slate-400 font-semibold">/100</span>
+                            <span className="text-[#93939f] font-semibold">/100</span>
                             <span className="text-xs text-muted-foreground">eşik ≥65</span>
                           </div>
                         )}
@@ -1284,8 +1284,8 @@ export default function StudyDetailPage() {
                             <p className="text-[10px] font-bold text-muted-foreground uppercase">Bileşen Profili</p>
                             {Object.entries(components).map(([key, val]) => (
                               <div key={key} className="flex items-center gap-2">
-                                <span className="text-[10px] font-semibold text-slate-500 w-28 shrink-0">{COMPONENT_LABELS[key] ?? key}</span>
-                                <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <span className="text-[10px] font-semibold text-[#616161] w-28 shrink-0">{COMPONENT_LABELS[key] ?? key}</span>
+                                <div className="flex-1 bg-[#eeece7] rounded-full h-2 overflow-hidden">
                                   <div
                                     className="h-full rounded-full transition-all duration-700"
                                     style={{ width: `${(val as number) * 100}%`, backgroundColor: COMPONENT_COLORS[key] ?? "#94a3b8" }}
@@ -1305,7 +1305,7 @@ export default function StudyDetailPage() {
                             <p className="text-[10px] font-bold text-muted-foreground uppercase">Adversarial Review Aşamaları</p>
                             <div className="flex flex-wrap gap-1.5">
                               {phasesPassed.map(ph => (
-                                <Badge key={ph} className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200 /40">
+                                <Badge key={ph} className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200">
                                   ✓ {ph}
                                 </Badge>
                               ))}
@@ -1331,7 +1331,7 @@ export default function StudyDetailPage() {
                         )}
 
                         {adversarialSummary && (
-                          <p className="text-[10px] text-slate-500 border-t border-border pt-2 leading-relaxed">
+                          <p className="text-[10px] text-[#616161] border-t border-border pt-2 leading-relaxed">
                             {adversarialSummary}
                           </p>
                         )}
@@ -1349,7 +1349,7 @@ export default function StudyDetailPage() {
         {activeTab === "personas" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Sentetik Kitle Paneli ({personas.length})</h2>
+              <h2 className="text-xl font-bold text-[#17171c] dark:text-white">Sentetik Kitle Paneli ({personas.length})</h2>
               <p className="text-muted-foreground text-sm">Araştırmada simüle edilen ve mülakat gerçekleştirilen hedef kitle profilleri.</p>
             </div>
 
@@ -1362,9 +1362,9 @@ export default function StudyDetailPage() {
                 {personas.map((persona: Persona, index: number) => (
                   <Card key={persona.id || index} className="shadow-sm border hover:border-[#e5e7eb] dark:hover:border-[rgba(24,99,220,0.35)]/50 hover:shadow-md transition-all duration-300 group flex flex-col justify-between overflow-hidden">
                     <div>
-                      <div className="p-6 bg-slate-50/50 /30 border-b border-border/50 flex justify-between items-start gap-2">
+                      <div className="p-6 bg-[#f5f4f1]/50 border-b border-border/50 flex justify-between items-start gap-2">
                         <div className="space-y-0.5">
-                          <h3 className="font-bold text-lg text-slate-950 dark:text-white group-hover:text-[#1863dc] dark:group-hover:text-[#4c6ee6] transition-colors">
+                          <h3 className="font-bold text-lg text-[#17171c] dark:text-white group-hover:text-[#1863dc] dark:group-hover:text-[#4c6ee6] transition-colors">
                             {persona.name}
                           </h3>
                           <p className="text-xs text-muted-foreground font-semibold">
@@ -1378,8 +1378,8 @@ export default function StudyDetailPage() {
 
                       <CardContent className="p-6 space-y-4">
                         <div className="space-y-1.5">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Biyografi & Karakteristik</span>
-                          <p className="text-slate-600 text-xs leading-relaxed italic line-clamp-3">
+                          <span className="text-[10px] font-bold text-[#93939f] uppercase tracking-wider block">Biyografi & Karakteristik</span>
+                          <p className="text-[#616161] text-xs leading-relaxed italic line-clamp-3">
                             &quot;{persona.bio || persona.context}&quot;
                           </p>
                         </div>
@@ -1388,7 +1388,7 @@ export default function StudyDetailPage() {
                         <div className="space-y-3 border-t border-border pt-4">
                           {persona.big_five ? (
                             <>
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Büyük Beşli (Big Five)</span>
+                              <span className="text-[10px] font-bold text-[#93939f] uppercase tracking-wider block mb-2">Büyük Beşli (Big Five)</span>
                               {[
                                 { label: "Açıklık (Openness)",      value: persona.big_five?.Openness      ?? persona.big_five?.openness      ?? 50, color: "bg-sky-500" },
                                 { label: "Sorumluluk (Conscientiousness)", value: persona.big_five?.Conscientiousness ?? persona.big_five?.conscientiousness ?? 50, color: "bg-blue-500" },
@@ -1399,9 +1399,9 @@ export default function StudyDetailPage() {
                                 <div key={trait.label} className="space-y-1">
                                   <div className="flex justify-between text-[10px] font-semibold">
                                     <span className="text-muted-foreground">{trait.label}</span>
-                                    <span className="text-slate-800 ">{trait.value}%</span>
+                                    <span className="text-[#212121] ">{trait.value}%</span>
                                   </div>
-                                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                  <div className="h-1.5 w-full bg-[#eeece7] rounded-full overflow-hidden">
                                     <div 
                                       className={`h-full ${trait.color} rounded-full`} 
                                       style={{ width: `${trait.value}%` }}
@@ -1415,9 +1415,9 @@ export default function StudyDetailPage() {
                               <div className="space-y-1">
                                 <div className="flex justify-between text-[10px] font-semibold">
                                   <span className="text-muted-foreground">Fiyat Hassasiyeti</span>
-                                  <span className="text-slate-800 ">{persona.price_sensitivity}/5</span>
+                                  <span className="text-[#212121] ">{persona.price_sensitivity}/5</span>
                                 </div>
-                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-1.5 w-full bg-[#eeece7] rounded-full overflow-hidden">
                                   <div 
                                     className="h-full bg-[#f1f5ff]0 rounded-full" 
                                     style={{ width: `${(persona.price_sensitivity / 5) * 100}%` }}
@@ -1427,9 +1427,9 @@ export default function StudyDetailPage() {
                               <div className="space-y-1">
                                 <div className="flex justify-between text-[10px] font-semibold">
                                   <span className="text-muted-foreground">Dijital Güven</span>
-                                  <span className="text-slate-800 ">{persona.digital_confidence}/5</span>
+                                  <span className="text-[#212121] ">{persona.digital_confidence}/5</span>
                                 </div>
-                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-1.5 w-full bg-[#eeece7] rounded-full overflow-hidden">
                                   <div 
                                     className="h-full bg-blue-500 rounded-full" 
                                     style={{ width: `${(persona.digital_confidence / 5) * 100}%` }}
@@ -1444,7 +1444,7 @@ export default function StudyDetailPage() {
                         <div className="space-y-2 border-t border-border/50 pt-3">
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-muted-foreground">Pazar Yaklaşımı:</span>
-                            <Badge variant="outline" className="font-semibold text-slate-700 ">
+                            <Badge variant="outline" className="font-semibold text-[#616161] ">
                               {persona.stance}
                             </Badge>
                           </div>
@@ -1454,7 +1454,7 @@ export default function StudyDetailPage() {
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                                   persona.ses_group === "AB" ? "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-400" :
                                   persona.ses_group === "C1" ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/20 dark:border-blue-800 " :
-                                  persona.ses_group === "C2" ? "bg-slate-50 border-slate-200 text-slate-600 " :
+                                  persona.ses_group === "C2" ? "bg-[#f5f4f1] border-[#d9d9dd] text-[#616161] " :
                                   "bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/20 dark:border-rose-800 dark:text-rose-400"
                                 }`}>SES {persona.ses_group}</span>
                               )}
@@ -1525,12 +1525,12 @@ export default function StudyDetailPage() {
                       </thead>
                       <tbody>
                         {study.ses_cross_tab.map(row => (
-                          <tr key={row.ses_group} className="border-b border-border/50 hover:bg-slate-50 dark:hover:bg-slate-900/30">
+                          <tr key={row.ses_group} className="border-b border-border/50 hover:bg-[#f5f4f1] dark:hover:bg-[#212121]/30">
                             <td className="py-2 pr-4">
                               <span className={`px-2 py-0.5 rounded text-xs font-bold ${
                                 row.ses_group === "AB" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" :
                                 row.ses_group === "C1" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 " :
-                                row.ses_group === "C2" ? "bg-slate-100 text-slate-700 " :
+                                row.ses_group === "C2" ? "bg-[#eeece7] text-[#616161] " :
                                 "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400"
                               }`}>{row.ses_group}</span>
                             </td>
@@ -1542,7 +1542,7 @@ export default function StudyDetailPage() {
                                 <td key={s} className="text-center py-2 px-2">
                                   {count > 0 ? (
                                     <span className={`inline-flex w-7 h-7 rounded-full text-xs font-bold items-center justify-center ${
-                                      count === max ? "bg-[#1863dc] text-white" : "bg-slate-100 text-slate-600 "
+                                      count === max ? "bg-[#1863dc] text-white" : "bg-[#eeece7] text-[#616161] "
                                     }`}>{count}</span>
                                   ) : <span className="text-muted-foreground">—</span>}
                                 </td>
@@ -1571,14 +1571,14 @@ export default function StudyDetailPage() {
                     {study.respondent_type_summary.map(rt => (
                       <div key={rt.respondent_type} className="p-4 border border-border rounded-xl space-y-2 hover:border-[#e5e7eb] dark:hover:border-[rgba(24,99,220,0.35)]/40 transition-colors">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-sm text-slate-800 dark:text-slate-100">{rt.label}</span>
+                          <span className="font-semibold text-sm text-[#212121] dark:text-[#e5e7eb]">{rt.label}</span>
                           <Badge variant="secondary" className="text-xs">{rt.count} kişi</Badge>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Ort. fiyat hassasiyeti: <strong className="text-slate-700 ">{rt.avg_price_sensitivity.toFixed(1)}/10</strong>
+                          Ort. fiyat hassasiyeti: <strong className="text-[#616161] ">{rt.avg_price_sensitivity.toFixed(1)}/10</strong>
                         </div>
                         {rt.top_pain && (
-                          <div className="text-xs bg-rose-50 dark:bg-rose-950/20 border border-rose-100 /30 rounded-lg p-2 text-rose-700 dark:text-rose-400 italic line-clamp-2">
+                          <div className="text-xs bg-rose-50 dark:bg-rose-950/20 border border-rose-100 rounded-lg p-2 text-rose-700 dark:text-rose-400 italic line-clamp-2">
                             &ldquo;{rt.top_pain}&rdquo;
                           </div>
                         )}
@@ -1600,7 +1600,7 @@ export default function StudyDetailPage() {
         {activeTab === "interviews" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Mülakat Transcriptleri</h2>
+              <h2 className="text-xl font-bold text-[#17171c] dark:text-white">Mülakat Transkriptleri</h2>
               <p className="text-muted-foreground text-sm">Yapay zeka moderatörü ve sentetik personalar arasında geçen tüm diyaloglar.</p>
             </div>
 
@@ -1618,7 +1618,7 @@ export default function StudyDetailPage() {
                           <CardTitle className="text-base">{item.persona?.name}</CardTitle>
                           <CardDescription className="text-xs">{item.persona?.role_title || "Sentetik Tüketici"} • {item.persona?.age} Yaş</CardDescription>
                         </div>
-                        <Badge variant="outline" className="text-[10px] bg-slate-50 dark:bg-slate-900">{item.turns?.length} Soru</Badge>
+                        <Badge variant="outline" className="text-[10px] bg-[#f5f4f1] dark:bg-[#212121]">{item.turns?.length} Soru</Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="p-5 pt-0 space-y-4">
@@ -1628,43 +1628,51 @@ export default function StudyDetailPage() {
                       </div>
                       <Dialog>
                         <DialogTrigger render={
-                          <Button variant="outline" className="w-full text-xs font-semibold gap-2 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900">
+                          <Button variant="outline" className="w-full text-xs font-semibold gap-2 border-[#d9d9dd] hover:bg-[#f5f4f1] text-[#17171c] dark:border-[rgba(255,255,255,0.12)] dark:text-white dark:hover:bg-[#2c2c33]">
                             <MessageSquare size={14} />
-                            Transcript Görüntüle
+                            Transkript Görüntüle
                           </Button>
                         } />
-                        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
-                          <DialogHeader className="p-6 pb-4 border-b border-border/80 bg-slate-50 dark:bg-slate-900/50">
-                            <DialogTitle>Mülakat Transkripti: {item.persona?.name}</DialogTitle>
-                            <DialogDescription>
-                              {item.persona?.role_title} • {item.persona?.age} Yaş • {item.persona?.city} • {item.persona?.stance} Profil
+                        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl">
+                          <DialogHeader className="px-6 py-5 border-b border-[#d9d9dd] dark:border-[rgba(255,255,255,0.1)] bg-[#eeece7] dark:bg-[#212121]">
+                            <DialogTitle className="text-lg">Mülakat Transkripti · {item.persona?.name}</DialogTitle>
+                            <DialogDescription className="text-[#616161] dark:text-[#93939f]">
+                              {item.persona?.role_title} · {item.persona?.age} Yaş · {item.persona?.city} · {item.persona?.stance} Profil
                             </DialogDescription>
                           </DialogHeader>
-                          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30 dark:bg-slate-950/10">
+                          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 bg-white dark:bg-[#17171c]">
                             {item.turns?.map((turn: InterviewTurn, turnIdx: number) => (
-                              <div key={turnIdx} className="space-y-4">
-                                {/* AI Interviewer Bubble */}
-                                <div className="flex gap-3 max-w-[85%]">
-                                  <div className="h-8 w-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs shrink-0 select-none">
-                                    Q
+                              <div key={turnIdx} className="space-y-5 border-b border-[#f2f2f2] dark:border-[rgba(255,255,255,0.08)] pb-6 last:border-0 last:pb-0">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-[#93939f]">Soru {turnIdx + 1}</span>
+                                  <div className="h-px flex-1 bg-[#f2f2f2] dark:bg-[rgba(255,255,255,0.08)]" />
+                                </div>
+
+                                {/* Moderatör sorusu */}
+                                <div className="flex items-start gap-3">
+                                  <div className="h-8 w-8 rounded-full bg-[#003c33] dark:bg-[#edfce9] text-white dark:text-[#003c33] flex items-center justify-center shrink-0">
+                                    <MessageSquare size={14} />
                                   </div>
-                                  <div className="p-3.5 bg-white dark:bg-[#1c1c21] border border-slate-200/60 dark:border-slate-800 rounded-2xl rounded-tl-none shadow-sm text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
-                                    {turn.question}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] font-mono font-semibold uppercase tracking-wider text-[#93939f] mb-1.5">Moderatör (AI)</p>
+                                    <p className="text-[15px] leading-relaxed text-[#212121] dark:text-[#e5e7eb]">{turn.question}</p>
                                   </div>
                                 </div>
-                                {/* Persona Bubble */}
-                                <div className="flex gap-3 max-w-[90%] ml-auto justify-end">
-                                  <div className="p-3.5 bg-primary dark:bg-[#2c2c33] text-white rounded-2xl rounded-tr-none shadow-sm text-sm leading-relaxed">
-                                    {turn.answer}
-                                  </div>
-                                  <div className="h-8 w-8 rounded-full bg-[#f1f5ff] dark:bg-[#071829] text-[#1863dc] dark:text-[#4c6ee6] border border-[#e5e7eb]/50 dark:border-[rgba(24,99,220,0.15)] flex items-center justify-center font-bold text-xs shrink-0 select-none">
+
+                                {/* Persona yanıtı */}
+                                <div className="flex items-start gap-3">
+                                  <div className="h-8 w-8 rounded-full bg-[#ff7759] text-white flex items-center justify-center font-bold text-xs shrink-0">
                                     {item.persona?.name.charAt(0) || "P"}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] font-mono font-semibold uppercase tracking-wider text-[#93939f] mb-1.5">{item.persona?.name}</p>
+                                    <p className="text-[15px] leading-relaxed text-[#212121] dark:text-[#e5e7eb]">{turn.answer}</p>
                                   </div>
                                 </div>
                               </div>
                             ))}
                           </div>
-                          <DialogFooter className="p-4 border-t border-border bg-white dark:bg-[#0c0c0f] flex flex-col gap-3 sm:justify-start">
+                          <DialogFooter className="px-6 py-4 border-t border-[#d9d9dd] dark:border-[rgba(255,255,255,0.1)] bg-[#f5f4f1]/60 dark:bg-[#212121] flex flex-col gap-3">
                             {(() => {
                               const followUpCount = (() => {
                                 let count = 0;
@@ -1686,54 +1694,54 @@ export default function StudyDetailPage() {
                               let inputPlaceholder = `${item.persona?.name} isimli personaya ekstra bir soru sorun...`;
                               let isDisabled = sendingFollowUp;
                               let badgeText = "";
-                              let badgeColor = "bg-slate-100 text-slate-600";
+                              let badgeColor = "bg-[#eeece7] text-[#616161] dark:bg-[#2c2c33] dark:text-[#93939f]";
 
                               if (isFree) {
                                 inputPlaceholder = "Takip sorusu · Flex+ planı gerektirir.";
                                 isDisabled = true;
                                 badgeText = "Takip Sorusu · Flex+ Gerekli";
-                                badgeColor = "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400";
+                                badgeColor = "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/40";
                               } else if (isLimitReached) {
                                 inputPlaceholder = "Takip sorusu limitine ulaştınız (3/3). Planınızı yükseltin.";
                                 isDisabled = true;
                                 badgeText = "Limit Doldu (3/3)";
-                                badgeColor = "bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-400";
+                                badgeColor = "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/40";
                               } else if (isLimited) {
                                 badgeText = `Takip Sorusu Limiti: ${followUpCount}/3`;
-                                badgeColor = "bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-950/20 dark:border-indigo-900/40 dark:text-indigo-400";
+                                badgeColor = "bg-[#f1f5ff] text-[#1863dc] border-[#e5e7eb] dark:bg-[#071829] dark:text-[#4c6ee6] dark:border-[rgba(24,99,220,0.15)]";
                               } else {
                                 badgeText = "Sınırsız Takip Sorusu";
-                                badgeColor = "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-400";
+                                badgeColor = "bg-[#edfce9] text-[#003c33] border-[#d9d9dd] dark:bg-[#003c33]/20 dark:text-[#edfce9] dark:border-[#003c33]/40";
                               }
 
                               return (
                                 <div className="w-full space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold uppercase text-slate-400">Persona ile Etkileşim (Probing)</span>
-                                    <Badge variant="outline" className={`text-[10px] font-semibold ${badgeColor}`}>
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-[#93939f]">Persona ile Etkileşim (Probing)</span>
+                                    <Badge variant="outline" className={`text-[11px] font-semibold ${badgeColor}`}>
                                       {badgeText}
                                     </Badge>
                                   </div>
                                   <div className="flex gap-2 w-full">
-                                    <Textarea 
+                                    <Textarea
                                       placeholder={inputPlaceholder}
                                       className="min-h-[60px] resize-none text-sm flex-1"
                                       value={followUpText}
                                       onChange={(e) => setFollowUpText(e.target.value)}
                                       disabled={isDisabled}
                                     />
-                                    <Button 
-                                      onClick={() => handleFollowUp(item.persona.id)} 
+                                    <Button
+                                      onClick={() => handleFollowUp(item.persona.id)}
                                       disabled={isDisabled || !followUpText.trim()}
-                                      className="h-auto px-6 font-semibold"
+                                      className="h-auto px-6 font-semibold bg-[#17171c] hover:opacity-85 text-white"
                                     >
                                       {sendingFollowUp ? <Loader2 className="animate-spin w-4 h-4" /> : "Sor"}
                                     </Button>
                                   </div>
+                                  <span className="text-[11px] text-[#93939f]">Bu özellik ile personaya mülakat sonrası ek soru yöneltip daha derin içgörü elde edebilirsiniz.</span>
                                 </div>
                               );
                             })()}
-                            <span className="text-[10px] text-muted-foreground text-center">Follow-up özelliği ile personayı daha derinlemesine analiz edebilirsiniz.</span>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
@@ -1749,7 +1757,7 @@ export default function StudyDetailPage() {
         {activeTab === "script" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Mülakat Senaryosu</h2>
+              <h2 className="text-xl font-bold text-[#17171c] dark:text-white">Mülakat Senaryosu</h2>
               <p className="text-muted-foreground text-sm">Yapay zeka moderatörünün personalara yönelttiği ana sorular.</p>
             </div>
 
@@ -1759,13 +1767,13 @@ export default function StudyDetailPage() {
               </div>
             ) : (
               <Card className="shadow-sm border-[#e5e7eb] dark:border-[rgba(24,99,220,0.15)] overflow-hidden">
-                <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-border">
+                <CardHeader className="bg-[#f5f4f1]/50 dark:bg-[#212121]/50 border-b border-border">
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-base">Mülakat Akışı</CardTitle>
                       <CardDescription>Toplam {plan.interview_questions.length} soru kalıbı kullanıldı.</CardDescription>
                     </div>
-                    <Badge variant="outline" className="bg-white dark:bg-slate-950">
+                    <Badge variant="outline" className="bg-white dark:bg-[#17171c]">
                       Salt Okunur (Read-Only)
                     </Badge>
                   </div>
@@ -1773,14 +1781,14 @@ export default function StudyDetailPage() {
                 <CardContent className="p-0">
                   <div className="divide-y divide-border/60">
                     {plan.interview_questions.map((q: string, i: number) => (
-                      <div key={i} className="flex gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+                      <div key={i} className="flex gap-4 p-5 hover:bg-[#f5f4f1] dark:hover:bg-[#212121]/30 transition-colors">
                         <div className="h-6 w-6 rounded-full bg-[#f1f5ff] dark:bg-[#071829] text-[#1863dc] dark:text-[#4c6ee6] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                           {i + 1}
                         </div>
                         <div className="space-y-2 flex-1">
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-relaxed">{q}</p>
+                          <p className="text-sm font-medium text-[#212121] dark:text-[#e5e7eb] leading-relaxed">{q}</p>
                           <div className="flex gap-2">
-                            <Badge variant="secondary" className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500">Açık Uçlu Soru</Badge>
+                            <Badge variant="secondary" className="text-[10px] bg-[#eeece7] dark:bg-[#2c2c33] text-[#616161]">Açık Uçlu Soru</Badge>
                           </div>
                         </div>
                       </div>
@@ -1796,7 +1804,7 @@ export default function StudyDetailPage() {
         {activeTab === "findings" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Kanıt Zinciri ve Karar Katmanı</h2>
+              <h2 className="text-xl font-bold text-[#17171c] dark:text-white">Kanıt Zinciri ve Karar Katmanı</h2>
               <p className="text-muted-foreground text-sm">Mülakatlardan çıkarılan bulgular, kanıt alıntıları ve karar sinyalleri.</p>
             </div>
 
@@ -1826,7 +1834,7 @@ export default function StudyDetailPage() {
                             <DcIcon size={16} className={`shrink-0 mt-0.5 ${dc.color}`} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-semibold text-sm text-slate-800">{di.title}</span>
+                                <span className="font-semibold text-sm text-[#212121]">{di.title}</span>
                                 <Badge className={`text-[10px] ${dc.bg} ${dc.color}`}>{dc.label}</Badge>
                               </div>
                               <p className="text-xs text-muted-foreground mt-1">{di.recommended_action}</p>
@@ -1863,12 +1871,12 @@ export default function StudyDetailPage() {
         {activeTab === "report" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Yapay Zeka Sentez Raporu</h2>
+              <h2 className="text-xl font-bold text-[#17171c] dark:text-white">Yapay Zeka Sentez Raporu</h2>
               <p className="text-muted-foreground text-sm">Sentetik mülakatlardan elde edilen pazar analizleri, itirazlar ve ürün geliştirme tavsiyeleri.</p>
             </div>
 
             {!isCompleted ? (
-              <div className="text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl bg-slate-50/50 /30">
+              <div className="text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl bg-[#f5f4f1]/50">
                 Bu araştırma henüz tamamlanmamış veya nihai sentez raporu üretilmemiş.
               </div>
             ) : clientPlan.plan_type === "Free" ? (
@@ -1878,24 +1886,24 @@ export default function StudyDetailPage() {
                   <Card className="shadow-sm border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/10">
                     <CardContent className="p-5">
                       <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase mb-2">Önizleme</p>
-                      <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed line-clamp-4">
+                      <div className="text-sm text-[#616161] dark:text-[#e5e7eb] leading-relaxed line-clamp-4">
                         {study.report_markdown.split('\n').slice(0, 8).map((line, i) => <p key={i} className="my-1">{line}</p>)}
                       </div>
                     </CardContent>
                   </Card>
                 )}
                 {/* Blurred full report + gradient CTA */}
-                <div className="relative rounded-2xl overflow-hidden border border-slate-200">
+                <div className="relative rounded-2xl overflow-hidden border border-[#d9d9dd]">
                   <div className="filter blur-md pointer-events-none select-none opacity-20 p-6 space-y-4">
                     {study.report_markdown && study.report_markdown.split('\n').slice(8, 30).map((line, i) => (
-                      <div key={i} className="h-3 bg-slate-400 rounded" style={{width: `${70 + Math.random()*30}%`}} />
+                      <div key={i} className="h-3 bg-[#93939f] rounded" style={{width: `${70 + Math.random()*30}%`}} />
                     ))}
                   </div>
                   <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-6 pt-24"
                     style={{background: "linear-gradient(to top, white 0%, white 50%, transparent 100%)"}}>
                     <div className="text-center space-y-3 max-w-sm px-4">
                       <Lock className="mx-auto text-amber-600" size={18} />
-                      <h3 className="text-base font-black text-slate-800">Raporun Tamamını Gör</h3>
+                      <h3 className="text-base font-black text-[#212121]">Raporun Tamamını Gör</h3>
                       <p className="text-xs text-muted-foreground">Fiyat analizi, kanıt zinciri ve karar önerileri seni bekliyor.</p>
                       <Link href="/client/upgrade" className="inline-flex w-full">
                         <Button className="w-full bg-[#003c33] hover:bg-[#003c33]/90 text-white font-semibold rounded-xl py-2.5 text-sm">
@@ -2001,7 +2009,7 @@ export default function StudyDetailPage() {
                           <p className="text-xs font-semibold text-muted-foreground uppercase">Çağrışım Haritası</p>
                           {Object.entries(study.brand_health.associations).map(([brand, words]) => (
                             <div key={brand} className="flex flex-wrap items-center gap-2">
-                              <span className="text-xs font-bold text-slate-700 w-24 shrink-0">{brand}</span>
+                              <span className="text-xs font-bold text-[#616161] w-24 shrink-0">{brand}</span>
                               {words.map(w => (
                                 <Badge key={w} variant="outline" className="text-[10px] font-medium">{w}</Badge>
                               ))}
@@ -2046,11 +2054,11 @@ export default function StudyDetailPage() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {study.external_evidence.map((ev, i) => (
-                        <div key={i} className="flex gap-3 items-start p-3 bg-slate-50 rounded-lg border border-border/60">
-                          <Globe size={14} className="shrink-0 mt-0.5 text-slate-400" />
+                        <div key={i} className="flex gap-3 items-start p-3 bg-[#f5f4f1] rounded-lg border border-border/60">
+                          <Globe size={14} className="shrink-0 mt-0.5 text-[#93939f]" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-sm text-slate-800">{ev.source_title}</span>
+                              <span className="font-semibold text-sm text-[#212121]">{ev.source_title}</span>
                               <Badge variant="outline" className="text-[10px]">{ev.relevance}</Badge>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{ev.snippet}</p>
@@ -2091,7 +2099,7 @@ export default function StudyDetailPage() {
                             className={`max-w-[85%] p-2.5 rounded-xl text-xs leading-relaxed ${
                               msg.role === "user"
                                 ? "bg-[#1863dc] text-white rounded-br-sm"
-                                : "bg-slate-100 text-slate-700 rounded-bl-sm"
+                                : "bg-[#eeece7] text-[#616161] rounded-bl-sm"
                             }`}
                           >
                             {msg.content}
@@ -2100,7 +2108,7 @@ export default function StudyDetailPage() {
                       ))}
                       {sendingChat && (
                         <div className="flex justify-start">
-                          <div className="bg-slate-100 text-slate-400 p-2.5 rounded-xl rounded-bl-sm text-xs">
+                          <div className="bg-[#eeece7] text-[#93939f] p-2.5 rounded-xl rounded-bl-sm text-xs">
                             <Loader2 size={14} className="animate-spin inline mr-1.5" />
                             Düşünüyor...
                           </div>

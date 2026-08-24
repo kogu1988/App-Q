@@ -162,7 +162,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
     <>
     <div className="mt-6 flex-1 outline-none">
       <div className="mb-6">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-[#616161] dark:text-[#93939f]">
           Sisteme kayıtlı kurumsal müşteriler ve simülasyon limitleri.
         </p>
       </div>
@@ -184,7 +184,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
           </CardHeader>
           <CardContent>
             <div className="mb-4 p-3 bg-white border border-border rounded-lg space-y-2">
-              <Label className="text-xs font-bold text-muted-foreground uppercase">
+              <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">
                 Plan Şablonu Seç (Limitler Otomatik Dolar)
               </Label>
               <div className="flex flex-wrap gap-2">

@@ -155,7 +155,7 @@ export default function GuidePage() {
                     <CheckCircle2 size={16} className="text-deep-green shrink-0 mt-1" />
                     <div className="text-sm text-body-muted">
                       <strong className="text-primary block mb-0.5">Varsayımları Zorlayan Cevaplar</strong>
-                      Skeptikler ve muhaliflerden gelen gerçekçi itirazlar (Örn: <em className="font-mono text-xs text-slate-700">&quot;Fiyatlandırma çok karmaşık&quot;</em>, <em className="font-mono text-xs text-slate-700">&quot;KVKK ve SSO entegrasyonu yoksa bakmam bile&quot;</em>).
+                      Skeptikler ve muhaliflerden gelen gerçekçi itirazlar (Örn: <em className="font-mono text-xs text-[#616161]">&quot;Fiyatlandırma çok karmaşık&quot;</em>, <em className="font-mono text-xs text-[#616161]">&quot;KVKK ve SSO entegrasyonu yoksa bakmam bile&quot;</em>).
                     </div>
                   </div>
                   <div className="flex items-start gap-3 border-b border-hairline pb-4">

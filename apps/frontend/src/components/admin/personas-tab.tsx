@@ -445,7 +445,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
   return (
     <div className="mt-6 flex-1 outline-none">
       <div className="mb-6">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-[#616161] dark:text-[#93939f]">
           Global ve müşteri özel durumlar için sisteme yüklenmiş tüm sentetik kullanıcılar.
         </p>
       </div>
@@ -465,13 +465,13 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                       <div className="max-w-sm space-y-4">
                         <h4 className="text-sm font-bold">Bilimsel Varsayılanlara Dönülsün mü?</h4>
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                          Grounded moduna dönerseniz yaptığınız tüm özel psikolojik katsayı ve slider değişiklikleri silinerek bilimsel varsayılanlar geri yüklenecektir.
+                          Bilimsel moda dönerseniz yaptığınız tüm özel psikolojik katsayı ve slider değişiklikleri silinerek bilimsel varsayılanlar geri yüklenecektir.
                         </p>
                         <div className="flex gap-2 justify-center">
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-xs h-8 text-slate-800"
+                            className="text-xs h-8 text-[#212121]"
                             onClick={() => setResetAlertOpen(false)}
                           >
                             İptal
@@ -501,7 +501,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                     <div className="flex items-end justify-between gap-4">
                       {/* Segmented Control Wizard Toggle (Stark Monochrome Style) */}
                       <div className="space-y-1.5 flex-1">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase">
+                        <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">
                           Sihirbaz Modu
                         </Label>
                         <div className="flex border border-border rounded-lg p-0.5 max-w-xs bg-muted/20">
@@ -512,7 +512,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                               wizardMode === "grounded" ? "bg-[#17171c] text-white" : "text-[#616161] hover:text-[#17171c]"
                             }`}
                           >
-                            Grounded (Bilimsel)
+                            Bilimsel (Grounded)
                           </button>
                           <button
                             type="button"
@@ -521,7 +521,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                               wizardMode === "sandbox" ? "bg-[#17171c] text-white" : "text-[#616161] hover:text-[#17171c]"
                             }`}
                           >
-                            Custom Sandbox
+                            Serbest (Sandbox)
                           </button>
                         </div>
                       </div>
@@ -556,12 +556,12 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
 
                     {/* Section 1: Demographics */}
                     <div className="space-y-3">
-                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider pb-1 border-b border-border/50">
+                      <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] pb-1 border-b border-border/50">
                         1. Demografik Kimlik Bilgileri
                       </h4>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">İsim</Label>
+                          <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">İsim</Label>
                           <Input
                             value={manualForm.name}
                             onChange={e => setManualForm(f => ({ ...f, name: e.target.value }))}
@@ -570,7 +570,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Yaş (18-65)</Label>
+                          <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Yaş (18-65)</Label>
                           <Input
                             type="number"
                             min={18}
@@ -584,7 +584,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Şehir</Label>
+                          <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Şehir</Label>
                           <Input
                             value={manualForm.city}
                             onChange={e => setManualForm(f => ({ ...f, city: e.target.value }))}
@@ -593,7 +593,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Rol / Segment</Label>
+                          <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Rol / Segment</Label>
                           <Input
                             value={manualForm.segment}
                             onChange={e => setManualForm(f => ({ ...f, segment: e.target.value }))}
@@ -605,7 +605,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Katılımcı Tipi</Label>
+                          <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Katılımcı Tipi</Label>
                           <select
                             value={manualForm.respondent_type}
                             onChange={e => setManualForm(f => ({ ...f, respondent_type: e.target.value }))}
@@ -619,7 +619,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Yerleşim Tipi</Label>
+                          <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Yerleşim Tipi</Label>
                           <select
                             value={manualForm.settlement_type}
                             onChange={e => setManualForm(f => ({ ...f, settlement_type: e.target.value }))}
@@ -635,12 +635,12 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
 
                     {/* Section 2: Grounded Parameters */}
                     <div className="space-y-3">
-                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider pb-1 border-b border-border/50">
+                      <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] pb-1 border-b border-border/50">
                         2. Tüketici Tipi & Kültürel Parametreler
                       </h4>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Rogers İnovasyon Tipi</Label>
+                          <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Rogers İnovasyon Tipi</Label>
                           <select
                             value={manualForm.stance}
                             onChange={e => setManualForm(f => ({ ...f, stance: e.target.value }))}
@@ -654,7 +654,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Sosyoekonomik Sınıf (SES)</Label>
+                          <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Sosyoekonomik Sınıf (SES)</Label>
                           <select
                             value={manualForm.ses_group}
                             onChange={e => setManualForm(f => ({ ...f, ses_group: e.target.value }))}
@@ -670,7 +670,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Fiyat Hassasiyeti (1-10)</Label>
+                          <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Fiyat Hassasiyeti (1-10)</Label>
                           <select
                             value={manualForm.price_sensitivity}
                             onChange={e => setManualForm(f => ({ ...f, price_sensitivity: +e.target.value }))}
@@ -682,7 +682,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Dijital Özgüven (1-10)</Label>
+                          <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Dijital Özgüven (1-10)</Label>
                           <select
                             value={manualForm.digital_confidence}
                             onChange={e => setManualForm(f => ({ ...f, digital_confidence: +e.target.value }))}
@@ -698,10 +698,10 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
 
                     {/* Section 3: OCEAN Personality */}
                     <div className="space-y-3">
-                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider pb-1 border-b border-border/50">
+                      <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] pb-1 border-b border-border/50">
                         3. Beş Büyük Kişilik Özelliği (OCEAN)
                       </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 bg-slate-50 dark:bg-slate-900 border border-border/40 p-3 rounded-xl">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 bg-[#f5f4f1] dark:bg-[#17171c] border border-border/40 p-3 rounded-xl">
                         {[
                           { label: "Openness (Deneyime Açıklık)", field: "openness", color: "accent-blue-500" },
                           { label: "Conscientiousness (Sorumluluk)", field: "conscientiousness", color: "accent-emerald-500" },
@@ -710,7 +710,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                           { label: "Neuroticism (Duygusal Dengesizlik)", field: "neuroticism", color: "accent-red-500" },
                         ].map(item => (
                           <div key={item.field} className="space-y-1">
-                            <div className="flex justify-between text-[10px] font-medium text-slate-600 dark:text-slate-400">
+                            <div className="flex justify-between text-[10px] font-medium text-[#616161] dark:text-[#93939f]">
                               <span>{item.label}</span>
                               <span className="font-bold">%{(manualForm as any)[item.field]}</span>
                             </div>
@@ -721,7 +721,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                               value={(manualForm as any)[item.field]}
                               disabled={wizardMode === "grounded"}
                               onChange={e => setManualForm(f => ({ ...f, [item.field]: +e.target.value }))}
-                              className={`w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer ${item.color} disabled:opacity-60 disabled:cursor-not-allowed`}
+                              className={`w-full h-1 bg-[#d9d9dd] dark:bg-[#2c2c33] rounded-lg appearance-none cursor-pointer ${item.color} disabled:opacity-60 disabled:cursor-not-allowed`}
                             />
                           </div>
                         ))}
@@ -731,12 +731,12 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                     {/* Section 4: Enterprise Local Reflexes (Sandbox only) */}
                     {wizardMode === "sandbox" && (
                       <div className="space-y-3">
-                        <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider pb-1 border-b border-border/50">
+                        <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] pb-1 border-b border-border/50">
                           4. Gelişmiş Türkiye İşlem Refleksleri (Enterprise)
                         </h4>
                         <div className="grid grid-cols-2 gap-3 bg-muted/10 border border-border/40 p-3 rounded-xl">
                           <div className="space-y-1">
-                            <div className="flex justify-between text-[10px] font-medium text-slate-600">
+                            <div className="flex justify-between text-[10px] font-medium text-[#616161]">
                               <span>Pazarlık Eğilimi (Bargaining)</span>
                               <span className="font-bold">%{Math.round(manualForm.pazarlik_propensity * 100)}</span>
                             </div>
@@ -747,12 +747,12 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                               step="0.05"
                               value={manualForm.pazarlik_propensity}
                               onChange={e => setManualForm(f => ({ ...f, pazarlik_propensity: +e.target.value }))}
-                              className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#17171c]"
+                              className="w-full h-1 bg-[#d9d9dd] rounded-lg appearance-none cursor-pointer accent-[#17171c]"
                             />
                           </div>
 
                           <div className="space-y-1">
-                            <div className="flex justify-between text-[10px] font-medium text-slate-600">
+                            <div className="flex justify-between text-[10px] font-medium text-[#616161]">
                               <span>Kargo Sepet Terk (S-O-R Logit)</span>
                               <span className="font-bold">%{Math.round(manualForm.sor_osca_threshold * 100)}</span>
                             </div>
@@ -763,12 +763,12 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                               step="0.05"
                               value={manualForm.sor_osca_threshold}
                               onChange={e => setManualForm(f => ({ ...f, sor_osca_threshold: +e.target.value }))}
-                              className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#17171c]"
+                              className="w-full h-1 bg-[#d9d9dd] rounded-lg appearance-none cursor-pointer accent-[#17171c]"
                             />
                           </div>
 
                           <div className="space-y-1">
-                            <div className="flex justify-between text-[10px] font-medium text-slate-600">
+                            <div className="flex justify-between text-[10px] font-medium text-[#616161]">
                               <span>Kart Limit Doluluğu (Limit VRAM)</span>
                               <span className="font-bold">%{Math.round(manualForm.credit_card_limit_doluluk * 100)}</span>
                             </div>
@@ -779,12 +779,12 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                               step="0.05"
                               value={manualForm.credit_card_limit_doluluk}
                               onChange={e => setManualForm(f => ({ ...f, credit_card_limit_doluluk: +e.target.value }))}
-                              className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#17171c]"
+                              className="w-full h-1 bg-[#d9d9dd] rounded-lg appearance-none cursor-pointer accent-[#17171c]"
                             />
                           </div>
 
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Enflasyon Taksit Tercihi</Label>
+                            <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] block mb-1">Enflasyon Taksit Tercihi</Label>
                             <select
                               value={manualForm.taksit_preference ? "true" : "false"}
                               onChange={e => setManualForm(f => ({ ...f, taksit_preference: e.target.value === "true" }))}
@@ -800,12 +800,12 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
 
                     {/* Section 5: Bio, Goals, Objections */}
                     <div className="space-y-3">
-                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider pb-1 border-b border-border/50">
+                      <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] pb-1 border-b border-border/50">
                         {wizardMode === "sandbox" ? "5. Yaşam Konsepti & Hedefler" : "4. Yaşam Konsepti & Hedefler"}
                       </h4>
                       <div className="space-y-2">
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-bold text-muted-foreground uppercase">Biyografi & Hikaye</Label>
+                          <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Biyografi & Hikaye</Label>
                           <textarea
                             value={manualForm.bio}
                             onChange={e => setManualForm(f => ({ ...f, bio: e.target.value }))}
@@ -816,7 +816,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                         
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase">
+                            <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">
                               Amaçlar / Hedefler
                               <span className="text-[9px] lowercase font-normal text-muted-foreground ml-1">(virgülle ayırın)</span>
                             </Label>
@@ -828,7 +828,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase">
+                            <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">
                               Tüketici İtirazları
                               <span className="text-[9px] lowercase font-normal text-muted-foreground ml-1">(virgülle ayırın)</span>
                             </Label>
@@ -925,7 +925,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                                   : p.ses_group === "C1"
                                   ? "border-[#1863dc]/30 text-[#1863dc] bg-blue-50/50"
                                   : p.ses_group === "C2"
-                                  ? "border-[#d9d9dd] text-[#616161] bg-slate-50/50"
+                                  ? "border-[#d9d9dd] text-[#616161] bg-[#f5f4f1]/50"
                                   : "border-rose-300 text-rose-700 bg-rose-50/50"
                               }
                             >
@@ -938,7 +938,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                         <TableCell>
                           <Badge
                             variant="secondary"
-                            className="text-[10px] font-semibold bg-slate-100 text-slate-800"
+                            className="text-[10px] font-semibold bg-[#eeece7] text-[#212121]"
                           >
                             {({
                               potential_customer: "Potansiyel",
@@ -969,15 +969,15 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                               <DialogTrigger render={
                                 <Button
                                   variant="ghost"
-                                  className="h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                  className="h-8 w-8 p-0 hover:bg-[#eeece7] dark:hover:bg-[#2c2c33]"
                                 >
-                                  <Eye className="w-4 h-4 text-slate-500" />
+                                  <Eye className="w-4 h-4 text-[#616161]" />
                                 </Button>
                               } />
                               <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-background text-foreground">
                                 <DialogHeader className="pb-3 border-b border-border">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <DialogTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                                    <DialogTitle className="text-lg font-bold text-[#17171c] dark:text-[#e5e7eb]">
                                       {p.name}, {p.age}
                                     </DialogTitle>
                                     {p.is_global ? (
@@ -1001,10 +1001,10 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                                   <div className="space-y-4 text-left">
                                     <div>
-                                      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                      <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] mb-1.5">
                                         Biyografi & Yaşam Konsepti
                                       </h4>
-                                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900 rounded-xl p-3 border border-border/40">
+                                      <p className="text-xs text-[#212121] dark:text-[#e5e7eb] leading-relaxed bg-[#f5f4f1] dark:bg-[#17171c] rounded-xl p-3 border border-border/40">
                                         {p.bio || "Bu persona için henüz biyografi hikayesi eklenmemiş."}
                                       </p>
                                     </div>
@@ -1014,7 +1014,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                                         <span className="text-[10px] text-muted-foreground block mb-0.5">
                                           Sosyoeonomik Statü (SES)
                                         </span>
-                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                        <span className="text-sm font-bold text-[#212121] dark:text-[#e5e7eb]">
                                           {p.ses_group || "C1"}
                                         </span>
                                       </div>
@@ -1022,7 +1022,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                                         <span className="text-[10px] text-muted-foreground block mb-0.5">
                                           Rogers İnovasyon Arketipi
                                         </span>
-                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                        <span className="text-sm font-bold text-[#212121] dark:text-[#e5e7eb]">
                                           {({
                                             Innovator: "Yenilikçi (Innovator)",
                                             EarlyAdopter: "Erken Benimseyen",
@@ -1038,7 +1038,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                                         <span className="text-[10px] text-muted-foreground block mb-0.5">
                                           Yerleşim Tipi
                                         </span>
-                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                        <span className="text-sm font-bold text-[#212121] dark:text-[#e5e7eb]">
                                           {({ kentsel: "Kentsel (Metropol)", kirsal: "Kırsal (Taşra)" } as Record<
                                             string,
                                             string
@@ -1049,7 +1049,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                                         <span className="text-[10px] text-muted-foreground block mb-0.5">
                                           Katılımcı Tipi
                                         </span>
-                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                        <span className="text-sm font-bold text-[#212121] dark:text-[#e5e7eb]">
                                           {({
                                             potential_customer: "Potansiyel",
                                             competitor_user: "Rakip Kullanıcı",
@@ -1062,21 +1062,21 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                                     </div>
 
                                     <div className="space-y-2 border border-border/50 rounded-xl p-3 bg-muted/10">
-                                      <h4 className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                                      <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">
                                         Tüketici Davranış Endeksleri
                                       </h4>
                                       <div className="space-y-1.5 text-xs">
                                         <div className="flex justify-between items-center">
-                                          <span className="text-slate-600 dark:text-slate-400">Fiyat Hassasiyeti</span>
-                                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                          <span className="text-[#616161] dark:text-[#93939f]">Fiyat Hassasiyeti</span>
+                                          <span className="font-semibold text-[#212121] dark:text-[#e5e7eb]">
                                             {(p.price_sensitivity ?? 3)} / 5
                                           </span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                          <span className="text-slate-600 dark:text-slate-400">
+                                          <span className="text-[#616161] dark:text-[#93939f]">
                                             Dijital Güven & Yetkinlik
                                           </span>
-                                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                          <span className="font-semibold text-[#212121] dark:text-[#e5e7eb]">
                                             {(p.digital_confidence ?? 3)} / 5
                                           </span>
                                         </div>
@@ -1086,10 +1086,10 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
 
                                   <div className="space-y-4 text-left">
                                     <div>
-                                      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                                      <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] mb-2">
                                         Beş Büyük Kişilik Özelliği (OCEAN)
                                       </h4>
-                                      <div className="space-y-2 bg-slate-50 dark:bg-slate-900 border border-border/40 p-3 rounded-xl">
+                                      <div className="space-y-2 bg-[#f5f4f1] dark:bg-[#17171c] border border-border/40 p-3 rounded-xl">
                                         {(() => {
                                           const ocean = getBigFive(p);
                                           return [
@@ -1108,11 +1108,11 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                                             },
                                           ].map(item => (
                                             <div key={item.name} className="space-y-1">
-                                              <div className="flex justify-between text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                                              <div className="flex justify-between text-[11px] font-medium text-[#616161] dark:text-[#93939f]">
                                                 <span>{item.name}</span>
                                                 <span>%{item.val}</span>
                                               </div>
-                                              <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                                              <div className="h-1.5 w-full bg-[#d9d9dd] dark:bg-[#2c2c33] rounded-full overflow-hidden">
                                                 <div
                                                   className={`h-full ${item.color} rounded-full`}
                                                   style={{ width: `${item.val}%` }}
@@ -1125,7 +1125,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                                     </div>
 
                                     <div>
-                                      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                      <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] mb-1.5">
                                         Kullanıcı Hedefleri & Amaçları
                                       </h4>
                                       <div className="flex flex-wrap gap-1.5">
@@ -1147,7 +1147,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                                     </div>
 
                                     <div>
-                                      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                      <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] mb-1.5">
                                         Satın Alma İtirazları & Kaygıları
                                       </h4>
                                       <div className="flex flex-wrap gap-1.5">
@@ -1177,7 +1177,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                                 variant="ghost"
                                 disabled
                                 title="Bu persona bir araştırmaya katıldığı için silinemez (Kilitli)"
-                                className="h-8 w-8 p-0 text-slate-300 dark:text-slate-700 cursor-not-allowed"
+                                className="h-8 w-8 p-0 text-[#d9d9dd] dark:text-[#616161] cursor-not-allowed"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -1222,7 +1222,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                       size="sm"
                       disabled={poolPage === 1}
                       onClick={() => setPoolPage(p => p - 1)}
-                      className="h-8 text-xs text-slate-800"
+                      className="h-8 text-xs text-[#212121]"
                     >
                       Önceki
                     </Button>
@@ -1234,7 +1234,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                       size="sm"
                       disabled={poolPage >= Math.ceil(personas.length / 5)}
                       onClick={() => setPoolPage(p => p + 1)}
-                      className="h-8 text-xs text-slate-800"
+                      className="h-8 text-xs text-[#212121]"
                     >
                       Sonraki
                     </Button>

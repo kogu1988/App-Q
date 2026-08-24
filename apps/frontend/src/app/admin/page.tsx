@@ -316,7 +316,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-background text-foreground p-4 sm:p-8">
       <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4">
-        <header className="flex items-center justify-between border-b border-border pb-6">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2">
               <Logo size={36} strokeColor="#17171c" />
@@ -551,10 +551,10 @@ export default function AdminPage() {
 
                 return (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <Card className="border-l-4 border-l-slate-400 shadow-sm">
+                    <Card className="border-l-4 border-l-[#93939f] shadow-sm">
                       <CardContent className="pt-5 pb-4">
-                        <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-wide">Toplam Kayıt</p>
-                        <p className="text-4xl font-black text-slate-900 dark:text-white mt-1">{total}</p>
+                        <p className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Toplam Kayıt</p>
+                        <p className="text-4xl font-black text-[#17171c] dark:text-[#e5e7eb] mt-1">{total}</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           <span className="text-emerald-600 font-semibold">{likes} beğeni</span>
                           {" · "}
@@ -573,7 +573,7 @@ export default function AdminPage() {
                       }`}
                     >
                       <CardContent className="pt-5 pb-4">
-                        <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-wide">Beğeni Oranı</p>
+                        <p className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Beğeni Oranı</p>
                         <p
                           className={`text-4xl font-black mt-1 ${
                             likeRate >= 70
@@ -585,7 +585,7 @@ export default function AdminPage() {
                         >
                           %{likeRate}
                         </p>
-                        <div className="mt-2 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className="mt-2 h-1.5 bg-[#eeece7] dark:bg-[#2c2c33] rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-700 ${
                               likeRate >= 70 ? "bg-emerald-500" : likeRate >= 40 ? "bg-amber-500" : "bg-red-500"
@@ -598,7 +598,7 @@ export default function AdminPage() {
 
                     <Card className="border-l-4 border-l-sky-400 shadow-sm">
                       <CardContent className="pt-5 pb-4">
-                        <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-wide">Yorum İçeren</p>
+                        <p className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Yorum İçeren</p>
                         <p className="text-4xl font-black text-sky-600 dark:text-sky-400 mt-1">%{commentRate}</p>
                         <p className="text-xs text-muted-foreground mt-1">{withComment} kayıtta yorum var</p>
                       </CardContent>
@@ -606,7 +606,7 @@ export default function AdminPage() {
 
                     <Card className="border-l-4 border-l-indigo-400 shadow-sm">
                       <CardContent className="pt-5 pb-4">
-                        <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-wide">
+                        <p className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">
                           En Çok Değerlendirilen
                         </p>
                         <p className="text-lg font-black text-[#1863dc] dark:text-[#4c6ee6] mt-1 truncate">{topType}</p>
@@ -776,7 +776,7 @@ export default function AdminPage() {
                                   {card.headers.filter(Boolean).map(h => (
                                     <th
                                       key={h}
-                                      className="text-left py-1.5 px-3 font-semibold text-muted-foreground uppercase tracking-wide text-[10px]"
+                                      className="text-left py-1.5 px-3 font-mono text-[#93939f] uppercase tracking-wider text-[10px]"
                                     >
                                       {h}
                                     </th>
@@ -859,7 +859,7 @@ export default function AdminPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-8 shrink-0 text-slate-800"
+                                className="h-8 shrink-0 text-[#212121]"
                                 disabled={savingDefaults}
                                 onClick={async () => {
                                   const el = document.getElementById(`brief-default-${key}`) as HTMLInputElement;
@@ -900,7 +900,7 @@ export default function AdminPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="gap-1.5 h-8 text-slate-800"
+                          className="gap-1.5 h-8 text-[#212121]"
                           onClick={() => {
                             setEditingDefaultQ(!editingDefaultQ);
                             if (!editingDefaultQ) setDraftQuestions([...schemas.default_interview_questions]);
@@ -943,14 +943,14 @@ export default function AdminPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="gap-1.5 text-slate-800"
+                              className="gap-1.5 text-[#212121]"
                               onClick={() => setDraftQuestions(prev => [...prev, ""])}
                             >
                               <Plus size={12} /> Soru Ekle
                             </Button>
                             <Button
                               size="sm"
-                              className="gap-1.5 bg-[#17171c] hover:bg-[#17171c]/90 text-white"
+                              className="gap-1.5 bg-[#17171c] text-white hover:opacity-85"
                               disabled={savingDefaults}
                               onClick={async () => {
                                 setSavingDefaults(true);
@@ -1018,13 +1018,13 @@ export default function AdminPage() {
                           {expandedPool === name && (
                             <div className="px-4 pb-4 space-y-3 border-t border-border bg-muted/20">
                               <div className="mt-3">
-                                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-1">
+                                <div className="text-[10px] font-mono text-[#93939f] uppercase tracking-wider mb-1">
                                   Odak Alanları
                                 </div>
                                 <p className="text-xs text-[#616161] leading-relaxed">{pool.focus_areas}</p>
                               </div>
                               <div>
-                                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">
+                                <div className="text-[10px] font-mono text-[#93939f] uppercase tracking-wider mb-1.5">
                                   Soru Havuzu ({pool.questions.length})
                                 </div>
                                 <ol className="space-y-1">
@@ -1049,7 +1049,7 @@ export default function AdminPage() {
             <TabsContent value="metrics" className="mt-6 flex-1 outline-none space-y-6">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-[#616161] dark:text-[#93939f]">
                     Sistem metrikleri, aktif projeler ve kullanıcı istatistikleri.
                   </p>
                 </div>
@@ -1098,7 +1098,7 @@ export default function AdminPage() {
                       <Card key={kpi.label} className={`${kpi.bg} border ${kpi.border}`}>
                         <CardContent className="pt-5 pb-4">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            <span className="text-xs font-mono text-[#93939f] uppercase tracking-wider">
                               {kpi.label}
                             </span>
                             {kpi.icon}
@@ -1129,7 +1129,7 @@ export default function AdminPage() {
                           { label: "Pro (B2B)", value: metrics.models.b2b, color: "text-[#1863dc]", bg: "bg-[#f1f5ff]" },
                         ].map(m => (
                           <div key={m.label} className={`rounded-lg px-4 py-3 ${m.bg}`}>
-                            <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-0.5">
+                            <div className="text-[10px] font-mono uppercase tracking-wider text-[#93939f] mb-0.5">
                               {m.label}
                             </div>
                             <div className={`font-mono text-sm font-semibold ${m.color}`}>{m.value}</div>
@@ -1201,14 +1201,14 @@ export default function AdminPage() {
                       <CardHeader className="pb-3">
                         <CardTitle className="text-sm font-bold">Plan Dağılımı</CardTitle>
                       </CardHeader>
-                      <CardContent className="p-0">
-                        <table className="w-full text-sm">
+                      <CardContent className="p-0 overflow-x-auto">
+                        <table className="w-full text-sm min-w-[440px]">
                           <thead>
                             <tr className="border-b border-border bg-muted/40">
                               {["Plan", "Danışan", "Token (toplam)", "Simülasyon"].map(h => (
                                 <th
                                   key={h}
-                                  className="text-left py-2 px-4 text-[10px] font-bold uppercase text-muted-foreground"
+                                  className="text-left py-2 px-4 text-[10px] font-mono uppercase tracking-wider text-[#93939f]"
                                 >
                                   {h}
                                 </th>
