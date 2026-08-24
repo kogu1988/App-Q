@@ -644,6 +644,8 @@ async def submit_feedback(data: FeedbackCreate):
 
 @router.post("/studies")
 async def create_or_update_study(data: StudyPayload, x_username: str | None = Depends(get_current_username)):
+    if not x_username:
+        raise HTTPException(status_code=401, detail="Oturum bilgisi eksik. Lütfen giriş yapın.")
     study_id = data.metadata.get("id", "")
     # Org bağlamı (multi-user paylaşımı) — org üyesiyse çalışmayı org'a bağla
     if x_username and not data.metadata.get("org_id"):
