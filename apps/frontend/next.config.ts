@@ -19,6 +19,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  output: "standalone", // Docker production build (küçük imaj)
   async headers() {
     return [
       {
