@@ -1,0 +1,12 @@
+# Clarere — LOCAL test override (docker-compose.prod.yml üzerine)
+# Kullanım: docker compose -f docker-compose.prod.yml -f docker-compose.local.yml up -d --build
+# Caddy'yi localhost:8080 (HTTP) ile değiştirir.
+
+services:
+  caddy:
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config

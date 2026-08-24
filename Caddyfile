@@ -1,6 +1,11 @@
 # Clarere — Caddy reverse proxy (otomatik HTTPS/Let's Encrypt)
 
 clarere.com, www.clarere.com {
+    # Backend health check
+    handle /health {
+        reverse_proxy clarere-api:3000
+    }
+
     # Backend REST + streaming API
     handle /api/* {
         reverse_proxy clarere-api:3000

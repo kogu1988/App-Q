@@ -1,0 +1,16 @@
+# Clarere — LOCAL test Caddyfile (HTTP, HTTPS yok)
+http://localhost:8080 {
+    handle /health {
+        reverse_proxy clarere-api:3000
+    }
+    handle /api/* {
+        reverse_proxy clarere-api:3000
+    }
+    handle /ws {
+        reverse_proxy clarere-api:3000
+    }
+    handle {
+        reverse_proxy frontend:3000
+    }
+    encode gzip
+}
