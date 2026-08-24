@@ -77,10 +77,10 @@ app.add_middleware(
 @app.middleware("http")
 async def tenant_isolation_middleware(request: Request, call_next):
     """
-    Tenant'ı belirler (öncelik sırasıyla):
+    Tenant'ı belirler:
       1. JWT: `Authorization: Bearer <token>` → doğrula → `sub` claim'i
-      2. Fallback: `X-Username` header (geriye dönük uyumluluk)
-    Tenant bilgisi database.py get_db() içinde RLS için kullanılır.
+      2. Fallback: `X-Username` header (YALNIZCA development)
+    Production'da JWT zorunludur. Tenant bilgisi RLS için kullanılır.
     """
     username = None
 
@@ -92,8 +92,8 @@ async def tenant_isolation_middleware(request: Request, call_next):
         if token:
             username = extract_username(token)
 
-    # 2. Fallback: X-Username header
-    if not username:
+    # 2. Fallback: X-Username header — YALNIZCA development (production'da JWT zorunlu)
+    if not username and _app_env != "production":
         username = request.headers.get("x-username")
 
     current_tenant_var.set(username)
