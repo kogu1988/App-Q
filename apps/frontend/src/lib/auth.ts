@@ -4,15 +4,19 @@
  */
 export function getAuthHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
+  const headers: Record<string, string> = {};
   const token = localStorage.getItem("clarere_token");
   if (token) {
-    return { Authorization: `Bearer ${token}` };
+    headers["Authorization"] = `Bearer ${token}`;
   }
   const username = localStorage.getItem("clarere_username");
   if (username) {
-    return { "X-Username": username };
+    // X-Username her zaman da gönderilir: production'da middleware bunu yok sayar
+    // (JWT zorunlu), development'ta ise süresi dolmuş/geçersiz token durumunda
+    // yedek oturum bilgisi olarak kullanılır.
+    headers["X-Username"] = username;
   }
-  return {};
+  return headers;
 }
 
 /**

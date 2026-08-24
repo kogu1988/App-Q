@@ -32,9 +32,22 @@ def get_jwt_secret() -> str:
     return os.getenv("JWT_SECRET") or os.getenv("ADMIN_SECRET_KEY") or "clarere-dev-secret"
 
 
-def create_token(username: str, secret: str | None = None, expires_in: int = 3600) -> str:
+def _default_token_expiry() -> int:
+    """Token ömrü (saniye).
+
+    Production'da güvenlik için 1 saat; dev/test ortamında ise 30 gün — böylece
+    yerel denemelerde oturum süresinin dolmasıyla uğraşmak gerekmez.
+    """
+    if os.getenv("APP_ENV", "development").lower() == "production":
+        return 3600
+    return 30 * 24 * 3600
+
+
+def create_token(username: str, secret: str | None = None, expires_in: int | None = None) -> str:
     """Bir kullanıcı adı için HS256 access token üretir."""
     secret = secret or get_jwt_secret()
+    if expires_in is None:
+        expires_in = _default_token_expiry()
     now = int(time.time())
     header = {"alg": "HS256", "typ": "JWT"}
     payload = {"sub": username, "iat": now, "exp": now + expires_in}
