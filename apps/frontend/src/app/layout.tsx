@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Space_Grotesk, Space_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -85,33 +85,45 @@ const jsonLd = {
       name: "Free Plan",
       price: "0",
       priceCurrency: "TRY",
-      description: "2 araştırma/ay, 3 persona, temel rapor",
+      description: "2 araştırma, 10 persona, temel rapor",
+    },
+    {
+      "@type": "Offer",
+      name: "Research Pack (Flex)",
+      price: "1990",
+      priceCurrency: "TRY",
+      description: "3 araştırma (tek seferlik), A/B test, takip sorusu",
     },
     {
       "@type": "Offer",
       name: "Starter Plan",
-      price: "990",
+      price: "2690",
       priceCurrency: "TRY",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
-        price: "990",
+        price: "2690",
         priceCurrency: "TRY",
         unitText: "MON",
       },
-      description: "10 araştırma/ay, 5 persona, PDF rapor, Van Westendorp",
+      description: "10 araştırma/ay, 10 persona, PDF rapor, Van Westendorp",
     },
     {
       "@type": "Offer",
       name: "Pro Plan",
-      price: "2990",
+      price: "6790",
       priceCurrency: "TRY",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
-        price: "2990",
+        price: "6790",
         priceCurrency: "TRY",
         unitText: "MON",
       },
-      description: "Sınırsız araştırma, A/B Test, Adversarial Review, RFI skoru",
+      description: "Sınırsız araştırma, White-label, B2B modu, Marka Sağlığı",
+    },
+    {
+      "@type": "Offer",
+      name: "Enterprise Plan",
+      description: "Özelleştirilmiş kurumsal çözüm — fiyat için iletişime geçin",
     },
   ],
 };

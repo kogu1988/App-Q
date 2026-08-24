@@ -1001,7 +1001,7 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     payload = load_study_payload(study_id, include_pdf=False)
     interviews = payload.get("interviews", [])
 
-    # 3. Starter plan follow-up limiti kontrolü (Maks 3 adet)
+    # 3. Flex/Starter plan follow-up limiti kontrolü (Maks 3 adet)
     max_follow_ups = plan_config.get("max_follow_ups", 9999)
     current_follow_ups = 0
     for inv in interviews:
@@ -1012,7 +1012,7 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     if current_follow_ups >= max_follow_ups:
         raise HTTPException(
             status_code=403,
-            detail=f"Starter plan limitinize ulaştınız (Maksimum {max_follow_ups} takip sorusu). Lütfen planınızı yükseltin."
+            detail=f"Plan limitinize ulaştınız (Maksimum {max_follow_ups} takip sorusu). Lütfen planınızı yükseltin."
         )
 
     target_interview = None

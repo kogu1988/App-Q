@@ -360,7 +360,7 @@ export default function NewResearchWizard() {
             onClick={() => {
               if (abTestLocked) {
                 toast.error(
-                  "A/B Test Modu Pro planında kullanılabilir.",
+                  "A/B Test Modu Flex planında kullanılabilir.",
                   { action: { label: "Planı Yükselt", onClick: () => router.push("/client/upgrade") } }
                 );
                 return;
@@ -377,7 +377,7 @@ export default function NewResearchWizard() {
           >
             {abTestLocked && (
               <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                <Lock size={9} /> Pro
+                <Lock size={9} /> Flex
               </span>
             )}
             <div className={`p-2.5 rounded-xl w-fit ${researchMode === "ab_test" && !abTestLocked ? "bg-[#edfce9] " : "bg-[#eeece7] "}`}>
@@ -412,7 +412,7 @@ export default function NewResearchWizard() {
         {abTestLocked && researchMode === "ab_test" && (
           <p className="text-center text-xs text-muted-foreground">
             A/B Test modu{" "}
-            <Link href="/client/upgrade" className="text-accent underline underline-offset-2 font-medium">Pro planında</Link>
+            <Link href="/client/upgrade" className="text-accent underline underline-offset-2 font-medium">Flex planında</Link>
             {" "}kullanılabilir.
           </p>
         )}

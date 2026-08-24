@@ -123,7 +123,7 @@ const PLAN_META = [
       "A/B testleri",
       "Mülakat taslağı iyileştirme",
       "Araştırma başına 3 takip sorusu",
-      "Sınırsız 'Araştırmayla Konuş' sorgusu",
+      "Araştırma başına 3 'Araştırmayla Konuş' sorgusu",
       "Kurumsal düzeyde araştırma raporu",
       "Rapor paylaşımı",
     ],
@@ -142,7 +142,7 @@ const PLAN_META = [
       "A/B testleri",
       "Mülakat taslağı iyileştirme",
       "Araştırma başına 3 takip (probing)",
-      "Araştırma başına 2 'Araştırmayla Konuş'",
+      "Araştırma başına 3 'Araştırmayla Konuş'",
       "Kurumsal düzeyde araştırma raporu",
       "Rapor paylaşımı",
     ],
@@ -191,8 +191,8 @@ const FEATURES = [
   { label: "Research Fidelity Index (RFI)", plans: [true, true, true, true, true] },
   { label: "Marka Sağlığı Analizi", plans: [false, false, false, true, true] },
   { label: "Özel Persona Havuzu", plans: [false, false, false, false, true] },
-  { label: "White-label Raporlar", plans: [true, false, true, true] },
-  { label: "Audit Log", plans: [false, false, false, true] },
+  { label: "White-label Raporlar", plans: [false, false, false, true, true] },
+  { label: "Audit Log", plans: [false, false, false, false, true] },
 ];
 
 const FEATURE_HIGHLIGHTS = [

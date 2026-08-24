@@ -47,7 +47,7 @@ PLAN_CONFIG: dict[str, dict] = {
         "max_simulations": 3,
         "max_tokens": 200_000,
         "max_follow_ups": 3,
-        "max_talk_to_research": 9999,
+        "max_talk_to_research": 3,
         "max_adversarial_loops": 2,
         "ab_test": True,
         "b2b_mode": False,

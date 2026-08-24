@@ -1689,9 +1689,9 @@ export default function StudyDetailPage() {
                               let badgeColor = "bg-slate-100 text-slate-600";
 
                               if (isFree) {
-                                inputPlaceholder = "Takip sorusu · Starter+ planı gerektirir.";
+                                inputPlaceholder = "Takip sorusu · Flex+ planı gerektirir.";
                                 isDisabled = true;
-                                badgeText = "Takip Sorusu · Starter+ Gerekli";
+                                badgeText = "Takip Sorusu · Flex+ Gerekli";
                                 badgeColor = "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400";
                               } else if (isLimitReached) {
                                 inputPlaceholder = "Takip sorusu limitine ulaştınız (3/3). Planınızı yükseltin.";

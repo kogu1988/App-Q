@@ -71,7 +71,7 @@ const PLANS = [
       "A/B Test simülasyonları dahil",
       "Mülakat taslağı iyileştirme",
       "Araştırma başına 3 takip sorusu (probing)",
-      "Araştırma başına 2 'Araştırmayla Konuş'",
+      "Araştırma başına 3 'Araştırmayla Konuş'",
       "PDF rapor export & SES cross-tab tablosu",
       "Gerçek zamanlı stream & RFI Skoru",
       "3 günlük ücretsiz deneme",
@@ -98,25 +98,6 @@ const PLANS = [
       "B2B persona modu",
       "Marka Sağlığı analizi",
       "3 günlük ücretsiz deneme",
-    ],
-    locked: [],
-  },
-  {
-    key: "Enterprise",
-    name: "Enterprise",
-    monthlyPrice: 51000,
-    annualPrice: 40800,
-    description: "Büyük ölçekli AI destekli araştırmalar için",
-    color: "border-[#17171c]",
-    badge: "Kurumsal",
-    features: [
-      "Sınırsız her şey & custom metodolojiler",
-      "%100 Yerel Veri Lokalizasyonu (2026 KVKK Uyumlu)",
-      "Çok kullanıcılı organizasyon & audit log",
-      "Özel entegrasyonlar ve API erişimi",
-      "Atanmış müşteri başarı temsilcisi",
-      "PDF export & SES cross-tab",
-      "7/24 Öncelikli destek",
     ],
     locked: [],
   },
@@ -356,7 +337,7 @@ export default function UpgradePage() {
 
         {/* Plan Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {PLANS.filter(p => p.key !== "Enterprise").map(p => {
+          {PLANS.map(p => {
             const planOrder = ["Free", "Flex", "Starter", "Pro", "Enterprise"];
             const isCurrent = p.key === currentPlan;
             const isDowngrade = planOrder.indexOf(p.key) < planOrder.indexOf(currentPlan);
@@ -464,7 +445,7 @@ export default function UpgradePage() {
             href="mailto:hiclarere@clarere.com?subject=Enterprise Plan Talebi"
             className="px-5 py-2.5 rounded-xl bg-[#17171c] text-white text-xs font-semibold hover:opacity-85 transition-opacity shrink-0 w-full md:w-auto text-center"
           >
-            İletişime Geç (₺51.000 / Ay)
+            İletişime Geç
           </a>
         </div>
       </div>

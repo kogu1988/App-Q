@@ -34,10 +34,11 @@ interface ClientInfo {
 }
 
 const PLAN_TEMPLATES: Record<string, { max_simulations: number; max_tokens: number }> = {
-  Free: { max_simulations: 2, max_tokens: 50_000 },
-  Starter: { max_simulations: 10, max_tokens: 200_000 },
-  Pro: { max_simulations: 50, max_tokens: 1_000_000 },
-  Enterprise: { max_simulations: 9999, max_tokens: 50_000_000 },
+  Free: { max_simulations: 2, max_tokens: 100_000 },
+  Flex: { max_simulations: 3, max_tokens: 200_000 },
+  Starter: { max_simulations: 10, max_tokens: 500_000 },
+  Pro: { max_simulations: 9999, max_tokens: 9_999_999 },
+  Enterprise: { max_simulations: 9999, max_tokens: 9_999_999 },
 };
 
 export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRefresh: () => void }) {
@@ -48,7 +49,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
     email: "",
     plan_type: "Free",
     max_simulations: 2,
-    max_tokens: 50000,
+    max_tokens: 100_000,
     plan_start: "",
     plan_end: "",
   });
@@ -106,7 +107,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
         email: "",
         plan_type: "Free",
         max_simulations: 2,
-        max_tokens: 50000,
+        max_tokens: 100_000,
         plan_start: "",
         plan_end: "",
       });
