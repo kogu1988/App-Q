@@ -190,7 +190,9 @@ const FEATURES = [
   { label: "Adversarial Review", plans: [true, true, true, true, true] },
   { label: "Research Fidelity Index (RFI)", plans: [true, true, true, true, true] },
   { label: "Marka Sağlığı Analizi", plans: [false, false, false, true, true] },
+  { label: "SES Cross-Tab Analizi", plans: [false, true, true, true, true] },
   { label: "Özel Persona Havuzu", plans: [false, false, false, false, true] },
+  { label: "Çok Kullanıcılı Organizasyon", plans: [false, false, false, false, true] },
   { label: "White-label Raporlar", plans: [false, false, false, true, true] },
   { label: "Audit Log", plans: [false, false, false, false, true] },
 ];
@@ -747,7 +749,7 @@ export default function HomePage() {
             </table>
           </div>
           <p className="text-center text-xs text-[#93939f] mt-4">
-            Tüm fiyatlar KDV hariçtir. Yıllık faturalamalarda %8 indirim uygulanır.
+            Tüm fiyatlar KDV hariçtir. Yıllık faturalamalarda %20 indirim uygulanır.
           </p>
         </Reveal>
         </div>
