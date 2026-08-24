@@ -179,6 +179,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   function handleLogout() {
     localStorage.removeItem("clarere_username");
+    localStorage.removeItem("clarere_token");
     window.location.href = "/";
   }
 

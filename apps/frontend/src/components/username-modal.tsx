@@ -32,6 +32,9 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    // Eski oturum token'ını temizle — kullanıcı değişiminde karışma olmasın.
+    // Parola verilirse register sonrası yeni token set edilecek.
+    localStorage.removeItem("clarere_token");
 
     if (!isValidUsername(value)) {
       setError("2-20 karakter, sadece harf, rakam, _ veya - kullanabilirsiniz.");

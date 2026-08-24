@@ -33,18 +33,34 @@ def render_markdown(report: ResearchReport) -> str:
     lines.extend(f"- {item}" for item in report.plan.assumptions)
 
     lines.extend(["", "### Netleştirici Sorular", ""])
-    lines.extend(
-        f"- **{question.priority.upper()}**: {question.question} _({question.reason})_"
-        for question in report.plan.clarifying_questions
-    )
+    for question in report.plan.clarifying_questions:
+        if isinstance(question, dict):
+            _priority = str(question.get("priority", "medium")).upper()
+            _q = question.get("question", "")
+            _reason = question.get("reason", "")
+        else:
+            _priority = question.priority.upper()
+            _q = question.question
+            _reason = question.reason
+        lines.append(f"- **{_priority}**: {_q} _({_reason})_")
 
     lines.extend(["", "### Görüşme Script'i", ""])
     for index, question in enumerate(report.plan.interview_script, start=1):
+        if isinstance(question, dict):
+            _label = question.get("label", "")
+            _q = question.get("question", "")
+            _reason = question.get("reason", "")
+            _tags = question.get("tags") or []
+        else:
+            _label = question.label
+            _q = question.question
+            _reason = question.reason
+            _tags = question.tags or []
         lines.extend(
             [
-                f"{index}. **{question.label}** - {question.question}",
-                f"   - Amaç: {question.reason}",
-                f"   - Etiketler: {', '.join(question.tags) if question.tags else 'risk'}",
+                f"{index}. **{_label}** - {_q}",
+                f"   - Amaç: {_reason}",
+                f"   - Etiketler: {', '.join(str(t) for t in _tags) if _tags else 'risk'}",
             ]
         )
 
