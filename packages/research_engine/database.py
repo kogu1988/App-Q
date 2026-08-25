@@ -677,13 +677,7 @@ def init_db() -> None:
                 cur.execute("""
                     INSERT INTO clients (username, created_at, email, plan_type, max_simulations, max_tokens, billing_cycle, period_start, period_simulations)
                     VALUES (%s, %s, %s, %s, %s, %s, 'monthly', %s, 0)
-                    ON CONFLICT (username) DO UPDATE SET
-                        email           = EXCLUDED.email,
-                        plan_type       = EXCLUDED.plan_type,
-                        max_simulations = EXCLUDED.max_simulations,
-                        max_tokens      = EXCLUDED.max_tokens,
-                        billing_cycle   = EXCLUDED.billing_cycle,
-                        period_start    = EXCLUDED.period_start
+                    ON CONFLICT (username) DO NOTHING
                 """, (_uname, _now, _email, _plan, _sims, _tokens, _today))
         
         # Default system config
