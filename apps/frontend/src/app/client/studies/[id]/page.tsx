@@ -207,10 +207,23 @@ interface StudyDetail {
 
 // ──────────────── Decision Signal Config ────────────────
 const DECISION_CONFIG: Record<string, { icon: React.ComponentType<{ size?: number; className?: string }>; color: string; bg: string; label: string }> = {
-  SHIP: { icon: Ship, color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", label: "SHIP" },
-  ITERATE: { icon: GitBranch, color: "text-amber-700", bg: "bg-amber-50 border-amber-200", label: "ITERATE" },
-  INVESTIGATE: { icon: AlertTriangle, color: "text-sky-700", bg: "bg-sky-50 border-sky-200", label: "ARAŞTIR" },
-  KILL: { icon: Trash2, color: "text-red-700", bg: "bg-red-50 border-red-200", label: "KILL" },
+  SHIP: { icon: Ship, color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", label: "Yayınla" },
+  ITERATE: { icon: GitBranch, color: "text-amber-700", bg: "bg-amber-50 border-amber-200", label: "İyileştir" },
+  INVESTIGATE: { icon: AlertTriangle, color: "text-sky-700", bg: "bg-sky-50 border-sky-200", label: "Araştır" },
+  KILL: { icon: Trash2, color: "text-red-700", bg: "bg-red-50 border-red-200", label: "Vazgeç" },
+};
+
+// Duruş (stance) etiketlerinin Türkçe karşılıkları
+const STANCE_TR: Record<string, string> = {
+  "Champion": "Öncü",
+  "Pragmatist": "Pragmatist",
+  "Observer": "Gözlemci",
+  "Skeptic": "Şüpheci",
+  "Blocker": "Engelleyici",
+  "Innovator": "Öncü",
+  "EarlyAdopter": "Erken Benimseyen",
+  "Mainstream": "Ana Akım",
+  "Laggard": "Geciken",
 };
 
 // ──────────────── Finding Card Component ────────────────
@@ -300,7 +313,7 @@ function FindingCard({ finding, dc, DcIcon, confPct, barColor }: {
                         ev.stance === "Skeptic" ? "bg-amber-100 text-amber-700" :
                         ev.stance === "Blocker" ? "bg-red-100 text-red-700" :
                         "bg-[#eeece7] text-[#616161]"
-                      }`}>{ev.stance}</span>
+                      }`}>{STANCE_TR[ev.stance] || ev.stance}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="font-semibold text-[#212121]">{ev.persona_name}</span>
@@ -1180,14 +1193,14 @@ export default function StudyDetailPage() {
                         const flags = [
                           (rq.straight_lining_count || 0) > 0 && {
                             icon: "🔁",
-                            label: "Tekdüze Yanıt Kalıbı (Straight-Lining)",
+                            label: "Tekdüze Yanıt Kalıbı",
                             count: rq.straight_lining_count || 0,
                             color: "text-red-600 dark:text-red-400",
                             bg: "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40",
                           },
                           (rq.acquiescence_count || 0) > 0 && {
                             icon: "🟠",
-                            label: "Beklenmedik Uzlaşmacılık (Acquiescence)",
+                            label: "Aşırı Uzlaşmacılık",
                             count: rq.acquiescence_count || 0,
                             color: "text-orange-600 dark:text-orange-400",
                             bg: "bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900/40",
@@ -1268,7 +1281,7 @@ export default function StudyDetailPage() {
                             {valid ? "Geçerli" : "Eşik Altı"}
                           </Badge>
                         </CardTitle>
-                        <CardDescription className="text-[10px]">Grounded Simulation RFI — Bilal (2026) §6.4</CardDescription>
+                        <CardDescription className="text-[10px]">Bilimsel simülasyon temelli bütünlük ölçütü — yanıt kalitesi ve tutarlılık denetimi.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         {rfi !== null && (
@@ -1389,7 +1402,7 @@ export default function StudyDetailPage() {
                         <div className="space-y-3 border-t border-border pt-4">
                           {persona.big_five ? (
                             <>
-                              <span className="text-[10px] font-bold text-[#93939f] uppercase tracking-wider block mb-2">Büyük Beşli (Big Five)</span>
+                              <span className="text-[10px] font-bold text-[#93939f] uppercase tracking-wider block mb-2">Kişilik Profili (Büyük Beşli)</span>
                               {[
                                 { label: "Açıklık (Openness)",      value: persona.big_five?.Openness      ?? persona.big_five?.openness      ?? 50, color: "bg-sky-500" },
                                 { label: "Sorumluluk (Conscientiousness)", value: persona.big_five?.Conscientiousness ?? persona.big_five?.conscientiousness ?? 50, color: "bg-blue-500" },
@@ -1446,7 +1459,7 @@ export default function StudyDetailPage() {
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-muted-foreground">Pazar Yaklaşımı:</span>
                             <Badge variant="outline" className="font-semibold text-[#616161] ">
-                              {persona.stance}
+                              {STANCE_TR[persona.stance] || persona.stance}
                             </Badge>
                           </div>
                           {(persona.ses_group || persona.respondent_type) && (
@@ -1508,8 +1521,8 @@ export default function StudyDetailPage() {
             {study?.ses_cross_tab && study.ses_cross_tab.length > 0 && (
               <Card className="shadow-sm border-[#e5e7eb] dark:border-[rgba(24,99,220,0.15)]">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">SES × Duruş Çapraz Tablosu</CardTitle>
-                  <CardDescription>TÜAD 2025 sosyo-ekonomik gruplara göre pazar yaklaşımı dağılımı.</CardDescription>
+                  <CardTitle className="text-base">Sosyo-Ekonomik Grup × Duruş</CardTitle>
+                  <CardDescription>Sosyo-ekonomik gruplara göre pazar yaklaşımı dağılımı.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -1518,7 +1531,7 @@ export default function StudyDetailPage() {
                         <tr className="border-b border-border">
                           <th className="text-left py-2 pr-4 text-xs font-semibold text-muted-foreground uppercase">SES</th>
                           {["Champion","Pragmatist","Observer","Skeptic","Blocker"].map(s => (
-                            <th key={s} className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground uppercase">{s}</th>
+                            <th key={s} className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground uppercase">{STANCE_TR[s] || s}</th>
                           ))}
                           <th className="text-center py-2 pl-4 text-xs font-semibold text-muted-foreground uppercase">Toplam</th>
                           <th className="text-left py-2 pl-4 text-xs font-semibold text-muted-foreground uppercase">Baskın</th>
@@ -1638,7 +1651,7 @@ export default function StudyDetailPage() {
                           <DialogHeader className="px-6 py-5 border-b border-[#d9d9dd] dark:border-[rgba(255,255,255,0.1)] bg-[#eeece7] dark:bg-[#212121]">
                             <DialogTitle className="text-lg">Mülakat Transkripti · {item.persona?.name}</DialogTitle>
                             <DialogDescription className="text-[#616161] dark:text-[#93939f]">
-                              {item.persona?.role_title} · {item.persona?.age} Yaş · {item.persona?.city} · {item.persona?.stance} Profil
+                              {item.persona?.role_title} · {item.persona?.age} Yaş · {item.persona?.city} · {STANCE_TR[item.persona?.stance || ""] || item.persona?.stance} Profil
                             </DialogDescription>
                           </DialogHeader>
                           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 bg-white dark:bg-[#17171c]">

@@ -748,6 +748,14 @@ _ITERATE_ASPECT: dict[str, str] = {
     "positioning": "konumlandırma",
 }
 
+# Karar sinyallerinin son kullanıcıya dönük Türkçe karşılıkları
+_SIGNAL_LABELS_TR: dict[str, str] = {
+    "SHIP": "YAYINLA",
+    "ITERATE": "İYİLEŞTİR",
+    "INVESTIGATE": "ARAŞTIR",
+    "KILL": "VAZGEÇ",
+}
+
 
 def generate_decision_summary(enhanced_findings: list) -> list[DecisionItem]:
     """Enhanced findings'ları karar öğelerine (DecisionItem) dönüştürür.
@@ -1082,22 +1090,22 @@ def synthesize_report(
 
         decision_header = [
             "",
-            "EXECUTIVE DECISION SUMMARY",
+            "YÖNETİCİ KARAR ÖZETİ",
             "═══════════════════════════",
-            f"SHIP ({_sig_counts.get('SHIP', 0)})            → Features ready to build/launch",
-            f"ITERATE ({_sig_counts.get('ITERATE', 0)})         → Needs refinement before launch",
-            f"INVESTIGATE ({_sig_counts.get('INVESTIGATE', 0)})   → Requires more research",
-            f"KILL ({_sig_counts.get('KILL', 0)})            → Drop/avoid",
+            f"YAYINLA ({_sig_counts.get('SHIP', 0)})            → Geliştirmeye/yayına hazır",
+            f"İYİLEŞTİR ({_sig_counts.get('ITERATE', 0)})         → Yayından önce iyileştirme gerekir",
+            f"ARAŞTIR ({_sig_counts.get('INVESTIGATE', 0)})   → Daha fazla araştırma gerekir",
+            f"VAZGEÇ ({_sig_counts.get('KILL', 0)})            → Bırak / kaçın",
             "",
-            "FINDING DECISIONS",
+            "BULGU KARARLARI",
             "═════════════════",
         ]
         for di in decision_items:
-            badge = f"[{di.signal}]"
+            badge = f"[{_SIGNAL_LABELS_TR.get(di.signal, di.signal)}]"
             decision_header.append(
                 f"{badge:<16} {di.title}"
             )
-            decision_header.append(f"         Evidence: {di.evidence_summary}")
+            decision_header.append(f"         Kanıt: {di.evidence_summary}")
             decision_header.append(f"         → {di.recommended_action}")
             decision_header.append("")
 
@@ -1282,22 +1290,22 @@ def synthesize_report(
 
     decision_header_std = [
         "",
-        "EXECUTIVE DECISION SUMMARY",
+        "YÖNETİCİ KARAR ÖZETİ",
         "═══════════════════════════",
-        f"SHIP ({_sig_counts_std.get('SHIP', 0)})            → Features ready to build/launch",
-        f"ITERATE ({_sig_counts_std.get('ITERATE', 0)})         → Needs refinement before launch",
-        f"INVESTIGATE ({_sig_counts_std.get('INVESTIGATE', 0)})   → Requires more research",
-        f"KILL ({_sig_counts_std.get('KILL', 0)})            → Drop/avoid",
+        f"YAYINLA ({_sig_counts_std.get('SHIP', 0)})            → Geliştirmeye/yayına hazır",
+        f"İYİLEŞTİR ({_sig_counts_std.get('ITERATE', 0)})         → Yayından önce iyileştirme gerekir",
+        f"ARAŞTIR ({_sig_counts_std.get('INVESTIGATE', 0)})   → Daha fazla araştırma gerekir",
+        f"VAZGEÇ ({_sig_counts_std.get('KILL', 0)})            → Bırak / kaçın",
         "",
-        "FINDING DECISIONS",
+        "BULGU KARARLARI",
         "═════════════════",
     ]
     for di in decision_items:
-        badge = f"[{di.signal}]"
+        badge = f"[{_SIGNAL_LABELS_TR.get(di.signal, di.signal)}]"
         decision_header_std.append(
             f"{badge:<16} {di.title}"
         )
-        decision_header_std.append(f"         Evidence: {di.evidence_summary}")
+        decision_header_std.append(f"         Kanıt: {di.evidence_summary}")
         decision_header_std.append(f"         → {di.recommended_action}")
         decision_header_std.append("")
 
