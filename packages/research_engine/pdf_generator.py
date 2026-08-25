@@ -30,13 +30,26 @@ except Exception as e:
 # In case the file is missing or failed, define fallback styles
 if not _CSS:
     _CSS = """
+@font-face {
+    font-family: "DejaVu Sans";
+    src: url("fonts/DejaVuSans.ttf");
+}
+@font-face {
+    font-family: "DejaVu Sans";
+    font-weight: bold;
+    src: url("fonts/DejaVuSans-Bold.ttf");
+}
+@font-face {
+    font-family: "DejaVu Sans Mono";
+    src: url("fonts/DejaVuSansMono.ttf");
+}
 @page {
     margin: 2cm 2.5cm;
     size: A4;
 }
 
 body {
-    font-family: Helvetica, Arial, sans-serif;
+    font-family: "DejaVu Sans", sans-serif;
     font-size: 10pt;
     color: #1a1a2e;
     line-height: 1.6;
@@ -108,7 +121,7 @@ code {
     background-color: #f0f0f0;
     border-radius: 2pt;
     padding: 1pt 3pt;
-    font-family: Courier, monospace;
+    font-family: "DejaVu Sans Mono", monospace;
     font-size: 8.5pt;
 }
 
@@ -148,6 +161,20 @@ blockquote {
 }
 """
 
+
+# ── Türkçe karakterleri destekleyen Unicode font (DejaVu) kaydı ─────────────
+import os
+
+_FONT_DIR = "/usr/share/fonts/truetype/dejavu"
+
+
+def _link_callback(uri: str, rel: str) -> str:
+    """CSS @font-face src URL'lerini konteyner içindeki TTF dosyalarına çevirir."""
+    if uri.startswith("fonts/"):
+        path = os.path.join(_FONT_DIR, os.path.basename(uri))
+        if os.path.exists(path):
+            return path
+    return uri
 
 
 def generate_pdf_from_markdown(
@@ -212,6 +239,7 @@ def generate_pdf_from_markdown(
         src=html,
         dest=output,
         encoding="utf-8",
+        link_callback=_link_callback,
     )
 
     if pisa_status.err:

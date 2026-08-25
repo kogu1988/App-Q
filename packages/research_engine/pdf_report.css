@@ -1,10 +1,26 @@
+@font-face {
+    font-family: "DejaVu Sans";
+    src: url("fonts/DejaVuSans.ttf");
+}
+
+@font-face {
+    font-family: "DejaVu Sans";
+    font-weight: bold;
+    src: url("fonts/DejaVuSans-Bold.ttf");
+}
+
+@font-face {
+    font-family: "DejaVu Sans Mono";
+    src: url("fonts/DejaVuSansMono.ttf");
+}
+
 @page {
     margin: 2cm 2.5cm;
     size: A4;
 }
 
 body {
-    font-family: Helvetica, Arial, sans-serif;
+    font-family: "DejaVu Sans", sans-serif;
     font-size: 10pt;
     color: #1a1a2e;
     line-height: 1.6;
@@ -76,7 +92,7 @@ code {
     background-color: #f0f0f0;
     border-radius: 2pt;
     padding: 1pt 3pt;
-    font-family: Courier, monospace;
+    font-family: "DejaVu Sans Mono", monospace;
     font-size: 8.5pt;
 }
 
