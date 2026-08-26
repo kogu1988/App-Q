@@ -177,11 +177,49 @@ def _link_callback(uri: str, rel: str) -> str:
     return uri
 
 
+def horizontal_bar_chart(title: str, items: list[tuple[str, int]], color: str = "#003c33") -> str:
+    """Pillow ile basit yatay bar grafiği üretir; base64 PNG döndürür (PDF'e gömülür)."""
+    import base64 as _b64
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        return ""
+
+    _font_path = os.path.join(_FONT_DIR, "DejaVuSans.ttf")
+    try:
+        _font_title = ImageFont.truetype(_font_path, 18)
+        _font_label = ImageFont.truetype(_font_path, 14)
+    except Exception:
+        _font_title = _font_label = ImageFont.load_default()
+
+    _width, _bar_h, _gap = 720, 26, 10
+    _height = 70 + len(items) * (_bar_h + _gap)
+    _img = Image.new("RGB", (_width, _height), "#ffffff")
+    _d = ImageDraw.Draw(_img)
+    _d.text((24, 14), title, fill="#17171c", font=_font_title)
+
+    _max_v = max((v for _, v in items), default=1) or 1
+    _bar_x = 200
+    _bar_max = _width - _bar_x - 70
+    _y = 54
+    for label, v in items:
+        _d.text((24, _y + 5), label, fill="#212121", font=_font_label)
+        _w = int(_bar_max * v / _max_v) if v > 0 else 2
+        _d.rectangle([_bar_x, _y, _bar_x + _w, _y + _bar_h], fill=color)
+        _d.text((_bar_x + _w + 8, _y + 5), str(v), fill="#616161", font=_font_label)
+        _y += _bar_h + _gap
+
+    _buf = io.BytesIO()
+    _img.save(_buf, format="PNG")
+    return _b64.b64encode(_buf.getvalue()).decode("ascii")
+
+
 def generate_pdf_from_markdown(
     markdown_text: str,
     title: str = "Clarere Research Report",
     study_id: Optional[str] = None,
     brand_name: str = "Clarere",
+    charts: Optional[list[tuple[str, str]]] = None,
 ) -> Optional[bytes]:
     """
     Convert a markdown research report to PDF bytes.
@@ -218,6 +256,18 @@ def generate_pdf_from_markdown(
     </div>
     """
 
+    # 2b. Grafik bölümleri (Pillow ile üretilen PNG'ler, base64 olarak gömülür)
+    chart_html = ""
+    if charts:
+        for _cap, _b64 in charts:
+            if _b64:
+                chart_html += (
+                    '<div style="margin: 12pt 0; text-align: center;">'
+                    f'<img src="data:image/png;base64,{_b64}" width="480"/>'
+                    f'<p style="font-size: 8pt; color: #616161; margin-top: 3pt;">{_cap}</p>'
+                    "</div>"
+                )
+
     # 3. Full HTML document
     html = f"""<!DOCTYPE html>
 <html lang="tr">
@@ -229,6 +279,7 @@ def generate_pdf_from_markdown(
 </head>
 <body>
 {header_html}
+{chart_html}
 {body_html}
 </body>
 </html>"""

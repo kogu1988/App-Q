@@ -1101,7 +1101,7 @@ def synthesize_report(
             "═════════════════",
         ]
         for di in decision_items:
-            badge = f"[{_SIGNAL_LABELS_TR.get(di.signal, di.signal)}]"
+            badge = f"**[{_SIGNAL_LABELS_TR.get(di.signal, di.signal)}]**"
             decision_header.append(
                 f"{badge:<16} {di.title}"
             )

@@ -578,10 +578,34 @@ async def download_study_pdf(study_id: str, x_username: str | None = Depends(get
         )
 
     # On-the-fly: Markdown → HTML → PDF (no DB write needed)
-    from packages.research_engine.pdf_generator import generate_pdf_from_markdown
+    from packages.research_engine.pdf_generator import generate_pdf_from_markdown, horizontal_bar_chart
     from packages.research_engine.plan_config import get_brand_name
+
+    # Grafikler — persona panelinden basit dağılımlar (PDF'e görsel zenginlik katar)
+    charts = []
+    personas = payload.get("personas") or []
+    if personas:
+        from collections import Counter
+        _stance_tr = {
+            "Innovator": "Öncü", "EarlyAdopter": "Erken Benimseyen",
+            "Mainstream": "Ana Akım", "Laggard": "Geciken", "Skeptic": "Şüpheci",
+        }
+        _stance_order = ["Innovator", "EarlyAdopter", "Mainstream", "Laggard", "Skeptic"]
+        _sc = Counter((p.get("stance") or "Mainstream") for p in personas)
+        _items = [(_stance_tr.get(s, s), _sc.get(s, 0)) for s in _stance_order if _sc.get(s, 0)]
+        if _items:
+            charts.append(("Duruş Dağılımı", horizontal_bar_chart("Duruş Dağılımı", _items)))
+
+        _ses_order = ["AB", "C1", "C2", "DE"]
+        _sesc = Counter((p.get("ses_group") or "C1") for p in personas)
+        _ses_items = [(s, _sesc.get(s, 0)) for s in _ses_order if _sesc.get(s, 0)]
+        if _ses_items:
+            charts.append(("Sosyo-Ekonomik Grup Dağılımı", horizontal_bar_chart("Sosyo-Ekonomik Grup Dağılımı", _ses_items, color="#ff7759")))
+
     brand = get_brand_name(plan_type)
-    pdf_bytes = generate_pdf_from_markdown(report_markdown, title=title, study_id=study_id, brand_name=brand)
+    pdf_bytes = generate_pdf_from_markdown(
+        report_markdown, title=title, study_id=study_id, brand_name=brand, charts=charts or None
+    )
 
     if not pdf_bytes:
         raise HTTPException(

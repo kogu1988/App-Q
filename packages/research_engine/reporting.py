@@ -172,7 +172,7 @@ def render_markdown(report: ResearchReport) -> str:
                 f"### {finding.title}",
                 "",
                 f"- Kategori: {_CATEGORY_TR.get(finding.category, finding.category)}",
-                f"- Güven skoru: {finding.confidence:.2f}",
+                f"- Güven skoru: **{finding.confidence:.2f}**",
                 f"- Özet: {finding.summary}",
                 f"- Etki: {finding.implication}",
                 "",
