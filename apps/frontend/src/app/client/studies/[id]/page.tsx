@@ -364,6 +364,50 @@ function ChannelBarChart({ data }: { data: NonNullable<StudyDetail["channel_map"
   );
 }
 
+// ──────────────── Büyük Beşli Radar Grafiği ────────────────
+function BigFiveRadar({ bigFive }: { bigFive: Record<string, number> }) {
+  const W = 240, H = 240, cx = W / 2, cy = H / 2, R = 82;
+  const axes = [
+    { label: "Açıklık", value: bigFive?.Openness ?? bigFive?.openness ?? 50 },
+    { label: "Sorumluluk", value: bigFive?.Conscientiousness ?? bigFive?.conscientiousness ?? 50 },
+    { label: "Dışadönüklük", value: bigFive?.Extraversion ?? bigFive?.extraversion ?? 50 },
+    { label: "Uyumluluk", value: bigFive?.Agreeableness ?? bigFive?.agreeableness ?? 50 },
+    { label: "Denge", value: bigFive?.Neuroticism ?? bigFive?.neuroticism ?? 50 },
+  ];
+  const N = axes.length;
+  const angle = (i: number) => (Math.PI * 2 * i) / N - Math.PI / 2;
+  const pt = (i: number, r: number) => [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))] as const;
+
+  const rings = [0.34, 0.67, 1].map((f, ri) => {
+    const pts = Array.from({ length: N }, (_, i) => pt(i, R * f).map(n => n.toFixed(1)).join(",")).join(" ");
+    return <polygon key={ri} points={pts} fill="none" stroke="#d9d9dd" strokeWidth="1" />;
+  });
+  const spokes = Array.from({ length: N }, (_, i) => {
+    const [x, y] = pt(i, R);
+    return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#d9d9dd" strokeWidth="1" />;
+  });
+  const valuePts = Array.from(
+    { length: N },
+    (_, i) => pt(i, (R * Math.min(100, axes[i].value)) / 100).map(n => n.toFixed(1)).join(",")
+  ).join(" ");
+  const labels = Array.from({ length: N }, (_, i) => {
+    const [x, y] = pt(i, R + 20);
+    return (
+      <text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="9" fill="#616161">
+        {axes[i].label}
+      </text>
+    );
+  });
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-[220px] mx-auto" role="img" aria-label="Büyük Beşli kişilik radarı">
+      {rings}{spokes}
+      <polygon points={valuePts} fill="#003c33" fillOpacity="0.22" stroke="#003c33" strokeWidth="2" />
+      {labels}
+    </svg>
+  );
+}
+
 // ──────────────── Van Westendorp PSM Chart ────────────────
 function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendorp"]> }) {
   const W = 600, H = 260, PAD = { left: 56, right: 24, top: 16, bottom: 40 };
@@ -1403,6 +1447,7 @@ export default function StudyDetailPage() {
                           {persona.big_five ? (
                             <>
                               <span className="text-[10px] font-bold text-[#93939f] uppercase tracking-wider block mb-2">Kişilik Profili (Büyük Beşli)</span>
+                              <BigFiveRadar bigFive={persona.big_five || {}} />
                               {[
                                 { label: "Açıklık (Openness)",      value: persona.big_five?.Openness      ?? persona.big_five?.openness      ?? 50, color: "bg-sky-500" },
                                 { label: "Sorumluluk (Conscientiousness)", value: persona.big_five?.Conscientiousness ?? persona.big_five?.conscientiousness ?? 50, color: "bg-blue-500" },

@@ -602,6 +602,16 @@ async def download_study_pdf(study_id: str, x_username: str | None = Depends(get
         if _ses_items:
             charts.append(("Sosyo-Ekonomik Grup Dağılımı", horizontal_bar_chart("Sosyo-Ekonomik Grup Dağılımı", _ses_items, color="#ff7759")))
 
+        # Fiyat hassasiyeti (persona bazında, 1-10)
+        _ps_items = [(p.get("name") or "Persona", int(p.get("price_sensitivity") or 0)) for p in personas if (p.get("price_sensitivity") or 0) > 0]
+        if _ps_items:
+            charts.append(("Fiyat Hassasiyeti (1-10)", horizontal_bar_chart("Fiyat Hassasiyeti", _ps_items, color="#1863dc")))
+
+        # Dijital özgüven (persona bazında, 1-10)
+        _dc_items = [(p.get("name") or "Persona", int(p.get("digital_confidence") or 0)) for p in personas if (p.get("digital_confidence") or 0) > 0]
+        if _dc_items:
+            charts.append(("Dijital Özgüven (1-10)", horizontal_bar_chart("Dijital Özgüven", _dc_items, color="#0d9488")))
+
     brand = get_brand_name(plan_type)
     pdf_bytes = generate_pdf_from_markdown(
         report_markdown, title=title, study_id=study_id, brand_name=brand, charts=charts or None
