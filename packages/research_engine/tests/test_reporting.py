@@ -89,3 +89,92 @@ def test_render_markdown_includes_evidence_quote():
     md = render_markdown(_minimal_report())
     assert "Güzel ürün" in md
     assert "Ali" in md
+
+
+def _enterprise_report() -> ResearchReport:
+    """Karar katmanı + Van Westendorp + harici kanıt + enhanced findings içeren kurumsal rapor."""
+    from packages.research_engine.models import (
+        ClarifyingQuestion,
+        DecisionItem,
+        EnhancedFinding,
+        ExternalEvidence,
+        VanWestendorpInsight,
+    )
+
+    base = _minimal_report()
+    ev = Evidence(
+        persona_id="p1", persona_name="Ali", stance="Skeptic",
+        quote="Çok pahalı", source_question="q1", sentiment="refuting",
+    )
+    ef = EnhancedFinding(
+        title="Fiyat bariyeri", category="pricing", summary="Özet",
+        confidence=0.72, evidence=[ev], implication="Etki",
+        supporting_count=2, refuting_count=3, neutral_count=0,
+        contradiction_score=0.4, decision_signal="INVESTIGATE",
+    )
+    di = DecisionItem(
+        signal="INVESTIGATE", title="Fiyat bariyeri", confidence=0.72,
+        supporting_count=2, refuting_count=3, evidence_summary="özet",
+        recommended_action="Hedefli anket öner",
+    )
+    vw = VanWestendorpInsight(
+        too_cheap_values=[100], cheap_values=[200],
+        expensive_values=[400], too_expensive_values=[600],
+        opp=300, ipp=250, pmc=150, pme=500, acceptable_range=(150, 500),
+    )
+    ee = ExternalEvidence(
+        finding_title="Fiyat bariyeri", source_title="TÜAD 2025",
+        source_url="http://x", snippet="Fiyat şeffaflığı önemli",
+        relevance="high", confidence_boost=0.05,
+    )
+    return ResearchReport(
+        title=base.title,
+        executive_summary=base.executive_summary,
+        plan=base.plan,
+        personas=base.personas,
+        interviews=base.interviews,
+        findings=base.findings,
+        pricing=base.pricing,
+        pain_point_matrix=base.pain_point_matrix,
+        action_items=base.action_items,
+        quality_issues=base.quality_issues,
+        recommendations=base.recommendations,
+        validation_next_steps=base.validation_next_steps,
+        limitations=base.limitations,
+        model_usage=base.model_usage,
+        enhanced_findings=[ef],
+        decision_items=[di],
+        van_westendorp=vw,
+        external_evidence=[ee],
+        research_quality={"rfi": 0.71, "warning_count": 1},
+    )
+
+
+def test_render_markdown_enterprise_sections():
+    """Kurumsal bölümler: karar katmanı, PSM, harici kanıt, kanıt sayıları, RFI."""
+    md = render_markdown(_enterprise_report())
+    assert "Karar Katmanı" in md
+    assert "Van Westendorp Fiyat Hassasiyet Analizi" in md
+    assert "Harici Kanıt Doğrulaması" in md
+    assert "72%" in md  # güven skoru yüzde olarak
+    assert "71.0/100" in md  # RFI
+    assert "ARAŞTIR" in md  # karar sinyali Türkçe
+    assert "150 - 500 TL" in md  # PSM kabul aralığı
+    assert "Destekleyen: **2**" in md  # kanıt sayıları
+    assert "TÜAD 2025" in md  # harici kanıt
+
+
+def test_render_report_html_turkish_headers():
+    """HTML raporu tamamen Türkçe ve kurumsal bölümleri içerir."""
+    from packages.research_engine.reporting import render_report_html
+    report = _enterprise_report()
+    import json
+    from dataclasses import asdict
+    html = render_report_html(asdict(report), render_markdown(report))
+    assert "Yönetici Özeti" in html
+    assert "Karar Katmanı" in html
+    assert "Van Westendorp" in html
+    assert "Harici Kanıt Doğrulaması" in html
+    assert "Ticarileştirme Skor Kartı" in html
+    assert "Total personas" not in html  # İngilizce kalıntı yok
+    assert "Synthetic Study" not in html

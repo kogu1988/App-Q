@@ -166,19 +166,33 @@ def render_markdown(report: ResearchReport) -> str:
     lines.append("")
 
     lines.extend(["## Bulgular", ""])
-    for finding in report.findings:
+    # Enhanced findings varsa onları kullan (kanıt sayıları + karar sinyali ile)
+    _source_findings = getattr(report, "enhanced_findings", None) or report.findings
+    for finding in _source_findings:
         lines.extend(
             [
                 f"### {finding.title}",
                 "",
                 f"- Kategori: {_CATEGORY_TR.get(finding.category, finding.category)}",
-                f"- Güven skoru: **{finding.confidence:.2f}**",
+                f"- Güven skoru: **{int(finding.confidence * 100)}%**",
                 f"- Özet: {finding.summary}",
                 f"- Etki: {finding.implication}",
                 "",
-                "Kanıtlar:",
             ]
         )
+        # Enhanced finding alanları (varsa)
+        supporting = getattr(finding, "supporting_count", None)
+        refuting = getattr(finding, "refuting_count", None)
+        signal = getattr(finding, "decision_signal", None)
+        if supporting is not None:
+            lines.append(
+                f"- Destekleyen: **{supporting}** persona | Karşı çıkan: **{refuting or 0}** persona"
+            )
+        if signal:
+            _SIGNAL_TR = {"SHIP": "✅ YAYINLA", "ITERATE": "🔁 İYİLEŞTİR", "INVESTIGATE": "🔍 ARAŞTIR", "KILL": "⛔ VAZGEÇ"}
+            lines.append(f"- Karar sinyali: **{_SIGNAL_TR.get(signal, signal)}**")
+        lines.append("")
+        lines.append("Kanıtlar:")
         for evidence in finding.evidence:
             lines.append(
                 f"- {evidence.persona_name} ({_STANCE_TR.get(evidence.stance, evidence.stance)}) - \"{evidence.quote}\""
@@ -197,10 +211,88 @@ def render_markdown(report: ResearchReport) -> str:
     )
     lines.extend(f"- {item}" for item in report.pricing.resistance_points)
 
+    # ── Van Westendorp PSM (varsa) ──
+    if report.van_westendorp:
+        vw = report.van_westendorp
+        lines.extend(
+            [
+                "",
+                "### Van Westendorp Fiyat Hassasiyet Analizi (PSM)",
+                "",
+                f"- **PMC** (Alt kabul sınırı): {vw.pmc:.0f} TL",
+                f"- **OPP** (Optimal fiyat noktası): {vw.opp:.0f} TL",
+                f"- **IPP** (Beklenti noktası): {vw.ipp:.0f} TL",
+                f"- **PME** (Üst kabul sınırı): {vw.pme:.0f} TL",
+                f"- Kabul edilebilir fiyat aralığı: {vw.acceptable_range[0]:.0f} - {vw.acceptable_range[1]:.0f} TL",
+                f"- Metodoloji: {vw.methodology_note}",
+            ]
+        )
+
+    # ── Karar Katmanı (varsa) ──
+    if getattr(report, "decision_items", None):
+        lines.extend(["", "## Karar Katmanı", ""])
+        _SIGNAL_TR = {"SHIP": "YAYINLA", "ITERATE": "İYİLEŞTİR", "INVESTIGATE": "ARAŞTIR", "KILL": "VAZGEÇ"}
+        for d in report.decision_items:
+            lines.extend(
+                [
+                    f"### [{_SIGNAL_TR.get(d.signal, d.signal)}] {d.title}",
+                    "",
+                    f"- Güven: {int(d.confidence * 100)}% | Destek: {d.supporting_count} | Karşı: {d.refuting_count}",
+                    f"- Önerilen aksiyon: {d.recommended_action}",
+                    "",
+                ]
+            )
+
+    # ── Harici Kanıtlar (varsa) ──
+    if getattr(report, "external_evidence", None):
+        lines.extend(["## Harici Kanıt Doğrulaması", ""])
+        lines.append("Sentetik bulguları destekleyen dış kaynaklar:")
+        for ev in report.external_evidence:
+            _rel = {"high": "Yüksek", "medium": "Orta", "low": "Düşük"}.get(ev.relevance, ev.relevance)
+            lines.append(f"- **{ev.source_title}** (İlgi: {_rel})")
+            if ev.snippet:
+                lines.append(f"  - {ev.snippet[:160]}")
+
+    # ── SES × Stance Çapraz Tablosu (varsa) ──
+    if getattr(report, "ses_cross_tab", None):
+        lines.extend(["", "## SES × Stance Çapraz Tablosu", "", "| SES | Kişi | Baskın Stance |", "| --- | --- | --- |"])
+        for row in report.ses_cross_tab:
+            lines.append(
+                f"| {row.get('ses_group', '')} | {row.get('total', 0)} | {_STANCE_TR.get(row.get('dominant_stance', ''), row.get('dominant_stance', ''))} |"
+            )
+
+    # ── Marka Sağlığı (varsa) ──
+    if getattr(report, "brand_health", None):
+        bh = report.brand_health
+        lines.extend(["", "## Marka Sağlığı Analizi", ""])
+        if bh.get("top_of_mind"):
+            lines.append(f"- Zihin payı lideri: **{bh['top_of_mind']}** ({bh.get('total_mentions', 0)} anma)")
+        lines.append("- Yardımsız bilinirlik:")
+        for brand, count in bh.get("unaided_recall", {}).items():
+            lines.append(f"  - {brand}: {count}")
+
+    # ── Keşif Kanalı Haritası (varsa) ──
+    if getattr(report, "channel_map", None):
+        lines.extend(["", "## Keşif Kanalı Haritası", ""])
+        for ch in report.channel_map:
+            lines.append(f"- {ch.get('channel', '')}: %{ch.get('pct', 0)}")
+
     lines.extend(["", "## Aksiyon Listesi", ""])
     lines.extend(f"- {item}" for item in report.action_items)
 
     lines.extend(["", "## Kalite Kontrol", ""])
+
+    # ── Araştırma Bütünlüğü (RFI) ──
+    if getattr(report, "research_quality", None):
+        rq = report.research_quality
+        rfi = rq.get("rfi")
+        if rfi is not None:
+            _rfi_ok = "✅ Geçerli" if rfi >= 0.65 else "⚠️ Eşik Altı"
+            lines.append(f"- Araştırma Bütünlüğü (RFI): **{rfi * 100:.1f}/100** {_rfi_ok}")
+        warnings = rq.get("warning_count", 0)
+        if warnings:
+            lines.append(f"- Dikkat gerektiren nokta sayısı: {warnings}")
+
     if report.quality_issues:
         _grouped: dict[str, dict] = {}
         for issue in report.quality_issues:
@@ -326,19 +418,19 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
         )
     score_rows = [
         {
-            "goal": "Satin alma niyeti",
-            "score": "Orta-Yuksek" if findings else "Belirsiz",
-            "evidence": "Fiyat ve deger bulgulari persona alintilariyla destekleniyor." if findings else "Rapor uretimi bekleniyor.",
+            "goal": "Satın alma niyeti",
+            "score": "Orta-Yüksek" if findings else "Belirsiz",
+            "evidence": "Fiyat ve değer bulguları persona alıntılarıyla destekleniyor." if findings else "Rapor üretimi bekleniyor.",
         },
         {
-            "goal": "Guven / KVKK bariyeri",
+            "goal": "Güven / KVKK bariyeri",
             "score": "Kritik",
-            "evidence": "Sentetik metodoloji, veri gizliligi ve kanit zinciri acikca anlatilmali.",
+            "evidence": "Sentetik metodoloji, veri gizliliği ve kanıt zinciri açıkça anlatılmalı.",
         },
         {
-            "goal": "MVP odak netligi",
+            "goal": "MVP odak netliği",
             "score": "Aksiyonlanabilir" if report_json.get("action_items") else "Eksik",
-            "evidence": "Aksiyon listesi ve acik sorular sonraki sprint kararlarini besliyor.",
+            "evidence": "Aksiyon listesi ve açık sorular sonraki sprint kararlarını besliyor.",
         },
     ]
     open_questions = [
@@ -347,6 +439,45 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
         "Takip görüşmesinde fiyat eşiği hangi TL aralığında sıkışıyor?",
         "Hangi özellik ilk MVP dışında bırakılırsa satın alma niyeti düşmez?",
     ]
+
+    # ── Kurumsal ek bölümler: Karar Katmanı + Van Westendorp + Harici Kanıt ──
+    decision_blocks = []
+    _SIGNAL_LABEL = {"SHIP": "YAYINLA", "ITERATE": "İYİLEŞTİR", "INVESTIGATE": "ARAŞTIR", "KILL": "VAZGEÇ"}
+    for d in report_json.get("decision_items", []):
+        _sig = _SIGNAL_LABEL.get(str(d.get("signal", "")).upper(), d.get("signal", ""))
+        decision_blocks.append(
+            "<section class='card'>"
+            f"<div class='eyebrow'>{escape(str(_sig))}</div>"
+            f"<h3>{escape(d.get('title', ''))}</h3>"
+            f"<p class='muted'>Güven: {escape(str(d.get('confidence', 0)))} · "
+            f"Destek: {escape(str(d.get('supporting_count', 0)))} · Karşı: {escape(str(d.get('refuting_count', 0)))}</p>"
+            f"<p>{escape(d.get('recommended_action', ''))}</p>"
+            "</section>"
+        )
+
+    vw = report_json.get("van_westendorp")
+    vw_blocks = ""
+    if vw:
+        vw_blocks = (
+            "<section class='card'>"
+            "<h3>Van Westendorp Fiyat Hassasiyet Analizi (PSM)</h3>"
+            f"<p><strong>PMC</strong> (Alt kabul): {escape(str(round(vw.get('pmc', 0))))} TL · "
+            f"<strong>OPP</strong> (Optimal): {escape(str(round(vw.get('opp', 0))))} TL · "
+            f"<strong>IPP</strong> (Beklenti): {escape(str(round(vw.get('ipp', 0))))} TL · "
+            f"<strong>PME</strong> (Üst kabul): {escape(str(round(vw.get('pme', 0))))} TL</p>"
+            f"<p class='muted'>Kabul edilebilir aralık: {escape(str(round(vw.get('pmc', 0))))} - {escape(str(round(vw.get('pme', 0))))} TL</p>"
+            "</section>"
+        )
+
+    ext_evidence = report_json.get("external_evidence", [])
+    ext_blocks = "".join(
+        "<section class='card'>"
+        f"<h3>{escape(ev.get('source_title', ''))}</h3>"
+        f"<p class='muted'>{escape(str(ev.get('relevance', '')))} ilgi · {escape(ev.get('finding_title', ''))}</p>"
+        f"<p>{escape((ev.get('snippet') or '')[:160])}</p>"
+        "</section>"
+        for ev in ext_evidence
+    ) or '<p class="muted">Harici kanıt bulunamadı.</p>'
 
     return f"""<!doctype html>
 <html lang="tr">
@@ -518,94 +649,104 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
 <body>
   <main class="page">
     <div class="topbar">
-      <div class="brand">Clarere Research</div>
-      <div class="badge">Synthetic Study</div>
+      <div class="brand">Clarere Araştırma</div>
+      <div class="badge">Sentetik Çalışma</div>
     </div>
 
     <section class="hero">
-      <h1>{escape(report_json.get('title', 'Research Report'))}</h1>
+      <h1>{escape(report_json.get('title', 'Araştırma Raporu'))}</h1>
       <p class="summary">{escape(plan.get('objective', ''))}</p>
     </section>
 
     <section class="metrics">
-      <div class="metric"><span>Total personas</span><strong>{len(personas)}</strong></div>
-      <div class="metric"><span>Age range</span><strong>{f"{min(age_values)}-{max(age_values)}" if age_values else "-"}</strong></div>
-      <div class="metric"><span>Interview answers</span><strong>{quote_count}</strong></div>
-      <div class="metric"><span>Quality issues</span><strong>{len(quality_issues)}</strong></div>
+      <div class="metric"><span>Toplam Persona</span><strong>{len(personas)}</strong></div>
+      <div class="metric"><span>Yaş Aralığı</span><strong>{f"{min(age_values)}-{max(age_values)}" if age_values else "-"}</strong></div>
+      <div class="metric"><span>Mülakat Yanıtı</span><strong>{quote_count}</strong></div>
+      <div class="metric"><span>Kalite Sorunu</span><strong>{len(quality_issues)}</strong></div>
     </section>
 
-    <h2>Executive Summary</h2>
+    <h2>Yönetici Özeti</h2>
     <section class="card">{html_list(report_json.get('executive_summary', []))}</section>
 
-    <h2>Commercialisation Scorecard</h2>
+    <h2>Ticarileştirme Skor Kartı</h2>
     <p class="section-note">Bu skor kartı, sentetik görüşme sinyallerini ürün kararı için okunabilir bir yönetici özetine indirger.</p>
-    {html_table(score_rows, [('goal', 'Goal'), ('score', 'Score'), ('evidence', 'Evidence')])}
+    {html_table(score_rows, [('goal', 'Hedef'), ('score', 'Skor'), ('evidence', 'Kanıt')])}
 
-    <h2>Panel Design</h2>
+    <h2>Panel Tasarımı</h2>
     <div class="grid">
       <section class="card">
-        <h3>Role Distribution</h3>
-        {html_table(role_rows, [('role', 'Role'), ('count', 'Count')])}
+        <h3>Rol Dağılımı</h3>
+        {html_table(role_rows, [('role', 'Rol'), ('count', 'Adet')])}
       </section>
       <section class="card">
-        <h3>Model Usage</h3>
-        {html_table(model_rows, [('model', 'Model'), ('answers', 'Answers')])}
+        <h3>Model Kullanımı</h3>
+        {html_table(model_rows, [('model', 'Model'), ('answers', 'Yanıt')])}
       </section>
     </div>
 
-    <h2>Persona Panel Preview</h2>
+    <h2>Persona Paneli Önizlemesi</h2>
     <p class="section-note">Panel, aynı fikre farklı fiyat, güven, operasyon ve dijital olgunluk lenslerinden bakacak şekilde dengelenir.</p>
     <div class="persona-grid">{''.join(persona_cards) or '<p class="muted">Persona yok.</p>'}</div>
 
-    <h2>Interview Script Coverage</h2>
-    {html_table(script_rows, [('label', 'Label'), ('question', 'Question'), ('reason', 'Why it matters')])}
+    <h2>Görüşme Senaryosu Kapsamı</h2>
+    {html_table(script_rows, [('label', 'Etiket'), ('question', 'Soru'), ('reason', 'Neden önemli')])}
 
-    <h2>Pain Point Matrix</h2>
+    <h2>Acı Noktası Matrisi</h2>
     {html_table(report_json.get('pain_point_matrix', []), [
         ('persona', 'Persona'),
         ('segment', 'Segment'),
-        ('primary_pain', 'Primary pain'),
-        ('main_objection', 'Main objection'),
-        ('pricing_signal', 'Pricing signal'),
+        ('primary_pain', 'Ana sorun'),
+        ('main_objection', 'Ana itiraz'),
+        ('pricing_signal', 'Fiyat sinyali'),
     ])}
 
     <div class="locked">
-      <div><strong>Evidence chain preview</strong><br><span>Findings below connect claims to persona quotes.</span></div>
+      <div><strong>Kanıt zinciri önizlemesi</strong><br><span>Aşağıdaki bulgular iddiaları persona alıntılarına bağlar.</span></div>
       <div>Clarere</div>
     </div>
 
-    <h2>Critical Findings</h2>
+    <h2>Kritik Bulgular</h2>
     <div class="finding-grid">{''.join(evidence_blocks)}</div>
 
-    <h2>Transcript Evidence Preview</h2>
+    <h2>Karar Katmanı</h2>
+    <p class="section-note">Kanıt zincirinden türetilen aksiyon önerileri: YAYINLA · İYİLEŞTİR · ARAŞTIR · VAZGEÇ.</p>
+    <div class="finding-grid">{''.join(decision_blocks) or '<p class="muted">Karar önerisi yok.</p>'}</div>
+
+    {f"<h2>Van Westendorp Fiyat Analizi</h2><div class='grid'>{vw_blocks}</div>" if vw else ''}
+
+    <h2>Harici Kanıt Doğrulaması</h2>
+    <p class="section-note">Sentetik bulguları destekleyen dış kaynaklar (TÜAD, Statista vb.).</p>
+    <div class="finding-grid">{ext_blocks}</div>
+
+    <h2>Mülakat Kanıtı Önizlemesi</h2>
     <p class="section-note">Bu bölüm, rapordaki bulguların ham görüşme izlerine bağlanabildiğini gösterir.</p>
     <div class="finding-grid">{''.join(transcript_blocks) or '<p class="muted">Transcript yok.</p>'}</div>
 
-    <h2>Pricing and Packaging</h2>
+    <h2>Fiyatlandırma ve Paketleme</h2>
     <section class="card">
-      <h3>{escape(pricing.get('acceptable_range', 'Pricing insight'))}</h3>
+      <h3>{escape(pricing.get('acceptable_range', 'Fiyat içgörüsü'))}</h3>
       <p>{escape(pricing.get('packaging_suggestion', ''))}</p>
-      <h3>Resistance Points</h3>
+      <h3>Direnç Noktaları</h3>
       {html_list(pricing.get('resistance_points', []))}
     </section>
 
-    <h2>Action Plan</h2>
+    <h2>Aksiyon Planı</h2>
     <section class="card">{html_list(report_json.get('action_items', []))}</section>
 
-    <h2>Quality Control</h2>
+    <h2>Kalite Kontrol</h2>
     <section class="card">
       <p class="{ 'quality-risk' if quality_issues else 'quality-ok' }">
-        {f"{len(quality_issues)} quality issue(s) need review." if quality_issues else "No critical quality warning."}
+        {f"{len(quality_issues)} kalite sorunu incelenmeli." if quality_issues else "Kritik kalite uyarısı yok."}
       </p>
-      {html_table(quality_issues, [('persona_name', 'Persona'), ('severity', 'Severity'), ('issue', 'Issue'), ('recommendation', 'Recommendation')]) if quality_issues else ''}
+      {html_table(quality_issues, [('persona_name', 'Persona'), ('severity', 'Önem'), ('issue', 'Sorun'), ('recommendation', 'Öneri')]) if quality_issues else ''}
     </section>
 
-    <h2>Methodology Notes</h2>
+    <h2>Metodoloji Notları</h2>
     <section class="card">
       {html_list(report_json.get('limitations', []))}
     </section>
 
-    <h2>Open Questions for the Next Study</h2>
+    <h2>Sonraki Çalışma için Açık Sorular</h2>
     <section class="next-study">{html_list(open_questions)}</section>
   </main>
 </body>

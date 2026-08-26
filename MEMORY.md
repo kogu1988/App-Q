@@ -14,6 +14,8 @@ Marka: **Clarere** | İletişim: **hiclarere@clarere.com**
 
 > **Stabilizasyon (2026-08):** Duplicate `follow-up` endpoint + `FollowUpRequest` temizlendi (frontend 422/404 bug'ı). `test_semantic_router.py` bayat Ollama import'ları düzeltildi (süit koleksiyonunu engelliyordu → 126 test yeşil). `run_benchmark.py` Windows cp1254 emoji çökmesi giderildi. `.env.example` DeepSeek/Clarere'ye göre yeniden yazıldı, `run_backend.py` port 4000, App-Q kalıntıları temizlendi.
 
+> **Kurumsal Seviye (2026-08):** Rapor export'u tamamlandı. `render_markdown` + `render_report_html` artık Karar Katmanı (SHIP/ITERATE/ARAŞTIR/VAZGEÇ), Van Westendorp PSM, Harici Kanıt, SES×Stance tablosu, Marka Sağlığı, Keşif Kanalı ve RFI içeriyor. Güven skorları `%78` formatında. HTML raporu tamamen Türkçe (İngilizce başlıklar kaldırıldı). Frontend markdown parser'a tablo desteği eklendi. `scripts/generate_demo_study.py` sunum demo çalışması üretir (DB'ye kaydeder). Test: 158 passed + 1 skipped.
+
 ## 🏗️ Mimari (3 Aşamalı API)
 
 ```
@@ -159,6 +161,7 @@ python -m pytest packages/research_engine/tests/ -q  # 156 passed
 | `SUNUM.md` | 14 slidelık yatırımcı sunumu |
 | `MEMORY.md` | Bu dosya |
 | `scripts/run_benchmark.py` | RFI benchmark runner (Sprint 8) |
+| `scripts/generate_demo_study.py` | Sunum demo çalışması üretici (DB'ye kaydeder) |
 | `data/evals/rfi_benchmark_samples.json` | 5 Türkiye pazarı benchmark senaryosu (Sprint 8) |
 
 ---
