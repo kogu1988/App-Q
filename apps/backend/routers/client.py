@@ -1107,21 +1107,31 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
 
 @router.post("/synthesize")
 async def synthesize(request: SynthesizeRequest, x_username: str | None = Depends(get_current_username)):
+    try:
+        return _synthesize_impl(request, x_username)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("synthesize hata: %s", e, exc_info=True)
+        raise HTTPException(status_code=422, detail=f"Sentez verisi eksik veya hatalı: {str(e)[:200]}")
+
+
+def _synthesize_impl(request, x_username: str | None):
+    from packages.research_engine.models import PersonaInterview, ResearchPlan, ResearchBrief, Persona, InterviewTurn, ClarifyingQuestion
+
     plan_type, _ = _resolve_plan(x_username)
 
     # B2B modu Pro+ gerektirir
     if request.brief.get("b2b_mode"):
         _require_feature(plan_type, "b2b_mode")
 
-    from packages.research_engine.models import PersonaInterview, ResearchPlan, ResearchBrief, Persona
-
-    # brief → ResearchBrief
+    # brief → ResearchBrief (eksik alanlara varsayılan)
     bd = request.brief
     r_brief = ResearchBrief(
-        title=bd.get("title", "Araştırma"),
-        market=bd.get("market", "Türkiye"),
-        category=bd.get("category", "Genel"),
-        idea=bd.get("context") or bd.get("idea", ""),
+        title=bd.get("title") or "Araştırma",
+        market=bd.get("market") or "Türkiye",
+        category=bd.get("category") or "Genel",
+        idea=bd.get("context") or bd.get("idea") or "",
         target_users=bd.get("target_users") or [],
         questions=bd.get("questions") or [],
         competitors=bd.get("competitors") or [],
@@ -1134,15 +1144,40 @@ async def synthesize(request: SynthesizeRequest, x_username: str | None = Depend
         discovery_channels=bd.get("discovery_channels") or [],
     )
 
-    r_plan = ResearchPlan(**request.plan)
-    # PersonaInterview icindeki nested dict'leri dogru objelere cevir
-    from packages.research_engine.models import InterviewTurn, Persona
+    # plan → ResearchPlan (eksik alanlara varsayılan)
+    pd = request.plan or {}
+    r_plan = ResearchPlan(
+        objective=pd.get("objective") or f"{r_brief.title} fikrinin pazar potansiyelini test etmek",
+        assumptions=pd.get("assumptions") or [],
+        clarifying_questions=[
+            ClarifyingQuestion(id=cq.get("id", f"cq_{i}"), question=cq.get("question", ""), reason=cq.get("reason", ""), priority=cq.get("priority", "medium"))
+            for i, cq in enumerate(pd.get("clarifying_questions") or [])
+        ],
+        interview_questions=pd.get("interview_questions") or [],
+        recommended_panel_size=pd.get("recommended_panel_size") or len(request.interviews) or 5,
+        interview_script=[],
+        ses_quota=pd.get("ses_quota") or {},
+    )
+
+    # PersonaInterview icindeki nested dict'leri dogru objelere cevir (eksik alanlara varsayılan)
     raw_interviews = []
     for i in request.interviews:
         raw_turns = i.get("turns", [])
-        turns = [InterviewTurn(**t) for t in raw_turns]
+        turns = []
+        for t in raw_turns:
+            turns.append(InterviewTurn(
+                question=t.get("question", ""),
+                answer=t.get("answer", ""),
+                tags=t.get("tags") or [],
+                model_id=t.get("model_id"),
+                quality_flags=t.get("quality_flags") or [],
+                is_probe=bool(t.get("is_probe", False)),
+            ))
         raw_persona = i.get("persona", {})
-        persona = Persona(**raw_persona) if isinstance(raw_persona, dict) else raw_persona
+        if isinstance(raw_persona, dict):
+            persona = _build_persona_tolerant(raw_persona)
+        else:
+            persona = raw_persona
         pi = PersonaInterview(
             persona=persona,
             turns=turns,
@@ -1152,9 +1187,8 @@ async def synthesize(request: SynthesizeRequest, x_username: str | None = Depend
     p_interviews = raw_interviews
 
     # personas listesi varsa ilet (van_westendorp ve brand_health için gerekli)
-    # SynthesizeRequest'e personas eklenmemişse boş liste ile devam et
-    personas_raw = getattr(request, "personas", []) or []
-    r_personas = [Persona(**p) for p in personas_raw] if personas_raw else [
+    personas_raw = getattr(request, "personas", None) or []
+    r_personas = [_build_persona_tolerant(p) for p in personas_raw] if personas_raw else [
         iv.persona for iv in p_interviews
     ]
 
@@ -1176,9 +1210,44 @@ async def synthesize(request: SynthesizeRequest, x_username: str | None = Depend
         logger.warning(f"report_markdown üretilemedi: {e}")
         report_dict["report_markdown"] = "\n".join(f"- {i}" for i in report.executive_summary)
 
-    # research_quality her plan için hesaplanır; Pro+ kontrolü yok —
-    # frontend PlanGate ile gösterimi kısıtlıyor
     return report_dict
+
+
+def _build_persona_tolerant(p: dict):
+    """Eksik alanları varsayılanla doldurarak Persona dataclass'ı kurar (500 yerine tolerant)."""
+    from packages.research_engine.models import Persona
+    return Persona(
+        id=p.get("id") or f"p_{abs(hash(str(p.get('name', '')))) % 100000}",
+        name=p.get("name") or "Katılımcı",
+        age=p.get("age") or 30,
+        city=p.get("city") or "İstanbul",
+        segment=p.get("segment") or "Genel",
+        stance=p.get("stance") or "Mainstream",
+        price_sensitivity=p.get("price_sensitivity") or 5,
+        digital_confidence=p.get("digital_confidence") or 5,
+        context=p.get("context") or "",
+        goals=p.get("goals") or [],
+        objections=p.get("objections") or [],
+        knowledge_boundary=p.get("knowledge_boundary") or "",
+        country_code=p.get("country_code") or "TR",
+        origin_country=p.get("origin_country") or "Türkiye",
+        role_title=p.get("role_title") or "",
+        bio=p.get("bio") or "",
+        attributes=p.get("attributes") or {},
+        traits=p.get("traits") or {},
+        ses_group=p.get("ses_group") or "C1",
+        respondent_type=p.get("respondent_type") or "potential_customer",
+        settlement_type=p.get("settlement_type") or "kentsel",
+        usage_frequency=p.get("usage_frequency") or "weekly",
+        brand_loyalty=p.get("brand_loyalty") or 5,
+        diffusion_stage=p.get("diffusion_stage") or "",
+        neo_facets=p.get("neo_facets") or {},
+        big_five=p.get("big_five") or p.get("traits") or {},
+        pazarlik_propensity=p.get("pazarlik_propensity") or 0.3,
+        taksit_preference=p.get("taksit_preference") or 0.71,
+        sor_osca_threshold=p.get("sor_osca_threshold") or 0.5,
+        credit_card_limit_doluluk=p.get("credit_card_limit_doluluk") or 0.5,
+    )
 
 
 # ── Sprint 4: Research Copilot Chat ──

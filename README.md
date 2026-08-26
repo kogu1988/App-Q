@@ -116,7 +116,7 @@ Frontend (Next.js :4001)
 
 ## Bilimsel Altyapı
 
-Clarere, `docs/god_doc.md` spesifikasyonunda tanımlanan akademik metodolojilere dayanır.
+Clarere, grounded simulation akademik çerçevesine dayanır (Bilal 2026, Rogers 2003, TÜAD 2025 SES, Hofstede). Metodolojik detaylar `packages/research_engine/` içindeki modüller ve `MEMORY.md` dosyasında özetlenmiştir.
 
 ### Grounded Simulation Principle
 

@@ -86,22 +86,25 @@ def persona_traits(seed: int, stance: str, price_sensitivity: int, digital_confi
       base=60 + stance_modifier + küçük varyasyon (+/-6)
       modifier büyüklüğü (min 4, max 10) > max varyasyon (6) olduğu için
       Skeptic her zaman Mainstream'den düşük Agreeableness puanına sahip olur.
+    Openness prensibi:
+      Stance modifier birincil sürücüdür (Innovator +12 ... Laggard -8);
+      digital_confidence ikincil etki olarak merkezlenmiş şekilde (dc-5)*3 eklenir.
     """
     profile = STANCE_PROFILE.get(stance, STANCE_PROFILE["Mainstream"])
     var = (seed * 7 % 13) - 6
 
     agreeableness = 60 + profile["agreeableness_mod"] + var
 
-    openness = min(92, max(35, digital_confidence * 9 + (seed * 3 % 12)))
+    # Openness: stance baskın; digital_confidence merkezlenmiş ikincil etki
+    openness = 52 + (digital_confidence - 5) * 3 + ((seed * 3 % 12) - 6) + profile["openness_mod"]
     conscientiousness = 62 + (seed * 7 % 28)
     extraversion = 42 + (seed * 5 % 35)
     neuroticism = min(88, max(25, price_sensitivity * 7 + (seed * 4 % 18)))
 
-    openness = min(100, max(1, openness + profile["openness_mod"]))
     neuroticism = min(100, max(1, neuroticism + profile["neuroticism_mod"]))
 
     return {
-        "Openness":          min(100, max(1, openness)),
+        "Openness":          min(92, max(20, openness)),
         "Conscientiousness": min(100, max(1, conscientiousness)),
         "Extraversion":      min(100, max(1, extraversion)),
         "Agreeableness":     min(100, max(1, agreeableness)),
@@ -981,14 +984,21 @@ def run_interviews_batch(
         # Batch interview — retry loop (DeepSeek JSON mode may rarely return empty)
         answers: dict[str, str] = {}
         batch_attempt = 0
-        max_batch_attempts = 2
+        max_batch_attempts = 3
+        expected_labels = {sq.label.upper() for sq in script}
         
         for batch_attempt in range(max_batch_attempts):
+            missing_labels = expected_labels - set(answers.keys())
+            if not missing_labels:
+                break
+
             current_prompt = prompt
             if batch_attempt > 0:
-                # Retry: sıkılaştırılmış prompt (god_doc.md §5 EWMA Tamir Protokolü mantığı)
+                # Retry: sadece eksik soruları hedefle
+                missing_block = "\n".join(f"{i}. [{lbl}] ..." for i, lbl in enumerate(sorted(missing_labels), 1))
                 current_prompt = prompt + (
-                    "\n\n[UYARI: ONCEKI YANITIN KALITE KONTROLUNDEN GECMEDI]\n"
+                    f"\n\n[UYARI: BAZI SORULARA CEVAP VERILMEDI]\n"
+                    f"Su etiketli sorulara MUTLAKA cevap ver: {sorted(missing_labels)}\n"
                     "- Asistan/yapay zeka oldugunu asla belli etme.\n"
                     "- Tum sorulari birinci tekil sahis olarak, 2-4 cumleyle cevapla.\n"
                     "- Turkiye gerceklerine bagli kal: TL, taksit, KVKK, kargo.\n"
@@ -1009,13 +1019,14 @@ def run_interviews_batch(
                     for item in parsed:
                         lbl = item.get("label", "").upper()
                         ans = item.get("answer", "")
-                        if lbl and ans:
+                        if lbl and ans and lbl not in answers:
                             answers[lbl] = ans
-                if answers:
-                    break
-                logger.warning(f"Batch parse yielded no answers for {persona.name} (attempt {batch_attempt+1}), raw[:200]={raw[:200]}")
             except (json.JSONDecodeError, Exception) as e:
                 logger.warning(f"Batch parse failed for {persona.name} (attempt {batch_attempt+1}): {e}")
+
+            still_missing = expected_labels - set(answers.keys())
+            if still_missing:
+                logger.warning(f"Batch partial answers for {persona.name} (attempt {batch_attempt+1}): missing {sorted(still_missing)}, raw[:150]={raw[:150]}")
 
         # ── Bilimsel Kalite Kontrolü (Grounded Simulation §5) ──
         turns: List[InterviewTurn] = []

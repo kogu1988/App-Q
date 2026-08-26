@@ -730,14 +730,22 @@ export default function StudyDetailPage() {
     try {
       const res = await fetch(`/api/client/studies/${studyId}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ question }),
       });
       if (res.ok) {
         const data = await res.json();
         setChatMessages(prev => [...prev, { role: "assistant", content: data.answer || data.response || "" }]);
       } else {
-        setChatMessages(prev => [...prev, { role: "assistant", content: "Yanıt alınamadı. Lütfen tekrar deneyin." }]);
+        let errMsg = "Yanıt alınamadı. Lütfen tekrar deneyin.";
+        try {
+          const errData = await res.json();
+          const d = errData?.detail;
+          if (typeof d === "string") errMsg = d;
+          else if (d?.message) errMsg = d.message;
+          else if (d?.required_plan) errMsg = `Bu özellik ${d.required_plan} planı gerektirir.`;
+        } catch {}
+        setChatMessages(prev => [...prev, { role: "assistant", content: errMsg }]);
       }
     } catch {
       setChatMessages(prev => [...prev, { role: "assistant", content: "Bir hata oluştu. Lütfen tekrar deneyin." }]);

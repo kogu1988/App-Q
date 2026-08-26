@@ -17,11 +17,29 @@ Marka: **Clarere** | İletişim: **hiclarere@clarere.com**
 ## 🏗️ Mimari (3 Aşamalı API)
 
 ```
-POST /api/client/intake       → Defne sohbeti (flash)
+POST /api/client/intake       → Defne sohbeti (flash) — 3-5 tur, özet+onay
 POST /api/client/research     → Plan + Persona + Batch Mülakat (flash)
-POST /api/client/synthesize   → Rapor (algoritmik)
+POST /api/client/synthesize   → Rapor (algoritmik + kanıt zinciri + karar katmanı)
 POST /api/client/contact      → İletişim formu (DB'ye kaydeder)
+GET  /api/client/studies/{id}/findings        → Kanıt zinciri (Sprint 1)
+GET  /api/client/studies/{id}/findings/{fid}  → Tek bulgu detayı (Sprint 1)
+POST /api/client/studies/{id}/chat           → Research Copilot (pro, Sprint 4)
+POST /api/client/studies/{id}/follow-up      → Personaya ek soru (probing)
+POST /api/client/studies/{id}/pdf            → PDF rapor (plan gated)
+POST /api/client/studies                    → Çalışma kaydet (findings'i de DB'ye yazar)
+POST /api/client/personas/generate           → Plan'dan persona üret
+POST /api/client/interviews/stream           → SSE streaming mülakat
+POST /api/client/studio/simulate             → Celery async simülasyon
+POST /api/auth/register|login               → JWT auth (parola + token)
 ```
+
+## 🔐 Auth Katmanı
+
+- `apps/backend/main.py` middleware: `Authorization: Bearer <JWT>` → username; geliştirmede `X-Username` fallback
+- `jwt_utils.py` token üret/doğrula, `auth_utils.py` parola hash (bcrypt)
+- Frontend `src/lib/auth.ts`: token varsa Bearer + her zaman X-Username gönderir (dev)
+- RLS: `current_tenant_var` → PostgreSQL `clarere.current_tenant` session değişkeni (B2B izolasyonu)
+- Admin: `X-Admin-Key` header (ADMIN_SECRET_KEY)
 
 ## ⚡ Hızlı Başlatma
 
@@ -29,6 +47,41 @@ POST /api/client/contact      → İletişim formu (DB'ye kaydeder)
 python launch.py  # Tek tıkla. Backend :4000, Frontend :4001
 # --reload aktif, kod değişince otomatik yeniden başlar
 ```
+
+## 🐳 Docker Stack (docker-compose.yml)
+
+| Servis | Port | Görev |
+|---|---|---|
+| postgres (pgvector:pg16) | 5433 | Ana DB — vector ext, RLS, tüm tablolar |
+| redis (7.2) | 4006 | Celery broker + WebSocket pub/sub |
+| searxng | 4003 | Meta arama (Sprint 6 web corroboration) |
+| clarere-api | 4000 | FastAPI (Docker build) |
+| celery_worker | — | Async pipeline (`--concurrency=1`) |
+| langfuse | 4002 | Observability (profiles: optional) |
+
+> `launch.py` SADECE postgres+redis'i ayağa kaldırır; API/Celery/SearXNG host'ta çalışır.
+
+## 🧪 Test Durumu (2026-08)
+
+```bash
+python -m pytest packages/research_engine/tests/ -q  # 156 passed
+```
+
+| Test Dosyası | Kapsam |
+|---|---|
+| test_stance_diversity.py | Rogers×SES matris, Largest Remainder, Skeptic garantisi |
+| test_ewma_echo.py | EWMA, Jaccard echo, echo drift |
+| test_van_westendorp.py | PSM kesişimleri (OPP/IPP/PMC/PME) |
+| test_workflow.py | ELEPHANT prompt, agreeableness kalibrasyonu |
+| test_quality.py | bias, acquiescence, meta-tone |
+| test_semantic_router.py | keyword routing |
+| test_intake.py | Defne akışı |
+| test_grounded.py | Grounded Simulation |
+| test_auth_utils.py, test_jwt_utils.py | auth |
+| test_db_org.py | organizasyon RLS |
+| test_plan_config.py | feature gate |
+| test_reporting.py | rapor render |
+| test_finetuning_export.py | ShareGPT JSONL export |
 
 ## 📁 Kritik Dosya Haritası
 
@@ -217,7 +270,22 @@ python launch.py  # Tek tıkla. Backend :4000, Frontend :4001
 
 ### Referans
 
-- `docs/god_doc.md` — Tam spesifikasyon + model karşılaştırma matrisi
-- `docs/Türkçe Ajan Modelleri Yerel Geliştirme Rehberi.md`
-- `docs/grounded_simulation.md` — Akademik makale (Bilal, 2026)
+- `docs/` — Bilimsel dökümanlar (god_doc.md, grounded_simulation.md vb.) **artık repoda yok** (silindi)
+- `README.md` — Bilimsel altyapı özeti (Stance Diversity, EWMA, PSM)
 - `data/evals/turkish_quality_eval.jsonl` — Kalite değerlendirme veri seti
+- `models/` — Sadece README.md kaldı (eski yerel model klasörü)
+
+---
+
+## 🐛 Bilinen Sorunlar / Notlar (2026-08 derin analiz)
+
+1. ✅ **README docs referansı** — `docs/god_doc.md` atfı kaldırıldı, akademik kaynaklara yönlendirildi.
+2. ℹ️ **`models/` klasörü** — Sadece README.md (DeepSeek config). Kullanıcı onayıyla kaldırılabilir ama içeriği güncel, silinmedi.
+3. ✅ **Batch interview retry** — 2→3 deneme; eksik label'ları hedefli yeniden ister (`run_interviews_batch`).
+4. ✅ **synthesize 500 tolerant** — `_synthesize_impl` eksik plan/persona/turn alanlarını varsayılanla doldurur, hata 422 ile döner.
+5. ✅ **Openness stance hizalaması** — `persona_traits`'te dc*k9 formülü merkezlendi; Innovator > EarlyAdopter > Mainstream > Skeptic > Laggard sıralaması sağlandı (aynı dc'de).
+6. ✅ **RLS canlı testi** — `test_rls_isolation.py` eklendi (Postgres yoksa skip). Tenant izolasyonunu gerçek DB'de doğrular.
+7. ℹ️ **Frontend commit'lenmemiş değişiklik** — `studies/[id]/page.tsx` (paywall teaser + brief/Big5 fix) commit bekliyor.
+8. ℹ️ **Docker API/Celery host'ta** — `launch.py` sadece postgres+redis'i başlatır; tam Docker deploy için `docker compose up -d clarere-api celery_worker`.
+
+> **Test durumu:** 156 passed + 1 skipped (RLS canlı test — Postgres gerektirir).
