@@ -1345,6 +1345,8 @@ def synthesize_report(
         ],
         recommendations=[
             "Birebir müşteri görüşmelerinde bu sentetik rapordaki itirazları test edin.",
+            "Güven bariyerini aşmak için veri güvenliği (KVKK) ve klinik entegrasyonu vurgusunu öne çıkarın.",
+            "Fiyatlandırmayı esnek (aylık, kolay iptal) tutarak direnci azaltın.",
         ],
         validation_next_steps=[
             "Fiyat modelini gerçek bir landing page üzerinde A/B testine sokun.",
