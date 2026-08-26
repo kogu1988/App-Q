@@ -3,12 +3,66 @@ from __future__ import annotations
 from html import escape
 from .models import ResearchReport
 
+# ── Rapor çıktısı için Türkçe etiket eşlemeleri ──────────────────────────────
+_STANCE_TR = {
+    "Innovator": "Öncü",
+    "EarlyAdopter": "Erken Benimseyen",
+    "Mainstream": "Ana Akım",
+    "Laggard": "Geciken",
+    "Skeptic": "Şüpheci",
+    "Champion": "Öncü",
+    "Pragmatist": "Pragmatist",
+    "Observer": "Gözlemci",
+    "Blocker": "Engelleyici",
+}
+
+_TRAIT_TR = {
+    "Openness": "Açıklık",
+    "Conscientiousness": "Sorumluluk",
+    "Extraversion": "Dışadönüklük",
+    "Agreeableness": "Uyumluluk",
+    "Neuroticism": "Duygusal Denge",
+}
+
+_ATTR_TR = {
+    "Hobbies": "Hobiler",
+    "Origin country": "Ülke",
+    "Current workflow": "Mevcut Çözüm",
+    "Decision trigger": "Karar Tetikleyicisi",
+    "Buying friction": "Satın Alma Engeli",
+    "Price posture": "Fiyat Yaklaşımı",
+    "Digital confidence": "Dijital Güven",
+    "Segment role": "Segment Rolü",
+    "Research stance": "Araştırma Duruşu",
+}
+
+_CATEGORY_TR = {
+    "pain_point": "Acı Noktası",
+    "value": "Değer Algısı",
+    "objection": "İtiraz",
+    "risk": "Risk",
+    "pricing": "Fiyat",
+    "positioning": "Konumlandırma",
+}
+
+_SCRIPT_LABEL_TR = {
+    "CONTEXT": "BAĞLAM",
+    "VALUE": "DEĞER",
+    "OBJECTION": "İTİRAZ",
+    "PRICING": "FİYAT",
+    "ALTERNATIVES": "ALTERNATİFLER",
+}
+
+_PRIORITY_TR = {"high": "YÜKSEK", "medium": "ORTA", "low": "DÜŞÜK"}
+
+_SEVERITY_TR = {"WARNING": "UYARI", "ERROR": "HATA", "INFO": "BİLGİ"}
+
 
 def render_markdown(report: ResearchReport) -> str:
     lines: list[str] = [
         f"# {report.title}",
         "",
-        "## Model Kullanımı",
+        "## Kullanılan Model",
         "",
     ]
     if report.model_usage:
@@ -35,14 +89,14 @@ def render_markdown(report: ResearchReport) -> str:
     lines.extend(["", "### Netleştirici Sorular", ""])
     for question in report.plan.clarifying_questions:
         if isinstance(question, dict):
-            _priority = str(question.get("priority", "medium")).upper()
+            _priority = str(question.get("priority", "medium")).lower()
             _q = question.get("question", "")
             _reason = question.get("reason", "")
         else:
-            _priority = question.priority.upper()
+            _priority = question.priority.lower()
             _q = question.question
             _reason = question.reason
-        lines.append(f"- **{_priority}**: {_q} _({_reason})_")
+        lines.append(f"- **{_PRIORITY_TR.get(_priority, _priority.upper())}**: {_q} _({_reason})_")
 
     lines.extend(["", "### Görüşme Script'i", ""])
     for index, question in enumerate(report.plan.interview_script, start=1):
@@ -56,11 +110,13 @@ def render_markdown(report: ResearchReport) -> str:
             _q = question.question
             _reason = question.reason
             _tags = question.tags or []
+        _label_tr = _SCRIPT_LABEL_TR.get(_label, _label)
+        _tags_tr = [_CATEGORY_TR.get(str(t), str(t)) for t in _tags]
         lines.extend(
             [
-                f"{index}. **{_label}** - {_q}",
+                f"{index}. **{_label_tr}** - {_q}",
                 f"   - Amaç: {_reason}",
-                f"   - Etiketler: {', '.join(str(t) for t in _tags) if _tags else 'risk'}",
+                f"   - Etiketler: {', '.join(_tags_tr) if _tags_tr else 'Genel'}",
             ]
         )
 
@@ -72,7 +128,7 @@ def render_markdown(report: ResearchReport) -> str:
                 "",
                 f"- Şehir/yaş: {persona.city}, {persona.age}",
                 f"- Rol: {persona.role_title or persona.segment}",
-                f"- Duruş: {persona.stance}",
+                f"- Pazar Yaklaşımı: {_STANCE_TR.get(persona.stance, persona.stance)}",
                 f"- Fiyat hassasiyeti: {persona.price_sensitivity}/10",
                 f"- Dijital özgüven: {persona.digital_confidence}/10",
                 f"- Kısa profil: {persona.bio or persona.context}",
@@ -83,17 +139,17 @@ def render_markdown(report: ResearchReport) -> str:
         )
         if persona.attributes:
             lines.extend(["Davranış alanları:"])
-            lines.extend(f"- {key}: {value}" for key, value in persona.attributes.items())
+            lines.extend(f"- {_ATTR_TR.get(key, key)}: {value}" for key, value in persona.attributes.items())
             lines.append("")
         if persona.traits:
             lines.extend(["Kişilik skorları:"])
-            lines.extend(f"- {key}: {value}/100" for key, value in persona.traits.items())
+            lines.extend(f"- {_TRAIT_TR.get(key, key)}: {value}/100" for key, value in persona.traits.items())
             lines.append("")
 
     lines.extend(["## Pain Point Matrisi", ""])
     lines.extend(
         [
-            "| Persona | Segment | Ana Pain Point | Ana İtiraz | Fiyat Sinyali |",
+            "| Persona | Segment | Ana Sorun | Ana İtiraz | Fiyat Beklentisi |",
             "| --- | --- | --- | --- | --- |",
         ]
     )
@@ -115,7 +171,7 @@ def render_markdown(report: ResearchReport) -> str:
             [
                 f"### {finding.title}",
                 "",
-                f"- Kategori: {finding.category}",
+                f"- Kategori: {_CATEGORY_TR.get(finding.category, finding.category)}",
                 f"- Güven skoru: {finding.confidence:.2f}",
                 f"- Özet: {finding.summary}",
                 f"- Etki: {finding.implication}",
@@ -125,7 +181,7 @@ def render_markdown(report: ResearchReport) -> str:
         )
         for evidence in finding.evidence:
             lines.append(
-                f"- {evidence.persona_name} ({evidence.stance}) - \"{evidence.quote}\""
+                f"- {evidence.persona_name} ({_STANCE_TR.get(evidence.stance, evidence.stance)}) - \"{evidence.quote}\""
             )
         lines.append("")
 
@@ -146,11 +202,18 @@ def render_markdown(report: ResearchReport) -> str:
 
     lines.extend(["", "## Kalite Kontrol", ""])
     if report.quality_issues:
+        _grouped: dict[str, dict] = {}
         for issue in report.quality_issues:
-            lines.append(
-                f"- **{issue.severity.upper()}** {issue.persona_name}: {issue.issue} "
-                f"Öneri: {issue.recommendation}"
-            )
+            _key = issue.issue
+            if _key not in _grouped:
+                _grouped[_key] = {"severity": issue.severity, "personas": [], "recommendation": issue.recommendation}
+            _grouped[_key]["personas"].append(issue.persona_name)
+        for msg, g in _grouped.items():
+            _sev = _SEVERITY_TR.get(str(g["severity"]).upper(), str(g["severity"]).upper())
+            _names = ", ".join(dict.fromkeys(g["personas"]))
+            lines.append(f"- **{_sev}** ({_names}): {msg}")
+            if g["recommendation"]:
+                lines.append(f"  - Öneri: {g['recommendation']}")
     else:
         lines.append("- Kritik kalite uyarısı yok.")
 

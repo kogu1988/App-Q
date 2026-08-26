@@ -53,7 +53,7 @@ def detect_acquiescence(stance: str, answers: list[str]) -> bool:
     Eşik: cevap başına ortalama ≥ 2.5 acquiescence anahtar kelimesi
     ve negatif sinyal / kelime oranı < 0.02.
     """
-    if stance not in {"Skeptic", "Blocker"}:
+    if stance not in {"Skeptic", "Laggard"}:
         return False
 
     all_text = " ".join(answers).lower()
@@ -312,7 +312,7 @@ def compute_research_quality(report_json: dict) -> dict:
     if straight_lining_count:
         bias_summary.append(f"{straight_lining_count} personada tekdüze yanıt kalıbı (straight-lining)")
     if acquiescence_count:
-        bias_summary.append(f"{acquiescence_count} Skeptic/Blocker personada beklenmedik uzlaşmacılık")
+        bias_summary.append(f"{acquiescence_count} Şüpheci/Geciken personada beklenmedik uzlaşmacılık")
     if social_desir_count:
         bias_summary.append(f"{social_desir_count} personada sosyal beğeni etkisi")
 

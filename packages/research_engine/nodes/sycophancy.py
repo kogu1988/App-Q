@@ -108,8 +108,8 @@ def judge_answer_quality(persona: Any, question: str, answer: str) -> List[str]:
     if len(answer.strip()) < 80:
         flags.append("too_short")
         
-    stance = getattr(persona, "stance", "Observer")
-    if stance in {"Skeptic", "Blocker"} and not any(
+    stance = getattr(persona, "stance", "Mainstream")
+    if stance in {"Skeptic", "Laggard"} and not any(
         marker in lower for marker in ["güven", "risk", "pahalı", "kanıt", "emin", "itiraz", "şüphe", "kvkk"]
     ):
         flags.append("weak_skepticism")

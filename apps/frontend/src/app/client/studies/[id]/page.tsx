@@ -309,9 +309,9 @@ function FindingCard({ finding, dc, DcIcon, confPct, barColor }: {
                   <div key={ei} className="flex gap-2 p-2.5 bg-[#f5f4f1] rounded-lg border border-border/60 text-xs">
                     <div className="shrink-0">
                       <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                        ev.stance === "Champion" ? "bg-emerald-100 text-emerald-700" :
+                        (ev.stance === "Innovator" || ev.stance === "EarlyAdopter") ? "bg-emerald-100 text-emerald-700" :
                         ev.stance === "Skeptic" ? "bg-amber-100 text-amber-700" :
-                        ev.stance === "Blocker" ? "bg-red-100 text-red-700" :
+                        ev.stance === "Laggard" ? "bg-red-100 text-red-700" :
                         "bg-[#eeece7] text-[#616161]"
                       }`}>{STANCE_TR[ev.stance] || ev.stance}</span>
                     </div>
@@ -1530,7 +1530,7 @@ export default function StudyDetailPage() {
                       <thead>
                         <tr className="border-b border-border">
                           <th className="text-left py-2 pr-4 text-xs font-semibold text-muted-foreground uppercase">SES</th>
-                          {["Champion","Pragmatist","Observer","Skeptic","Blocker"].map(s => (
+                          {["Innovator","EarlyAdopter","Mainstream","Laggard","Skeptic"].map(s => (
                             <th key={s} className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground uppercase">{STANCE_TR[s] || s}</th>
                           ))}
                           <th className="text-center py-2 pl-4 text-xs font-semibold text-muted-foreground uppercase">Toplam</th>
@@ -1548,7 +1548,7 @@ export default function StudyDetailPage() {
                                 "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400"
                               }`}>{row.ses_group}</span>
                             </td>
-                            {["Champion","Pragmatist","Observer","Skeptic","Blocker"].map(s => {
+                            {["Innovator","EarlyAdopter","Mainstream","Laggard","Skeptic"].map(s => {
                               const sc = row.stance_counts as Record<string,number>;
                               const count = sc?.[s] ?? 0;
                               const max = sc ? Math.max(...Object.values(sc)) : 0;

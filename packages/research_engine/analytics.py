@@ -1159,10 +1159,22 @@ def synthesize_report(
     else:
         summary_pain = "Hedef kitlede bu problemle ilgili aciliyet tespit edilemedi."
 
+    objection_hint = (
+        f"En güçlü bariyer güven/KVKK ve entegrasyon endişesi: \"{objections[0].quote[:110]}\""
+        if objections and objections[0].quote
+        else "Belirgin bir satın alma bariyeri öne çıkmadı."
+    )
+    price_hint = (
+        f"Fiyat beklentisi orta seviyede kümeleniyor: \"{pricing_evidence[0].quote[:110]}\""
+        if pricing_evidence and pricing_evidence[0].quote
+        else "Fiyat beklentisi konusunda net bir sinyal toplanamadı."
+    )
+
     executive_summary = [
-        f"{brief.title} fikrinin genel pazar karşılığı incelendi.",
+        f"{brief.title} fikrinin hedef kitle nezdindeki pazar karşılığı incelendi.",
         summary_pain,
-        "Fiyatlama veya güven konusunda bazı çekinceler (özellikle skeptik profillerde) mevcut.",
+        objection_hint,
+        price_hint,
     ]
 
     # R14 — Dinamik finding üretimi: mülakat verisinden kanıt bazlı bulgular
@@ -1243,14 +1255,17 @@ def synthesize_report(
             )
         ]
 
+    _resistance = ["Peşin yıllık ödeme istenmesi", "Ekstra gizli ücretler", "Kurulum maliyeti"]
+    if objections and objections[0].quote:
+        _resistance.insert(0, f"Güven/KVKK ve klinik entegrasyonu endişesi (örn: \"{objections[0].quote[:80]}\")")
+
     pricing = PricingInsight(
         acceptable_range=brief.expected_price or "Aylık 200-500 TL (Tahmini)",
-        packaging_suggestion="Deneme sürümü şart.",
-        resistance_points=[
-            "Peşin yıllık ödeme istenmesi",
-            "Ekstra gizli ücretler",
-            "Kurulum maliyeti",
-        ],
+        packaging_suggestion=(
+            "Ücretsiz planı kısıtlı, ücretli planı cazip tutan freemium yapı korunmalı; "
+            "deneme sürümü ve aylık ödeme seçeneği satın alma bariyerini düşürür."
+        ),
+        resistance_points=_resistance,
     )
 
     report_dict_std = {
@@ -1263,6 +1278,8 @@ def synthesize_report(
         ],
         "recommendations": [
             "Birebir müşteri görüşmelerinde bu sentetik rapordaki itirazları test edin.",
+            "Güven bariyerini aşmak için veri güvenliği (KVKK) ve klinik entegrasyonu vurgusunu öne çıkarın.",
+            "Fiyatlandırmayı esnek (aylık, kolay iptal) tutarak direnci azaltın.",
         ],
         "validation_next_steps": [
             "Fiyat modelini gerçek bir landing page üzerinde A/B testine sokun.",
