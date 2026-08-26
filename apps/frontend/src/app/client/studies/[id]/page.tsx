@@ -187,6 +187,8 @@ interface StudyDetail {
       sentiment: string;
     }>;
   }>;
+  recommendations?: string[];
+  action_items?: string[];
   decision_items?: Array<{
     signal: string;
     title: string;
@@ -1600,9 +1602,13 @@ export default function StudyDetailPage() {
                               return (
                                 <td key={s} className="text-center py-2 px-2">
                                   {count > 0 ? (
-                                    <span className={`inline-flex w-7 h-7 rounded-full text-xs font-bold items-center justify-center ${
-                                      count === max ? "bg-[#1863dc] text-white" : "bg-[#eeece7] text-[#616161] "
-                                    }`}>{count}</span>
+                                    <span
+                                      className="inline-flex w-8 h-8 rounded-md text-xs font-bold items-center justify-center transition-colors"
+                                      style={{
+                                        backgroundColor: count === max ? "#1863dc" : `rgba(24, 99, 220, ${0.15 + (count / max) * 0.55})`,
+                                        color: count === max ? "#ffffff" : "#17171c",
+                                      }}
+                                    >{count}</span>
                                   ) : <span className="text-muted-foreground">—</span>}
                                 </td>
                               );
@@ -1934,6 +1940,21 @@ export default function StudyDetailPage() {
               <p className="text-muted-foreground text-sm">Sentetik mülakatlardan elde edilen pazar analizleri, itirazlar ve ürün geliştirme tavsiyeleri.</p>
             </div>
 
+            {/* Öne çıkan sayılar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "Persona", value: personas.length },
+                { label: "Mülakat Yanıtı", value: interviews.reduce((acc, iv) => acc + (iv.turns?.length || 0), 0) },
+                { label: "Bulgu", value: study?.findings?.length ?? 0 },
+                { label: "Öneri", value: study?.recommendations?.length ?? 0 },
+              ].map(s => (
+                <div key={s.label} className="rounded-xl border border-[#d9d9dd] bg-white dark:bg-[#212121] p-4 text-center">
+                  <div className="text-3xl font-black text-[#003c33] dark:text-[#edfce9]">{s.value}</div>
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] mt-1">{s.label}</div>
+                </div>
+              ))}
+            </div>
+
             {!isCompleted ? (
               <div className="text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl bg-[#f5f4f1]/50">
                 Bu araştırma henüz tamamlanmamış veya nihai sentez raporu üretilmemiş.
@@ -2138,7 +2159,7 @@ export default function StudyDetailPage() {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <MessageSquare size={16} className="text-[#1863dc]" />
-                      Research Copilot
+                      Araştırma Asistanı
                     </CardTitle>
                     <CardDescription>Raporla ilgili sorular sorun</CardDescription>
                   </CardHeader>
@@ -2179,7 +2200,7 @@ export default function StudyDetailPage() {
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
-                        placeholder="Örn: Skeptikler neden reddetti?"
+                        placeholder="Örn: Şüpheciler neden reddetti?"
                         className="text-sm"
                         disabled={sendingChat}
                       />
@@ -2187,7 +2208,7 @@ export default function StudyDetailPage() {
                         onClick={sendChat}
                         disabled={!chatInput.trim() || sendingChat}
                         size="sm"
-                        className="shrink-0"
+                        className="shrink-0 bg-[#17171c] text-white hover:opacity-85 dark:bg-[#ffffff] dark:text-[#17171c]"
                       >
                         {sendingChat ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                         <span className="ml-1.5 hidden sm:inline">Gönder</span>

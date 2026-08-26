@@ -756,6 +756,14 @@ _SIGNAL_LABELS_TR: dict[str, str] = {
     "KILL": "VAZGEÇ",
 }
 
+# Karar sinyalleri için renkler (PDF raporunda renkli rozetler)
+_SIGNAL_COLORS: dict[str, str] = {
+    "SHIP": "#0d9488",
+    "ITERATE": "#d97706",
+    "INVESTIGATE": "#0284c7",
+    "KILL": "#dc2626",
+}
+
 
 def generate_decision_summary(enhanced_findings: list) -> list[DecisionItem]:
     """Enhanced findings'ları karar öğelerine (DecisionItem) dönüştürür.
@@ -1101,9 +1109,10 @@ def synthesize_report(
             "═════════════════",
         ]
         for di in decision_items:
-            badge = f"**[{_SIGNAL_LABELS_TR.get(di.signal, di.signal)}]**"
+            _sig_color = _SIGNAL_COLORS.get(di.signal, "#616161")
+            badge = f'<span style="color:{_sig_color};font-weight:bold;">[{_SIGNAL_LABELS_TR.get(di.signal, di.signal)}]</span>'
             decision_header.append(
-                f"{badge:<16} {di.title}"
+                f"{badge} {di.title}"
             )
             decision_header.append(f"         Kanıt: {di.evidence_summary}")
             decision_header.append(f"         → {di.recommended_action}")
@@ -1318,9 +1327,10 @@ def synthesize_report(
         "═════════════════",
     ]
     for di in decision_items:
-        badge = f"[{_SIGNAL_LABELS_TR.get(di.signal, di.signal)}]"
+        _sig_color = _SIGNAL_COLORS.get(di.signal, "#616161")
+        badge = f'<span style="color:{_sig_color};font-weight:bold;">[{_SIGNAL_LABELS_TR.get(di.signal, di.signal)}]</span>'
         decision_header_std.append(
-            f"{badge:<16} {di.title}"
+            f"{badge} {di.title}"
         )
         decision_header_std.append(f"         Kanıt: {di.evidence_summary}")
         decision_header_std.append(f"         → {di.recommended_action}")
