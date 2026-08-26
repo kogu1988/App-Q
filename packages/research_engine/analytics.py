@@ -35,7 +35,7 @@ def collect_quality_issues(interviews: list[PersonaInterview]) -> list[QualityIs
         "meta_tone": "Cevapta asistan/meta tonu var.",
         "visible_reasoning": "Cevapta görünür muhakeme bloğu var.",
         "too_short": "Cevap karar çıkarmak için fazla kısa.",
-        "weak_skepticism": "Skeptik/bloklayıcı persona yeterince sert itiraz üretmedi.",
+        "weak_skepticism": "Şüpheci/Geciken persona yeterince sert itiraz üretmedi.",
         "weak_pricing_specificity": "Fiyat sorusunda TL, bütçe, abonelik veya ödeme modeli somutluğu zayıf.",
         "weak_turkey_context": "Türkiye pazarı bağlamı zayıf.",
     }
@@ -1239,7 +1239,7 @@ def synthesize_report(
             ),
             confidence=min(0.55 + len(pos_evidence) * 0.05, 0.88),
             evidence=pos_evidence,
-            implication="Rakip farklılaşması mesajı, özellikle Innovator ve EarlyAdopter segmentlerinde güçlü etki yaratır.",
+            implication="Rakip farklılaşması mesajı, özellikle Öncü ve Erken Benimseyen segmentlerinde güçlü etki yaratır.",
         ))
 
     # Veri yoksa minimum fallback (golden master uyumlu)
