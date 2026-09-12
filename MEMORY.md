@@ -162,6 +162,8 @@ python -m pytest packages/research_engine/tests/ -q  # 156 passed
 | `MEMORY.md` | Bu dosya |
 | `scripts/run_benchmark.py` | RFI benchmark runner (Sprint 8) |
 | `scripts/generate_demo_study.py` | Sunum demo çalışması üretici (DB'ye kaydeder) |
+| `docs/TEST_PLAN.md` | ⚠️ gitignored — Güçlü yönleri koruma test planı (15 grup, ~110 test) |
+| `docs/CRITICAL_BLOCKERS_PLAN.md` | ⚠️ gitignored — P0 blocker'lar + Paddle entegrasyon spesifikasyonu |
 | `data/evals/rfi_benchmark_samples.json` | 5 Türkiye pazarı benchmark senaryosu (Sprint 8) |
 
 ---
@@ -273,7 +275,7 @@ python -m pytest packages/research_engine/tests/ -q  # 156 passed
 
 ### Referans
 
-- `docs/` — Bilimsel dökümanlar (god_doc.md, grounded_simulation.md vb.) **artık repoda yok** (silindi)
+- `docs/` — Bilimsel dökümanlar **yerelde mevcut** (god_doc.md, grounded_simulation.md, Türk Tüketici Refleksleri vb.) ancak `.gitignore`'da — **kasıtlı olarak repoya gönderilmiyor**. Klonlayan biri bu dosyaları görmez; bu yüzden README onlara referans vermez.
 - `README.md` — Bilimsel altyapı özeti (Stance Diversity, EWMA, PSM)
 - `data/evals/turkish_quality_eval.jsonl` — Kalite değerlendirme veri seti
 - `models/` — Sadece README.md kaldı (eski yerel model klasörü)
