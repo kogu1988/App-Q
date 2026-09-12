@@ -362,13 +362,13 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 19. ✅ **Yerel Docker :4001** — `docker-compose.local.yml`'de frontend doğrudan `http://localhost:4001`'de. `API_PROXY_TARGET` **BUILD ARG**: `next.config` rewrites derleme anında gömülür, runtime env etkisizdir.
 20. 🔴→✅ **KRİTİK: tenacity kwargs hatası (düzeltildi)** — `providers.py::_chat` içinde `_retry_policy()(fn)(**kwargs)` yazımı `fn`'i **argümansız** çağırıyordu → OpenAI SDK "Missing required arguments" → **gerçek DeepSeek çağrılarının TAMAMI başarısız** (Defne fallback yanıtı, brief %0, mülakat/sentez boş). Doğrusu: `_retry_policy()(fn, **kwargs)`. Testler `FakeModel` kullandığı için yakalanmamıştı. Regresyon: `test_providers.py` (4 test).
 21. ✅ **E2E harness (Playwright)** — `e2e/` klasörü (ayrı package.json, frontend build'ini etkilemez). `tests/01-ui` (landing/giriş/upgrade/admin), `tests/02-research-flow` (tam akış, gerçek LLM), `tests/03-study-actions` (mevcut çalışma: sekmeler+transkript+sentez). Ekran görüntüleri `e2e/artifacts/screens/`. Çalıştır: `cd e2e && npx playwright test` (Docker stack açık olmalı).
-22. ⚠️ **Rapor kalitesi bulguları (AÇIK)** — E2E ile tespit edildi:
-    - **Kişiler arası yankı:** 5 persona da aynı hayvan adını/aynı senaryoyu üretti ("Pamuk", "veteriner karnesi çekmecede"). Intra-persona Jaccard bunu yakalamıyor (cross-persona echo koruması yok).
-    - **Karar katmanı tutarsızlığı:** "Temel İhtiyaç ve Acı Noktası" KILL + "0 destekleyici, 3 karşıt" — ama Executive Summary aynı bulguyu güçlü acı noktası olarak sunuyor. Ayrıca decision item'lar "0 kanıt" derken `enhanced_findings` "4 persona itiraz etti" diyor (kanıt sayımı tutarsız).
-    - **Rapor metni zayıf:** `report_markdown` ~2 KB ve başlıksız; `report_html` boş. Articos seviyesi anlatı yok.
-    - **Kalite bayrağı:** `quality_issues` "Cevapta asistan/meta tonu var" (p1) — kişiler zaman zaman rolden çıkıyor.
-    - `quality_score` çalışma listesinde 0/N-A (bu akışta persist edilmiyor).
-23. ℹ️ **Dikkat:** Demo `free` kullanıcısının planı DB'de **Flex** (seed `Free` yazıyor ama `ON CONFLICT DO NOTHING` eski kaydı koruyor) → Free-paywall testi için yeni kullanıcı doğurmak gerekiyor.
+22. ✅ **Rapor kalitesi bulguları (DÜZELTİLDİ — E2E ile doğrulandı)** — plan: `docs/REPORT_QUALITY_FIXES.md`.
+    - ✅ **Rapor zayıftı:** `render_markdown` `enhanced_findings` dict'lerinde `.title` çağırıp çöküyordu (`'dict' object has no attribute 'title'`) → fallback (~2 KB). Tolerant `_g()` eklendi. **Sonuç: 2 KB → 33,7 KB**, tam başlıklı rapor (Bulgular/Karar Katmanı/Van Westendorp/SES×Stance/Marka Sağlığı).
+    - ✅ **Karar katmanı tutarsızlığı:** (a) `risk` bulgusu `objection` etiketli turlarla eşleşmiyordu → `_CATEGORY_TAG_ALIASES`; (b) pain_point'te acı dili 'karşı kanıt' sayılıp KILL veriyordu → kategori-farkında polarite (`_NEGATIVE_CLAIM_CATEGORIES`). **Sonuç: kanıt 0 → 5/bulgu; pain point KILL(0/3) → INVESTIGATE(1/1).**
+    - ✅ **Kişiler arası yankı:** `quality.detect_cross_persona_echo` + `workflow._regen_persona_turns` ile yankılanan persona 'kaçın' listesiyle yeniden üretilir. **Sonuç: 5/5 persona aynı adı ("Pamuk") yerine farklı adlar (Şila, Zeytin, Paşa, Pamuk, Poyraz).**
+    - ✅ **Meta ton yanlış pozitifi:** `judge_answer_quality` ürünün "yapay zeka özelliği"nden bahsedince meta_tone veriyordu → yalnızca kendine-referans kalıplarına daraltıldı.
+    - ⚠️ **Kalan (kalibrasyon):** `quality_score` formülü çok agresif cezalandırıyor (grade=C iken score=0 çıkabiliyor); `report_html` frontend tarafından kaydedilmiyor (boş). Bunlar işlevsel değil, kalibrasyon/kozmetik.
+23. ✅ **Demo kullanıcı plan senkronizasyonu** — seed `ON CONFLICT DO NOTHING` yüzünden `free` DB'de Flex kalmıştı; dev'de `DO UPDATE` ile fixture planları senkronize edilir (prod'da demo seed yok). Test: `test_12_4_demo_users_are_synced_to_fixtures`.
 
 > **Test durumu:** 304 passed, 0 skipped (DB testleri dahil — `POSTGRES_HOST/PORT` env ile tam süit).
 

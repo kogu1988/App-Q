@@ -57,6 +57,25 @@ _PRIORITY_TR = {"high": "YÜKSEK", "medium": "ORTA", "low": "DÜŞÜK"}
 
 _SEVERITY_TR = {"WARNING": "UYARI", "ERROR": "HATA", "INFO": "BİLGİ"}
 
+_SIGNAL_TR = {
+    "SHIP": "✅ YAYINLA",
+    "ITERATE": "🔁 İYİLEŞTİR",
+    "INVESTIGATE": "🔍 ARAŞTIR",
+    "KILL": "⛔ VAZGEÇ",
+}
+
+
+def _g(obj, key, default=None):
+    """dict VEYA nesne üzerinden güvenli alan erişimi.
+
+    `synthesize_report` bazı alanları (`enhanced_findings`) `asdict` ile dict'e
+    çeviriyor; `render_markdown` ise nesne bekliyordu → AttributeError → rapor
+    fallback'e düşüyordu. Bu yardımcı iki biçimi de destekler.
+    """
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
 
 def render_markdown(report: ResearchReport) -> str:
     lines: list[str] = [
@@ -169,33 +188,40 @@ def render_markdown(report: ResearchReport) -> str:
     # Enhanced findings varsa onları kullan (kanıt sayıları + karar sinyali ile)
     _source_findings = getattr(report, "enhanced_findings", None) or report.findings
     for finding in _source_findings:
+        f_title = _g(finding, "title", "")
+        f_category = _g(finding, "category", "")
+        f_confidence = _g(finding, "confidence", 0.0) or 0.0
+        f_summary = _g(finding, "summary", "")
+        f_implication = _g(finding, "implication", "")
         lines.extend(
             [
-                f"### {finding.title}",
+                f"### {f_title}",
                 "",
-                f"- Kategori: {_CATEGORY_TR.get(finding.category, finding.category)}",
-                f"- Güven skoru: **{int(finding.confidence * 100)}%**",
-                f"- Özet: {finding.summary}",
-                f"- Etki: {finding.implication}",
+                f"- Kategori: {_CATEGORY_TR.get(f_category, f_category)}",
+                f"- Güven skoru: **{int(f_confidence * 100)}%**",
+                f"- Özet: {f_summary}",
+                f"- Etki: {f_implication}",
                 "",
             ]
         )
         # Enhanced finding alanları (varsa)
-        supporting = getattr(finding, "supporting_count", None)
-        refuting = getattr(finding, "refuting_count", None)
-        signal = getattr(finding, "decision_signal", None)
+        supporting = _g(finding, "supporting_count")
+        refuting = _g(finding, "refuting_count")
+        signal = _g(finding, "decision_signal")
         if supporting is not None:
             lines.append(
                 f"- Destekleyen: **{supporting}** persona | Karşı çıkan: **{refuting or 0}** persona"
             )
         if signal:
-            _SIGNAL_TR = {"SHIP": "✅ YAYINLA", "ITERATE": "🔁 İYİLEŞTİR", "INVESTIGATE": "🔍 ARAŞTIR", "KILL": "⛔ VAZGEÇ"}
             lines.append(f"- Karar sinyali: **{_SIGNAL_TR.get(signal, signal)}**")
         lines.append("")
         lines.append("Kanıtlar:")
-        for evidence in finding.evidence:
+        for evidence in (_g(finding, "evidence", []) or []):
+            e_persona = _g(evidence, "persona_name", "")
+            e_stance = _g(evidence, "stance", "")
+            e_quote = _g(evidence, "quote", "")
             lines.append(
-                f"- {evidence.persona_name} ({_STANCE_TR.get(evidence.stance, evidence.stance)}) - \"{evidence.quote}\""
+                f"- {e_persona} ({_STANCE_TR.get(e_stance, e_stance)}) - \"{e_quote}\""
             )
         lines.append("")
 
@@ -231,7 +257,6 @@ def render_markdown(report: ResearchReport) -> str:
     # ── Karar Katmanı (varsa) ──
     if getattr(report, "decision_items", None):
         lines.extend(["", "## Karar Katmanı", ""])
-        _SIGNAL_TR = {"SHIP": "YAYINLA", "ITERATE": "İYİLEŞTİR", "INVESTIGATE": "ARAŞTIR", "KILL": "VAZGEÇ"}
         for d in report.decision_items:
             lines.extend(
                 [

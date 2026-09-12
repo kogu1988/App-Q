@@ -500,3 +500,117 @@ def compute_rfi(report_dict: dict) -> dict:
         "interpretation": interpretation,
         "source": "Bilal (2026) Grounded Simulation §6.4",
     }
+
+
+# ---------------------------------------------------------------------------
+# Cross-Persona Echo (kişiler arası yankı) — P2-1
+# ---------------------------------------------------------------------------
+
+# Kişiler arası benzerlik hesabında anlamsız kelimeler
+_CROSS_STOP_WORDS: set[str] = {
+    "bir", "ve", "bu", "ile", "için", "olarak", "daha", "çok", "ama", "gibi",
+    "benim", "benim", "bana", "beni", "bende", "kendi", "zaten", "şeyler", "şeyi",
+    "olduğu", "olduğunu", "olabilir", "olunca", "diye", "yani", "çünkü", "ancak",
+    "kadar", "sonra", "önce", "şimdi", "belki", "tabii", "ayrıca", "hepsi",
+    "varmış", "yoktu", "vardı", "olsa", "olurum", "düşünüyorum", "geliyor",
+}
+
+# Meşru ortak marka/kanal adları — yankı sayılmaz
+_SHARED_PROPER_ALLOWLIST: set[str] = {
+    "whatsapp", "google", "instagram", "youtube", "tiktok", "iphone", "android",
+    "türkiye", "istanbul", "ankara", "izmir", "amazon", "trendyol", "hepsiburada",
+    "kvkk", "app", "store", "play",
+}
+
+
+def _content_tokens(text: str) -> set[str]:
+    import re as _re
+
+    toks = set(_re.findall(r"[^\W\d_]+", text.lower(), flags=_re.UNICODE))
+    return {t for t in toks if len(t) >= 4 and t not in _CROSS_STOP_WORDS}
+
+
+def _shared_proper_tokens(text: str) -> set[str]:
+    """Cümle ortasında geçen büyük harfli özel adlar (uydurulmuş isimler).
+
+    Cümle başı büyük harfleri hariç tutulur; marka allowlist'i çıkarılır.
+    """
+    import re as _re
+
+    found = _re.findall(r"(?<=[a-zçğıöşü]\s)([A-ZÇĞİÖŞÜ][\wçğıöşü]{2,})", text)
+    return {t for t in found if t.lower() not in _SHARED_PROPER_ALLOWLIST}
+
+
+def detect_cross_persona_echo(
+    interviews: list,
+    threshold: float = 0.28,
+    min_personas: int = 3,
+) -> dict:
+    """Kişiler arası yankı: farklı personaların aynı örnek/senaryoyu üretmesi.
+
+    Mevcut `detect_echo` SORU↔CEVAP (intra) yankısını ölçer; bu fonksiyon
+    PERSONA↔PERSONA benzerliğini ve ortak uydurulmuş özel adları tespit eder.
+
+    Dönüş:
+        {
+          "echoing_persona_ids": [...],   # yeniden üretilmesi gerekenler
+          "shared_tokens": [...],         # kaçınılacak ortak özel adlar
+          "pairs": [{"a","b","similarity"}],
+          "persona_count": int,
+        }
+    """
+    from collections import Counter
+
+    content: dict[str, set[str]] = {}
+    proper_counter: Counter = Counter()
+
+    for iv in interviews:
+        persona = getattr(iv, "persona", None)
+        pid = getattr(persona, "id", None)
+        if not pid:
+            continue
+        answers = " ".join(
+            t.answer for t in (iv.turns or [])
+            if t.answer and t.answer != "[Yanıt alınamadı]"
+        )
+        if not answers.strip():
+            continue
+        content[pid] = _content_tokens(answers)
+        for tok in _shared_proper_tokens(answers):
+            proper_counter[tok] += 1
+
+    ids = list(content)
+    echoing: set[str] = set()
+    pairs: list[dict] = []
+    for i in range(len(ids)):
+        for j in range(i + 1, len(ids)):
+            a, b = content[ids[i]], content[ids[j]]
+            union = a | b
+            if not union:
+                continue
+            jac = len(a & b) / len(union)
+            if jac >= threshold:
+                echoing.add(ids[i])
+                echoing.add(ids[j])
+                pairs.append({"a": ids[i], "b": ids[j], "similarity": round(jac, 2)})
+
+    # Ortak uydurulmuş özel adlar (>= min_personas) → yankının en net sinyali
+    shared_tokens = [t for t, c in proper_counter.most_common() if c >= min_personas]
+    # Ortak özel ad kullanan personalar da yeniden üretim listesine girer
+    if shared_tokens:
+        shared_lower = {t.lower() for t in shared_tokens}
+        for iv in interviews:
+            persona = getattr(iv, "persona", None)
+            pid = getattr(persona, "id", None)
+            if not pid:
+                continue
+            answers = " ".join(t.answer for t in (iv.turns or []))
+            if {t.lower() for t in _shared_proper_tokens(answers)} & shared_lower:
+                echoing.add(pid)
+
+    return {
+        "echoing_persona_ids": sorted(echoing),
+        "shared_tokens": shared_tokens,
+        "pairs": pairs,
+        "persona_count": len(ids),
+    }

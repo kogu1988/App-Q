@@ -1019,6 +1019,10 @@ def run_interviews_batch(
             f"Yukarıdaki kimliğe girerek her soruyu 2-4 cümle ile yanıtla.\n"
             f"- Birinci tekil şahıs kullan, Türkiye gerçeklerine bağlı kal (TL, taksit, KVKK).\n"
             f"- Dürüst ol; ürünü beğenmek zorunda değilsin.\n"
+            f"- ÖZGÜNLÜK: Kendi hayatına özgü SOMUT detaylar ver (kendi durumun, kendi olayın, kendi rakamların).\n"
+            f"  Başka katılımcıların kullanabileceği klişe örnekleri tekrar etme; jenerik ifadelerden kaçın.\n"
+            f"- ROLDE KAL: Yapay zeka/asistan olduğunu asla ima etme, ürünü pazarlama diliyle övme;\n"
+            f"  gerçek bir kullanıcı gibi kendi deneyiminden konuş.\n"
             f"- ZORUNLU: Yanıtını şu JSON dizisi olarak ver, başka hiçbir metin ekleme:\n"
             f'[{{"label": "SORU_ETIKETI", "answer": "..."}}, ...]\n'
         )
@@ -1139,4 +1143,119 @@ def run_interviews_batch(
             consistency_notes=consistency_notes,
         ))
 
+    # ── P2-1: Cross-persona echo (kişiler arası yankı) düzeltmesi ──
+    # Farklı personalar aynı klişe örneği (ör. aynı evcil hayvan adı) ürettiyse,
+    # yankılanan personaları 'kaçın' listesiyle 1 kez yeniden üret.
+    try:
+        from .quality import detect_cross_persona_echo
+
+        echo = detect_cross_persona_echo(interviews)
+        echoing = echo.get("echoing_persona_ids") or []
+        shared = echo.get("shared_tokens") or []
+        if echoing and shared:
+            logger.warning(
+                "Cross-persona echo: %d persona, ortak ornekler=%s",
+                len(echoing), shared[:6],
+            )
+            by_id = {iv.persona.id: iv for iv in interviews}
+            regenerated = 0
+            for pid in echoing[:3]:
+                if _deadline is not None and _time.monotonic() > _deadline:
+                    logger.warning("Sure butcesi — kalan echo yeniden uretimi atlandi.")
+                    break
+                iv = by_id.get(pid)
+                if iv is None:
+                    continue
+                sys_prompt = db_prompt if db_prompt else build_elephant_system_prompt(iv.persona, brief.hypothesis_blind)
+                new_turns = _regen_persona_turns(brief, iv.persona, script, model, sys_prompt, shared)
+                if new_turns:
+                    iv.turns = new_turns
+                    iv.consistency_notes.append("Cross-persona echo yeniden uretimi uygulandi.")
+                    regenerated += 1
+            logger.info("Cross-persona echo: %d persona yeniden uretildi", regenerated)
+    except Exception:
+        logger.warning("Cross-persona echo duzeltmesi atlandi", exc_info=True)
+
     return interviews
+
+
+def _regen_persona_turns(
+    brief: ResearchBrief,
+    persona: Persona,
+    script: List[InterviewQuestion],
+    model: ResearchModel,
+    system_prompt: str,
+    avoid_terms: list[str],
+) -> List[InterviewTurn]:
+    """Cross-persona echo sonrası TEK persona için cevapları yeniden üretir.
+
+    Diğer personaların kullandığı ortak örnek/klişeler 'kaçın' listesi olarak
+    verilir; başarısız/eksik olursa boş liste döner (mevcut cevaplar korunur).
+    """
+    if not script:
+        return []
+
+    questions_block = "\n".join(
+        f"{i}. [{sq.label}] {sq.question}" for i, sq in enumerate(script, 1)
+    )
+    avoid_block = ""
+    if avoid_terms:
+        avoid_block = (
+            "[ÖZGÜNLÜK ZORUNLULUĞU]\n"
+            "Aşağıdaki örnek/klişeler BAŞKA katılımcılar tarafından kullanıldı; SEN KULLANMA:\n"
+            + "\n".join(f"- {t}" for t in avoid_terms[:12])
+            + "\nKendi hayatına özgü, tamamen farklı isim/olay/rakam uydur.\n\n"
+        )
+
+    prompt = (
+        f"[KİMLİĞİN]\n"
+        f"{persona.name}, {persona.age} yaş, {persona.city} — {persona.segment}\n"
+        f"Ekonomik Grup: {persona.ses_group} | Tutum: {persona.stance}\n"
+        f"Fiyat Hassasiyeti: {persona.price_sensitivity}/10 | Dijital Özgüven: {persona.digital_confidence}/10\n"
+        f"Bağlam: {persona.context}\n\n"
+        f"{avoid_block}"
+        f"[SORULAR]\n{questions_block}\n\n"
+        f"[GÖREV]\nHer soruyu 2-4 cümleyle, birinci tekil şahıs olarak yanıtla. "
+        f"Asistan gibi konuşma, ürünü pazarlama diliyle övme; kendi deneyiminden konuş. "
+        f"Sadece şu JSON dizisini döndür:\n"
+        f'[{{"label": "SORU_ETIKETI", "answer": "..."}}, ...]\n'
+    )
+
+    try:
+        raw = model.generate(system_prompt, prompt)
+    except Exception:
+        logger.warning("Echo yeniden uretimi basarisiz", exc_info=True)
+        return []
+    if not raw:
+        return []
+
+    clean = re.sub(r'```(?:json)?\s*|```', '', raw)
+    match = re.search(r'\[.*\]', clean, re.DOTALL)
+    if not match:
+        return []
+    try:
+        parsed = json.loads(match.group(0))
+    except Exception:
+        return []
+
+    by_label: dict[str, str] = {}
+    for item in parsed:
+        lbl = str(item.get("label", "")).upper()
+        ans = item.get("answer") or ""
+        if lbl and ans:
+            by_label[lbl] = ans
+
+    turns: List[InterviewTurn] = []
+    for sq in script:
+        ans = by_label.get(sq.label.upper())
+        if not ans:
+            return []  # eksik → mevcut cevapları koru
+        flags = list(judge_answer_quality(persona, sq.question, ans))
+        turns.append(InterviewTurn(
+            question=sq.question,
+            answer=ans,
+            tags=sq.tags or classify_question(sq.question),
+            model_id=getattr(model, "last_model_id", None),
+            quality_flags=flags,
+        ))
+    return turns

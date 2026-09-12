@@ -114,11 +114,30 @@ _REFUTING_KEYWORDS: set[str] = {
     "entegrasyon", "uyumsuz", "desteklemiyor",
 }
 
+# "Sorun/bariyer VAR" iddiası taşıyan bulgu kategorileri — bu bulgularda olumsuz
+# dil DESTEK, olumlu dil (inkar) KARŞI kanıttır.
+_NEGATIVE_CLAIM_CATEGORIES: set[str] = {"pain_point", "risk"}
 
-def classify_evidence_sentiment(quote: str, finding_summary: str) -> str:
-    """Bir alıntının bulgu özetine karşı duygusunu sınıflandırır.
+# Bulgu kategori ↔ görüşme sorusu etiketi eşlemesi. Bulgu kategorisi `risk` iken
+# senaryo soruları `objection` etiketi taşıdığı için kanıt hiç eşleşmiyordu
+# (karar öğeleri "0 destekleyici, 0 karşıt" gösteriyordu).
+_CATEGORY_TAG_ALIASES: dict[str, set[str]] = {
+    "pain_point": {"pain_point", "pain"},
+    "risk": {"risk", "objection"},
+    "value": {"value"},
+    "positioning": {"positioning", "value"},
+}
 
-    Anahtar kelime tabanlı ilk geçiş sınıflandırması yapar.
+
+def classify_evidence_sentiment(quote: str, finding_summary: str = "", category: str | None = None) -> str:
+    """Bir alıntının bulguya göre duygusunu sınıflandırır.
+
+    `category` verilirse **bulgunun iddiasına göre** polarite uygulanır:
+    - `pain_point` / `risk` bulguları "sorun/bariyer VAR" iddiasıdır → olumsuz dil
+      bu iddiayı DESTEKLER, olumlu dil (inkar) karşı çıkar.
+    - `value` / `positioning` bulguları olumlu iddiadır → olumlu dil destekler.
+
+    `category` verilmezse eski (kategori-bağımsız) davranış korunur.
     Dönüş: "supporting", "refuting" veya "neutral"
     """
     if not quote or not isinstance(quote, str):
@@ -127,6 +146,14 @@ def classify_evidence_sentiment(quote: str, finding_summary: str) -> str:
 
     support_score = sum(1 for kw in _SUPPORTING_KEYWORDS if kw in text_lower)
     refute_score = sum(1 for kw in _REFUTING_KEYWORDS if kw in text_lower)
+
+    # Kategori-farkında polarite: "sorun var" iddialarında olumsuz dil destektir.
+    if category in _NEGATIVE_CLAIM_CATEGORIES:
+        if refute_score > support_score:
+            return "supporting"
+        if support_score > refute_score:
+            return "refuting"
+        return "neutral"
 
     if support_score > refute_score:
         return "supporting"
@@ -154,13 +181,14 @@ def build_evidence_graph(
     for finding in findings:
         # Bulgu kategorisiyle eşleşen mülakat dönüşlerini tara
         category_tag = finding.category
+        wanted_tags = _CATEGORY_TAG_ALIASES.get(category_tag, {category_tag})
         relevant_evidence: list[dict] = []
 
         for interview in interviews:
             for turn in interview.turns:
-                if category_tag in (turn.tags or []):
+                if wanted_tags & set(turn.tags or []):
                     sentiment = classify_evidence_sentiment(
-                        turn.answer, finding.summary
+                        turn.answer, finding.summary, category=category_tag
                     )
                     relevant_evidence.append({
                         "persona_id": interview.persona.id,

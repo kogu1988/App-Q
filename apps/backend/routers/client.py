@@ -1336,6 +1336,19 @@ def _synthesize_impl(request, x_username: str | None):
         logger.warning(f"report_markdown üretilemedi: {e}")
         report_dict["report_markdown"] = "\n".join(f"- {i}" for i in report.executive_summary)
 
+    # ── P3-1: Kalite skoru (rapor oluşturulunca hesapla ve kalıcılaştır) ──
+    # Frontend bunu study metadata'sına yazar; aksi halde listede 0/N-A kalıyordu.
+    try:
+        from packages.research_engine.quality import compute_research_quality
+
+        _q = compute_research_quality(report_dict)
+        report_dict["quality_score"] = int(_q.get("overall_score", 0))
+        report_dict["quality_grade"] = {
+            "green": "A", "yellow": "B", "red": "C",
+        }.get(str(_q.get("grade", "")), "B")
+    except Exception as e:
+        logger.warning(f"Kalite skoru hesaplanamadı: {e}")
+
     return report_dict
 
 

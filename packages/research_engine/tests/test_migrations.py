@@ -90,28 +90,31 @@ def test_12_3_schema_migrations_has_no_duplicate_versions():
 
 
 @DB_REQUIRED
-def test_12_4_demo_users_are_not_overwritten():
-    """init_db() demo kullanıcıların planını üzerine yazmamalı (ON CONFLICT DO NOTHING)."""
+def test_12_4_demo_users_are_synced_to_fixtures():
+    """init_db() demo kullanıcıları fixture planına senkronize etmeli (dev).
+
+    Dev'de demo kullanıcılar deterministik fixture'dır: eski/yanlış bir plan
+    kaydı kalıcı olmamalı (ör. `free` yanlışlıkla Flex kalmamalı).
+    Production'da demo kullanıcı hiç seed edilmez.
+    """
     from packages.research_engine.database import get_client_by_username, get_db, init_db
 
     original = get_client_by_username(DEMO_USER)
     if original is None:
         pytest.skip(f"demo kullanıcı '{DEMO_USER}' yok")
 
-    original_plan = original["plan_type"]
     with get_db() as (_conn, cur):
-        cur.execute("UPDATE clients SET plan_type = 'Pro' WHERE username = %s", (DEMO_USER,))
+        cur.execute("UPDATE clients SET plan_type = 'Flex' WHERE username = %s", (DEMO_USER,))
 
     try:
         init_db()
         after = get_client_by_username(DEMO_USER)
-        assert after["plan_type"] == "Pro", "init_db() demo kullanıcının planını ezdi"
+        assert after["plan_type"] == "Free", (
+            "init_db() demo kullanıcının planını fixture değerine (Free) senkronize etmeli"
+        )
     finally:
         with get_db() as (_conn, cur):
-            cur.execute(
-                "UPDATE clients SET plan_type = %s WHERE username = %s",
-                (original_plan, DEMO_USER),
-            )
+            cur.execute("UPDATE clients SET plan_type = 'Free' WHERE username = %s", (DEMO_USER,))
 
 
 @DB_REQUIRED

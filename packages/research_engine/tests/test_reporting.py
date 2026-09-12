@@ -178,3 +178,25 @@ def test_render_report_html_turkish_headers():
     assert "Ticarileştirme Skor Kartı" in html
     assert "Total personas" not in html  # İngilizce kalıntı yok
     assert "Synthetic Study" not in html
+
+
+def test_render_markdown_tolerates_dict_enhanced_findings():
+    """Regresyon: `synthesize_report` enhanced_findings'i `asdict` ile dict yapar.
+
+    render_markdown bu dict'lerde `.title` çağırdığı için
+    `'dict' object has no attribute 'title'` ile çöküyordu → client tarafında
+    fallback (yalnızca executive_summary) devreye giriyor ve rapor ~2 KB kalıyordu.
+    """
+    from dataclasses import asdict, replace
+
+    report = _enterprise_report()
+    assert report.enhanced_findings, "test raporunda enhanced_findings olmalı"
+
+    dict_findings = [asdict(f) for f in report.enhanced_findings]
+    report = replace(report, enhanced_findings=dict_findings)
+
+    md = render_markdown(report)
+    assert "Fiyat bariyeri" in md
+    assert "Kanıtlar:" in md
+    assert "Çok pahalı" in md
+    assert "Destekleyen: **2**" in md

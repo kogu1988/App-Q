@@ -798,7 +798,10 @@ def init_db() -> None:
         except Exception as e:
             logger.warning("Migration 005-evidence-indexes atlandı: %s", e)
 
-        # Production'da bu kayıtlar X-Username backdoor riski oluşturur
+        # Production'da bu kayıtlar X-Username backdoor riski oluşturur.
+        # Dev'de demo kullanıcılar DETERMİNİSTİK fixture'dır: plan/limitleri her
+        # başlatmada senkronize edilir (aksi halde eski bir plan kaydı kalıcı olur,
+        # ör. `free` kullanıcısı yanlışlıkla Flex kalır).
         _app_env = os.getenv("APP_ENV", "development").lower()
         if _app_env != "production":
             _now = datetime.now().isoformat()
@@ -814,7 +817,11 @@ def init_db() -> None:
                 cur.execute("""
                     INSERT INTO clients (username, created_at, email, plan_type, max_simulations, max_tokens, billing_cycle, period_start, period_simulations)
                     VALUES (%s, %s, %s, %s, %s, %s, 'monthly', %s, 0)
-                    ON CONFLICT (username) DO NOTHING
+                    ON CONFLICT (username) DO UPDATE SET
+                        email = EXCLUDED.email,
+                        plan_type = EXCLUDED.plan_type,
+                        max_simulations = EXCLUDED.max_simulations,
+                        max_tokens = EXCLUDED.max_tokens
                 """, (_uname, _now, _email, _plan, _sims, _tokens, _today))
         
         # Default system config

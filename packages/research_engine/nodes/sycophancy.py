@@ -103,7 +103,18 @@ def judge_answer_quality(persona: Any, question: str, answer: str) -> List[str]:
     """Yanıtın kalitesini denetler, yapay zeka tonu, kısa yanıt, zayıf şüphecilik gibi bayrakları döner."""
     flags: List[str] = []
     lower = answer.lower()
-    if any(marker in lower for marker in ["yapay zeka", "asistan", "model olarak", "persona şöyle"]):
+    # Meta ton: kişi KENDİNİ yapay zeka/asistan olarak tanımlarsa.
+    # NOT: Ürünün "yapay zeka özelliği"nden bahsetmek meta ton DEĞİLDİR; eski
+    # kontrol `"yapay zeka"` kelimesini arıyordu ve bu yaygın bir yanlış pozitifti
+    # (ör. "yapay zeka kısmı hoşuma gitti" → sahte meta_tone bayrağı).
+    _META_SELF_MARKERS = (
+        "yapay zeka olarak", "yapay zekayım", "yapay zeka olduğum",
+        "ben bir yapay zeka", "bir yapay zekayım",
+        "asistan olarak", "ben bir asistan", "asistanım",
+        "model olarak", "ben bir model", "dil modeli", "dil modeliyim",
+        "persona olarak", "persona şöyle", "senaryo gereği",
+    )
+    if any(marker in lower for marker in _META_SELF_MARKERS):
         flags.append("meta_tone")
     if len(answer.strip()) < 80:
         flags.append("too_short")

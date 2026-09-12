@@ -994,7 +994,12 @@ export default function StudyDetailPage() {
                         ...getAuthHeaders(),
                       },
                       body: JSON.stringify({
-                        metadata: { ...metadata, has_report: true },
+                        metadata: {
+                          ...metadata,
+                          has_report: true,
+                          quality_score: report.quality_score ?? metadata?.quality_score ?? 0,
+                          quality_grade: report.quality_grade ?? metadata?.quality_grade ?? "N/A",
+                        },
                         payload: reportPayload,
                       }),
                     });
