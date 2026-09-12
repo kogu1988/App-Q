@@ -24,6 +24,7 @@ PLAN_CONFIG: dict[str, dict] = {
     "Free": {
         "max_personas": 10,
         "max_simulations": 2,
+        "local_pii_scrubbing": False,
         "max_tokens": 100_000,
         "max_follow_ups": 0,
         "max_talk_to_research": 0,
@@ -45,6 +46,7 @@ PLAN_CONFIG: dict[str, dict] = {
     "Flex": {
         "max_personas": 10,
         "max_simulations": 3,
+        "local_pii_scrubbing": False,
         "max_tokens": 200_000,
         "max_follow_ups": 3,
         "max_talk_to_research": 3,
@@ -66,6 +68,7 @@ PLAN_CONFIG: dict[str, dict] = {
     "Starter": {
         "max_personas": 10,
         "max_simulations": 10,
+        "local_pii_scrubbing": False,
         "max_tokens": 500_000,
         "max_follow_ups": 3,
         "max_talk_to_research": 3,
@@ -87,6 +90,7 @@ PLAN_CONFIG: dict[str, dict] = {
     "Pro": {
         "max_personas": 10,
         "max_simulations": 9999,  # unlimited
+        "local_pii_scrubbing": False,
         "max_tokens": 9_999_999,  # unlimited
         "max_follow_ups": 9999,
         "max_talk_to_research": 9999,
@@ -108,6 +112,7 @@ PLAN_CONFIG: dict[str, dict] = {
     "Enterprise": {
         "max_personas": 999,  # effectively unlimited / custom
         "max_simulations": 9999,
+        "local_pii_scrubbing": True,
         "max_tokens": 9_999_999,
         "max_follow_ups": 9999,
         "max_talk_to_research": 9999,
@@ -143,6 +148,7 @@ FEATURE_MIN_PLAN: dict[str, str] = {
     "audit_log":         "Enterprise",
     "multi_user":        "Enterprise",
     "white_label":       "Pro",
+    "local_pii_scrubbing": "Enterprise",
 }
 
 PLAN_ORDER = ["Free", "Flex", "Starter", "Pro", "Enterprise"]

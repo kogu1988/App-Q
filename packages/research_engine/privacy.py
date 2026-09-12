@@ -1,7 +1,11 @@
+import logging
+import os
 import re
 from typing import Dict
 import httpx
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 # --- ADIM 1: Maskelenen Verilerin Geri Dönüşümü İçin Sözlük Yapısı ---
 class AnonymizationContext(BaseModel):
@@ -19,11 +23,35 @@ class PrivacyFilterException(Exception):
 
 # --- ADIM 2: Asenkron PII Temizleme Motoru ---
 class LocalPIIScrubber:
-    def __init__(self):
+    """İki katmanlı PII temizleyici.
+
+    1) Katman — Regex: telefon/e-posta/TC (model GEREKTİRMEZ, her planda çalışır).
+    2) Katman — Yerel NER modeli: isim/lokasyon (Enterprise özelliği; yerel SLM ister).
+
+    Yapılandırma (env):
+      PII_NER_ENABLED : yerel NER modeli kullanılsın mı (varsayılan: false — model yoksa çağrı denemez)
+      PII_MODEL_URL   : OpenAI-uyumlu chat/completions adresi (varsayılan: localhost:11434)
+      PII_MODEL_NAME  : model adı
+      PII_TIMEOUT     : saniye (varsayılan 10)
+      PII_STRICT      : true ise NER hatasında exception fırlatır (varsayılan: false → regex'e düşer)
+    """
+
+    def __init__(self, enable_ner: bool | None = None):
         # 2026 Standartlarında Türkiye Odaklı Katı Regex Kalıpları
         self.phone_regex = re.compile(r'(?:\+?90[- ]?)?5[0-9]{2}[- ]?[0-9]{3}[- ]?[0-9]{2}[- ]?[0-9]{2}')
         self.email_regex = re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
         self.tc_regex = re.compile(r'\b[1-9][0-9]{10}\b')
+
+        self.model_url = os.getenv("PII_MODEL_URL", "http://localhost:11434/v1/chat/completions")
+        self.model_name = os.getenv("PII_MODEL_NAME", "Kara-Kumru-v1.0-2B")
+        try:
+            self.timeout = float(os.getenv("PII_TIMEOUT", "10"))
+        except ValueError:
+            self.timeout = 10.0
+        self.strict = os.getenv("PII_STRICT", "false").lower() in {"1", "true", "yes"}
+        if enable_ner is None:
+            enable_ner = os.getenv("PII_NER_ENABLED", "false").lower() in {"1", "true", "yes"}
+        self.enable_ner = bool(enable_ner)
 
     def _apply_regex_mask(self, text: str, context: AnonymizationContext) -> str:
         # E-posta Maskeleme
@@ -57,38 +85,50 @@ class LocalPIIScrubber:
 
     async def sanitize_input(self, raw_text: str) -> SanitizedOutput:
         context = AnonymizationContext()
-        
-        # 1. Katman: Hızlı Regex Filtresi
+
+        # 1. Katman: Hızlı Regex Filtresi (her planda, model gerektirmez)
         partially_sanitized = self._apply_regex_mask(raw_text, context)
-        
+
+        # NER kapalıysa (varsayılan: yerel model yok / plan uygun değil) doğrudan regex sonucu.
+        if not self.enable_ner:
+            return SanitizedOutput(sanitized_text=partially_sanitized, context=context)
+
         # 2. Katman: Yerel Model ile İsim ve Lokasyon NER Filtresi
-        url = "http://localhost:11434/v1/chat/completions"
         ner_system_prompt = """
         Sen sadece girdi metnindeki İNSAN İSİMLERİNİ ve LOKASYONLARI (Şehir, İlçe, Mahalle) bulup temizleyen yerel bir güvenlik katmanısın.
         Görevin: Metindeki isimleri [B_NAME_X], lokasyonları [B_LOCATION_X] şeklinde değiştirerek metni yeniden döndürmektir.
         Kesinlikle açıklama yazma, sadece temizlenmiş metni döndür.
         """
-        
+
         payload = {
-            "model": "Kara-Kumru-v1.0-2B", # Yerel SLM
+            "model": self.model_name,
             "messages": [
                 {"role": "system", "content": ner_system_prompt},
-                {"role": "user", "content": partially_sanitized}
+                {"role": "user", "content": partially_sanitized},
             ],
-            "temperature": 0.0 # Kesin determinizm
+            "temperature": 0.0,  # Kesin determinizm
         }
-        
+
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.post(url, json=payload, timeout=10.0)
+                response = await client.post(self.model_url, json=payload, timeout=self.timeout)
                 if response.status_code == 200:
                     final_text = response.json()["choices"][0]["message"]["content"].strip()
                     return SanitizedOutput(sanitized_text=final_text, context=context)
-                else:
-                    raise PrivacyFilterException(f"NER model returned status {response.status_code}")
+                raise RuntimeError(f"NER model returned status {response.status_code}")
             except Exception as e:
-                # KVKK Standartı: Sessiz fallback yapılmaz, data leak önlenir.
-                raise PrivacyFilterException("Privacy filter failed during local LLM sanitization.") from e
+                if self.strict:
+                    # Enterprise/katı mod: sessiz fallback yok, veri sızıntısı önlenir.
+                    raise PrivacyFilterException(
+                        "Privacy filter failed during local LLM sanitization."
+                    ) from e
+                # Dayanıklı mod (varsayılan): regex maskesi uygulanmış metinle devam et.
+                logger.warning(
+                    "Yerel PII/NER modeli kullanılamadı (%s) — regex maskeleme ile devam ediliyor. "
+                    "İsim/lokasyon maskelemesi devre dışı; Enterprise'da PII_STRICT=true önerilir.",
+                    e,
+                )
+                return SanitizedOutput(sanitized_text=partially_sanitized, context=context)
 
 # Geriye uyumluluk için eski sınıfları tutalım
 class PrivacyMasker:

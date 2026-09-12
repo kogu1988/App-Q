@@ -35,8 +35,10 @@ _ROUTER_FILES = [
 # Endpoint katmanında `_require_feature`/`has_feature` ile kapısı olan özellikler
 ENFORCED_AT_API = {"streaming", "pdf_export", "ab_test", "b2b_mode", "ses_crosstab", "brand_health"}
 
-# Raporlama katmanında (plan_config.get_brand_name) uygulanan özellik
-ENFORCED_ELSEWHERE = {"white_label"}
+# Router dosyaları DIŞINDA kapılanan özellikler:
+# - white_label: raporlama katmanı (plan_config.get_brand_name)
+# - local_pii_scrubbing: gateway.trigger_simulation_triage (yerel NER yalnızca Enterprise)
+ENFORCED_ELSEWHERE = {"white_label", "local_pii_scrubbing"}
 
 # Admin API'si X-Admin-Key ile korunuyor → operatör özellikleri ayrıca plan-kapılı değil
 ADMIN_PROTECTED = {"custom_personas", "fine_tuning_export", "audit_log", "multi_user"}

@@ -46,9 +46,22 @@ class ResearchInflowGateway:
         """Asenkron simülasyon kuyruğunu başlatır"""
         
         # 0. Aşama: Deterministik PII (Kişisel Veri) Maskeleme
+        # Regex katmanı HER planda çalışır. Yerel NER modeli (isim/lokasyon) yalnızca
+        # Enterprise planında denenir (`local_pii_scrubbing`); model yoksa regex'e düşer.
         from .privacy import LocalPIIScrubber, PrivacyFilterException
+        from .plan_config import has_feature
+        from .database import get_client_by_username
+
+        plan_type = "Free"
         try:
-            scrubber = LocalPIIScrubber()
+            _client = get_client_by_username(username) if username else None
+            if _client:
+                plan_type = _client.get("plan_type") or "Free"
+        except Exception:
+            logger.debug("Plan tipi okunamadi (studio triage)", exc_info=True)
+
+        try:
+            scrubber = LocalPIIScrubber(enable_ner=has_feature(plan_type, "local_pii_scrubbing"))
             sanitized_output = await scrubber.sanitize_input(brief)
             safe_brief = sanitized_output.sanitized_text
         except PrivacyFilterException as e:
