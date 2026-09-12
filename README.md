@@ -204,38 +204,38 @@ DEEPSEEK_API_KEY=sk-your-key-here
 POSTGRES_PASSWORD=guclu-bir-sifre
 ```
 
-### 3. Tek Tıkla Başlat
+### 3. Tek Tıkla Başlat (Docker — önerilen)
 
 ```powershell
 python launch.py
+# veya Windows'ta: start.bat
 ```
 
-Bu komut sırasıyla:
-1. Docker servislerini kontrol eder ve başlatır (PostgreSQL + Redis)
-2. Backend API'i başlatır (port 4000)
-3. Frontend'i başlatır (port 4001, gerekirse `npm install` çeker)
-4. Tarayıcıda otomatik açar
-
-### Manuel Başlatma
-
-```powershell
-# Altyapı
-docker compose up -d postgres redis
-
-# Backend
-python -m uvicorn apps.backend.main:app --host 127.0.0.1 --port 4000 --reload
-
-# Frontend
-cd apps/frontend
-npm install
-npm run dev
-```
+Bu komut:
+1. Docker stack'ini başlatır (`docker-compose.prod.yml` + `docker-compose.local.yml`): PostgreSQL, Redis, API, Celery, SearXNG, frontend, Caddy
+2. Servisler hazır olana kadar bekler
+3. Tarayıcıda otomatik açar
 
 | Servis | Adres |
 |--------|-------|
 | Frontend | http://localhost:4001 |
-| API | http://localhost:4000 |
-| API Docs | http://localhost:4000/docs |
+| Tam stack (Caddy) | http://localhost:8080 |
+| API Docs | http://localhost:8080/docs |
+
+Durdurmak için:
+
+```powershell
+docker compose -f docker-compose.prod.yml -f docker-compose.local.yml down
+```
+
+### Host Dev Modu (hızlı backend reload)
+
+```powershell
+python launch.py --dev
+```
+
+Backend `uvicorn --reload` (:4000) + frontend `next dev` (:4001) olarak host'ta çalışır.
+Docker stack kapalı olmalıdır (4001 portu paylaşılır).
 
 ---
 

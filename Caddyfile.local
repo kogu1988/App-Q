@@ -9,6 +9,16 @@ http://localhost:8080 {
     handle /ws {
         reverse_proxy clarere-api:3000
     }
+    # API dokumantasyonu (Swagger/ReDoc) — yerel gelistirme icin
+    handle /docs {
+        reverse_proxy clarere-api:3000
+    }
+    handle /redoc {
+        reverse_proxy clarere-api:3000
+    }
+    handle /openapi.json {
+        reverse_proxy clarere-api:3000
+    }
     handle {
         reverse_proxy frontend:3000
     }

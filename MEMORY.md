@@ -46,22 +46,22 @@ POST /api/auth/register|login               → JWT auth (parola + token)
 ## ⚡ Hızlı Başlatma
 
 ```bash
-python launch.py  # Tek tıkla. Backend :4000, Frontend :4001
-# --reload aktif, kod değişince otomatik yeniden başlar
+python launch.py        # Docker stack (onerilen): frontend :4001, tam stack :8080
+python launch.py --dev  # Host dev: backend :4000 (--reload) + frontend :4001
 ```
 
-## 🐳 Docker Stack (docker-compose.yml)
+`start.bat` → `python launch.py` (Docker modu).
 
-| Servis | Port | Görev |
+## 🐳 Docker
+
+İki akış var — **KARIŞTIRMAYIN**:
+
+| Akış | Komut | Kullanım |
 |---|---|---|
-| postgres (pgvector:pg16) | 5433 | Ana DB — vector ext, RLS, tüm tablolar |
-| redis (7.2) | 4006 | Celery broker + WebSocket pub/sub |
-| searxng | 4003 | Meta arama (Sprint 6 web corroboration) |
-| clarere-api | 4000 | FastAPI (Docker build) |
-| celery_worker | — | Async pipeline (`--concurrency=1`) |
-| langfuse | 4002 | Observability (profiles: optional) |
+| **Yerel Docker (onerilen)** | `docker compose -f docker-compose.prod.yml -f docker-compose.local.yml up -d --build` | Prod benzeri; Caddy :8080, frontend :4001 |
+| Host dev altyapı | `docker compose up -d postgres redis` | Sadece DB+Redis; API/Celery host'ta (`--dev`) |
 
-> `launch.py` SADECE postgres+redis'i ayağa kaldırır; API/Celery/SearXNG host'ta çalışır.
+> `launch.py` (varsayılan) prod+local Docker stack'ini ayağa kaldırır. `--dev` ile eski host akışı (uvicorn --reload).
 
 ## 🧪 Test Durumu
 
@@ -192,7 +192,7 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 | `Caddyfile.cloud` | **Bulut**: yalnızca `api.clarere.com` (+ Paddle webhook) |
 | `.github/workflows/ci.yml` | CI: pytest + `tsc --noEmit` + lint |
 | `scripts/backup_db.sh` | Günlük `pg_dump` yedeği (14 gün saklama) |
-| `launch.py` | Tek tıkla başlatma (Docker kontrolü + backend --reload + frontend) |
+| `launch.py` | Tek tıkla başlatma — Docker stack (varsayılan) / host dev (`--dev`) |
 | `start.bat` | `python launch.py` wrapper |
 | `SUNUM.md` | 14 slidelık yatırımcı sunumu |
 | `server_plan.md` | Canlıya geçiş planı (Vercel + netcup VPS + Neon + Paddle) — sıralı fazlar |
