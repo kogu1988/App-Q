@@ -289,7 +289,7 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 | Custom personas | Enterprise | ✅ `db_vectors.py` + admin |
 | Audit log | Enterprise | ✅ admin `/audit_logs` |
 | Streaming / PDF export | Flex | ✅ |
-| White-label | Pro | ✅ client nav + PDF filename (backend + frontend); `render_report_html` ölü kod |
+| White-label | Pro | ✅ client nav + PDF filename (backend + frontend); `render_report_html` sentezde kullanılıyor |
 | Fine-tuning export | Enterprise | ✅ `db_vectors.export_finetuning_data` + admin `/fine-tuning/export` |
 | Multi-user org | Enterprise | ✅ org/member CRUD (`db_org.py`) + studies RLS (tenant + org paylaşımı); **canlı DB testi tamam** (`test_rls_org_sharing.py`) |
 
@@ -367,7 +367,10 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
     - ✅ **Karar katmanı tutarsızlığı:** (a) `risk` bulgusu `objection` etiketli turlarla eşleşmiyordu → `_CATEGORY_TAG_ALIASES`; (b) pain_point'te acı dili 'karşı kanıt' sayılıp KILL veriyordu → kategori-farkında polarite (`_NEGATIVE_CLAIM_CATEGORIES`). **Sonuç: kanıt 0 → 5/bulgu; pain point KILL(0/3) → INVESTIGATE(1/1).**
     - ✅ **Kişiler arası yankı:** `quality.detect_cross_persona_echo` + `workflow._regen_persona_turns` ile yankılanan persona 'kaçın' listesiyle yeniden üretilir. **Sonuç: 5/5 persona aynı adı ("Pamuk") yerine farklı adlar (Şila, Zeytin, Paşa, Pamuk, Poyraz).**
     - ✅ **Meta ton yanlış pozitifi:** `judge_answer_quality` ürünün "yapay zeka özelliği"nden bahsedince meta_tone veriyordu → yalnızca kendine-referans kalıplarına daraltıldı.
-    - ⚠️ **Kalan (kalibrasyon):** `quality_score` formülü çok agresif cezalandırıyor (grade=C iken score=0 çıkabiliyor); `report_html` frontend tarafından kaydedilmiyor (boş). Bunlar işlevsel değil, kalibrasyon/kozmetik.
+    - ✅ **Kalite skoru kalibrasyonu:** eski formül sabit cezalarla 68 tabanını ezip skoru 0 yapıyordu (grade C ile tutarsız). Oran-tabanlı + sınırlı cezalara geçildi; kanıt artık `enhanced_findings`'ten sayılır. **Sonuç: 0/C → 90/A.**
+    - ✅ **`report_html` boştu:** sentezde `render_report_html` üretilip frontend kaydediyor. **Sonuç: 0 → 37 KB.**
+    - ✅ **Gürültülü uyarılar:** `weak_turkey_context` yalnızca ticari/ödeme sorularında; `weak_skepticism` yalnızca değerlendirme sorularında tetiklenir. **Sonuç: 12 → 2 uyarı** (kalan 2 meşru: şüpheci persona fayda sorusunda itiraz etmedi).
+    - ⚠️ **Ders:** Async araştırma **Celery worker**'da çalışır — backend kod düzeltince `celery_worker` de yeniden derlenmeli, sadece `clarere-api` değil.
 23. ✅ **Demo kullanıcı plan senkronizasyonu** — seed `ON CONFLICT DO NOTHING` yüzünden `free` DB'de Flex kalmıştı; dev'de `DO UPDATE` ile fixture planları senkronize edilir (prod'da demo seed yok). Test: `test_12_4_demo_users_are_synced_to_fixtures`.
 
 > **Test durumu:** 304 passed, 0 skipped (DB testleri dahil — `POSTGRES_HOST/PORT` env ile tam süit).

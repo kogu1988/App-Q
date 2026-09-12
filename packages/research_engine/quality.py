@@ -262,9 +262,11 @@ def adversarial_review(report_dict: dict, model: object) -> dict:
 def compute_research_quality(report_json: dict) -> dict:
     """Computes quality score and metrics for a research report."""
     findings = report_json.get("findings", [])
+    # Kanıt zinciri `enhanced_findings` içinde zenginleştirilmiş olabilir; onu tercih et.
+    _source_findings = report_json.get("enhanced_findings") or findings
     interviews = report_json.get("interviews", [])
     quality_issues = report_json.get("quality_issues", [])
-    evidence_count = sum(len(finding.get("evidence", [])) for finding in findings)
+    evidence_count = sum(len((f.get("evidence") or [])) for f in _source_findings)
 
     turns = [turn for interview in interviews for turn in interview.get("turns", [])]
     pricing_signal_count = sum(
@@ -289,18 +291,24 @@ def compute_research_quality(report_json: dict) -> dict:
     acquiescence_count    = sum(1 for flags in bias_results.values() if "acquiescence_bias" in flags)
     social_desir_count    = sum(1 for flags in bias_results.values() if "social_desirability" in flags)
 
-    score = 68
-    score += min(evidence_count, 12) * 2
-    score += min(pricing_signal_count, 6) * 2
-    score += min(trust_or_kvkk_signal_count, 6)
-    score -= issue_count * 6
-    score -= weak_answer_count * 3
-    score -= meta_issue_count * 10
-    # Bias cezaları
-    score -= straight_lining_count * 8
-    score -= acquiescence_count * 10
-    score -= social_desir_count * 5
-    score = max(0, min(100, score))
+    # ── Skor (0-100): oran tabanlı ve SINIRLI cezalar ──
+    # Eski formül her zayıf yanıt/uyarı için sabit ceza veriyordu ve toplam ceza
+    # 68 tabanını ezip skoru 0'a düşürüyordu (grade C ile tutarsız).
+    _persona_count = max(len(interviews), 1)
+    _turn_count = max(len(turns), 1)
+    weak_rate = weak_answer_count / _turn_count
+
+    score = 60.0
+    score += min(evidence_count, 15) * 1.5              # 0..22.5
+    score += min(pricing_signal_count, 8) * 1.0         # 0..8
+    score += min(trust_or_kvkk_signal_count, 6) * 1.0   # 0..6
+    score -= weak_rate * 20                             # 0..20
+    score -= min(issue_count, 8) * 2                    # 0..16
+    score -= min(meta_issue_count, 3) * 6               # 0..18
+    score -= min(straight_lining_count / _persona_count, 1.0) * 12
+    score -= min(acquiescence_count / _persona_count, 1.0) * 12
+    score -= min(social_desir_count / _persona_count, 1.0) * 8
+    score = int(round(max(0.0, min(100.0, score))))
 
     grade = (
         "green" if score >= 80 and meta_issue_count == 0 and not bias_results

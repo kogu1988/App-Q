@@ -145,3 +145,54 @@ def test_self_identification_still_flagged_as_meta_tone():
         "Ben bir yapay zekayım ve sana yardımcı olmak için buradayım, bu soruya cevap verebilirim.",
     )
     assert "meta_tone" in flags
+
+
+# ── P3: Türkiye bağlamı kapısı + kalite skoru kalibrasyonu ──
+
+def test_weak_turkey_context_not_flagged_for_experience_question():
+    """Deneyim/acı sorusunda TL/taksit geçmemesi uyarı ÜRETMEMELİ."""
+    persona = make_persona()
+    flags = judge_answer_quality(
+        persona,
+        "Bu problemi bugün nasıl yaşıyorsun? Son yaşadığın somut bir örneği anlatır mısın?",
+        "Geçen ay kedimin aşısını kaçırdım, deftere not almıştım ama bir türlü bulamadım, çok stres oldum.",
+    )
+    assert "weak_turkey_context" not in flags
+
+
+def test_weak_turkey_context_flagged_for_commercial_question():
+    """Ticari/fiyat sorusunda bağlam sinyali yoksa uyarı gelmeli."""
+    persona = make_persona()
+    flags = judge_answer_quality(
+        persona,
+        "Bu ürün için ne kadar ödemeyi düşünürsün, fiyatı senin için nedir?",
+        "Uygun olursa düşünürüm, sanırım alırım ama henüz karar vermedim.",
+    )
+    assert "weak_turkey_context" in flags
+
+
+def test_research_quality_score_does_not_collapse_to_zero():
+    """Ağır koşullarda bile skor 0'a çökmemeli (eski formül ezip 0 veriyordu)."""
+    from packages.research_engine.quality import compute_research_quality
+
+    turns = [{"question": "soru", "answer": "kısa", "tags": ["pain_point"]} for _ in range(10)]
+    report_json = {
+        "findings": [],
+        "enhanced_findings": [{"evidence": [{"quote": "x"}] * 10}],
+        "interviews": [
+            {"persona": {"id": "p1", "name": "A", "stance": "Mainstream"}, "turns": turns}
+        ],
+        "quality_issues": [{"issue": "x"}] * 8,
+    }
+
+    q = compute_research_quality(report_json)
+
+    assert q["overall_score"] > 0, "skor 0'a çökmemeli"
+    assert q["overall_score"] <= 100
+    # Grade ile skor tutarlı olmalı
+    if q["overall_score"] >= 80:
+        assert q["grade"] == "green"
+    elif q["overall_score"] >= 60:
+        assert q["grade"] == "yellow"
+    else:
+        assert q["grade"] == "red"

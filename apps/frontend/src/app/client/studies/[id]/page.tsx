@@ -976,6 +976,7 @@ export default function StudyDetailPage() {
                       brief, plan, personas, interviews,
                       report_json: report,
                       report_markdown: report.report_markdown || report.executive_summary?.join("\n") || "",
+                      report_html: report.report_html || "",
                       findings: report.findings || [],
                       action_items: report.action_items || [],
                       recommendations: report.recommendations || [],

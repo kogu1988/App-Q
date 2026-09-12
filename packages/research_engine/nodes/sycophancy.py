@@ -120,16 +120,37 @@ def judge_answer_quality(persona: Any, question: str, answer: str) -> List[str]:
         flags.append("too_short")
         
     stance = getattr(persona, "stance", "Mainstream")
-    if stance in {"Skeptic", "Laggard"} and not any(
-        marker in lower for marker in ["güven", "risk", "pahalı", "kanıt", "emin", "itiraz", "şüphe", "kvkk"]
+    _q_lower = question.lower()
+    # Değerlendirme sorularında şüpheci persona itiraz üretmeli; deneyim/olgu
+    # sorularında ("bugün nasıl yaşıyorsun?") her turda itiraz beklemek yanlıştı.
+    _EVAL_CUES = (
+        "fayda", "heyecan", "özellik", "ozellik", "katıl", "katil", "düşün", "dusun",
+        "neden", "itiraz", "endişe", "endise", "çekince", "cekin", "engel",
+        "pahalı", "pahali", "fiyat", "güven", "guven", "risk", "alır", "alir", "ister", "değer", "deger",
+    )
+    if (
+        stance in {"Skeptic", "Laggard"}
+        and any(cue in _q_lower for cue in _EVAL_CUES)
+        and not any(
+            marker in lower for marker in ["güven", "risk", "pahalı", "kanıt", "emin", "itiraz", "şüphe", "kvkk"]
+        )
     ):
         flags.append("weak_skepticism")
-        
-    if "fiyat" in question.lower() or "para" in question.lower():
+
+    if "fiyat" in _q_lower or "para" in _q_lower:
         if not any(marker in lower for marker in ["tl", "pahalı", "ucuz", "bütçe", "abonelik", "rapor başı"]):
             flags.append("weak_pricing_specificity")
-            
-    if not any(
+
+    # Türkiye bağlamı yalnızca gerçek TİCARİ/ÖDEME sorularında beklenir (TL/taksit/kargo/KVKK).
+    # Acı noktası/deneyim/değer-fayda sorularında bu sinyaller doğal olarak geçmez;
+    # eskiden her yanıta uyarı üretiliyordu (gürültülü yanlış pozitif).
+    _commercial_question = any(
+        k in _q_lower for k in [
+            "fiyat", "para", "ödeme", "odeme", "bütçe", "butce", "satın", "satin",
+            "abonelik", "ücret", "ucret", "kaç tl", "ne kadar öde", "ne kadar ode", "taksit",
+        ]
+    )
+    if _commercial_question and not any(
         marker in lower
         for marker in ["türkiye", "tl", "taksit", "kargo", "komisyon", "kvkk", "bütçe", "pazaryeri", "ajans"]
     ):

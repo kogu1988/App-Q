@@ -1349,6 +1349,16 @@ def _synthesize_impl(request, x_username: str | None):
     except Exception as e:
         logger.warning(f"Kalite skoru hesaplanamadı: {e}")
 
+    # ── HTML raporu (PDF/export + web gösterimi) ──
+    try:
+        from packages.research_engine.reporting import render_report_html
+
+        report_dict["report_html"] = render_report_html(
+            report_dict, report_dict.get("report_markdown", "")
+        )
+    except Exception as e:
+        logger.warning(f"report_html üretilemedi: {e}")
+
     return report_dict
 
 
