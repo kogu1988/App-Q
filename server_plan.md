@@ -1,9 +1,56 @@
 # Clarere — Canlıya Geçiş Planı
 
 > **Durum:** Uygulama planı. Sıra ile ilerlenir; her fazın sonunda doğrulama adımı vardır.
-> **Hedef mimari:** Vercel (frontend) + netcup VPS (backend/worker/redis/caddy/searxng) + Neon (PostgreSQL).
+>
+> **⚠️ Mimari güncellemesi (2026-09):** **Birincil plan = Oracle Cloud Always Free (tek ARM VM, tek-VM self-hosted).**
+> Aşağıdaki netcup + Neon + Vercel planı **ikincil/yedek plan** olarak korunur (§1–§14).
 >
 > **Sorumluluk ayrımı:** 🔴 = kullanıcı yapmalı (hesap/DNS/ödeme, browser+kimlik gerektirir) · 🟢 = ajan SSH/terminal üzerinden yapabilir
+
+---
+
+## 0a. Birincil Plan — Oracle Cloud Always Free (tek VM)
+
+**Neden:** Tek VM'de Postgres+pgvector, Redis, API, Celery, Caddy ve (opsiyonel) SearXNG birlikte çalışır;
+ayrı managed servis (Neon/Upstash) gerekmez. Kod zaten env tabanlı olduğu için ileride parça parça
+taşınabilir (Neon'a geçiş = sadece `POSTGRES_HOST` değişikliği).
+
+**Kaynak ihtiyacı:** 2 OCPU / 12 GB ARM (Ampere A1, Always Free) rahat yeter; ayrıca 2–4 GB **swap** ekle.
+
+### Kullanıcı adımları (🔴)
+
+1. **Oracle Cloud hesabı** aç (Always Free uygun bölge seç: ör. Frankfurt/Amsterdam).
+2. **Compute → Instance** oluştur:
+   - Shape: **VM.Standard.A1.Flex** (2 OCPU / 12 GB) — ARM Ampere
+   - Image: **Ubuntu 22.04 veya 24.04**
+   - SSH anahtarını yükle (mevcut public key veya yeni üret)
+3. **Reserved Public IP** ata (Always Free, kalıcı — ephemeral kullanma).
+4. **Security List / NSG** — giriş portları: **22, 80, 443**.
+5. (Opsiyonel) İlk girişte disk/swap ve `ufw` ayarı ajan tarafından yapılır.
+
+### Ajan adımları (🟢 — SSH erişimi verildikten sonra)
+
+6. Sistem güncelleme, 3–4 GB swap, Docker + compose kurulumu, `ufw allow 22/80/443`.
+7. `git clone https://github.com/kogu1988/clarere.git /opt/clarere` + `.env` oluştur (`chmod 600`).
+8. **Tek-VM stack:** `docker compose -f docker-compose.prod.yml up -d --build` (postgres+redis+api+celery+caddy+searxng),
+   `Caddyfile` (prod) ile `clarere.com`/`api.clarere.com` + otomatik TLS.
+9. `init_db()` migrationları, admin/secrets, `python scripts/setup_paddle_catalog.py` (webhook public URL ile).
+10. Yedekleme cron'u (`scripts/backup_db.sh`) + Sentry/Resend anahtarları.
+11. Uçtan uca doğrulama (§8) + Paddle webhook testi.
+
+### Ajanın senden ihtiyaç duyduğu bilgiler (🔴 → 🟢)
+
+- **VM public IP** (reserved) ve **SSH kullanıcı adı** (`ubuntu`)
+- **SSH özel anahtarının bu makinedeki yolu** (anahtarı sohbete YAZMA; dosya olarak yerelde dursun)
+- **DNS erişimi** (Squarespace) — `A` kayıtlarını sen mi ekleyeceksin, yoksa adımları mı vereyim?
+- **Karar:** DB tek VM'de mi (öneri) yoksa Neon'da mı?
+- **Sırlar:** `ADMIN_SECRET_KEY`, `JWT_SECRET`, `POSTGRES_PASSWORD` (yeni güçlü değerler; `.env`'e senin makinede yazılır)
+
+### ARM uyumu notları
+
+- Base image'lar multi-arch (`node:20-alpine`, `python:3.12-slim`, `pgvector/pgvector:pg16`, `redis`) → sorun beklenmiyor.
+- Gerekirse build'de `--platform linux/arm64`.
+- `psycopg2-binary`, `pillow`, `pyarrow` vb. arm64 wheel'leri mevcut.
 
 ---
 
