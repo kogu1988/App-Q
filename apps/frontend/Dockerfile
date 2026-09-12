@@ -4,6 +4,11 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# API proxy hedefi build-time'da gömülür — next.config rewrites derleme anında sabitlenir.
+# Bu yüzden runtime env değil BUILD ARG olarak verilmelidir.
+ARG API_PROXY_TARGET
+ENV API_PROXY_TARGET=$API_PROXY_TARGET
+
 COPY package.json package-lock.json ./
 RUN npm ci
 

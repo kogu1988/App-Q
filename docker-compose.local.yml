@@ -10,3 +10,14 @@ services:
       - ./Caddyfile.local:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+
+  # Frontend'e doğrudan erişim: http://localhost:4001
+  # API_PROXY_TARGET BUILD ARG'dır: next.config rewrites derleme anında gömülür
+  # (runtime env etkisizdir). /api/* container içinden clarere-api:3000'e gider.
+  frontend:
+    build:
+      context: ./apps/frontend
+      args:
+        API_PROXY_TARGET: http://clarere-api:3000
+    ports:
+      - "4001:3000"
