@@ -46,8 +46,23 @@ import {
   ThumbsDown,
   Eye,
   Info,
+  DollarSign,
 } from "lucide-react";
 import Logo from "@/components/logo";
+
+interface UsageRow {
+  username: string;
+  calls: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cache_hit_tokens: number;
+  cost_usd: string | number;
+}
+
+interface UsageResponse {
+  usage: UsageRow[];
+}
 
 // Import modular components
 import { FeedbackTable } from "@/components/admin/feedback-table";
@@ -210,6 +225,8 @@ export default function AdminPage() {
   const [savingConfig, setSavingConfig] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
+  const [usage, setUsage] = useState<UsageResponse | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
   const [adminKey, setAdminKey] = useState(() => typeof window !== "undefined" ? (localStorage.getItem("clarere_admin_key") || "") : "");
 
   // Edit question purpose states
@@ -411,6 +428,23 @@ export default function AdminPage() {
             >
               <BarChart3 size={16} className="mr-3" />
               <span>Metrikler</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="usage"
+              className="justify-start px-4 py-2.5 w-full"
+              onClick={() => {
+                if (!usage && !usageLoading) {
+                  setUsageLoading(true);
+                  fetch("/api/admin/usage", { headers: getAdminHeaders() })
+                    .then(r => r.json())
+                    .then(d => setUsage(d))
+                    .catch(() => toast.error("Maliyet verisi yüklenemedi."))
+                    .finally(() => setUsageLoading(false));
+                }
+              }}
+            >
+              <DollarSign size={16} className="mr-3" />
+              <span>Maliyet</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1344,6 +1378,73 @@ export default function AdminPage() {
                     </Card>
                   )}
                 </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="usage" className="mt-6 flex-1 outline-none space-y-6">
+              <div className="mb-6">
+                <p className="text-sm text-[#616161] dark:text-[#93939f]">
+                  Kullanıcı bazlı token tüketimi ve tahmini DeepSeek maliyeti (USD).
+                </p>
+              </div>
+
+              {usageLoading && (
+                <div className="flex items-center gap-3 py-16 justify-center text-muted-foreground">
+                  <Loader2 size={22} className="animate-spin text-[#ff7759]" />
+                  Maliyet verisi yükleniyor...
+                </div>
+              )}
+
+              {usage && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Token &amp; Maliyet Özeti</CardTitle>
+                    <CardDescription>
+                      {usage.usage.length} kullanıcı · Toplam tahmini maliyet: ${
+                        usage.usage.reduce((sum, r) => sum + Number(r.cost_usd || 0), 0).toFixed(4)
+                      }
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {usage.usage.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        Henüz kayıtlı token kullanımı yok.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto w-full">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Kullanıcı</TableHead>
+                              <TableHead className="text-right">Çağrı</TableHead>
+                              <TableHead className="text-right">Prompt</TableHead>
+                              <TableHead className="text-right">Completion</TableHead>
+                              <TableHead className="text-right">Cache Hit</TableHead>
+                              <TableHead className="text-right">Toplam Token</TableHead>
+                              <TableHead className="text-right">Maliyet (USD)</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {usage.usage.map((row) => (
+                              <TableRow key={row.username}>
+                                <TableCell className="font-medium">{row.username}</TableCell>
+                                <TableCell className="text-right">{row.calls.toLocaleString("tr-TR")}</TableCell>
+                                <TableCell className="text-right">{row.prompt_tokens.toLocaleString("tr-TR")}</TableCell>
+                                <TableCell className="text-right">{row.completion_tokens.toLocaleString("tr-TR")}</TableCell>
+                                <TableCell className="text-right">{row.cache_hit_tokens.toLocaleString("tr-TR")}</TableCell>
+                                <TableCell className="text-right font-semibold">{row.total_tokens.toLocaleString("tr-TR")}</TableCell>
+                                <TableCell className="text-right font-mono">${Number(row.cost_usd).toFixed(4)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                    <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">
+                      Maliyet tahminidir; DeepSeek fiyatları `DEEPSEEK_PRICE_*` ortam değişkenleriyle güncellenir.
+                    </p>
+                  </CardContent>
+                </Card>
               )}
             </TabsContent>
           </div>
