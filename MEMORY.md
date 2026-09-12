@@ -150,7 +150,7 @@ python -m pytest packages/research_engine/tests/ -q  # 187 passed + 1 skipped
 | `src/app/client/page.tsx` | Client dashboard |
 | `src/app/client/upgrade/page.tsx` | Plan yükseltme sayfası — Paddle checkout + ödeme yoklama |
 | `src/lib/paddle.ts` | Paddle.js v2 başlatma + checkout overlay |
-| `src/middleware.ts` | Edge middleware: www→apex, `/client/*` derin bağlantı koruması, noindex, probe engelleme |
+| `src/proxy.ts` | Next.js 16 proxy: www→apex, `/client/*` derin bağlantı koruması, noindex, probe engelleme |
 | `src/lib/auth.ts` | Auth header'ları + oturum işareti cookie'si (`setSessionMarker`) |
 | `src/app/layout.tsx` | Root layout, metadata, JSON-LD, favicon, Paddle.js script |
 | `src/hooks/use-client-plan.ts` | Plan bilgisi hook (DEFAULT_PLAN: Free) |
@@ -336,7 +336,7 @@ python -m pytest packages/research_engine/tests/ -q  # 187 passed + 1 skipped
 9. ⚠️ **Paddle env doldurulmalı** — sandbox katalog kuruldu; live için `PADDLE_ENV=production` + live price ID'ler. Webhook secret `PADDLE_WEBHOOK_URL` verilince oluşturulacak.
 10. ✅ **`/research` job pattern (P0-1 Aşama 2)** — `POST /research/jobs` → 202 `job_id`; `GET /research/jobs/{id}` durum. Celery görevi `jobs.py`, ortak çekirdek `research_runner.py`. Frontend: job dener, 503'te senkron `/research`'e düşer.
 11. ✅ **Ölü kod DEĞİL (denetim hatası düzeltildi)** — `graph.py`, `state.py`, `nodes/intake.py`, `synthesis_pipeline.py` **canlı**: `gateway.py` → `/studio/simulate` bunları kullanıyor. **SİLİNMEMELİ.**
-12. ✅ **Frontend middleware** — `src/middleware.ts` (prod host kanonikleştirme, derin bağlantı koruması, noindex, probe engelleme). `/client` kökü bilinçli olarak açık (onboarding orada).
+12. ✅ **Frontend proxy (middleware)** — `src/proxy.ts` (Next.js 16 konvansiyonu; `middleware.ts` DEĞİL). Prod host kanonikleştirme, derin bağlantı koruması, noindex, probe engelleme. `/client` kökü bilinçli olarak açık (onboarding orada).
 13. ℹ️ **`models/` klasörü** sadece README.
 14. ℹ️ **Canlıya geçiş** — `server_plan.md` fazları uygulanacak (VPS + Neon + Vercel).
 

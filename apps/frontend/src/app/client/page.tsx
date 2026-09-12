@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText, CreditCard, ExternalLink, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import { getAuthHeaders } from "@/lib/auth";
 
@@ -16,6 +17,118 @@ interface Study {
   category?: string;
   updated_at: string;
   has_report: boolean;
+}
+
+interface SubscriptionInfo {
+  plan: string;
+  status: string;
+  current_period_end: string | null;
+  paddle_customer_id: string;
+}
+
+const STATUS_LABELS: Record<string, { label: string; className: string }> = {
+  active: { label: "Aktif", className: "bg-[#003c33] text-white" },
+  trialing: { label: "Deneme", className: "bg-[#1d4ed8] text-white" },
+  past_due: { label: "Ödeme Gecikti", className: "bg-amber-500 text-white" },
+  paused: { label: "Duraklatıldı", className: "bg-[#616161] text-white" },
+  canceled: { label: "İptal Edildi", className: "bg-[#8b1e1e] text-white" },
+  none: { label: "Abonelik Yok", className: "bg-muted text-muted-foreground" },
+};
+
+// ── Abonelik Durumu ──────────────────────────────────────────────────────────
+
+function SubscriptionCard() {
+  const [sub, setSub] = useState<SubscriptionInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/billing/subscription`, { headers: getAuthHeaders() })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { setSub(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  async function openPortal() {
+    setPortalLoading(true);
+    try {
+      const res = await fetch(`/api/billing/portal`, { headers: getAuthHeaders() });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.detail || "Abonelik portalı açılamadı.");
+      }
+      const data = await res.json();
+      if (!data?.url) throw new Error("Portal bağlantısı alınamadı.");
+      window.open(data.url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Bir hata oluştu.");
+    } finally {
+      setPortalLoading(false);
+    }
+  }
+
+  if (loading) return null;
+
+  const status = sub?.status ?? "none";
+  const statusMeta = STATUS_LABELS[status] ?? STATUS_LABELS.none;
+  const periodEnd = sub?.current_period_end
+    ? new Date(sub.current_period_end).toLocaleDateString("tr-TR")
+    : null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard size={18} /> Abonelik
+            </CardTitle>
+            <CardDescription>
+              {sub?.plan ? `${sub.plan} planı` : "Henüz bir aboneliğiniz yok."}
+              {periodEnd ? ` · Dönem sonu: ${periodEnd}` : ""}
+            </CardDescription>
+          </div>
+          <Badge className={statusMeta.className}>{statusMeta.label}</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {status === "past_due" && (
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-300">
+            <AlertTriangle size={16} className="text-amber-700 mt-0.5 shrink-0" />
+            <p className="text-xs text-amber-900 leading-relaxed">
+              Ödemeniz alınamadı. Erişiminiz devam ediyor — kesinti yaşamamak için ödeme
+              yönteminizi güncelleyin.
+            </p>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          {sub?.paddle_customer_id ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-2 rounded-xl"
+              onClick={openPortal}
+              disabled={portalLoading}
+            >
+              <ExternalLink size={14} />
+              {portalLoading ? "Açılıyor…" : "Aboneliği Yönet"}
+            </Button>
+          ) : null}
+          <Link href="/client/upgrade">
+            <Button size="sm" className="bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl gap-2">
+              {sub?.plan && sub.plan !== "Free" ? "Planı Değiştir" : "Plan Seç"}
+            </Button>
+          </Link>
+        </div>
+
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Ödemeler Paddle üzerinden alınır. Fatura ve kart bilgilerinizi Paddle müşteri
+          portalından yönetebilirsiniz.
+        </p>
+      </CardContent>
+    </Card>
+  );
 }
 
 
@@ -63,6 +176,8 @@ export default function ClientDashboard() {
         <h1 className="text-3xl font-bold tracking-tight text-[#17171c] dark:text-white">Kontrol Paneli</h1>
         <p className="text-[#616161] dark:text-[#93939f] text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>
       </div>
+
+      <SubscriptionCard />
 
       {/* ── PRESET SHARP CARBON GLOW CARD ────────────────────────────────────── */}
       <div className="bg-[#17171c] text-white p-6 sm:p-8 rounded-[2px] border border-white/10 relative overflow-hidden shadow-lg">
