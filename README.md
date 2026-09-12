@@ -63,6 +63,9 @@ Clarere/
 │       ├── database.py        Tüm DB operasyonları + bağlantı havuzu
 │       ├── models.py          Dataclass veri sözleşmeleri
 │       ├── plan_config.py     Plan katmanı feature gate SSOT
+│       ├── pricing_table.py   DeepSeek token fiyatlandırma SSOT (USD/1M)
+│       ├── paddle_config.py   Paddle price → plan eşlemesi SSOT
+│       ├── paddle_webhooks.py Paddle imza doğrulama + event işleme
 │       └── reporting.py       PDF/HTML rapor üretimi
 │
 ├── launch.py                  Tek tıkla başlatma
@@ -110,7 +113,11 @@ Frontend (Next.js :4001)
 | **Atomik Kota** | `UPDATE...RETURNING` ile TOCTOU-güvenli simülasyon sayacı |
 | **Migration Versioning** | `schema_migrations` tablosu ile idempotent DB migrationları |
 | **Security Headers** | X-Frame-Options, CSP, HSTS, nosniff, Referrer-Policy |
-| **Admin Koruması** | `X-Admin-Key` header dependency ile tüm admin endpoint'leri korumalı |
+| **Admin Koruması** | `X-Admin-Key` header dependency; production'da key yoksa erişim kapalı (503) |
+| **Event Loop Koruması** | Senkron LLM/DB endpoint'leri threadpool'da çalışır — eşzamanlı istekler birbirini kilitlemez |
+| **LLM Dayanıklılık** | Timeout + exponential backoff retry + araştırma süre bütçesi |
+| **Token Muhasebesi** | Her LLM çağrısı `token_usage`'a yazılır; dönemsel bütçe aşımında 429 |
+| **Paddle Billing** | Checkout + webhook (HMAC imza, idempotent, sıralı) — Paddle merchant of record |
 
 ---
 
@@ -239,6 +246,10 @@ npm run dev
 | `DEEPSEEK_API_KEY` | — | **Zorunlu** — DeepSeek API anahtarı |
 | `DEEPSEEK_FLASH_MODEL` | `deepseek-v4-flash` | Intake ve interview modeli |
 | `DEEPSEEK_PRO_MODEL` | `deepseek-v4-pro` | Sentez ve analiz modeli |
+| `DEEPSEEK_TIMEOUT` | `90` | LLM çağrısı zaman aşımı (saniye) |
+| `DEEPSEEK_MAX_RETRIES` | `3` | LLM yeniden deneme sayısı (exponential backoff) |
+| `RESEARCH_DEADLINE_SECONDS` | `300` | Araştırma süre bütçesi — aşılırsa kalan personalar atlanır |
+| `THREADPOOL_SIZE` | `64` | Senkron endpoint'ler için threadpool boyutu |
 | `APP_ENV` | `development` | `development` \| `production` |
 | `POSTGRES_USER` | `clarere_user` | PostgreSQL kullanıcı adı |
 | `POSTGRES_PASSWORD` | `clarere_password` | PostgreSQL şifresi |
@@ -250,9 +261,21 @@ npm run dev
 | `VALKEY_URL` | `redis://localhost:6379/0` | Celery broker URL |
 | `PG_POOL_MIN` | `2` | Bağlantı havuzu minimum |
 | `PG_POOL_MAX` | `10` | Bağlantı havuzu maksimum |
-| `ADMIN_SECRET_KEY` | — | Admin API koruması |
+| `ADMIN_SECRET_KEY` | — | Admin API koruması — production'da zorunlu |
+| `JWT_SECRET` | — | JWT imzalama anahtarı — production'da zorunlu, min 32 karakter |
 | `ALLOWED_ORIGINS` | `*` (dev) | CORS — production'da zorunlu |
 | `CELERY_CONCURRENCY` | `1` | Celery worker sayısı |
+
+### Paddle Billing
+
+| Değişken | Açıklama |
+|----------|---------|
+| `PADDLE_ENV` | `sandbox` \| `production` |
+| `PADDLE_API_KEY` | Sunucu tarafı API anahtarı (sandbox: `pdl_sdbx_...`) |
+| `PADDLE_WEBHOOK_SECRET` | Notification destination imza anahtarı |
+| `PADDLE_PRICE_FLEX` / `_STARTER_MONTHLY` / `_STARTER_ANNUAL` / `_PRO_MONTHLY` / `_PRO_ANNUAL` | Plan → Paddle price ID eşlemesi |
+| `NEXT_PUBLIC_PADDLE_ENV` | Frontend Paddle.js ortamı |
+| `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | Frontend Paddle.js client token (yayınlanması güvenli) |
 
 ---
 
@@ -266,10 +289,14 @@ npm run dev
 | `GET` | `/me` | Plan ve kullanım bilgisi | `X-Username` | — |
 | `POST` | `/upgrade-plan` | Plan yükseltme | `X-Username` | — |
 | `POST` | `/intake` | Defne chatbot mesajı | — | Flash |
-| `POST` | `/research` | Plan + Persona + Batch Mülakat | `X-Username` | Flash |
+| `POST` | `/research` | Plan + Persona + Batch Mülakat (senkron) | `X-Username` | Flash |
+| `POST` | `/research/jobs` | Async araştırma başlat → 202 `job_id` | `X-Username` | Flash |
+| `GET` | `/research/jobs/{id}` | Async araştırma durumu (queued/running/completed/failed) | `X-Username` | — |
 | `POST` | `/synthesize` | Sentez raporu üret | `X-Username` | — |
 | `GET` | `/studies` | Araştırma listesi | `X-Username` | — |
 | `GET` | `/studies/{id}` | Araştırma detayı | `X-Username` | — |
+| `GET` | `/me/export` | KVKK veri dışa aktarma (JSON indirme) | `X-Username` | — |
+| `DELETE` | `/me` | KVKK hesap silme (abonelik iptali + veri silme) | `X-Username` | — |
 | `POST` | `/feedback` | Geri bildirim gönder | — | — |
 
 > **Auth:** `X-Username: <kullanıcı-adı>` header'ı. Kayıt olmadan `Free` plan uygulanır.
@@ -289,6 +316,16 @@ Tüm endpoint'ler `X-Admin-Key: <ADMIN_SECRET_KEY>` header'ı gerektirir.
 | `GET` | `/feedbacks` | Geri bildirimler |
 | `GET` | `/audit_logs` | Audit logları |
 | `GET` | `/personas` | Persona havuzu |
+| `GET` | `/usage` | Kullanıcı bazlı token + maliyet özeti |
+
+### Billing API (`/api/billing`)
+
+| Method | Endpoint | Açıklama | Auth |
+|--------|----------|---------|------|
+| `POST` | `/checkout` | Paddle checkout için price ID + müşteri bilgisi | `X-Username` |
+| `GET` | `/subscription` | Abonelik durumu (plan, status, dönem sonu) | `X-Username` |
+| `GET` | `/portal` | Paddle müşteri portalı linki | `X-Username` |
+| `POST` | `/webhook` | Paddle webhook — **HMAC imza doğrulaması** (auth header yok) | İmza |
 
 ### Rate Limitleri
 
@@ -367,17 +404,49 @@ pytest packages/research_engine/tests/test_van_westendorp.py -v
 | `test_quality.py` | Bias detection, acquiescence, meta-tone, research_quality | 14 |
 | `test_semantic_router.py` | Keyword fallback, route validasyonu | 12 |
 | `test_grounded.py` | ACT-R bellek, S-O-R sepet terk, Big Five | 3 |
-| **Toplam** | | **126** |
+| `test_blockers_p0.py` | Paddle imza/plan eşlemesi, token fiyat, JWT/admin guard, usage | 20 |
+| `test_production_readiness.py` | KVKK silme onayı, e-posta fail-safe, Paddle iptali, job runner | 9 |
+| **Toplam** | | **187** (+1 skipped) |
 
 ---
 
 ## Güvenlik Notları
 
 - **Lokal/Demo:** Mevcut `X-Username` header auth bu ortam için yeterlidir
-- **Production öncesi:** JWT auth migrasyonu zorunludur
-- **`ADMIN_SECRET_KEY`** set edilmezse admin API korumasız çalışır — development'ta terminal uyarısı verir, production'da **zorunludur**
+- **Production öncesi:** JWT auth migrasyonu zorunludur (`JWT_SECRET`, min 32 karakter)
+- **`ADMIN_SECRET_KEY`** production'da zorunludur — yoksa admin API **503** döner (erişim verilmez). Karşılaştırma timing-safe'dir; başarısız denemeler audit log'a yazılır
 - **`DEEPSEEK_API_KEY`** `.env`'de tutulmalı, asla commit edilmemeli
+- **Paddle:** `PADDLE_WEBHOOK_SECRET` olmadan webhook reddedilir; imza doğrulanmadan hiçbir payload işlenmez
 - **CORS:** Production'da `ALLOWED_ORIGINS` mutlaka kısıtlanmalı (varsayılan `*` yalnızca geliştirme içindir)
+- **`/upgrade-plan`** production'da kapalıdır — plan yalnızca Paddle ödeme akışıyla yükseltilir
+
+---
+
+## Production / Dağıtım
+
+Canlıya geçiş için ayrıntılı, sıralı plan: **`server_plan.md`**
+
+**Mimari:** **Vercel** (frontend) + **netcup VPS** (FastAPI + Celery + Redis + Caddy + SearXNG) + **Neon** (PostgreSQL + pgvector).
+
+| Dosya | Görev |
+|---|---|
+| `server_plan.md` | Faz faz canlıya geçiş planı (kontrol listeleriyle) |
+| `docker-compose.cloud.yml` | Bulut production stack — PostgreSQL yok (Neon), Caddy ile TLS |
+| `Caddyfile.cloud` | `api.clarere.com` otomatik Let's Encrypt + reverse proxy |
+| `docker-compose.prod.yml` + `docker-compose.local.yml` | Tek-sunucu / yerel Docker stack (korunmuştur) |
+| `.env.production.example` | Sunucu env şablonu |
+| `.github/workflows/ci.yml` | CI: pytest + `tsc --noEmit` + lint |
+| `scripts/backup_db.sh` | Günlük `pg_dump` yedeği (14 gün) |
+| `scripts/setup_paddle_catalog.py` | Paddle ürün/fiyat/destination idempotent kurulum |
+
+```bash
+# Sunucuda:
+cp .env.production.example .env && chmod 600 .env   # değerleri doldur
+docker compose -f docker-compose.cloud.yml up -d --build
+curl -s https://api.clarere.com/health
+```
+
+**Opsiyonel servisler (env ile açılır):** `SENTRY_DSN` → hata izleme · `RESEND_API_KEY` → işlemsel e-posta.
 
 ---
 

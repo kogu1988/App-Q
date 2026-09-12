@@ -901,6 +901,27 @@ def run_interviews_stream(
     return interviews
 
 
+def _skipped_interview(persona: Persona, script: List[InterviewQuestion]) -> PersonaInterview:
+    """Süre bütçesi aşıldığında kalan personalar için boş mülakat üretir (P0-5)."""
+    turns = [
+        InterviewTurn(
+            question=sq.question,
+            answer="[Yanıt alınamadı]",
+            tags=sq.tags or classify_question(sq.question),
+            model_id=None,
+            quality_flags=["timeout"],
+        )
+        for sq in script
+    ]
+    return PersonaInterview(
+        persona=persona,
+        turns=turns,
+        consistency_notes=[
+            "Süre bütçesi (RESEARCH_DEADLINE_SECONDS) aşıldı — mülakat çalıştırılmadı."
+        ],
+    )
+
+
 def run_interviews_batch(
     brief: ResearchBrief,
     personas: List[Persona],
@@ -914,6 +935,16 @@ def run_interviews_batch(
     interviews: List[PersonaInterview] = []
     script = interview_script or generate_interview_script(brief)
 
+    # ── Süre bütçesi (P0-5): aşılırsa kalan personalar atlanır ──
+    import time as _time
+    _deadline: float | None = None
+    try:
+        _deadline_seconds = float(os.getenv("RESEARCH_DEADLINE_SECONDS", "300"))
+        if _deadline_seconds > 0:
+            _deadline = _time.monotonic() + _deadline_seconds
+    except (TypeError, ValueError):
+        _deadline = None
+
     try:
         config = get_system_config()
         db_prompt = config.get("persona_interview_prompt")
@@ -926,6 +957,16 @@ def run_interviews_batch(
     has_ab = any(sq.label == "AB_TEST" for sq in script) and brief.variant_a and brief.variant_b
 
     for persona_idx, persona in enumerate(personas):
+        # Süre bütçesi aşıldıysa: kullanıcıyı daha fazla bekletme, kalanları boş mülakatla doldur.
+        if _deadline is not None and _time.monotonic() > _deadline:
+            logger.warning(
+                "Araştırma süre bütçesi aşıldı — %d persona atlanıyor (indeks %d).",
+                len(personas) - persona_idx, persona_idx,
+            )
+            for skipped in personas[persona_idx:]:
+                interviews.append(_skipped_interview(skipped, script))
+            break
+
         system_prompt = db_prompt if db_prompt else build_elephant_system_prompt(persona, brief.hypothesis_blind)
 
         # Sprint 5 — A/B soru metnini kişiye özel randomize et (batch için)

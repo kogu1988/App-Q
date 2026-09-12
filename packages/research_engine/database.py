@@ -145,27 +145,47 @@ def _ensure_app_role(cur) -> None:
 
     PostgreSQL superuser'ları RLS'yi bypass eder; tenant izolasyonunun
     fiilen çalışması için app bu rol (clarere_app) üzerinden bağlanmalı.
+
+    Yönetilen PostgreSQL (Neon vb.) `CREATE ROLE` yetkisi vermez. Bu durumda
+    rol oluşturma atlanır — `FORCE ROW LEVEL SECURITY` sayesinde tablo sahibi
+    de policy'ye tabi olduğu için tenant izolasyonu çalışmaya devam eder.
     """
     from psycopg2 import sql as psql
-    cur.execute(
-        """
-        DO $$
-        BEGIN
-            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'clarere_app') THEN
-                CREATE ROLE clarere_app LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB;
-            END IF;
-        END
-        $$;
-        """
-    )
-    cur.execute(
-        psql.SQL("ALTER ROLE clarere_app WITH LOGIN PASSWORD {}").format(psql.Literal(APP_DB_PASS))
-    )
-    cur.execute("GRANT USAGE ON SCHEMA public TO clarere_app;")
-    cur.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO clarere_app;")
-    cur.execute("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO clarere_app;")
-    cur.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO clarere_app;")
-    cur.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO clarere_app;")
+
+    if APP_DB_USER != "clarere_app":
+        logger.info(
+            "App rolü yönetilen DB tarafından sağlanıyor (APP_DB_USER=%s) — "
+            "rol oluşturma atlandı.",
+            APP_DB_USER,
+        )
+        return
+
+    try:
+        cur.execute(
+            """
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'clarere_app') THEN
+                    CREATE ROLE clarere_app LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB;
+                END IF;
+            END
+            $$;
+            """
+        )
+        cur.execute(
+            psql.SQL("ALTER ROLE clarere_app WITH LOGIN PASSWORD {}").format(psql.Literal(APP_DB_PASS))
+        )
+        cur.execute("GRANT USAGE ON SCHEMA public TO clarere_app;")
+        cur.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO clarere_app;")
+        cur.execute("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO clarere_app;")
+        cur.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO clarere_app;")
+        cur.execute("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO clarere_app;")
+    except Exception as exc:
+        logger.warning(
+            "clarere_app rolü oluşturulamadı (%s) — yönetilen DB olabilir; "
+            "FORCE ROW LEVEL SECURITY ile izolasyon devam eder.",
+            exc,
+        )
 
 
 DEFAULT_WIZARD_PROMPT = (
@@ -428,6 +448,26 @@ def init_db() -> None:
             )
             """
         )
+
+        # — P0-6: Token / maliyet muhasebesi —
+        # Her LLM çağrısı buraya bir satır yazar; clients.tokens_used dönemsel toplamdır.
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS token_usage (
+                id SERIAL PRIMARY KEY,
+                username TEXT NOT NULL,
+                study_id TEXT,
+                model_id TEXT NOT NULL,
+                operation TEXT NOT NULL,
+                prompt_tokens INTEGER DEFAULT 0,
+                completion_tokens INTEGER DEFAULT 0,
+                total_tokens INTEGER DEFAULT 0,
+                cache_hit_tokens INTEGER DEFAULT 0,
+                cost_usd NUMERIC(10,6) DEFAULT 0,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+            """
+        )
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS curated_questions (
@@ -549,6 +589,34 @@ def init_db() -> None:
             cur.execute("ALTER TABLE clients ADD COLUMN IF NOT EXISTS password_hash TEXT;")
         except Exception as e:
             print(f"[DB] Auth migration warning: {e}")
+
+        # — P0-2: Paddle abonelik durumu ("Lean Cache" — sadece erişim kararı alanları) —
+        try:
+            cur.execute("ALTER TABLE clients ADD COLUMN IF NOT EXISTS paddle_customer_id TEXT;")
+            cur.execute("ALTER TABLE clients ADD COLUMN IF NOT EXISTS paddle_subscription_id TEXT;")
+            cur.execute("ALTER TABLE clients ADD COLUMN IF NOT EXISTS subscription_status TEXT;")
+            cur.execute("ALTER TABLE clients ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ;")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_clients_paddle_sub ON clients(paddle_subscription_id);")
+        except Exception as e:
+            print(f"[DB] Paddle migration warning: {e}")
+
+        # Webhook idempotensi + sıralama — Paddle at-least-once teslim eder
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS paddle_events (
+                notification_id TEXT PRIMARY KEY,
+                event_type      TEXT NOT NULL,
+                occurred_at     TIMESTAMPTZ NOT NULL,
+                payload         JSONB NOT NULL,
+                processed_at    TIMESTAMPTZ DEFAULT NOW(),
+                process_status  TEXT DEFAULT 'ok',
+                error_message   TEXT
+            )
+            """
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_paddle_events_occurred ON paddle_events(occurred_at DESC);"
+        )
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS system_config (
@@ -660,6 +728,70 @@ def init_db() -> None:
                 logger.info("Migration 003-curated-questions-indexes uygulandı")
         except Exception as e:
             logger.warning("Migration 003-curated-questions-indexes atlandı: %s", e)
+
+        # — P0-1 (Aşama 2): Araştırma job kuyruğu —
+        # Uzun süren (≥30 sn) araştırmalar Celery'ye devredilir; API bloke olmaz.
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS research_jobs (
+                job_id     TEXT PRIMARY KEY,
+                username   TEXT NOT NULL,
+                status     TEXT NOT NULL DEFAULT 'queued',
+                progress   INTEGER DEFAULT 0,
+                result     TEXT,
+                error      TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            )
+            """
+        )
+        try:
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_research_jobs_user "
+                "ON research_jobs(username, created_at DESC);"
+            )
+        except Exception as e:
+            print(f"[DB] research_jobs index warning: {e}")
+
+        # — Token usage indeksleri (migration 004) —
+        # Kullanıcı bazlı maliyet sorguları ve tarih filtreleri için.
+        try:
+            cur.execute(
+                "SELECT version FROM schema_migrations WHERE version = '004-token-usage-indexes'"
+            )
+            if not cur.fetchone():
+                cur.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_token_usage_user_date "
+                    "ON token_usage(username, created_at DESC);"
+                )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version) VALUES ('004-token-usage-indexes')"
+                )
+                logger.info("Migration 004-token-usage-indexes uygulandı")
+        except Exception as e:
+            logger.warning("Migration 004-token-usage-indexes atlandı: %s", e)
+
+        # — Evidence Chain indeksleri (migration 005) —
+        # Bulgu ve kanıt sorguları study/finding bazlı; indekssiz büyük veride yavaşlar.
+        try:
+            cur.execute(
+                "SELECT version FROM schema_migrations WHERE version = '005-evidence-indexes'"
+            )
+            if not cur.fetchone():
+                cur.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_research_findings_study "
+                    "ON research_findings(study_id);"
+                )
+                cur.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_research_evidence_finding "
+                    "ON research_evidence(finding_id);"
+                )
+                cur.execute(
+                    "INSERT INTO schema_migrations (version) VALUES ('005-evidence-indexes')"
+                )
+                logger.info("Migration 005-evidence-indexes uygulandı")
+        except Exception as e:
+            logger.warning("Migration 005-evidence-indexes atlandı: %s", e)
 
         # Production'da bu kayıtlar X-Username backdoor riski oluşturur
         _app_env = os.getenv("APP_ENV", "development").lower()
@@ -1042,7 +1174,7 @@ def check_and_reset_period(username: str, conn, cur) -> None:
     period_start_str = row["period_start"]
     if not period_start_str:
         # Henüz set edilmemiş: bugünden başlat
-        cur.execute("UPDATE clients SET period_start = %s, period_simulations = 0 WHERE username = %s",
+        cur.execute("UPDATE clients SET period_start = %s, period_simulations = 0, tokens_used = 0 WHERE username = %s",
                     (datetime.now(timezone.utc).date().isoformat(), username))
         return
 
@@ -1054,7 +1186,7 @@ def check_and_reset_period(username: str, conn, cur) -> None:
         # Yeni dönem: sayıcıyı sıfırla ve period_start'i güncelle
         new_start = period_start + timedelta(days=days_in_period)
         cur.execute(
-            "UPDATE clients SET period_start = %s, period_simulations = 0 WHERE username = %s",
+            "UPDATE clients SET period_start = %s, period_simulations = 0, tokens_used = 0 WHERE username = %s",
             (new_start.isoformat(), username)
         )
 
@@ -1150,6 +1282,452 @@ def atomic_increment_simulation_count(username: str) -> tuple[bool, int, int]:
             max_s = info["max_simulations"] if info else 0
             return False, used, max_s
         return True, row["period_simulations"], row["max_simulations"]
+
+
+# — P0-6: Token / Maliyet Muhasebesi —
+
+# plan_config'te 9_999_999 = pratikte sınırsız (Pro/Enterprise)
+_UNLIMITED_TOKENS = 9_999_999
+
+
+def record_token_usage(
+    username: str,
+    model_id: str,
+    operation: str,
+    usage: dict | None = None,
+    study_id: str | None = None,
+) -> None:
+    """Bir LLM çağrısının token kullanımını ve tahmini maliyetini kaydeder.
+
+    Muhasebe hatası araştırmayı ÇÖKERTMEZ — yalnızca loglanır (fail-safe).
+    operation: intake | interview | synthesis | copilot | followup | match
+    """
+    if not username or username == "anonymous":
+        return
+    usage = usage or {}
+    try:
+        prompt_tokens = int(usage.get("prompt_tokens", 0) or 0)
+        completion_tokens = int(usage.get("completion_tokens", 0) or 0)
+        total_tokens = int(usage.get("total_tokens", 0) or 0)
+        cache_hit = int(usage.get("prompt_cache_hit_tokens", 0) or 0)
+
+        from .pricing_table import calculate_cost
+        cost = calculate_cost(
+            model_id,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            cache_hit_tokens=cache_hit,
+            cache_miss_tokens=usage.get("prompt_cache_miss_tokens"),
+        )
+
+        with get_db() as (conn, cur):
+            cur.execute(
+                """
+                INSERT INTO token_usage
+                  (username, study_id, model_id, operation, prompt_tokens,
+                   completion_tokens, total_tokens, cache_hit_tokens, cost_usd)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    username, study_id, model_id, operation,
+                    prompt_tokens, completion_tokens, total_tokens, cache_hit, cost,
+                ),
+            )
+            cur.execute(
+                "UPDATE clients SET tokens_used = COALESCE(tokens_used, 0) + %s WHERE username = %s",
+                (total_tokens, username),
+            )
+    except Exception:
+        logger.warning(
+            "Token muhasebesi kaydedilemedi (user=%s, op=%s).",
+            username, operation, exc_info=True,
+        )
+
+
+def check_token_budget(username: str | None, plan_type: str | None = None) -> tuple[bool, int, int]:
+    """Dönemsel token bütçesi kontrolü.
+
+    Returns: (izin_var, kullanilan, limit)
+    - Kullanıcı yok / anonim ise izin verilir (kota DB'de yoksa engellemeyiz).
+    - limit 9_999_999 ise sınırsız sayılır.
+    """
+    if not username:
+        return True, 0, 0
+    try:
+        with get_db() as (conn, cur):
+            check_and_reset_period(username, conn, cur)
+            cur.execute(
+                "SELECT plan_type, tokens_used, max_tokens FROM clients WHERE username = %s",
+                (username,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return True, 0, 0
+            used = row["tokens_used"] or 0
+            limit = row["max_tokens"] or 0
+            if limit <= 0:
+                from .plan_config import get_plan_config
+                limit = get_plan_config(row["plan_type"] or plan_type or "Free").get("max_tokens", 0)
+            if limit >= _UNLIMITED_TOKENS:
+                return True, used, limit
+            return used < limit, used, limit
+    except Exception:
+        logger.warning("Token bütçesi kontrol edilemedi (user=%s).", username, exc_info=True)
+        return True, 0, 0  # fail-open: muhasebe hatası kullanıcıyı engellemez
+
+
+def get_token_usage_summary(
+    username: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
+) -> list[dict]:
+    """Kullanıcı bazlı token + maliyet özeti (admin görünürlüğü)."""
+    with get_db() as (conn, cur):
+        where: list[str] = []
+        params: list = []
+        if username:
+            where.append("username = %s")
+            params.append(username)
+        if start:
+            where.append("created_at >= %s")
+            params.append(start)
+        if end:
+            where.append("created_at <= %s")
+            params.append(end)
+        clause = ("WHERE " + " AND ".join(where)) if where else ""
+        cur.execute(
+            f"""
+            SELECT username,
+                   COUNT(*)                         AS calls,
+                   COALESCE(SUM(prompt_tokens), 0)     AS prompt_tokens,
+                   COALESCE(SUM(completion_tokens), 0) AS completion_tokens,
+                   COALESCE(SUM(total_tokens), 0)      AS total_tokens,
+                   COALESCE(SUM(cache_hit_tokens), 0)  AS cache_hit_tokens,
+                   COALESCE(SUM(cost_usd), 0)          AS cost_usd
+            FROM token_usage
+            {clause}
+            GROUP BY username
+            ORDER BY cost_usd DESC
+            """,
+            tuple(params),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+
+# — P0-2: Paddle abonelik işlemleri —
+
+
+def already_processed_paddle_event(notification_id: str) -> bool:
+    """Webhook idempotensi — aynı notification_id daha önce işlendi mi?"""
+    if not notification_id:
+        return False
+    with get_db() as (conn, cur):
+        cur.execute(
+            "SELECT 1 FROM paddle_events WHERE notification_id = %s", (notification_id,)
+        )
+        return cur.fetchone() is not None
+
+
+def record_paddle_event(
+    notification_id: str,
+    event_type: str,
+    occurred_at: str,
+    payload: dict,
+    status: str = "ok",
+    error_message: str | None = None,
+) -> None:
+    """Webhook event'ini kaydeder (idempotensi + audit)."""
+    import json as _json
+
+    with get_db() as (conn, cur):
+        cur.execute(
+            """
+            INSERT INTO paddle_events
+              (notification_id, event_type, occurred_at, payload, process_status, error_message)
+            VALUES (%s, %s, %s::timestamptz, %s::jsonb, %s, %s)
+            ON CONFLICT (notification_id) DO UPDATE SET
+                process_status = EXCLUDED.process_status,
+                error_message  = EXCLUDED.error_message,
+                processed_at   = NOW()
+            """,
+            (
+                notification_id, event_type, occurred_at,
+                _json.dumps(payload, ensure_ascii=False), status, error_message,
+            ),
+        )
+
+
+def get_last_event_occurred_at(event_type: str):
+    """Aynı türde son başarıyla işlenen event'in zamanı — eski event'i elemek için."""
+    with get_db() as (conn, cur):
+        cur.execute(
+            "SELECT MAX(occurred_at) AS ts FROM paddle_events "
+            "WHERE event_type = %s AND process_status = 'ok'",
+            (event_type,),
+        )
+        row = cur.fetchone()
+        return row["ts"] if row else None
+
+
+def find_client_by_paddle_subscription(subscription_id: str) -> dict | None:
+    """paddle_subscription_id ile kullanıcıyı bulur (custom_data yoksa fallback)."""
+    if not subscription_id:
+        return None
+    with get_db() as (conn, cur):
+        cur.execute(
+            "SELECT * FROM clients WHERE paddle_subscription_id = %s", (subscription_id,)
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+
+def update_client_subscription(
+    username: str,
+    plan_type: str | None = None,
+    status: str | None = None,
+    subscription_id: str | None = None,
+    customer_id: str | None = None,
+    period_end: str | None = None,
+) -> None:
+    """Paddle webhook'undan gelen abonelik durumunu clients tablosuna yansıtır.
+
+    plan_type verilirse ilgili planın kota limitleri de (max_simulations, max_tokens)
+    güncellenir.
+    """
+    from .plan_config import get_plan_config
+
+    sets: list[str] = []
+    params: list = []
+
+    if plan_type is not None:
+        cfg = get_plan_config(plan_type)
+        sets.extend(["plan_type = %s", "max_simulations = %s", "max_tokens = %s"])
+        params.extend([plan_type, cfg["max_simulations"], cfg["max_tokens"]])
+    if status is not None:
+        sets.append("subscription_status = %s")
+        params.append(status)
+    if subscription_id is not None:
+        sets.append("paddle_subscription_id = %s")
+        params.append(subscription_id)
+    if customer_id is not None:
+        sets.append("paddle_customer_id = %s")
+        params.append(customer_id)
+    if period_end is not None:
+        sets.append("current_period_end = %s::timestamptz")
+        params.append(period_end)
+
+    if not sets:
+        return
+
+    params.append(username)
+    with get_db() as (conn, cur):
+        cur.execute(
+            f"UPDATE clients SET {', '.join(sets)} WHERE username = %s", tuple(params)
+        )
+
+
+def add_flex_credits(username: str, credits: int = 3) -> None:
+    """Flex (one-time Research Pack) satın alındığında araştırma hakkı ekler."""
+    with get_db() as (conn, cur):
+        cur.execute(
+            """
+            UPDATE clients
+            SET max_simulations = COALESCE(max_simulations, 0) + %s,
+                plan_type = CASE WHEN plan_type = 'Free' THEN 'Flex' ELSE plan_type END
+            WHERE username = %s
+            """,
+            (credits, username),
+        )
+
+
+# — KVKK / GDPR: veri taşınabilirliği ve hesap silme —
+
+
+def export_user_data(username: str) -> dict:
+    """Kullanıcının tüm verisini makine-okunur formatta döner (veri taşınabilirliği)."""
+    with get_db() as (conn, cur):
+        cur.execute("SELECT * FROM clients WHERE username = %s", (username,))
+        client_row = cur.fetchone()
+        account = dict(client_row) if client_row else {}
+        account.pop("password_hash", None)  # asla dışa aktarılmaz
+
+        cur.execute(
+            """
+            SELECT id, title, market, category, created_at, updated_at,
+                   archived, has_report, quality_score, quality_grade
+            FROM studies WHERE created_by = %s ORDER BY updated_at DESC
+            """,
+            (username,),
+        )
+        studies = [dict(r) for r in cur.fetchall()]
+
+        # report_pdf (BYTEA) hariç — büyük binary veri
+        cur.execute(
+            """
+            SELECT study_id, brief, plan, personas, interviews, report_markdown
+            FROM study_payloads
+            WHERE study_id IN (SELECT id FROM studies WHERE created_by = %s)
+            """,
+            (username,),
+        )
+        payloads = [dict(r) for r in cur.fetchall()]
+
+        cur.execute(
+            "SELECT item_type, item_id, vote, comment, created_at FROM feedbacks "
+            "WHERE username = %s",
+            (username,),
+        )
+        feedbacks = [dict(r) for r in cur.fetchall()]
+
+        cur.execute(
+            "SELECT model_id, operation, prompt_tokens, completion_tokens, total_tokens, "
+            "cost_usd, created_at FROM token_usage WHERE username = %s ORDER BY created_at DESC",
+            (username,),
+        )
+        usage = [dict(r) for r in cur.fetchall()]
+
+        cur.execute(
+            "SELECT persona_id, question, created_at FROM interview_responses "
+            "WHERE username = %s",
+            (username,),
+        )
+        responses = [dict(r) for r in cur.fetchall()]
+
+        cur.execute(
+            "SELECT id, name, age, city, segment, stance FROM personas_pool "
+            "WHERE created_by = %s",
+            (username,),
+        )
+        personas = [dict(r) for r in cur.fetchall()]
+
+    return {
+        "username": username,
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "account": account,
+        "studies": studies,
+        "study_payloads": payloads,
+        "feedbacks": feedbacks,
+        "token_usage": usage,
+        "interview_responses": responses,
+        "personas_created": personas,
+    }
+
+
+def delete_user_data(username: str) -> dict:
+    """Kullanıcının verisini siler. Global/paylaşılan personalar korunur.
+
+    Not: Paddle aboneliği iptali çağıran tarafın sorumluluğundadır (önce iptal,
+    sonra bu fonksiyon — aksi halde kullanıcı ücretlendirilmeye devam eder).
+    """
+    counts: dict[str, int] = {}
+    with get_db() as (conn, cur):
+        cur.execute("SELECT id FROM studies WHERE created_by = %s", (username,))
+        study_ids = [r["id"] for r in cur.fetchall()]
+
+        if study_ids:
+            cur.execute("DELETE FROM research_chat_messages WHERE study_id = ANY(%s)", (study_ids,))
+            cur.execute("DELETE FROM research_findings WHERE study_id = ANY(%s)", (study_ids,))
+        cur.execute("DELETE FROM studies WHERE created_by = %s", (username,))
+        counts["studies"] = len(study_ids)
+
+        cur.execute("DELETE FROM feedbacks WHERE username = %s", (username,))
+        counts["feedbacks"] = cur.rowcount
+        cur.execute("DELETE FROM token_usage WHERE username = %s", (username,))
+        counts["token_usage"] = cur.rowcount
+        cur.execute("DELETE FROM interview_responses WHERE username = %s", (username,))
+        counts["interview_responses"] = cur.rowcount
+        cur.execute(
+            "DELETE FROM personas_pool WHERE created_by = %s AND COALESCE(is_global, FALSE) = FALSE",
+            (username,),
+        )
+        counts["personas"] = cur.rowcount
+        try:
+            cur.execute("DELETE FROM organization_members WHERE username = %s", (username,))
+            counts["org_memberships"] = cur.rowcount
+        except Exception:
+            logger.debug("organization_members silinemedi (tablo yok olabilir).", exc_info=True)
+            counts["org_memberships"] = 0
+        cur.execute("DELETE FROM clients WHERE username = %s", (username,))
+        counts["account"] = cur.rowcount
+
+    return counts
+
+
+# — P0-1 Aşama 2: Araştırma job kuyruğu (Celery) —
+
+
+def create_research_job(job_id: str, username: str) -> None:
+    """Yeni bir araştırma job'ı kaydeder (status=queued)."""
+    with get_db() as (conn, cur):
+        cur.execute(
+            """
+            INSERT INTO research_jobs (job_id, username, status, progress)
+            VALUES (%s, %s, 'queued', 0)
+            ON CONFLICT (job_id) DO NOTHING
+            """,
+            (job_id, username),
+        )
+
+
+def update_research_job(
+    job_id: str,
+    status: str | None = None,
+    progress: int | None = None,
+    result: dict | None = None,
+    error: str | None = None,
+) -> None:
+    """Job durumunu günceller. Hata araştırmayı çökertmez (fail-safe)."""
+    import json as _json
+
+    sets: list[str] = ["updated_at = NOW()"]
+    params: list = []
+    if status is not None:
+        sets.append("status = %s")
+        params.append(status)
+    if progress is not None:
+        sets.append("progress = %s")
+        params.append(int(progress))
+    if result is not None:
+        sets.append("result = %s")
+        params.append(_json.dumps(result, ensure_ascii=False, default=str))
+    if error is not None:
+        sets.append("error = %s")
+        params.append(error[:1000])
+
+    params.append(job_id)
+    try:
+        with get_db() as (conn, cur):
+            cur.execute(
+                f"UPDATE research_jobs SET {', '.join(sets)} WHERE job_id = %s",
+                tuple(params),
+            )
+    except Exception:
+        logger.warning("research_jobs güncellenemedi (job=%s)", job_id, exc_info=True)
+
+
+def get_research_job(job_id: str) -> dict | None:
+    """Job durumunu ve (varsa) sonucunu döner."""
+    import json as _json
+
+    with get_db() as (conn, cur):
+        cur.execute(
+            "SELECT job_id, username, status, progress, result, error, created_at, updated_at "
+            "FROM research_jobs WHERE job_id = %s",
+            (job_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        data = dict(row)
+
+    raw_result = data.get("result")
+    if raw_result:
+        try:
+            data["result"] = _json.loads(raw_result)
+        except Exception:
+            logger.warning("research_jobs result ayrıştırılamadı (job=%s)", job_id, exc_info=True)
+            data["result"] = None
+    return data
 
 
 def register_client_if_new(username: str, email: str = "") -> tuple[dict, bool]:

@@ -1,0 +1,125 @@
+# Clarere — CLOUD production stack (onaylanan mimari)
+#
+# Vercel (frontend) + Neon (PostgreSQL) + bu sunucu (API + Celery + Redis + Caddy + SearXNG)
+#
+# Farklar (docker-compose.prod.yml = tek-sunucu/self-hosted stack'e göre):
+#   - PostgreSQL YOK → Neon kullanılır
+#   - frontend YOK → Vercel'de çalışır
+#   - Caddy yalnızca api.clarere.com'u sunar (Caddyfile.cloud)
+#   - Portlar dışa kapalı; 2 GB sunucu için bellek limitleri daraltıldı
+#
+# Kullanım:
+#   docker compose -f docker-compose.cloud.yml up -d --build
+#   docker compose -f docker-compose.cloud.yml logs -f clarere-api
+
+services:
+  redis:
+    image: redis:7.2-alpine
+    container_name: clarere-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 256M }
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: clarere-searxng
+    volumes:
+      - searxng_data:/etc/searxng
+    environment:
+      - SEARXNG_BASE_URL=https://api.clarere.com/
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 400M }
+
+  clarere-api:
+    build:
+      context: .
+      dockerfile: ./apps/backend/Dockerfile
+    container_name: clarere-api
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - VALKEY_URL=redis://redis:6379/0
+      - SEARXNG_URL=http://searxng:8080
+    expose:
+      - "3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+    deploy:
+      resources:
+        limits: { cpus: '1.0', memory: 700M }
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:3000/health', timeout=5).status==200 else 1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: ./apps/backend/Dockerfile
+    container_name: clarere-celery-worker
+    command: celery -A packages.research_engine.celery_app worker --loglevel=info --concurrency=1
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - VALKEY_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 500M }
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: clarere-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.cloud:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - clarere-api
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  redis_data:
+  searxng_data:
+  caddy_data:
+  caddy_config:

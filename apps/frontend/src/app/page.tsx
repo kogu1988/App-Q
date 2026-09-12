@@ -84,9 +84,9 @@ function ContactForm() {
 
 const PLAN_PRICES: Record<string, { monthly: number | null; annual: number | null }> = {
   "Free": { monthly: 0, annual: 0 },
-  "Research Pack": { monthly: 1990, annual: 1990 },
-  "Starter": { monthly: 2690, annual: 2150 },
-  "Pro": { monthly: 6790, annual: 5430 },
+  "Research Pack": { monthly: 49, annual: 49 },
+  "Starter": { monthly: 69, annual: 55 },
+  "Pro": { monthly: 169, annual: 135 },
   "Enterprise": { monthly: null, annual: null },
 };
 
@@ -555,8 +555,8 @@ export default function HomePage() {
             const priceDisplay = isVariable
               ? "Özel"
               : showAnnual
-                ? `₺${prices.annual!.toLocaleString("tr-TR")}`
-                : `₺${prices.monthly!.toLocaleString("tr-TR")}`;
+                ? `$${prices.annual!.toLocaleString("en-US")}`
+                : `$${prices.monthly!.toLocaleString("en-US")}`;
 
             const periodDisplay = isVariable
               ? ""
@@ -641,7 +641,7 @@ export default function HomePage() {
                         : isVariable
                           ? "Gereksinimlerinize göre kapsam"
                           : showAnnual
-                            ? `Yıllık faturalandırılır (toplam ₺${(prices.annual! * 12).toLocaleString("tr-TR")})`
+                            ? `Yıllık faturalandırılır (toplam $${(prices.annual! * 12).toLocaleString("en-US")})`
                             : `Aylık faturalandırılır`
                       }
                     </p>

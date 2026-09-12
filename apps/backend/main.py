@@ -9,6 +9,7 @@ import logging
 import sys
 import os
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 # .env dosyasini yukle — subprocess ile baslatilsa bile calisir
 from dotenv import load_dotenv
@@ -27,17 +28,38 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 # Routers import katmanı — stream router'ını asenkron ağ hattına ekliyoruz
-from apps.backend.routers import admin, client, auth  # noqa: E402
+from apps.backend.routers import admin, client, auth, billing  # noqa: E402
 from packages.research_engine.routers import stream  # noqa: E402
 from packages.research_engine.database import current_tenant_var  # noqa: E402
 
 # — Rate Limiter —
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Uygulama yaşam döngüsü.
+
+    Senkron endpoint'ler (LLM + DB çağrıları) FastAPI tarafından anyio threadpool'una
+    taşınır. Varsayılan 40 thread eşzamanlı araştırmalar için yetersiz kalabildiğinden
+    limit burada yapılandırılabilir hale getirilir (P0-1).
+    """
+    try:
+        import anyio
+
+        limiter_ = anyio.to_thread.current_default_thread_limiter()
+        limiter_.total_tokens = int(os.getenv("THREADPOOL_SIZE", "64"))
+        logger.info("Threadpool boyutu: %s", limiter_.total_tokens)
+    except Exception:  # anyio sürüm farkı — kritik değil
+        logger.warning("Threadpool boyutu ayarlanamadı, varsayılan kullanılıyor.", exc_info=True)
+    yield
+
+
 app = FastAPI(
     title="Clarere Backend API",
     description="FastAPI backend for Clarere Research Engine",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.state.limiter = limiter
@@ -74,6 +96,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# — Sentry (opsiyonel) — SENTRY_DSN yoksa tamamen devre dışı
+_sentry_dsn = (os.getenv("SENTRY_DSN") or "").strip()
+if _sentry_dsn:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            environment=_app_env,
+            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+            integrations=[FastApiIntegration()],
+            send_default_pii=False,  # KVKK: kişisel veri gönderilmez
+        )
+        logger.info("Sentry aktif (env=%s)", _app_env)
+    except ImportError:
+        logger.warning("SENTRY_DSN verildi ama sentry-sdk kurulu değil — Sentry devre dışı.")
+    except Exception:
+        logger.warning("Sentry başlatılamadı.", exc_info=True)
+
 @app.middleware("http")
 async def tenant_isolation_middleware(request: Request, call_next):
     """
@@ -104,6 +146,7 @@ async def tenant_isolation_middleware(request: Request, call_next):
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(client.router, prefix="/api/client", tags=["Client"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(billing.router, prefix="/api/billing", tags=["Billing"])
 
 # --- REALTİME STREAMING & WEBSOCKET ROUTER KAYDI (MÜHÜRLENEN KATMAN) ---
 # stream.router kendi içinde "/api/v1/stream" prefix'ini ve "/ws" soket yollarını barındırır.

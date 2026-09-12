@@ -84,25 +84,25 @@ const jsonLd = {
       "@type": "Offer",
       name: "Free Plan",
       price: "0",
-      priceCurrency: "TRY",
+      priceCurrency: "USD",
       description: "2 araştırma, 10 persona, temel rapor",
     },
     {
       "@type": "Offer",
       name: "Research Pack (Flex)",
-      price: "1990",
-      priceCurrency: "TRY",
+      price: "49",
+      priceCurrency: "USD",
       description: "3 araştırma (tek seferlik), A/B test, takip sorusu",
     },
     {
       "@type": "Offer",
       name: "Starter Plan",
-      price: "2690",
-      priceCurrency: "TRY",
+      price: "69",
+      priceCurrency: "USD",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
-        price: "2690",
-        priceCurrency: "TRY",
+        price: "69",
+        priceCurrency: "USD",
         unitText: "MON",
       },
       description: "10 araştırma/ay, 10 persona, PDF rapor, Van Westendorp",
@@ -110,12 +110,12 @@ const jsonLd = {
     {
       "@type": "Offer",
       name: "Pro Plan",
-      price: "6790",
-      priceCurrency: "TRY",
+      price: "169",
+      priceCurrency: "USD",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
-        price: "6790",
-        priceCurrency: "TRY",
+        price: "169",
+        priceCurrency: "USD",
         unitText: "MON",
       },
       description: "Sınırsız araştırma, White-label, B2B modu, Marka Sağlığı",
@@ -198,6 +198,12 @@ export default function RootLayout({
           id="schema-faq"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+          strategy="afterInteractive"
+        />
+        {/* Paddle.js v2 — ödeme overlay'i (P0-2). Client token yayınlanması güvenlidir. */}
+        <Script
+          id="paddle-js"
+          src="https://cdn.paddle.com/paddle/v2/paddle.js"
           strategy="afterInteractive"
         />
       </body>

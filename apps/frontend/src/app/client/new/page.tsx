@@ -134,6 +134,81 @@ function BriefPreview({ brief, mode, onToggleMobile }: { brief: Brief; mode: "re
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+// ── Araştırma isteği: async job (tercih) → senkron fallback ──
+
+const RESEARCH_POLL_INTERVAL_MS = 2000;
+const RESEARCH_POLL_TIMEOUT_MS = 6 * 60 * 1000;
+
+type ResearchResult = {
+  plan?: unknown;
+  personas?: unknown[];
+  interviews?: unknown[];
+};
+
+async function pollResearchJob(
+  jobId: string,
+  apiBase: string,
+  headers: Record<string, string>,
+): Promise<ResearchResult> {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < RESEARCH_POLL_TIMEOUT_MS) {
+    await new Promise((resolve) => setTimeout(resolve, RESEARCH_POLL_INTERVAL_MS));
+    const res = await fetch(`${apiBase}/api/client/research/jobs/${jobId}`, { headers });
+    if (!res.ok) continue;
+
+    const data = await res.json();
+    if (data.status === "completed") return data.result as ResearchResult;
+    if (data.status === "failed") {
+      throw new Error(data.error || "Araştırma tamamlanamadı.");
+    }
+  }
+  throw new Error("Araştırma zaman aşımına uğradı. Lütfen tekrar deneyin.");
+}
+
+/**
+ * Araştırmayı önce async job olarak dener (API threadpool'unu meşgul etmez);
+ * arka plan işleyicisi yoksa (yerel geliştirme) senkron endpoint'e düşer.
+ */
+async function requestResearch(payload: Record<string, unknown>): Promise<ResearchResult> {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
+  const headers = { "Content-Type": "application/json", ...getAuthHeaders() };
+
+  const jobRes = await fetch(`${apiBase}/api/client/research/jobs`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  if (jobRes.ok) {
+    const jobData = await jobRes.json().catch(() => ({}));
+    if (jobData?.job_id) {
+      return pollResearchJob(jobData.job_id, apiBase, headers);
+    }
+    if (jobData?.plan) return jobData as ResearchResult;
+  } else if (![503, 404, 405].includes(jobRes.status)) {
+    const errData = await jobRes.json().catch(() => ({}));
+    const detail = errData?.detail;
+    throw new Error(
+      typeof detail === "string" ? detail : detail?.message || `Sunucu hatası: ${jobRes.status}`,
+    );
+  }
+
+  // Senkron fallback
+  const res = await fetch(`${apiBase}/api/client/research`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    const detail = errData?.detail;
+    throw new Error(
+      typeof detail === "string" ? detail : detail?.message || `Sunucu hatası: ${res.status}`,
+    );
+  }
+  return (await res.json()) as ResearchResult;
+}
+
 export default function NewResearchWizard() {
   const router = useRouter();
   const { plan } = useClientPlan();
@@ -252,38 +327,24 @@ export default function NewResearchWizard() {
     const username = typeof window !== "undefined" ? localStorage.getItem("clarere_username") : null;
     
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
-      const res = await fetch(`${API_BASE}/api/client/research`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({
-          category: brief.category || "genel",
-          title: brief.title || "Araştırma",
-          context: brief.idea || brief.title || "",
-          brand: "",
-          budget: "",
-          target_users: toArray(brief.target_users),
-          competitors: toArray(brief.competitors),
-          expected_price: brief.expected_price || undefined,
-          success_metric: brief.success_metric || undefined,
-          respondent_types: [],
-          discovery_channels: [],
-          intake_brief: brief,
-          panel_size: 5,
-        }),
+      const data = await requestResearch({
+        category: brief.category || "genel",
+        title: brief.title || "Araştırma",
+        context: brief.idea || brief.title || "",
+        brand: "",
+        budget: "",
+        target_users: toArray(brief.target_users),
+        competitors: toArray(brief.competitors),
+        expected_price: brief.expected_price || undefined,
+        success_metric: brief.success_metric || undefined,
+        respondent_types: [],
+        discovery_channels: [],
+        intake_brief: brief,
+        panel_size: 5,
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || `Sunucu hatası: ${res.status}`);
-      }
-
-      const data = await res.json();
-
       // Save as study
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
       const studyRes = await fetch(`${API_BASE}/api/client/studies`, {
         method: "POST",
         headers: {

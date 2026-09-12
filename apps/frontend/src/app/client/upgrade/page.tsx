@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import { getAuthHeaders } from "@/lib/auth";
+import { openCheckout } from "@/lib/paddle";
 import { toast } from "sonner";
 import {
   Check, Zap, ArrowLeft, CreditCard, Shield,
@@ -40,8 +41,8 @@ const PLANS = [
   {
     key: "Flex",
     name: "Research Pack (Esnek)",
-    monthlyPrice: 1990,
-    annualPrice: 1990,
+    monthlyPrice: 49,
+    annualPrice: 49,
     description: "Taahhüt vermeden tek seferlik paket arayanlar için",
     color: "border-[#b8b7b3]",
     badge: "Tek Seferlik",
@@ -60,8 +61,8 @@ const PLANS = [
   {
     key: "Starter",
     name: "Starter",
-    monthlyPrice: 2690,
-    annualPrice: 2150, // ~20% discount
+    monthlyPrice: 69,
+    annualPrice: 55, // ~20% discount
     description: "Büyüyen ekipler ve danışmanlar için ideal",
     color: "border-[#003c33]",
     badge: "En Popüler",
@@ -85,8 +86,8 @@ const PLANS = [
   {
     key: "Pro",
     name: "Pro",
-    monthlyPrice: 6790,
-    annualPrice: 5430, // ~20% discount
+    monthlyPrice: 169,
+    annualPrice: 135, // ~20% discount
     description: "Ajanslar ve profesyonel araştırmacılar için",
     color: "border-[#ff7759]",
     badge: "Önerilen",
@@ -109,7 +110,7 @@ export default function UpgradePage() {
   const { plan, loading } = useClientPlan();
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
   const [selected, setSelected] = useState<string | null>(null);
-  const [step, setStep] = useState<"select" | "confirm" | "done">("select");
+  const [step, setStep] = useState<"select" | "confirm" | "payment" | "done">("select");
   const [upgrading, setUpgrading] = useState(false);
 
   const currentPlan = plan.plan_type;
@@ -132,6 +133,29 @@ export default function UpgradePage() {
       return;
     }
     try {
+      // 1) Paddle checkout denemesi — ödeme altyapısı yapılandırılmışsa
+      const billingRes = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ plan: selected, cycle: billing }),
+      });
+
+      if (billingRes.ok) {
+        const data = await billingRes.json().catch(() => ({}));
+        const priceId: string | undefined = data?.price_id;
+        if (priceId && openCheckout(priceId, data?.customer_email ?? "", username)) {
+          setStep("payment");
+          pollSubscription();
+          return;
+        }
+        throw new Error("Ödeme penceresi açılamadı. Lütfen tekrar deneyin.");
+      }
+
+      // 2) Ödeme altyapısı hazır değilse (ör. dev ortamı) mevcut akışa düş
+      const billingErr = await billingRes.json().catch(() => ({}));
       const res = await fetch("/api/client/upgrade-plan", {
         method: "POST",
         headers: {
@@ -142,7 +166,7 @@ export default function UpgradePage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err?.detail || "Plan güncellenemedi.");
+        throw new Error(err?.detail || billingErr?.detail || "Plan güncellenemedi.");
       }
       setStep("done");
       // Force plan refresh
@@ -156,7 +180,55 @@ export default function UpgradePage() {
     }
   };
 
+  /** Ödeme tamamlanınca webhook planı aktive eder; burada durum yoklanır. */
+  const pollSubscription = () => {
+    let attempts = 0;
+    const timer = setInterval(async () => {
+      attempts += 1;
+      try {
+        const res = await fetch("/api/billing/subscription", { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (data?.plan && data.plan !== currentPlan) {
+            clearInterval(timer);
+            setStep("done");
+            return;
+          }
+        }
+      } catch {
+        // Ağ hatası — sonraki turda tekrar denenir
+      }
+      if (attempts >= 40) clearInterval(timer);
+    }, 3000);
+  };
+
   const selectedPlan = PLANS.find(p => p.key === selected);
+
+  // ── Payment Step ──
+  if (step === "payment") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center animate-in fade-in duration-500">
+        <div className="h-16 w-16 rounded-full bg-[#fff5e6] flex items-center justify-center mb-6 shadow-sm">
+          <CreditCard size={30} className="text-[#c2410c]" />
+        </div>
+        <h2 className="text-2xl font-extrabold tracking-tight text-[#17171c] mb-2">
+          Ödeme penceresi açıldı
+        </h2>
+        <p className="text-muted-foreground mb-2">
+          Ödemeyi Paddle güvenli ödeme ekranında tamamlayın.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Ödeme onaylandığında planınız otomatik olarak aktifleşecek. Bu sayfayı kapatmayın.
+        </p>
+        <button
+          onClick={() => setStep("confirm")}
+          className="mt-6 text-sm text-muted-foreground hover:text-foreground underline transition-colors"
+        >
+          Ödemeyi tamamlayamadım
+        </button>
+      </div>
+    );
+  }
 
   // ── Done ──
   if (step === "done") {
@@ -237,7 +309,7 @@ export default function UpgradePage() {
             <span className="text-muted-foreground text-sm">Tutar</span>
             <div className="text-right">
               <span className="text-2xl font-extrabold text-[#17171c]">
-                {price === 0 ? "Ücretsiz" : `₺${price.toLocaleString("tr-TR")}`}
+                {price === 0 ? "Ücretsiz" : `$${price.toLocaleString("en-US")}`}
               </span>
               {price > 0 && !isFlex && (
                 <span className="text-xs text-muted-foreground ml-1">
@@ -391,7 +463,7 @@ export default function UpgradePage() {
                     <span className="text-xl font-extrabold">Ücretsiz</span>
                   ) : (
                     <div className="flex items-end gap-1">
-                      <span className="text-xl font-extrabold">₺{price.toLocaleString("tr-TR")}</span>
+                      <span className="text-xl font-extrabold">${price.toLocaleString("en-US")}</span>
                       <span className="text-[10px] text-muted-foreground mb-0.5 font-semibold">
                         {isFlex ? " / 3 Araştırma" : "/ ay"}
                       </span>

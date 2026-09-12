@@ -4,6 +4,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+!.env.production.example
 node_modules/
 .next/
 dist/
@@ -26,6 +27,7 @@ data/outputs/evals/*
 !data/outputs/evals/README.md
 data/studies/*
 !data/studies/.gitkeep
+backups/
 models/*
 !models/README.md
 *.log

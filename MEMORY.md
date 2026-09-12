@@ -63,14 +63,16 @@ python launch.py  # Tek tıkla. Backend :4000, Frontend :4001
 
 > `launch.py` SADECE postgres+redis'i ayağa kaldırır; API/Celery/SearXNG host'ta çalışır.
 
-## 🧪 Test Durumu (2026-08)
+## 🧪 Test Durumu
 
 ```bash
-python -m pytest packages/research_engine/tests/ -q  # 156 passed
+python -m pytest packages/research_engine/tests/ -q  # 187 passed + 1 skipped
 ```
 
 | Test Dosyası | Kapsam |
 |---|---|
+| test_blockers_p0.py | Paddle imza/plan eşlemesi, token fiyat, JWT/admin guard, usage birikimi (P0) |
+| test_production_readiness.py | KVKK silme onayı, e-posta fail-safe, Paddle iptal |
 | test_stance_diversity.py | Rogers×SES matris, Largest Remainder, Skeptic garantisi |
 | test_ewma_echo.py | EWMA, Jaccard echo, echo drift |
 | test_van_westendorp.py | PSM kesişimleri (OPP/IPP/PMC/PME) |
@@ -119,6 +121,12 @@ python -m pytest packages/research_engine/tests/ -q  # 156 passed
 | `pdf_generator.py` | PDF üretimi (xhtml2pdf) | PDF export |
 | `persona_generator.py` | Admin için LLM ile persona üretimi | Admin panel |
 | `synthesis_pipeline.py` | LangGraph tabanlı tematik sentez pipeline | Async sentez |
+| `pricing_table.py` | DeepSeek token fiyatlandırma SSOT (USD/1M) — `calculate_cost()` | Maliyet hesabı (P0-6) |
+| `paddle_config.py` | Paddle price → plan eşlemesi SSOT | Paddle fiyat ID'leri (P0-2) |
+| `paddle_webhooks.py` | Paddle imza doğrulama + event işleme + abonelik iptali | Webhook mantığı (P0-2) |
+| `research_runner.py` | `execute_research()` — senkron + Celery ortak araştırma çekirdeği | Araştırma akışı (P0-1 Aşama 2) |
+| `jobs.py` | Celery görevi `run_research_job` — async araştırma | Job kuyruğu |
+| `email_service.py` | Resend işlemsel e-posta (env-gated, opsiyonel) | E-posta bildirimleri |
 
 | `benchmark.py` | Clarere RFI — 6 metrikli validasyon benchmark'ı (Sprint 8) | Kalite ölçümü |
 
@@ -140,8 +148,11 @@ python -m pytest packages/research_engine/tests/ -q  # 156 passed
 | `src/app/client/new/page.tsx` | Araştırma sihirbazı (Defne → Research) |
 | `src/app/client/studies/[id]/page.tsx` | Araştırma detay/rapor sayfası + "Raporu Oluştur" |
 | `src/app/client/page.tsx` | Client dashboard |
-| `src/app/client/upgrade/page.tsx` | Plan yükseltme sayfası |
-| `src/app/layout.tsx` | Root layout, metadata, JSON-LD, favicon |
+| `src/app/client/upgrade/page.tsx` | Plan yükseltme sayfası — Paddle checkout + ödeme yoklama |
+| `src/lib/paddle.ts` | Paddle.js v2 başlatma + checkout overlay |
+| `src/middleware.ts` | Edge middleware: www→apex, `/client/*` derin bağlantı koruması, noindex, probe engelleme |
+| `src/lib/auth.ts` | Auth header'ları + oturum işareti cookie'si (`setSessionMarker`) |
+| `src/app/layout.tsx` | Root layout, metadata, JSON-LD, favicon, Paddle.js script |
 | `src/hooks/use-client-plan.ts` | Plan bilgisi hook (DEFAULT_PLAN: Free) |
 | `src/components/plan-gate.tsx` | Paywall bileşeni (blur + Lock + "Planı Yükselt →") |
 | `src/app/guide/page.tsx` | Kullanım kılavuzu |
@@ -155,12 +166,23 @@ python -m pytest packages/research_engine/tests/ -q  # 156 passed
 | Dosya | Görev |
 |---|---|
 | `.env` | DeepSeek API key + DB/Redis ayarları (gitignored) |
-| `docker-compose.yml` | PostgreSQL (5433) + Redis (4006) + API + Celery + SearXNG |
+| `.env.production.example` | Sunucu production env şablonu (secretsiz) |
+| `docker-compose.yml` | Yerel (host) dev: PostgreSQL (5433) + Redis (4006) + SearXNG + API + Celery |
+| `docker-compose.prod.yml` | Tek-sunucu / self-hosted stack (frontend + PostgreSQL + Caddy dahil) |
+| `docker-compose.local.yml` | `prod.yml` üzerine **yerel override** (Caddy → :8080, `Caddyfile.local`) |
+| `docker-compose.cloud.yml` | **Bulut (onaylanan)**: Neon (PG yok) + Redis + API + Celery + Caddy |
+| `Caddyfile` | Self-hosted: clarere.com + www + /api/* tek sunucuda |
+| `Caddyfile.local` | Yerel: `localhost:8080` |
+| `Caddyfile.cloud` | **Bulut**: yalnızca `api.clarere.com` (+ Paddle webhook) |
+| `.github/workflows/ci.yml` | CI: pytest + `tsc --noEmit` + lint |
+| `scripts/backup_db.sh` | Günlük `pg_dump` yedeği (14 gün saklama) |
 | `launch.py` | Tek tıkla başlatma (Docker kontrolü + backend --reload + frontend) |
 | `start.bat` | `python launch.py` wrapper |
 | `SUNUM.md` | 14 slidelık yatırımcı sunumu |
+| `server_plan.md` | Canlıya geçiş planı (Vercel + netcup VPS + Neon + Paddle) — sıralı fazlar |
 | `MEMORY.md` | Bu dosya |
 | `scripts/run_benchmark.py` | RFI benchmark runner (Sprint 8) |
+| `scripts/setup_paddle_catalog.py` | Paddle ürün/fiyat/destination idempotent kurulum (P0-2) |
 | `scripts/generate_demo_study.py` | Sunum demo çalışması üretici (DB'ye kaydeder) |
 | `docs/TEST_PLAN.md` | ⚠️ gitignored — Güçlü yönleri koruma test planı (15 grup, ~110 test) |
 | `docs/CRITICAL_BLOCKERS_PLAN.md` | ⚠️ gitignored — P0 blocker'lar + Paddle entegrasyon spesifikasyonu |
@@ -189,6 +211,25 @@ python -m pytest packages/research_engine/tests/ -q  # 156 passed
 17. **Web Corroboration (Sprint 6)** — Sentetik bulguları web kanıtıyla destekleme. SearXNG + mock fallback. TÜAD/Statista referansları.
 18. **Decision Layer (Sprint 7)** — Her bulgu SHIP/ITERATE/INVESTIGATE/KILL sinyali taşır. Executive decision summary raporda.
 19. **Validation Benchmark (Sprint 8)** — Clarere RFI. `benchmark.py`. 6 metrik (recall, precision, critical recall, FPR, segment accuracy, contradiction). 5 örnek senaryo.
+
+---
+
+## 🛡️ P0 Blocker Durumu (Sprint 9 — tamamlandı)
+
+| # | Blocker | Çözüm | Dosya |
+|---|---|---|---|
+| P0-1 | `async def` içinde blocking LLM → tüm API donuyordu | Tüm senkron endpoint'ler `def`'e çevrildi (threadpool); `lifespan`'da `THREADPOOL_SIZE` (64) | `client.py`, `main.py` |
+| P0-3 | JWT secret hardcoded fallback | Production'da `JWT_SECRET` zorunlu + min 32 karakter; dev'de `_DEV_FALLBACK` + uyarı | `jwt_utils.py` |
+| P0-4 | `ADMIN_SECRET_KEY` yoksa admin API açıktı | Production'da 503; `hmac.compare_digest`; başarısız deneme audit log | `admin.py` |
+| P0-5 | LLM timeout/retry yoktu | `tenacity` retry (timeout/conn/ratelimit/5xx) + `DEEPSEEK_TIMEOUT=90`; stream'de retry yalnızca ilk chunk öncesi; `RESEARCH_DEADLINE_SECONDS` bütçesi | `providers.py`, `workflow.py` |
+| P0-6 | Token muhasebesi kurguydu | `usage` yakalama + `token_usage` tablosu + dönemsel bütçe (`TOKEN_BUDGET_EXCEEDED` 429) + admin `/usage` | `providers.py`, `database.py`, `pricing_table.py`, `client.py`, `admin.py` |
+| P0-2 | Ödeme entegrasyonu yoktu | Paddle Billing: checkout/portal/subscription + webhook (HMAC, idempotent, sıralı) + Paddle.js | `billing.py`, `paddle_config.py`, `paddle_webhooks.py`, `paddle.ts`, `upgrade/page.tsx` |
+
+**Ek düzeltmeler:** `PrivacyResearchModelWrapper.free_memory()` eksikti (streaming finalizer'ı `AttributeError` veriyordu). `/upgrade-plan` production'da kapatıldı.
+
+**Test:** `test_blockers_p0.py` — 20 test (imza doğrulama, plan eşlemesi, fiyat hesabı, JWT/admin guard, usage birikimi, süre bütçesi). Toplam: **178 passed + 1 skipped**.
+
+**⚠️ Paddle için kullanıcı aksiyonu:** `PADDLE_API_KEY` `.env`'e konur, ardından `python scripts/setup_paddle_catalog.py` katalogu + webhook destination'ı otomatik oluşturur ve env satırlarını basar. **Fiyatlar USD'ye çevrildi** (Paddle TRY'yi desteklemiyor; kur varsayımı ~40 TL/USD): Flex $49 one-time · Starter $69/ay, $55/ay (yıllık) · Pro $169/ay, $135/ay (yıllık).
 
 ---
 
@@ -282,15 +323,21 @@ python -m pytest packages/research_engine/tests/ -q  # 156 passed
 
 ---
 
-## 🐛 Bilinen Sorunlar / Notlar (2026-08 derin analiz)
+## 🐛 Bilinen Sorunlar / Notlar
 
-1. ✅ **README docs referansı** — `docs/god_doc.md` atfı kaldırıldı, akademik kaynaklara yönlendirildi.
-2. ℹ️ **`models/` klasörü** — Sadece README.md (DeepSeek config). Kullanıcı onayıyla kaldırılabilir ama içeriği güncel, silinmedi.
-3. ✅ **Batch interview retry** — 2→3 deneme; eksik label'ları hedefli yeniden ister (`run_interviews_batch`).
-4. ✅ **synthesize 500 tolerant** — `_synthesize_impl` eksik plan/persona/turn alanlarını varsayılanla doldurur, hata 422 ile döner.
-5. ✅ **Openness stance hizalaması** — `persona_traits`'te dc*k9 formülü merkezlendi; Innovator > EarlyAdopter > Mainstream > Skeptic > Laggard sıralaması sağlandı (aynı dc'de).
-6. ✅ **RLS canlı testi** — `test_rls_isolation.py` eklendi (Postgres yoksa skip). Tenant izolasyonunu gerçek DB'de doğrular.
-7. ℹ️ **Frontend commit'lenmemiş değişiklik** — `studies/[id]/page.tsx` (paywall teaser + brief/Big5 fix) commit bekliyor.
-8. ℹ️ **Docker API/Celery host'ta** — `launch.py` sadece postgres+redis'i başlatır; tam Docker deploy için `docker compose up -d clarere-api celery_worker`.
+1. ✅ **P0 blocker'lar kapatıldı** — bkz. "P0 Blocker Durumu (Sprint 9)".
+2. ✅ **Production Docker hazırlığı** — `docker-compose.cloud.yml`, `Caddyfile.cloud`, `.env.production.example`, `next.config.ts` env-driven proxy, `_ensure_app_role` Neon-uyumlu (non-fatal). ⚠️ `docker-compose.prod.yml` + `docker-compose.local.yml` (yerel/self-hosted) **korundu**.
+3. ✅ **CI** — `.github/workflows/ci.yml` (pytest + tsc + lint).
+4. ✅ **Sentry** — `SENTRY_DSN` varsa aktif, `send_default_pii=False` (KVKK).
+5. ✅ **Resend** — `email_service.py`; iletişim formu bildirimi bağlandı. `RESEND_API_KEY` yoksa no-op.
+6. ✅ **KVKK** — `GET /api/client/me/export` + `DELETE /api/client/me` (abonelik iptali + veri silme, `confirm: "DELETE"`).
+7. ✅ **Index'ler** — `research_findings(study_id)`, `research_evidence(finding_id)` (migration 005).
+8. ✅ **Yedekleme** — `scripts/backup_db.sh` (cron'a eklenmeli).
+9. ⚠️ **Paddle env doldurulmalı** — sandbox katalog kuruldu; live için `PADDLE_ENV=production` + live price ID'ler. Webhook secret `PADDLE_WEBHOOK_URL` verilince oluşturulacak.
+10. ✅ **`/research` job pattern (P0-1 Aşama 2)** — `POST /research/jobs` → 202 `job_id`; `GET /research/jobs/{id}` durum. Celery görevi `jobs.py`, ortak çekirdek `research_runner.py`. Frontend: job dener, 503'te senkron `/research`'e düşer.
+11. ✅ **Ölü kod DEĞİL (denetim hatası düzeltildi)** — `graph.py`, `state.py`, `nodes/intake.py`, `synthesis_pipeline.py` **canlı**: `gateway.py` → `/studio/simulate` bunları kullanıyor. **SİLİNMEMELİ.**
+12. ✅ **Frontend middleware** — `src/middleware.ts` (prod host kanonikleştirme, derin bağlantı koruması, noindex, probe engelleme). `/client` kökü bilinçli olarak açık (onboarding orada).
+13. ℹ️ **`models/` klasörü** sadece README.
+14. ℹ️ **Canlıya geçiş** — `server_plan.md` fazları uygulanacak (VPS + Neon + Vercel).
 
-> **Test durumu:** 156 passed + 1 skipped (RLS canlı test — Postgres gerektirir).
+> **Test durumu:** 187 passed + 1 skipped (RLS canlı test — Postgres gerektirir).

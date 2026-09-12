@@ -8,6 +8,7 @@ import { UsernameModal } from "@/components/username-modal";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import Logo from "@/components/logo";
 import { getAuthHeaders } from "@/lib/auth";
+import { clearSessionMarker } from "@/lib/auth";
 
 interface SidebarStudy {
   id: string;
@@ -180,6 +181,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   function handleLogout() {
     localStorage.removeItem("clarere_username");
     localStorage.removeItem("clarere_token");
+    clearSessionMarker();
     window.location.href = "/";
   }
 

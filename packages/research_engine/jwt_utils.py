@@ -14,8 +14,14 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import time
+
+logger = logging.getLogger(__name__)
+
+# Geliştirme varsayılanı — üretimde ASLA dönmemeli (bkz. get_jwt_secret).
+_DEV_FALLBACK = "clarere-dev-secret-DO-NOT-USE-IN-PRODUCTION"
 
 
 def _b64url_encode(data: bytes) -> str:
@@ -28,8 +34,30 @@ def _b64url_decode(data: str) -> bytes:
 
 
 def get_jwt_secret() -> str:
-    """JWT imzalama anahtarı — env'den, yoksa dev varsayılanı."""
-    return os.getenv("JWT_SECRET") or os.getenv("ADMIN_SECRET_KEY") or "clarere-dev-secret"
+    """JWT imzalama anahtarı.
+
+    Production'da `JWT_SECRET` (veya `ADMIN_SECRET_KEY`) zorunludur; yoksa uygulama
+    başlatılmaz. Development'ta eksikse bilinen bir varsayılana düşer ve uyarı loglanır.
+    """
+    secret = os.getenv("JWT_SECRET") or os.getenv("ADMIN_SECRET_KEY")
+    app_env = os.getenv("APP_ENV", "development").lower()
+
+    if not secret:
+        if app_env == "production":
+            raise RuntimeError(
+                "JWT_SECRET ortam değişkeni production'da zorunludur. "
+                'Üretmek için: python -c "import secrets; print(secrets.token_urlsafe(48))"'
+            )
+        logger.warning("JWT_SECRET ayarlanmamış — geliştirme varsayılanı kullanılıyor.")
+        return _DEV_FALLBACK
+
+    if app_env == "production" and len(secret) < 32:
+        raise RuntimeError(
+            "JWT_SECRET production'da en az 32 karakter olmalıdır "
+            f"(mevcut: {len(secret)} karakter)."
+        )
+
+    return secret
 
 
 def _default_token_expiry() -> int:

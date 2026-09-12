@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Logo from "@/components/logo";
+import { setSessionMarker } from "@/lib/auth";
 
 interface UsernameModalProps {
   onComplete: (username: string) => void;
@@ -83,6 +84,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
 
       // Başarılı: localStorage'a kaydet
       localStorage.setItem("clarere_username", value);
+      setSessionMarker(); // middleware derin bağlantı koruması
       onComplete(value);
     } catch {
       setError("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");

@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends, Header, Response
+from fastapi import APIRouter, HTTPException, Depends, Header, Response, Request
 from pydantic import BaseModel
 from typing import Optional, List
+import hmac
+import logging
 import os
 from packages.research_engine.database import (
-    get_system_config, get_feedbacks, get_audit_logs, update_system_config, get_db
+    get_system_config, get_feedbacks, get_audit_logs, update_system_config, get_db,
+    get_token_usage_summary,
 )
 from packages.research_engine.db_auth import (
     get_clients, add_client, update_client, delete_client
@@ -14,14 +17,44 @@ from packages.research_engine.db_vectors import (
 )
 from packages.research_engine.plan_config import PLAN_CONFIG, PLAN_ORDER, FEATURE_MIN_PLAN
 
-_ADMIN_KEY = os.getenv("ADMIN_SECRET_KEY", "")
+logger = logging.getLogger(__name__)
 
-def require_admin(x_admin_key: str = Header(default="")) -> None:
-    """Admin endpoint koruyucu dependency. ADMIN_SECRET_KEY env var zorunlu."""
-    if not _ADMIN_KEY:
-        print("[WARN] ADMIN_SECRET_KEY ayarlanmamış — admin API korumasız!")
+
+def _get_admin_key() -> str:
+    """ADMIN_SECRET_KEY'i her çağrıda taze oku.
+
+    Import anında okumak, runtime'da set edilen değerin görülmemesine yol açıyordu.
+    """
+    return os.getenv("ADMIN_SECRET_KEY", "")
+
+
+def require_admin(request: Request, x_admin_key: str = Header(default="")) -> None:
+    """Admin endpoint koruyucu dependency.
+
+    - Production'da ADMIN_SECRET_KEY yoksa erişim verilmez (503).
+    - Anahtar karşılaştırması timing-safe (`hmac.compare_digest`).
+    - Başarısız denemeler audit log'a yazılır.
+    """
+    admin_key = _get_admin_key()
+    app_env = os.getenv("APP_ENV", "development").lower()
+
+    if not admin_key:
+        if app_env == "production":
+            raise HTTPException(
+                status_code=503,
+                detail="Admin API yapılandırılmamış (ADMIN_SECRET_KEY eksik).",
+            )
+        logger.warning("ADMIN_SECRET_KEY yok — admin API geliştirme modunda korumasız.")
         return
-    if x_admin_key != _ADMIN_KEY:
+
+    if not hmac.compare_digest(x_admin_key or "", admin_key):
+        client_ip = request.client.host if request.client else "unknown"
+        logger.warning("Başarısız admin girişi: ip=%s", client_ip)
+        try:
+            from packages.research_engine.database import log_audit
+            log_audit("admin-api", "-", f"Geçersiz admin anahtarı (ip={client_ip})", "403 Forbidden")
+        except Exception:
+            logger.debug("Admin audit log yazılamadı.", exc_info=True)
         raise HTTPException(status_code=403, detail="Yetkisiz: Geçersiz admin anahtarı.")
 
 
@@ -547,4 +580,21 @@ async def get_plan_config_endpoint():
         },
         "feature_min_plan": FEATURE_MIN_PLAN,
     }
+
+
+@router.get("/usage")
+async def get_usage_summary(
+    username: Optional[str] = None,
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+):
+    """Kullanıcı bazlı token ve maliyet özeti (P0-6).
+
+    Query paramları: username, start (ISO tarih), end (ISO tarih).
+    """
+    try:
+        return {"usage": get_token_usage_summary(username=username, start=start, end=end)}
+    except Exception as e:
+        logger.error("Kullanım özeti alınamadı: %s", e)
+        raise HTTPException(status_code=500, detail="Kullanım özeti alınamadı.")
 

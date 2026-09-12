@@ -5,9 +5,55 @@ import logging
 import os
 import re
 
+from tenacity import (
+    Retrying,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+    before_sleep_log,
+)
+
 from .models import ResearchModel
 
 logger = logging.getLogger(__name__)
+
+# — Retry edilebilir OpenAI/DeepSeek hataları —
+# Kimlik doğrulama (401) veya geçersiz istek (400) YENİDEN DENENMEZ: boşuna gecikme olur.
+try:
+    from openai import (
+        APIConnectionError,
+        APITimeoutError,
+        InternalServerError,
+        RateLimitError,
+    )
+
+    _RETRYABLE_EXCEPTIONS: tuple[type[BaseException], ...] = (
+        APITimeoutError,
+        APIConnectionError,
+        RateLimitError,
+        InternalServerError,
+    )
+except ImportError:  # openai yoksa retry devre dışı
+    _RETRYABLE_EXCEPTIONS = ()
+
+
+# LLM çağrısı zaman aşımı (saniye) — asılı kalmayı önler (P0-5)
+DEEPSEEK_TIMEOUT = float(os.getenv("DEEPSEEK_TIMEOUT", "90"))
+# Maksimum yeniden deneme sayısı (ilk deneme dahil)
+DEEPSEEK_MAX_RETRIES = int(os.getenv("DEEPSEEK_MAX_RETRIES", "3"))
+
+
+def _retry_policy() -> Retrying:
+    """Çağrı anında okunan retry politikası (test edilebilirlik için env her seferinde okunur)."""
+    retryable = _RETRYABLE_EXCEPTIONS or (Exception,)
+    return Retrying(
+        stop=stop_after_attempt(int(os.getenv("DEEPSEEK_MAX_RETRIES", str(DEEPSEEK_MAX_RETRIES)))),
+        wait=wait_exponential(multiplier=1, min=2, max=20),
+        retry=retry_if_exception_type(retryable),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        reraise=True,
+    )
+
 
 # B2B Enterprise Tracing: Langfuse Integration
 try:
@@ -69,10 +115,54 @@ class DeepSeekResearchModel:
 
         try:
             from openai import OpenAI
-            self.client = OpenAI(api_key=api_key, base_url=self.base_url)
+
+            # max_retries=0: retry'ı tenacity yönetir → çift retry/çift ücret olmaz.
+            self.client = OpenAI(
+                api_key=api_key,
+                base_url=self.base_url,
+                timeout=DEEPSEEK_TIMEOUT,
+                max_retries=0,
+            )
         except ImportError:
             self.client = None
             logger.error("openai package not found. DeepSeek adapter will fail.")
+
+        # Son çağrının token kullanımı (P0-6 maliyet muhasebesi)
+        self.last_usage: dict = {}
+        # İşlem boyunca biriken kullanım — batch mülakatlarda tek tek değil toplam kaydedilir
+        self.cumulative_usage: dict = {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "prompt_cache_hit_tokens": 0,
+            "prompt_cache_miss_tokens": 0,
+        }
+
+    def _chat(self, **kwargs):
+        """Tek LLM çağrısı — timeout + exponential backoff retry (P0-5).
+
+        Stream için de kullanılır: `create()` iterator döndürdüğü için retry SADECE
+        ilk chunk'tan önce çalışır. Yarıda kesilen stream yeniden denenmez.
+        """
+        if not self.client:
+            raise ModelProviderError("OpenAI client not initialized. Install openai package.")
+        return _retry_policy()(self.client.chat.completions.create)(**kwargs)
+
+    def _capture_usage(self, response) -> None:
+        """DeepSeek yanıtındaki token kullanımını saklar (cache-hit alanları dahil)."""
+        usage = getattr(response, "usage", None)
+        if not usage:
+            return
+        self.last_usage = {
+            "prompt_tokens": getattr(usage, "prompt_tokens", 0) or 0,
+            "completion_tokens": getattr(usage, "completion_tokens", 0) or 0,
+            "total_tokens": getattr(usage, "total_tokens", 0) or 0,
+            # DeepSeek context caching — indirimli faturalanır
+            "prompt_cache_hit_tokens": getattr(usage, "prompt_cache_hit_tokens", 0) or 0,
+            "prompt_cache_miss_tokens": getattr(usage, "prompt_cache_miss_tokens", 0) or 0,
+        }
+        for key, value in self.last_usage.items():
+            self.cumulative_usage[key] = self.cumulative_usage.get(key, 0) + int(value or 0)
 
     @observe(as_type="generation")
     def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
@@ -99,9 +189,13 @@ class DeepSeekResearchModel:
             kwargs["response_format"] = {"type": "json_object"}
 
         try:
-            response = self.client.chat.completions.create(**kwargs)
+            response = self._chat(**kwargs)
+        except ModelProviderError:
+            raise
         except Exception as exc:
             raise ModelProviderError(f"DeepSeek API çağrısı başarısız ({self.model_id}): {exc}") from exc
+
+        self._capture_usage(response)
 
         # DeepSeek thinking mode: reasoning_content ayrı alanda gelir (inline <thinking> tag'i DEĞİL)
         reasoning = getattr(response.choices[0].message, "reasoning_content", "") or ""
@@ -147,7 +241,9 @@ class DeepSeekResearchModel:
             kwargs["response_format"] = {"type": "json_object"}
 
         try:
-            response = self.client.chat.completions.create(**kwargs)
+            response = self._chat(**kwargs)
+        except ModelProviderError:
+            raise
         except Exception as exc:
             raise ModelProviderError(f"DeepSeek API stream çağrısı başarısız ({self.model_id}): {exc}") from exc
 

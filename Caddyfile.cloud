@@ -1,0 +1,35 @@
+# Clarere — CLOUD production Caddyfile (api.clarere.com)
+#
+# Onaylanan mimari: frontend Vercel'de, PostgreSQL Neon'da.
+# Bu dosya yalnızca backend API'yi (ve Paddle webhook'unu) sunar.
+#
+# DNS: Squarespace'te `api` A kaydı bu sunucunun IP'sine yönlenmeli.
+# Caddy sertifikayı ilk istekte otomatik alır ve yeniler.
+#
+# Not: Paddle webhook gövdesi DEĞİŞTİRİLMEDEN iletilir (imza doğrulaması bozulmaz).
+
+api.clarere.com {
+	encode gzip
+
+	# Webhook ve rapor yüklemeleri için gövde boyutu
+	request_body {
+		max_size 10MB
+	}
+
+	reverse_proxy clarere-api:3000
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 20mb
+			roll_keep 5
+		}
+	}
+}

@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, Query, Header, Request, Depends
 import logging
+import os
+from uuid import uuid4
 from dataclasses import asdict
 from pydantic import BaseModel
 from typing import Optional, List
@@ -12,7 +14,9 @@ from packages.research_engine.database import (
     get_findings, get_finding_detail, save_findings,
     get_client_by_username, upgrade_client_plan, check_simulation_limit,
     register_client_if_new, atomic_increment_simulation_count,
-    count_user_non_ab_simulations, count_chat_messages, get_current_username
+    count_user_non_ab_simulations, count_chat_messages, get_current_username,
+    record_token_usage, check_token_budget, export_user_data, delete_user_data,
+    create_research_job, get_research_job,
 )
 from packages.research_engine.db_vectors import (
     get_personas_pool, save_persona_to_pool
@@ -76,13 +80,26 @@ def is_trial_expired(client: dict | None) -> tuple[bool, str]:
     return False, ""
 
 
+def _effective_plan(client: dict) -> str:
+    """Abonelik durumuna göre geçerli planı döner (P0-2).
+
+    - active / trialing / past_due → plan korunur (past_due'da erişim kesilmez)
+    - paused / canceled          → Free'ye düşürülür
+    """
+    plan_type = client.get("plan_type") or "Free"
+    status = (client.get("subscription_status") or "").lower()
+    if status in {"paused", "canceled"}:
+        return "Free"
+    return plan_type
+
+
 def _resolve_plan(x_username: str | None) -> tuple[str, dict]:
     """Header'dan username al, plan tipini ve config'ini döner. Kullanıcı bulunamazsa Free plan uygular."""
     plan_type = "Free"
     if x_username:
         client = get_client_by_username(x_username)
         if client:
-            plan_type = client.get("plan_type", "Free")
+            plan_type = _effective_plan(client)
     return plan_type, get_plan_config(plan_type)
 
 
@@ -98,6 +115,65 @@ def _require_feature(plan_type: str, feature: str) -> None:
                 "current_plan": plan_type,
                 "required_plan": min_plan,
                 "message": "Bu özellik güncel planınızda bulunmuyor.",
+            },
+        )
+
+
+def _enforce_token_budget(username: str | None, plan_type: str) -> None:
+    """Dönemsel token bütçesi aşıldıysa 429 fırlatır (P0-6).
+
+    Muhasebe hatasında fail-open davranır — kullanıcı, altyapı sorunu yüzünden engellenmez.
+    """
+    allowed, used, limit = check_token_budget(username, plan_type)
+    if allowed:
+        return
+    raise HTTPException(
+        status_code=429,
+        detail={
+            "code": "TOKEN_BUDGET_EXCEEDED",
+            "used": used,
+            "limit": limit,
+            "current_plan": plan_type,
+            "message": (
+                "Bu dönem için token bütçeniz doldu. "
+                "Planınızı yükselterek araştırmaya devam edebilirsiniz."
+            ),
+        },
+    )
+
+
+def _record_usage(username: str | None, model, operation: str, study_id: str | None = None) -> None:
+    """LLM çağrı(lar)ının token kullanımını kaydeder. Hata araştırmayı çökertmez."""
+    try:
+        usage = getattr(model, "cumulative_usage", None) or getattr(model, "last_usage", None) or {}
+        model_id = getattr(model, "model_id", None) or getattr(model, "last_model_id", None) or ""
+        record_token_usage(
+            username=username or "",
+            model_id=model_id,
+            operation=operation,
+            usage=usage,
+            study_id=study_id,
+        )
+    except Exception:
+        logger.debug("Token kullanımı kaydedilemedi.", exc_info=True)
+
+
+# ── KVKK / GDPR: hesap silme onayı ──
+
+_DELETE_CONFIRM_TOKEN = "DELETE"
+
+
+def _require_delete_confirmation(value: str) -> None:
+    """Hesap silme için açık onay zorunlu (yanlışlıkla silmeyi önler)."""
+    if (value or "").strip().upper() != _DELETE_CONFIRM_TOKEN:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "CONFIRMATION_REQUIRED",
+                "message": (
+                    "Hesabı silmek için 'confirm' alanına "
+                    f"'{_DELETE_CONFIRM_TOKEN}' yazılmalıdır."
+                ),
             },
         )
 
@@ -381,7 +457,7 @@ class RegisterRequest(BaseModel):
 
 @router.get("/me")
 @limiter.limit("60/minute")
-async def get_me(request: Request, x_username: str | None = Depends(get_current_username)):
+def get_me(request: Request, x_username: str | None = Depends(get_current_username)):
     """Mevcut kullanıcının plan bilgisini döner."""
     plan_type, config = _resolve_plan(x_username)
     client = get_client_by_username(x_username) if x_username else None
@@ -415,7 +491,7 @@ async def get_me(request: Request, x_username: str | None = Depends(get_current_
 
 
 @router.post("/upgrade-plan")
-async def upgrade_plan(req: UpgradePlanRequest, x_username: str | None = Depends(get_current_username)):
+def upgrade_plan(req: UpgradePlanRequest, x_username: str | None = Depends(get_current_username)):
     """Kayıtlı kullanıcının planını yükseltir ve dönem sayacını sıfırlar."""
     if not x_username:
         raise HTTPException(status_code=401, detail="Oturum bilgisi eksik. Lütfen giriş yapın.")
@@ -425,6 +501,16 @@ async def upgrade_plan(req: UpgradePlanRequest, x_username: str | None = Depends
         raise HTTPException(status_code=400, detail=f"Geçersiz plan: {req.new_plan}")
     if req.billing_cycle not in ("monthly", "annual"):
         raise HTTPException(status_code=400, detail="Faturalama dönemi 'aylık' veya 'yıllık' olmalı.")
+
+    # Production'da para almadan plan yükseltme KAPALI — satın alma Paddle webhook'u ile olur.
+    if os.getenv("APP_ENV", "development").lower() == "production":
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Plan yükseltme yalnızca ödeme akışıyla yapılır. "
+                "Lütfen planlar sayfasından satın alın."
+            ),
+        )
 
     upgrade_client_plan(x_username, req.new_plan, req.billing_cycle)
     _, config = _resolve_plan(x_username)
@@ -443,7 +529,7 @@ async def upgrade_plan(req: UpgradePlanRequest, x_username: str | None = Depends
 
 @router.post("/register")
 @limiter.limit("10/minute")
-async def register(request: Request, req: RegisterRequest):
+def register(request: Request, req: RegisterRequest):
     """Yeni kullanıcı kaydı: yoksa Free planla oluşturur, varsa mevcut planı döner.
     İsteğe bağlı: new_plan verilmişse kayıt sonrası planı yükseltir."""
     username = (req.username or "").strip()
@@ -467,11 +553,11 @@ async def register(request: Request, req: RegisterRequest):
     }
 
 @router.get("/studies")
-async def get_studies(include_archived: bool = Query(False)):
+def get_studies(include_archived: bool = Query(False)):
     return list_studies(include_archived=include_archived)
 
 @router.get("/studies/{study_id}")
-async def get_study(study_id: str):
+def get_study(study_id: str):
     return load_study_payload(study_id, include_pdf=False)
 
 
@@ -480,7 +566,7 @@ async def get_study(study_id: str):
 # ---------------------------------------------------------------------------
 
 @router.get("/studies/{study_id}/findings")
-async def get_findings_endpoint(
+def get_findings_endpoint(
     study_id: str,
     x_username: str | None = Depends(get_current_username),
 ):
@@ -512,7 +598,7 @@ async def get_findings_endpoint(
 
 
 @router.get("/studies/{study_id}/findings/{finding_id}")
-async def get_finding_detail_endpoint(
+def get_finding_detail_endpoint(
     study_id: str,
     finding_id: int,
     x_username: str | None = Depends(get_current_username),
@@ -561,7 +647,7 @@ async def get_finding_detail_endpoint(
 # ---------------------------------------------------------------------------
 
 @router.get("/studies/{study_id}/pdf")
-async def download_study_pdf(study_id: str, x_username: str | None = Depends(get_current_username)):
+def download_study_pdf(study_id: str, x_username: str | None = Depends(get_current_username)):
     plan_type, _ = _resolve_plan(x_username)
     _require_feature(plan_type, "pdf_export")
 
@@ -636,13 +722,13 @@ async def download_study_pdf(study_id: str, x_username: str | None = Depends(get
 
 
 @router.put("/studies/{study_id}/archive")
-async def archive_study_endpoint(study_id: str):
+def archive_study_endpoint(study_id: str):
     archive_study(study_id)
     return {"status": "archived"}
 
 
 @router.delete("/studies/{study_id}")
-async def delete_study_endpoint(
+def delete_study_endpoint(
     study_id: str,
     x_username: str | None = Depends(get_current_username),
 ):
@@ -672,12 +758,12 @@ async def delete_study_endpoint(
     return {"status": "deleted", "study_id": study_id}
 
 @router.post("/feedback")
-async def submit_feedback(data: FeedbackCreate):
+def submit_feedback(data: FeedbackCreate):
     save_feedback(data.username, data.study_id, data.item_type, data.item_id, data.vote, data.comment)
     return {"status": "success"}
 
 @router.post("/studies")
-async def create_or_update_study(data: StudyPayload, x_username: str | None = Depends(get_current_username)):
+def create_or_update_study(data: StudyPayload, x_username: str | None = Depends(get_current_username)):
     if not x_username:
         raise HTTPException(status_code=401, detail="Oturum bilgisi eksik. Lütfen giriş yapın.")
     study_id = data.metadata.get("id", "")
@@ -734,11 +820,11 @@ async def create_or_update_study(data: StudyPayload, x_username: str | None = De
     return {"status": "success", "id": study_id}
 
 @router.get("/personas")
-async def list_personas():
+def list_personas():
     return get_personas_pool()
 
 @router.post("/personas")
-async def create_persona(persona: PersonaCreate):
+def create_persona(persona: PersonaCreate):
     save_persona_to_pool(
         name=persona.name,
         age=persona.age,
@@ -768,7 +854,7 @@ async def create_persona(persona: PersonaCreate):
     return {"status": "success"}
 
 @router.post("/plan")
-async def create_plan(request: BriefRequest, x_username: str | None = Depends(get_current_username)):
+def create_plan(request: BriefRequest, x_username: str | None = Depends(get_current_username)):
     plan_type, _ = _resolve_plan(x_username)
     client = get_client_by_username(x_username) if x_username else None
     expired, reason = is_trial_expired(client)
@@ -822,7 +908,7 @@ async def create_plan(request: BriefRequest, x_username: str | None = Depends(ge
     return plan
 
 @router.post("/personas/generate")
-async def generate_personas_from_plan(request: GeneratePersonasRequest, x_username: str | None = Depends(get_current_username)):
+def generate_personas_from_plan(request: GeneratePersonasRequest, x_username: str | None = Depends(get_current_username)):
     plan_type, _ = _resolve_plan(x_username)
     from packages.research_engine.models import ResearchBrief
 
@@ -855,10 +941,10 @@ async def generate_personas_from_plan(request: GeneratePersonasRequest, x_userna
 
 
 @router.post("/research")
-async def run_full_research(request: ResearchRequest, x_username: str | None = Depends(get_current_username)):
+def run_full_research(request: ResearchRequest, x_username: str | None = Depends(get_current_username)):
     """
-    Adım 2 — Birleşik Araştırma: Plan + Persona + Mülakat.
-    Brief'i alır; plan üretir, personaları oluşturur ve batch mülakatları çalıştırır.
+    Adım 2 — Birleşik Araştırma (senkron): Plan + Persona + Mülakat.
+    Uzun sürebilir (~30-60 sn); production'da `/research/jobs` (async) tercih edilir.
     Model: deepseek-v4-flash (hızlı/ucuz).
     """
     plan_type, _ = _resolve_plan(x_username)
@@ -867,65 +953,87 @@ async def run_full_research(request: ResearchRequest, x_username: str | None = D
     if expired:
         raise HTTPException(status_code=403, detail=reason)
 
-    from packages.research_engine.models import ResearchBrief
+    _enforce_token_budget(x_username, plan_type)
 
-    # Brief'i intake_brief (Defne çıktısı) veya doğrudan request'ten kur
-    brief_data = request.intake_brief or {}
-    brief = ResearchBrief(
-        title=brief_data.get("title") or request.title,
-        market="Türkiye",
-        category=request.category,
-        idea=brief_data.get("context") or brief_data.get("idea") or request.context,
-        target_users=brief_data.get("target_users") or request.target_users or [],
-        questions=brief_data.get("questions") or request.questions or [],
-        competitors=brief_data.get("competitors") or request.competitors or [],
-        expected_price=brief_data.get("expected_price") or request.expected_price,
-        sales_channel=brief_data.get("sales_channel") or request.sales_channel,
-        success_metric=brief_data.get("success_metric") or request.success_metric,
-        respondent_types=brief_data.get("respondent_types") or request.respondent_types or [],
-        discovery_channels=brief_data.get("discovery_channels") or request.discovery_channels or [],
-    )
+    from packages.research_engine.research_runner import execute_research
+    return execute_research(request.model_dump(), x_username or "", plan_type)
 
-        # 1. Plan üret
-    model = get_model_provider("flash", user_id=x_username or "")
-    plan = build_research_plan(brief)
 
-    # 2. Persona üret
-    personas = generate_personas(brief)
-    max_p = get_max_personas(plan_type)
-    personas = personas[:max_p]
+@router.post("/research/jobs", status_code=202)
+def start_research_job(request: ResearchRequest, x_username: str | None = Depends(get_current_username)):
+    """Async araştırma: Celery kuyruğuna ekler ve 202 + job_id döner.
 
-    # 3. Batch mülakat
-    interviews = run_interviews_batch(brief, personas, model, plan.interview_script)
+    Durum sorgusu: `GET /api/client/research/jobs/{job_id}`.
+    Kuyruk kullanılamıyorsa 503 `ASYNC_UNAVAILABLE` → istemci senkron `/research`'e düşer.
+    """
+    if not x_username:
+        raise HTTPException(status_code=401, detail="Oturum bilgisi eksik. Lütfen giriş yapın.")
 
-    # 4. Personaları havuza kaydet (tekrar kullanım için)
-    from packages.research_engine.db_vectors import save_persona_to_pool
-    for p in personas:
-        try:
-            p_dict = asdict(p)
-            p_dict["created_by"] = x_username or "anonymous"
-            p_dict["is_global"] = True
-            save_persona_to_pool(p_dict, embedding=None)
-        except Exception:
-            pass  # Havuz kaydı kritik değil, sessizce geç
+    plan_type, _ = _resolve_plan(x_username)
+    client = get_client_by_username(x_username)
+    expired, reason = is_trial_expired(client)
+    if expired:
+        raise HTTPException(status_code=403, detail=reason)
 
-    # 5. Atomik kota artırma
-    if x_username:
-        try:
-            atomic_increment_simulation_count(x_username)
-        except Exception:
-            logger.warning("Simulation count increment failed for %s", x_username, exc_info=True)
+    _enforce_token_budget(x_username, plan_type)
 
-    return {
-        "plan": asdict(plan),
-        "personas": [asdict(p) for p in personas],
-        "interviews": [asdict(iv) for iv in interviews],
+    can_run, used, max_s = check_simulation_limit(x_username)
+    if not can_run:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "QUOTA_EXCEEDED",
+                "used": used,
+                "limit": max_s,
+                "message": f"Aylık araştırma limitine ulaştınız ({used}/{max_s}). Planınızı yükseltin.",
+            },
+        )
+
+    job_id = f"job_{uuid4().hex}"
+    create_research_job(job_id, x_username)
+
+    try:
+        from packages.research_engine.jobs import run_research_job
+
+        run_research_job.delay(job_id, request.model_dump(), x_username, plan_type)
+    except Exception:
+        logger.warning("Celery kuyruğuna eklenemedi — istemci senkron moda düşmeli.", exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "ASYNC_UNAVAILABLE",
+                "message": "Arka plan işleyicisi şu an kullanılamıyor.",
+            },
+        )
+
+    return {"job_id": job_id, "status": "queued"}
+
+
+@router.get("/research/jobs/{job_id}")
+def get_research_job_status(job_id: str, x_username: str | None = Depends(get_current_username)):
+    """Async araştırma durumu: queued | running | completed | failed."""
+    if not x_username:
+        raise HTTPException(status_code=401, detail="Oturum bilgisi eksik. Lütfen giriş yapın.")
+
+    job = get_research_job(job_id)
+    if not job or job.get("username") != x_username:
+        raise HTTPException(status_code=404, detail="Görev bulunamadı.")
+
+    response: dict = {
+        "job_id": job_id,
+        "status": job.get("status"),
+        "progress": job.get("progress", 0),
     }
+    if job.get("status") == "completed":
+        response["result"] = job.get("result")
+    elif job.get("status") == "failed":
+        response["error"] = job.get("error") or "Araştırma başarısız oldu."
+    return response
 
 
 @router.post("/interviews/stream")
 @limiter.limit("30/minute")
-async def stream_interviews(request: Request, body: dict, x_username: str | None = Depends(get_current_username)):
+def stream_interviews(request: Request, body: dict, x_username: str | None = Depends(get_current_username)):
     plan_dict = body.get("plan")
     personas_list = body.get("personas")
     brief_dict = body.get("brief", {})
@@ -940,6 +1048,7 @@ async def stream_interviews(request: Request, body: dict, x_username: str | None
         raise HTTPException(status_code=403, detail=reason)
 
     _require_feature(plan_type, "streaming")
+    _enforce_token_budget(x_username, plan_type)
 
     from packages.research_engine.models import ResearchPlan, Persona, ResearchBrief
     plan = ResearchPlan(**plan_dict)
@@ -1008,12 +1117,13 @@ async def stream_interviews(request: Request, body: dict, x_username: str | None
                         exc_info=True,
                     )
         finally:
+            _record_usage(x_username, model, "interview")
             model.free_memory()
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.post("/studies/{study_id}/follow-up")
-async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str | None = Depends(get_current_username)):
+def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str | None = Depends(get_current_username)):
     """Belirli bir personaya ek soru sormak için kullanılır."""
     from packages.research_engine.database import get_study, save_study
     from packages.research_engine.providers import get_model_provider
@@ -1029,6 +1139,8 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     # 2. Free planda engelle
     if plan_type == "Free":
         raise HTTPException(status_code=403, detail="Free planda takip sorusu sorulamaz. Lütfen planınızı yükseltin.")
+
+    _enforce_token_budget(x_username, plan_type)
 
     study = get_study(study_id)
     if not study:
@@ -1085,6 +1197,7 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
         model = get_model_provider("flash", user_id=x_username or "")
         response = model.generate(messages[0]["content"], prompt)
         answer = response.strip()
+        _record_usage(x_username, model, "followup", study_id)
     except Exception as e:
         logger.error(f"Follow up error: {e}")
         raise HTTPException(status_code=500, detail="Cevap üretilemedi. Lütfen tekrar deneyin.")
@@ -1106,7 +1219,7 @@ async def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str 
     return {"status": "success", "turn": new_turn}
 
 @router.post("/synthesize")
-async def synthesize(request: SynthesizeRequest, x_username: str | None = Depends(get_current_username)):
+def synthesize(request: SynthesizeRequest, x_username: str | None = Depends(get_current_username)):
     try:
         return _synthesize_impl(request, x_username)
     except HTTPException:
@@ -1253,7 +1366,7 @@ def _build_persona_tolerant(p: dict):
 # ── Sprint 4: Research Copilot Chat ──
 
 @router.post("/studies/{study_id}/chat")
-async def research_chat(
+def research_chat(
     study_id: str,
     data: dict,
     request: Request,
@@ -1280,6 +1393,8 @@ async def research_chat(
     # ── Plan ve kota kontrolü ──
     plan_type, plan_cfg = _resolve_plan(x_username)
     max_queries = plan_cfg.get("max_talk_to_research", 0)
+
+    _enforce_token_budget(x_username, plan_type)
 
     if max_queries == 0:
         raise HTTPException(
@@ -1369,6 +1484,8 @@ async def research_chat(
     finally:
         model.free_memory()
 
+    _record_usage(x_username, model, "copilot", study_id)
+
     # ── Mesajları kaydet ──
     with get_db() as (conn, cur):
         cur.execute(
@@ -1422,7 +1539,7 @@ async def trigger_studio_simulation(request: Request, data: StudioSimulationRequ
         raise HTTPException(status_code=500, detail="Simülasyon kuyruğa alınırken hata oluştu.")
 
 @router.get("/studio/status/{task_id}")
-async def get_studio_simulation_status(task_id: str, x_username: str | None = Depends(get_current_username)):
+def get_studio_simulation_status(task_id: str, x_username: str | None = Depends(get_current_username)):
     """
     Celery task durumunu döner. Frontend polling için kullanılır.
     """
@@ -1449,7 +1566,7 @@ async def get_studio_simulation_status(task_id: str, x_username: str | None = De
 
 @router.post("/studio/match-personas")
 @limiter.limit("20/minute")
-async def match_personas(request: Request, data: dict, x_username: str | None = Depends(get_current_username)):
+def match_personas(request: Request, data: dict, x_username: str | None = Depends(get_current_username)):
     """
     Brief'e (veya idea'ya) uygun veritabanındaki hazır personaları eşleştirip önerir.
     Kullanıcıya 'hangi persona grubundan kaç tane istersiniz' diye sormak için kullanılır.
@@ -1479,6 +1596,7 @@ async def match_personas(request: Request, data: dict, x_username: str | None = 
 
         model = get_model_provider("flash", user_id=x_username or "")
         text = model.generate(system, prompt)
+        _record_usage(x_username, model, "match")
 
         # JSON parse (fallback safety)
         match = re.search(r'\[.*\]', text, re.DOTALL)
@@ -1504,9 +1622,11 @@ async def match_personas(request: Request, data: dict, x_username: str | None = 
 
 @router.post("/intake")
 @limiter.limit("20/minute")
-async def intake_chat(request: Request, data: IntakeChatRequest, x_username: str | None = Depends(get_current_username)):
+def intake_chat(request: Request, data: IntakeChatRequest, x_username: str | None = Depends(get_current_username)):
     try:
         from packages.research_engine.database import get_system_config
+        plan_type, _ = _resolve_plan(x_username)
+        _enforce_token_budget(x_username, plan_type)
         model = get_model_provider("flash", user_id=(x_username or "").strip() or "anonymous")
         # wizard_prompt DB'den okunur — admin panelinden kod deploy'u olmadan güncellenebilir
         try:
@@ -1522,13 +1642,16 @@ async def intake_chat(request: Request, data: IntakeChatRequest, x_username: str
             app_mode=data.app_mode,
             wizard_prompt=db_wizard_prompt,
         )
+        _record_usage(x_username, model, "intake")
         return result
+    except HTTPException:
+        raise  # plan/kota hatalarını (403/429) 503'e dönüştürme
     except Exception as e:
         logger.error("intake_chat error for user=%s: %s", getattr(data, 'user_message', '')[:40], e, exc_info=True)
         raise HTTPException(status_code=503, detail=f"Yapay Zeka servisi geçici olarak yoğun. Hata: {str(e)[:100]}")
 
 @router.post("/contact")
-async def contact_form(data: dict):
+def contact_form(data: dict):
     """İletişim formu — mesajı DB'ye kaydeder."""
     from packages.research_engine.database import get_db
     from datetime import datetime
@@ -1556,6 +1679,12 @@ async def contact_form(data: dict):
                 "INSERT INTO contact_messages (name, email, message) VALUES (%s, %s, %s)",
                 (name, email, message),
             )
+        # Bildirim e-postası (opsiyonel — RESEND_API_KEY yoksa sessizce atlanır)
+        try:
+            from packages.research_engine.email_service import notify_contact_form
+            notify_contact_form(name, email, message)
+        except Exception:
+            logger.debug("İletişim bildirimi gönderilemedi.", exc_info=True)
         logger.info(f"Contact form submitted by {name} <{email}>")
         return {"status": "success", "message": "Mesajınız iletildi."}
     except Exception as e:
@@ -1563,9 +1692,71 @@ async def contact_form(data: dict):
         raise HTTPException(status_code=500, detail="Mesaj kaydedilemedi. Lütfen hiclarere@clarere.com adresine e-posta atın.")
 
 
+@router.get("/me/export")
+def export_my_data(x_username: str | None = Depends(get_current_username)):
+    """KVKK/GDPR veri taşınabilirliği — kullanıcının tüm verisini JSON olarak indirir."""
+    if not x_username:
+        raise HTTPException(status_code=401, detail="Oturum bilgisi eksik. Lütfen giriş yapın.")
+    try:
+        data = export_user_data(x_username)
+    except Exception:
+        logger.error("Veri dışa aktarma başarısız (user=%s)", x_username, exc_info=True)
+        raise HTTPException(status_code=500, detail="Verileriniz dışa aktarılamadı. Lütfen tekrar deneyin.")
+
+    body = json.dumps(data, ensure_ascii=False, default=str)
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="clarere-{x_username}-export.json"'
+        },
+    )
+
+
+class AccountDeleteRequest(BaseModel):
+    confirm: str = ""
+
+
+@router.delete("/me")
+def delete_my_account(
+    data: AccountDeleteRequest,
+    x_username: str | None = Depends(get_current_username),
+):
+    """KVKK hesap silme — aboneliği iptal eder ve kullanıcı verisini siler.
+
+    Güvenlik: `confirm: "DELETE"` zorunlu. Abonelik iptal edilemezse silme yapılmaz
+    (kullanıcı ücretlendirilmeye devam ederken verisi silinmesin).
+    """
+    if not x_username:
+        raise HTTPException(status_code=401, detail="Oturum bilgisi eksik. Lütfen giriş yapın.")
+    _require_delete_confirmation(data.confirm)
+
+    client = get_client_by_username(x_username) or {}
+    subscription_id = client.get("paddle_subscription_id")
+    if subscription_id:
+        from packages.research_engine.paddle_webhooks import cancel_paddle_subscription
+        if not cancel_paddle_subscription(subscription_id):
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    "Abonelik iptal edilemediği için hesap silinemedi. "
+                    "Lütfen hiclarere@clarere.com ile iletişime geçin."
+                ),
+            )
+
+    try:
+        counts = delete_user_data(x_username)
+    except Exception:
+        logger.error("Hesap silme başarısız (user=%s)", x_username, exc_info=True)
+        raise HTTPException(status_code=500, detail="Hesap silinemedi. Lütfen tekrar deneyin.")
+
+    logger.info("Hesap silindi: %s (%s)", x_username, counts)
+    return {"status": "deleted", "deleted": counts}
+
+
 @router.post("/ws/ticket")
 @limiter.limit("20/minute")
-async def generate_ws_ticket(request: Request, x_username: str | None = Depends(get_current_username)):
+def generate_ws_ticket(request: Request, x_username: str | None = Depends(get_current_username)):
     """
     Generates a 10-second single-use ticket for WebSocket authentication.
     """

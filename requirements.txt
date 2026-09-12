@@ -31,6 +31,9 @@ plotly==6.7.0
 langgraph
 langchain-core
 
+# Monitoring (SENTRY_DSN yoksa devre dışı)
+sentry-sdk[fastapi]>=2.0.0
+
 # Reporting
 xhtml2pdf>=0.2.16
 

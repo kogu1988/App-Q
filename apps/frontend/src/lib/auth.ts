@@ -30,3 +30,20 @@ export function getAdminHeaders(): Record<string, string> {
   }
   return {};
 }
+
+/**
+ * Oturum işareti cookie'si — middleware'in derin bağlantı koruması için.
+ * Hassas veri İÇERMEZ (JWT localStorage'da kalır); yalnızca "giriş yapıldı" bilgisi.
+ */
+const SESSION_COOKIE = "clarere_session";
+const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 gün
+
+export function setSessionMarker(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${SESSION_COOKIE}=1; path=/; max-age=${SESSION_MAX_AGE}; samesite=lax`;
+}
+
+export function clearSessionMarker(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0; samesite=lax`;
+}

@@ -118,6 +118,24 @@ class PrivacyResearchModelWrapper:
     def last_model_id(self):
         return getattr(self._model, "last_model_id", None)
 
+    @property
+    def model_id(self):
+        return getattr(self._model, "model_id", None) or self.last_model_id
+
+    @property
+    def last_usage(self):
+        return getattr(self._model, "last_usage", {})
+
+    @property
+    def cumulative_usage(self):
+        return getattr(self._model, "cumulative_usage", {})
+
+    def free_memory(self) -> None:
+        """Alt modele devret — aksi halde streaming finalizer'ı AttributeError verir."""
+        free = getattr(self._model, "free_memory", None)
+        if callable(free):
+            free()
+
     def generate(self, system: str, prompt: str) -> str:
         return self._model.generate(system, prompt)
 

@@ -12,7 +12,7 @@ celery_app = Celery(
     "clarere_tasks",
     broker=VALKEY_URL,
     backend=VALKEY_URL,
-    include=["packages.research_engine.gateway"]  # We will put tasks in gateway.py or tasks.py
+    include=["packages.research_engine.gateway", "packages.research_engine.jobs"]
 )
 
 # Configuration
