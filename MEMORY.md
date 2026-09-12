@@ -66,13 +66,29 @@ python launch.py  # Tek tıkla. Backend :4000, Frontend :4001
 ## 🧪 Test Durumu
 
 ```bash
-python -m pytest packages/research_engine/tests/ -q  # 187 passed + 1 skipped
+python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 ```
 
 | Test Dosyası | Kapsam |
 |---|---|
 | test_blockers_p0.py | Paddle imza/plan eşlemesi, token fiyat, JWT/admin guard, usage birikimi (P0) |
-| test_production_readiness.py | KVKK silme onayı, e-posta fail-safe, Paddle iptal |
+| test_production_readiness.py | KVKK silme onayı, e-posta fail-safe, Paddle iptali, job runner |
+| test_integrations.py | Resend sözleşmesi/fail-safe, HTML kaçışı, Sentry env kapısı |
+| test_hypothesis_blind.py | Varsayılan blind, bağlam bloğu, 3 mülakat fonksiyonu uyumu (GRUP 3) |
+| test_evidence_chain.py | Duygu sınıflandırma, kanıt grafiği, çelişki skoru (GRUP 1) |
+| test_decision_layer.py | SHIP/ITERATE/INVESTIGATE/KILL eşikleri (GRUP 2) |
+| test_persona_traits.py | Openness/Agreeableness kalibrasyonu, big_five (GRUP 13) |
+| test_batch_resilience.py | Batch retry, response_format regresyonu (GRUP 14) |
+| test_synthesize_tolerance.py | Tolerant synthesize, 422 (GRUP 15) |
+| test_plan_enforcement.py | Plan gate'leri + gelir sızıntısı regresyonu (GRUP 5) |
+| test_quota_atomicity.py | Atomik kota / TOCTOU (GRUP 4, DB-gated) |
+| test_architecture.py | Domain izolasyonu, bağımlılık kuralları (GRUP 11) |
+| test_migrations.py | init_db idempotensi (GRUP 12, DB-gated) |
+| test_probe_engine.py | Adaptive probe heuristikleri (GRUP 6) |
+| test_ab_variants.py | A/B kör randomizasyon (GRUP 7) |
+| test_adversarial.py | 4 aşamalı denetim flag'leri (GRUP 8) |
+| test_web_corroboration.py | SearXNG yoksa graceful degradation (GRUP 9) |
+| test_benchmark.py | RFI ağırlık formülü ve grade eşikleri (GRUP 10) |
 | test_stance_diversity.py | Rogers×SES matris, Largest Remainder, Skeptic garantisi |
 | test_ewma_echo.py | EWMA, Jaccard echo, echo drift |
 | test_van_westendorp.py | PSM kesişimleri (OPP/IPP/PMC/PME) |
@@ -227,7 +243,7 @@ python -m pytest packages/research_engine/tests/ -q  # 187 passed + 1 skipped
 
 **Ek düzeltmeler:** `PrivacyResearchModelWrapper.free_memory()` eksikti (streaming finalizer'ı `AttributeError` veriyordu). `/upgrade-plan` production'da kapatıldı.
 
-**Test:** `test_blockers_p0.py` — 20 test (imza doğrulama, plan eşlemesi, fiyat hesabı, JWT/admin guard, usage birikimi, süre bütçesi). Toplam: **178 passed + 1 skipped**.
+**Test:** `test_blockers_p0.py` — 20 test (imza doğrulama, plan eşlemesi, fiyat hesabı, JWT/admin guard, usage birikimi, süre bütçesi). Güncel toplam için bkz. "Test Durumu" (290 passed + 10 skipped).
 
 **⚠️ Paddle için kullanıcı aksiyonu:** `PADDLE_API_KEY` `.env`'e konur, ardından `python scripts/setup_paddle_catalog.py` katalogu + webhook destination'ı otomatik oluşturur ve env satırlarını basar. **Fiyatlar USD'ye çevrildi** (Paddle TRY'yi desteklemiyor; kur varsayımı ~40 TL/USD): Flex $49 one-time · Starter $69/ay, $55/ay (yıllık) · Pro $169/ay, $135/ay (yıllık).
 
@@ -341,4 +357,10 @@ python -m pytest packages/research_engine/tests/ -q  # 187 passed + 1 skipped
 14. ℹ️ **`models/` klasörü** sadece README.
 15. ℹ️ **Canlıya geçiş** — `server_plan.md` fazları uygulanacak (VPS + Neon + Vercel).
 
-> **Test durumu:** 187 passed + 1 skipped (RLS canlı test — Postgres gerektirir).
+> **Test durumu:** 290 passed + 10 skipped (DB gerektiren gruplar: RLS, kota atomikliği, migration idempotensi).
+
+### Test planı sonrası bulunan gerçek sorunlar
+
+- **`workflow.py`'de `os` importu eksikti** — P0-5 süre bütçesi `os.getenv` çağırıyordu ama import yoktu; `run_interviews_batch` **NameError ile çöküyordu**. GRUP 3 testleri yakaladı (commit `eeffd0f`).
+- **Gelir sızıntısı** — `brand_health` (Pro+) ve `ses_crosstab` (Flex+) hiçbir endpoint'te gate'lenmiyordu. `_synthesize_impl` artık plan yetersizse bu alanları rapor çıktısından çıkarır (commit `f8cef2c`).
+- ℹ️ **Probe heuristiği kısa-token zaafı** — `PRICING_KEYWORDS` içindeki `"tl"` alt-dizi olarak eşleştiği için "kayıtları" gibi kelimeler yanlış pozitif üretir. İyileştirme adayı (kelime sınırı/uzunluk kontrolü).
