@@ -37,7 +37,7 @@ export default function PrivacyPage() {
           <p className="text-lg text-body-muted leading-relaxed">
             Clarere olarak kişisel bilgilerinizin güvenliğini sağlamayı taahhüt ediyoruz. Bu politika, hizmetlerimizi kullandığınızda bilgilerinizin nasıl toplandığını, kullanıldığını, paylaşıldığını ve korunduğunu açıklar.
           </p>
-          <p className="text-xs text-body-muted mt-4">Son güncelleme: 1 Ocak 2026</p>
+          <p className="text-xs text-body-muted mt-4">Son güncelleme: 12 Eylül 2026</p>
         </header>
 
         {/* Policy Sections */}
@@ -74,14 +74,14 @@ export default function PrivacyPage() {
                 <p className="text-xs text-body-muted leading-relaxed">Analiz edilmesi için gönderdiğiniz web site URL&apos;leri, araştırma brief&apos;leri ve bu içeriklerden elde edilen analizler toplanır.</p>
               </div>
               <div className="p-5 border border-hairline rounded-sm bg-white">
-                <span className="mono-label text-coral block mb-2 font-semibold">TEKNİK ANALİZ</span>
-                <strong className="text-primary font-semibold block mb-1 text-sm">Kullanım Verileri (PostHog)</strong>
-                <p className="text-xs text-body-muted leading-relaxed">Cihaz tipi, işletim sistemi, tarayıcı türü, IP adresi ve görüntülenen sayfalar gibi teknik veriler analiz edilerek kullanıcı deneyimi optimizasyonu için toplanır.</p>
+                <span className="mono-label text-coral block mb-2 font-semibold">TEKNİK KAYITLAR</span>
+                <strong className="text-primary font-semibold block mb-1 text-sm">Kullanım ve Maliyet Kayıtları</strong>
+                <p className="text-xs text-body-muted leading-relaxed">Hesabınıza ait araştırma sayısı, kullanılan token miktarı ve tahmini maliyet; hizmetin sunulması ve plan limitlerinin uygulanması amacıyla kaydedilir. Reklam veya üçüncü taraf izleme aracı kullanılmaz.</p>
               </div>
               <div className="p-5 border border-hairline rounded-sm bg-white">
-                <span className="mono-label text-coral block mb-2 font-semibold">DENEYİM KAYDI</span>
-                <strong className="text-primary font-semibold block mb-1 text-sm">Oturum Kayıtları (Session Replay)</strong>
-                <p className="text-xs text-body-muted leading-relaxed">Tıklamalar ve fare hareketleri gibi etkileşimler kullanıcı deneyimini iyileştirmek için kaydedilebilir. Form alanlarına yazdığınız metinler (kaydet/gönder butonuna basmadığınız sürece) kesinlikle kaydedilmez.</p>
+                <span className="mono-label text-coral block mb-2 font-semibold">HATA İZLEME</span>
+                <strong className="text-primary font-semibold block mb-1 text-sm">Teknik Hata Kayıtları</strong>
+                <p className="text-xs text-body-muted leading-relaxed">Sunucu hatalarını teşhis etmek için Sentry üzerinden teknik hata kayıtları tutulur. Kişisel verilerin hata kayıtlarına aktarımı devre dışıdır; form alanlarına yazdığınız metinler kaydedilmez.</p>
               </div>
             </div>
           </section>
@@ -139,7 +139,7 @@ export default function PrivacyPage() {
               Clarere, kişisel verilerinizi üçüncü şahıslara satmaz veya kiralamaz. Verileriniz sadece aşağıdaki durumlarda ve amaçlarla sınırlı olarak paylaşılabilir:
             </p>
             <ul className="space-y-3 text-sm text-body-muted list-disc pl-5 leading-relaxed">
-              <li><strong>Hizmet Sağlayıcılar:</strong> PostHog (oturum ve kullanım analizi), veritabanı barındırma sağlayıcıları ve e-posta gönderim servisleri gibi güvenli altyapı iş ortaklarıyla.</li>
+              <li><strong>Hizmet Sağlayıcılar (Alt İşleyiciler):</strong> Ödeme: <strong>Paddle</strong> (merchant of record) · Büyük dil modeli: <strong>DeepSeek API</strong> · Veritabanı: <strong>Neon</strong> (PostgreSQL) · Sunucu barındırma: <strong>netcup</strong> (VPS) · Arayüz barındırma: <strong>Vercel</strong> · İşlemsel e-posta: <strong>Resend</strong> · Hata izleme: <strong>Sentry</strong>. Bu sağlayıcılar yalnızca hizmeti sunmak için gereken veriyle sınırlıdır ve verileriniz hiçbir koşulda satılmaz veya kiralanmaz.</li>
               <li><strong>Yasal Zorunluluklar:</strong> Bir mahkeme kararı, savcılık talebi veya yürürlükteki yasal süreçlerin zorunlu kıldığı durumlarda yetkili resmi makamlarla.</li>
               <li><strong>Şirket Yapısı Değişiklikleri:</strong> Şirket birleşmesi, devri veya varlık satışı gibi yapısal durumlarda veriler, gizlilik taahhüdü korunarak halef kuruluşa aktarılabilir.</li>
             </ul>
@@ -168,7 +168,7 @@ export default function PrivacyPage() {
                 <tbody className="divide-y divide-hairline bg-white">
                   {[
                     ["Araştırma Raporları & Brief&apos;ler", "Hesap aktif olduğu sürece + 1 yıl"],
-                    ["Kullanım Logları (PostHog)", "6 ay"],
+                    ["Kullanım ve Maliyet Kayıtları", "12 ay"],
                     ["Güvenlik Logları (Erişim kayıtları)", "2 yıl (5651 sayılı kanun gereği)"],
                     ["E-Posta Adresi", "Hesap aktif olduğu sürece"],
                     ["Ödeme & Fatura Kayıtları", "10 yıl (Türk Ticaret Kanunu gereği)"],
@@ -217,6 +217,26 @@ export default function PrivacyPage() {
                 </div>
               ))}
             </div>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">10A. Haklarınızı Self-Servis Kullanma</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              KVKK/GDPR kapsamındaki <strong>veri taşınabilirliği</strong> ve <strong>silme</strong> haklarınızı hesabınızdan doğrudan kullanabilirsiniz:
+            </p>
+            <ul className="space-y-3 text-sm text-body-muted list-disc pl-5 leading-relaxed">
+              <li><strong>Verilerimi indir:</strong> Hesabınıza ait tüm veriler (araştırmalar, mülakatlar, raporlar, geri bildirimler, kullanım kayıtları) makine-okunur JSON biçiminde indirilir.</li>
+              <li><strong>Hesabımı sil:</strong> Aktif bir aboneliğiniz varsa önce Paddle üzerinden iptal edilir; ardından kişisel verileriniz sistemlerimizden silinir.</li>
+              <li>Silme talebiniz; fatura/vergi mevzuatı gibi yasal saklama yükümlülüğü bulunan kayıtlar hariç olmak üzere en kısa sürede yerine getirilir.</li>
+              <li>Bu haklarınızı arayüzden kullanamıyorsanız <a href="mailto:hiclarere@clarere.com" className="text-coral hover:underline font-semibold font-mono">hiclarere@clarere.com</a> adresine yazabilirsiniz.</li>
+            </ul>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">10B. Çerezler ve Yerel Depolama</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              Clarere yalnızca oturum yönetimi için gerekli teknik verileri kullanır: tarayıcınızda tutulan bir oturum işareti çerezi ve oturum tokenı için yerel depolama (localStorage). Reklam veya üçüncü taraf izleme çerezi kullanılmaz.
+            </p>
           </section>
 
           <section className="space-y-4">

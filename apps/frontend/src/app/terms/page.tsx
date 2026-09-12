@@ -36,7 +36,7 @@ export default function TermsPage() {
           <p className="text-lg text-body-muted leading-relaxed">
             Clarere platformunu ve ilgili sentetik pazar araştırması simülasyonu hizmetlerini kullanarak aşağıdaki tüm yasal koşulları kabul etmiş sayılırsınız.
           </p>
-          <p className="text-xs text-body-muted mt-4 font-mono">Son güncelleme: 27 Mayıs 2026</p>
+          <p className="text-xs text-body-muted mt-4 font-mono">Son güncelleme: 12 Eylül 2026</p>
         </header>
 
         {/* Policy Sections */}
@@ -99,14 +99,23 @@ export default function TermsPage() {
             </p>
           </section>
 
-          {/* 7. Ödemeler ve Ücretlendirme */}
+          {/* 7. Ödemeler, Abonelik ve İade */}
           <section className="space-y-3">
-            <h2 className="text-xl font-bold text-primary tracking-tight">7. Ödemeler ve Gelecekteki Ücretler</h2>
+            <h2 className="text-xl font-bold text-primary tracking-tight">7. Ödemeler, Abonelik ve İade</h2>
             <p className="text-body-muted leading-relaxed text-sm">
-              <strong>Beta Erişimi:</strong> Erken test aşamasında (Beta), Platform tarafından sağlanan temel deneme simülasyonları için herhangi bir abonelik veya işlem ücreti talep edilmez.
+              <strong>Ödeme Altyapısı:</strong> Ödemeler <strong>Paddle</strong> üzerinden alınır. Paddle, işlemlerde <em>merchant of record</em> olarak hareket eder; kart bilgileriniz Clarere sunucularında saklanmaz. Fatura ve ödeme yöntemi yönetimi Paddle müşteri portalından yapılır.
             </p>
             <p className="text-body-muted leading-relaxed text-sm">
-              <strong>Gelecekteki Ücretli Modeller:</strong> İlerleyen dönemlerde ücretli ticari planlara veya limitli kredi paketlerine geçilmesi durumunda, kullanıcılara fiyatlandırma değişiklikleri en az 30 gün önceden bildirilecektir.
+              <strong>Planlar ve Ücretler:</strong> Ücretli planlar (Starter, Pro ve tek seferlik araştırma paketi) ile güncel fiyatlar Platform üzerindeki fiyatlandırma bölümünde gösterilir. Fiyat değişiklikleri, mevcut abonelerin içinde bulunduğu dönem sonuna kadar etkilenmemesi kaydıyla en az 30 gün önceden bildirilir.
+            </p>
+            <p className="text-body-muted leading-relaxed text-sm">
+              <strong>Ücretsiz Deneme:</strong> Planlar, kredi kartı gerektirmeyen sınırlı bir ücretsiz deneme içerir. Deneme sonunda ücretli plana geçilmedikçe ücret alınmaz.
+            </p>
+            <p className="text-body-muted leading-relaxed text-sm">
+              <strong>İptal:</strong> Aboneliğinizi dilediğiniz zaman Paddle müşteri portalından iptal edebilirsiniz; iptal, içinde bulunduğunuz ödeme döneminin sonunda yürürlüğe girer ve o dönem için ücret iadesi yapılmaz. Hesabınızı Platform üzerinden silmeniz durumunda aktif abonelik önce iptal edilir.
+            </p>
+            <p className="text-body-muted leading-relaxed text-sm">
+              <strong>İade ve Cayma:</strong> İade talepleri<a href="mailto:hiclarere@clarere.com" className="text-coral hover:underline font-semibold font-mono"> hiclarere@clarere.com</a> adresi üzerinden değerlendirilir. Dijital hizmetin ifasına başlanmasıyla birlikte mesafeli sözleşmelerdeki cayma hakkı sınırlanabilir.
             </p>
           </section>
 
@@ -161,7 +170,7 @@ export default function TermsPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-primary tracking-tight">14 & 15. Sorumluluğun Sınırlandırılması</h2>
             <p className="text-body-muted leading-relaxed text-sm">
-              Platform ve tüm simülasyon içerikleri kullanıcıya <strong>&quot;OLDUĞU GİBİ&quot; (AS IS)</strong> esasıyla sunulmaktadır. Clarere; kar kaybı, veri kaybı, pazar başarısızlığı veya dolaylı/tesadüfi zararlardan ötürü hiçbir koşulda sorumlu tutulamaz. Clarere&apos;in kullanıcıya karşı doğabilecek toplam hukuki sorumluluğu, kullanıcının Platformu kullanmak için son 3 ayda ödediği toplam tutarı (şu anki beta aşaması için sıfır) aşamaz.
+              Platform ve tüm simülasyon içerikleri kullanıcıya <strong>&quot;OLDUĞU GİBİ&quot; (AS IS)</strong> esasıyla sunulmaktadır. Clarere; kar kaybı, veri kaybı, pazar başarısızlığı veya dolaylı/tesadüfi zararlardan ötürü hiçbir koşulda sorumlu tutulamaz. Clarere&apos;in kullanıcıya karşı doğabilecek toplam hukuki sorumluluğu, kullanıcının Platformu kullanmak için son 12 ayda ödediği toplam tutarı aşamaz (ücretsiz kullanımda bu tutar sıfırdır).
             </p>
           </section>
 
