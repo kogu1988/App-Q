@@ -1312,6 +1312,19 @@ def _synthesize_impl(request, x_username: str | None):
         interviews=p_interviews,
     )
 
+    # ── Plan gate (gelir koruması) ──
+    # brand_health (Pro+) ve SES cross-tab (Flex+) ücretli analizlerdir;
+    # plan yetersizse rapor çıktısından çıkarılır (markdown ve JSON dahil).
+    from dataclasses import replace as _dc_replace
+
+    gated: dict = {}
+    if not has_feature(plan_type, "brand_health"):
+        gated["brand_health"] = None
+    if not has_feature(plan_type, "ses_crosstab"):
+        gated["ses_cross_tab"] = []
+    if gated:
+        report = _dc_replace(report, **gated)
+
     from dataclasses import asdict
     report_dict = asdict(report)
 
