@@ -143,10 +143,14 @@ class DeepSeekResearchModel:
 
         Stream için de kullanılır: `create()` iterator döndürdüğü için retry SADECE
         ilk chunk'tan önce çalışır. Yarıda kesilen stream yeniden denenmez.
+
+        NOT: tenacity `Retrying.__call__(fn, *args, **kwargs)`; kwargs, `fn`'e
+        GEÇİLMELİDİR. `_retry_policy()(fn)(**kwargs)` yazılırsa fn argümansız
+        çağrılır ve OpenAI SDK "Missing required arguments" hatası verir.
         """
         if not self.client:
             raise ModelProviderError("OpenAI client not initialized. Install openai package.")
-        return _retry_policy()(self.client.chat.completions.create)(**kwargs)
+        return _retry_policy()(self.client.chat.completions.create, **kwargs)
 
     def _capture_usage(self, response) -> None:
         """DeepSeek yanıtındaki token kullanımını saklar (cache-hit alanları dahil)."""

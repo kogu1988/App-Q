@@ -1,0 +1,15 @@
+{
+  "name": "clarere-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Clarere E2E (Playwright) — yerel Docker stack'ine karşı uçtan uca testler",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test tests/01-ui.spec.ts",
+    "test:flow": "playwright test tests/02-research-flow.spec.ts",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

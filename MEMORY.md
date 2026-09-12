@@ -360,6 +360,15 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 17. ✅ **O-2 kararı** — `ai_semantic_cache` şeması **bilinçli korunuyor** (Enterprise vektör havuzu rezervi); kod içine açıklayıcı NOT eklendi.
 18. ✅ **Güvenlik yamaları (0 bilinen açık)** — Öncesi: npm 16 (1 kritik), pip-audit 75. Sonrası: **0 + 0**. `next`/`eslint-config-next` 16.3.5; `fastapi` 0.141.1, `starlette` 1.3.1, `pillow` 12.3.0, `GitPython` 3.1.59. ⚠️ `starlette` 1.3.1'e sabitlendi: tüm açıkları kapatır ve yine <1.4.0 kalır (paylaşılan global env'deki `streamlit` kısıtını bozmamak için). 304 test yeşil.
 19. ✅ **Yerel Docker :4001** — `docker-compose.local.yml`'de frontend doğrudan `http://localhost:4001`'de. `API_PROXY_TARGET` **BUILD ARG**: `next.config` rewrites derleme anında gömülür, runtime env etkisizdir.
+20. 🔴→✅ **KRİTİK: tenacity kwargs hatası (düzeltildi)** — `providers.py::_chat` içinde `_retry_policy()(fn)(**kwargs)` yazımı `fn`'i **argümansız** çağırıyordu → OpenAI SDK "Missing required arguments" → **gerçek DeepSeek çağrılarının TAMAMI başarısız** (Defne fallback yanıtı, brief %0, mülakat/sentez boş). Doğrusu: `_retry_policy()(fn, **kwargs)`. Testler `FakeModel` kullandığı için yakalanmamıştı. Regresyon: `test_providers.py` (4 test).
+21. ✅ **E2E harness (Playwright)** — `e2e/` klasörü (ayrı package.json, frontend build'ini etkilemez). `tests/01-ui` (landing/giriş/upgrade/admin), `tests/02-research-flow` (tam akış, gerçek LLM), `tests/03-study-actions` (mevcut çalışma: sekmeler+transkript+sentez). Ekran görüntüleri `e2e/artifacts/screens/`. Çalıştır: `cd e2e && npx playwright test` (Docker stack açık olmalı).
+22. ⚠️ **Rapor kalitesi bulguları (AÇIK)** — E2E ile tespit edildi:
+    - **Kişiler arası yankı:** 5 persona da aynı hayvan adını/aynı senaryoyu üretti ("Pamuk", "veteriner karnesi çekmecede"). Intra-persona Jaccard bunu yakalamıyor (cross-persona echo koruması yok).
+    - **Karar katmanı tutarsızlığı:** "Temel İhtiyaç ve Acı Noktası" KILL + "0 destekleyici, 3 karşıt" — ama Executive Summary aynı bulguyu güçlü acı noktası olarak sunuyor. Ayrıca decision item'lar "0 kanıt" derken `enhanced_findings` "4 persona itiraz etti" diyor (kanıt sayımı tutarsız).
+    - **Rapor metni zayıf:** `report_markdown` ~2 KB ve başlıksız; `report_html` boş. Articos seviyesi anlatı yok.
+    - **Kalite bayrağı:** `quality_issues` "Cevapta asistan/meta tonu var" (p1) — kişiler zaman zaman rolden çıkıyor.
+    - `quality_score` çalışma listesinde 0/N-A (bu akışta persist edilmiyor).
+23. ℹ️ **Dikkat:** Demo `free` kullanıcısının planı DB'de **Flex** (seed `Free` yazıyor ama `ON CONFLICT DO NOTHING` eski kaydı koruyor) → Free-paywall testi için yeni kullanıcı doğurmak gerekiyor.
 
 > **Test durumu:** 304 passed, 0 skipped (DB testleri dahil — `POSTGRES_HOST/PORT` env ile tam süit).
 
