@@ -337,7 +337,8 @@ python -m pytest packages/research_engine/tests/ -q  # 187 passed + 1 skipped
 10. ✅ **`/research` job pattern (P0-1 Aşama 2)** — `POST /research/jobs` → 202 `job_id`; `GET /research/jobs/{id}` durum. Celery görevi `jobs.py`, ortak çekirdek `research_runner.py`. Frontend: job dener, 503'te senkron `/research`'e düşer.
 11. ✅ **Ölü kod DEĞİL (denetim hatası düzeltildi)** — `graph.py`, `state.py`, `nodes/intake.py`, `synthesis_pipeline.py` **canlı**: `gateway.py` → `/studio/simulate` bunları kullanıyor. **SİLİNMEMELİ.**
 12. ✅ **Frontend proxy (middleware)** — `src/proxy.ts` (Next.js 16 konvansiyonu; `middleware.ts` DEĞİL). Prod host kanonikleştirme, derin bağlantı koruması, noindex, probe engelleme. `/client` kökü bilinçli olarak açık (onboarding orada).
-13. ℹ️ **`models/` klasörü** sadece README.
-14. ℹ️ **Canlıya geçiş** — `server_plan.md` fazları uygulanacak (VPS + Neon + Vercel).
+13. ✅ **Admin 'Maliyet' sekmesi** — `GET /api/admin/usage` verisini gösterir (kullanıcı bazlı token tüketimi + tahmini USD maliyet).
+14. ℹ️ **`models/` klasörü** sadece README.
+15. ℹ️ **Canlıya geçiş** — `server_plan.md` fazları uygulanacak (VPS + Neon + Vercel).
 
 > **Test durumu:** 187 passed + 1 skipped (RLS canlı test — Postgres gerektirir).
