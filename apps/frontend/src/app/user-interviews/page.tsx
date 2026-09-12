@@ -289,7 +289,7 @@ export default function UserInterviewsPage() {
               className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#ffffff] text-[#17171c] font-medium text-sm hover:opacity-90 transition-all text-center"
               id="cta-trial-btn"
             >
-              Ücretsiz Başlat (3 Günlük Deneme)
+              Ücretsiz Başlat (1 Aylık Deneme)
             </Link>
             <a
               href="mailto:hiclarere@clarere.com?subject=Görüşme Platformu Demosu"

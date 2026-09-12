@@ -157,10 +157,10 @@ export default function ClientDashboard() {
             <p className="text-sm font-black text-amber-900">Deneme Süreniz Doldu</p>
           </div>
           <p className="text-xs text-amber-800 leading-relaxed max-w-3xl">
-            Her plan 3 günlük ücretsiz deneme ve 2 ücretsiz araştırma içerir — kredi kartı gerekmez. Karar vermeden önce platformu deneyimler, gerçek bir araştırma yürütür ve çıktıyı görürsünüz.
+            Her plan 1 aylık ücretsiz deneme ve 2 ücretsiz araştırma içerir — kredi kartı gerekmez. Karar vermeden önce platformu deneyimler, gerçek bir araştırma yürütür ve çıktıyı görürsünüz.
           </p>
           <p className="text-xs text-amber-800 leading-relaxed max-w-3xl">
-            3 gün veya 2 araştırma (hangisi önce gelirse) sonunda bir plan seçmeniz istenir. Raporlarınız ve verileriniz 30 gün boyunca erişilebilir kalır; sonrasında erişim kısıtlanır. Her şeyi açık tutmak için bir plan seçin.
+            1 ay veya 2 araştırma (hangisi önce gelirse) sonunda bir plan seçmeniz istenir. Raporlarınız ve verileriniz 30 gün boyunca erişilebilir kalır; sonrasında erişim kısıtlanır. Her şeyi açık tutmak için bir plan seçin.
           </p>
           <div className="pt-1">
             <Link href="/client/upgrade">

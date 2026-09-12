@@ -102,7 +102,7 @@ const PLAN_META = [
     hasBillingToggle: false,
     isOneTime: false,
     limits: [
-      "2 araştırma hakkı",
+      "1 ay ücretsiz deneme veya 2 araştırma",
       "10 kişilik persona paneli",
       "Adversarial kalite denetimi",
       "Araştırma Bütünlük Endeksi (RFI)",
@@ -810,7 +810,7 @@ export default function HomePage() {
               },
               {
                 q: "Ücretsiz plan ne kadar süre kullanılabilir?",
-                a: "Ücretsiz plan süresiz kullanılabilir; aylık 2 araştırma hakkı ve 10 kişilik persona paneli ile sınırlıdır. Kart bilgisi gerekmez.",
+                a: "Ücretsiz plan 1 ay boyunca ya da toplam 2 araştırma hakkı bitene kadar — hangisi önce dolarsa o zaman — kullanılabilir; 10 kişilik persona paneli içerir. Kart bilgisi gerekmez.",
               },
             ].map(({ q, a }, i) => (
               <Reveal key={i} delay={i * 40}>

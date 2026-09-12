@@ -42,11 +42,11 @@ class FollowUpRequest(BaseModel):
 
 
 def is_trial_expired(client: dict | None) -> tuple[bool, str]:
-    """Free plan trial expiration checker: 3 days or 2 researches (excluding A/B tests)."""
+    """Free plan trial expiration checker: 1 month OR 2 researches (whichever comes first, excluding A/B tests)."""
     if not client or client.get("plan_type") != "Free":
         return False, ""
 
-    # 1. Check 3 days limit since created_at
+    # 1. Check 1 month limit since created_at
     created_at_val = client.get("created_at")
     if created_at_val:
         try:
@@ -65,8 +65,8 @@ def is_trial_expired(client: dict | None) -> tuple[bool, str]:
                 now = datetime.now()
 
             elapsed = now - created_at
-            if elapsed.days >= 3:
-                return True, "3 günlük ücretsiz deneme süreniz dolmuştur. Devam etmek için lütfen bir plan seçin."
+            if elapsed.days >= 30:
+                return True, "1 aylık ücretsiz deneme süreniz dolmuştur. Devam etmek için lütfen bir plan seçin."
         except Exception as e:
             logger.error(f"Error parsing created_at for client {client.get('username')}: {e}")
 

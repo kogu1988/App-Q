@@ -25,7 +25,7 @@ const PLANS = [
     color: "border-[#d9d9dd]",
     badge: null,
     features: [
-      "3 günlük ücretsiz deneme",
+      "1 aylık ücretsiz deneme veya 2 araştırma (hangisi önce biterse)",
       "Toplam 2 adet araştırma hakkı",
       "10 kişilik persona paneli",
       "Persona sohbetlerini izleme",
@@ -75,7 +75,7 @@ const PLANS = [
       "Araştırma başına 3 'Araştırmayla Konuş'",
       "PDF rapor export & SES cross-tab tablosu",
       "Gerçek zamanlı stream & RFI Skoru",
-      "3 günlük ücretsiz deneme",
+      "1 aylık ücretsiz deneme",
     ],
     locked: [
       "White-label (Markasız raporlar)",
@@ -98,7 +98,7 @@ const PLANS = [
       "White-label (Markasız/Özel logolu) raporlar",
       "B2B persona modu",
       "Marka Sağlığı analizi",
-      "3 günlük ücretsiz deneme",
+      "1 aylık ücretsiz deneme",
     ],
     locked: [],
   },

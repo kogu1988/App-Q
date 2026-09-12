@@ -160,3 +160,56 @@ def test_5_10_sync_research_enforces_quota():
 
     assert "check_simulation_limit" in body, "senkron /research kota kontrolü içermeli"
     assert "QUOTA_EXCEEDED" in body, "kota aşımı QUOTA_EXCEEDED döndürmeli"
+
+
+# ── 5.11 Free plan: 1 ay VEYA 2 araştırma (hangisi önce biterse) ──
+
+def _free_client(days_old: int, username: str = "trial_user") -> dict:
+    from datetime import datetime, timedelta
+
+    created = (datetime.now() - timedelta(days=days_old)).isoformat()
+    return {"plan_type": "Free", "created_at": created, "username": username}
+
+
+def test_5_11_free_trial_active_within_one_month(monkeypatch):
+    """10 gün önce açılmış, 0 araştırma yapmış Free kullanıcı hÂLÂ aktif olmalı."""
+    from apps.backend.routers.client import is_trial_expired
+
+    monkeypatch.setattr("apps.backend.routers.client.count_user_non_ab_simulations", lambda u: 0)
+
+    expired, _reason = is_trial_expired(_free_client(days_old=10))
+    assert expired is False
+
+
+def test_5_11b_free_trial_expires_after_one_month(monkeypatch):
+    """31 gün geçmişse (0 araştırmaya rağmen) Free denemesi bitmeli."""
+    from apps.backend.routers.client import is_trial_expired
+
+    monkeypatch.setattr("apps.backend.routers.client.count_user_non_ab_simulations", lambda u: 0)
+
+    expired, reason = is_trial_expired(_free_client(days_old=31))
+    assert expired is True
+    assert "1 aylık" in reason
+
+
+def test_5_11c_free_trial_expires_after_two_researches(monkeypatch):
+    """Yeni kullanıcı (1 gün) 2 araştırma yaptıysa deneme bitmeli (hangisi önce biterse)."""
+    from apps.backend.routers.client import is_trial_expired
+
+    monkeypatch.setattr("apps.backend.routers.client.count_user_non_ab_simulations", lambda u: 2)
+
+    expired, reason = is_trial_expired(_free_client(days_old=1))
+    assert expired is True
+    assert "2" in reason
+
+
+def test_5_11d_paid_plan_not_subject_to_trial(monkeypatch):
+    """Ücretli planlar deneme penceresine tabi olmamalı."""
+    from apps.backend.routers.client import is_trial_expired
+
+    monkeypatch.setattr("apps.backend.routers.client.count_user_non_ab_simulations", lambda u: 99)
+
+    expired, _reason = is_trial_expired(
+        {"plan_type": "Starter", "created_at": (__import__("datetime").datetime.now()).isoformat(), "username": "s"}
+    )
+    assert expired is False

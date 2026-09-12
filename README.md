@@ -163,6 +163,7 @@ Kümülatif frekans eğrilerinin matematiksel kesişimleri ile:
 
 | Özellik | Free | Flex | Starter | Pro | Enterprise |
 |---------|:----:|:----:|:-------:|:---:|:----------:|
+| Deneme süresi | 1 ay veya 2 araştırma (hangisi önce biterse) | — | — | — | — |
 | Aylık araştırma | 2 | 3 | 10 | Sınırsız | Sınırsız |
 | Persona sayısı | 10 | 10 | 10 | 10 | Sınırsız |
 | Streaming SSE | — | ✓ | ✓ | ✓ | ✓ |

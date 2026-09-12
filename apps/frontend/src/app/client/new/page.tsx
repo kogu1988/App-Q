@@ -241,7 +241,7 @@ export default function NewResearchWizard() {
         <div className="space-y-3">
           <h1 className="text-2xl font-black tracking-tight text-[#17171c]">Trial Expired (Deneme Süreniz Doldu)</h1>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Every plan comes with a 3-day free trial and 2 free researches — no credit card required. You get access to the platform so you can run real research and see the output before committing.
+            Every plan comes with a 1-month free trial and 2 free researches — no credit card required. You get access to the platform so you can run real research and see the output before committing.
           </p>
           <p className="text-xs text-muted-foreground leading-relaxed">
             After 3 days or 2 researches (whichever comes first), you’ll be asked to choose a plan. Your research reports and data stay accessible for 30 days — after that, access is limited. Pick a plan to keep everything unlocked.

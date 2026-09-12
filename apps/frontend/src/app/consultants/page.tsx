@@ -303,7 +303,7 @@ export default function ConsultantsPage() {
             Rakiplerinizden Ayrışın
           </h2>
           <p className="text-base text-white/60 mb-10 max-w-md mx-auto">
-            3 günlük ücretsiz deneme (Kredi kartı gerekmez).
+            1 aylık ücretsiz deneme (Kredi kartı gerekmez).
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-sm mx-auto">

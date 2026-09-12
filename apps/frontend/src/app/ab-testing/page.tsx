@@ -348,7 +348,7 @@ export default function ABTestingPage() {
               className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#ffffff] text-[#17171c] font-medium text-sm hover:opacity-90 transition-all text-center"
               id="cta-trial-btn"
             >
-              Ücretsiz Başla (3 Günlük Deneme)
+              Ücretsiz Başla (1 Aylık Deneme)
             </Link>
             <a
               href="mailto:hiclarere@clarere.com?subject=AB Test Demosu"
