@@ -132,24 +132,64 @@ class LocalPIIScrubber:
 
 # Geriye uyumluluk için eski sınıfları tutalım
 class PrivacyMasker:
+    """LLM'e gitmeden önce PII maskeleyen GERÇEK maskeleyici (eskiden no-op'tu).
+
+    - Telefon / e-posta / TC kimlik → her planda (KVKK temel katman)
+    - custom_keywords (ör. rakip markalar) → opsiyonel, çağıran taraf karar verir
+
+    Aynı değer her zaman aynı placeholder'a eşlenir (request boyunca tutarlı),
+    `unmask` ile orijinal değerler geri getirilir.
+    """
+
     def __init__(self, custom_keywords: list[str] | None = None):
         self.custom_keywords = [k.strip() for k in (custom_keywords or []) if len(k.strip()) > 2]
-        self._reverse_map: dict[str, str] = {}
-        self._mask_counter = 1
-        
-    def _generate_placeholder(self, category: str) -> str:
-        placeholder = f"[{category}_{self._mask_counter}]"
-        self._mask_counter += 1
+        self._reverse_map: dict[str, str] = {}   # placeholder -> original
+        self._forward_map: dict[str, str] = {}   # original -> placeholder
+        self._counter: dict[str, int] = {"EMAIL": 1, "TC_ID": 1, "PHONE": 1, "BRAND": 1}
+
+        self._email_re = re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
+        self._tc_re = re.compile(r'\b[1-9][0-9]{10}\b')
+        self._phone_re = re.compile(r'(?:\+?90[- ]?)?5[0-9]{2}[- ]?[0-9]{3}[- ]?[0-9]{2}[- ]?[0-9]{2}')
+
+    def _placeholder(self, category: str, original: str) -> str:
+        existing = self._forward_map.get(original)
+        if existing:
+            return existing
+        placeholder = f"[{category}_{self._counter[category]}]"
+        self._counter[category] += 1
+        self._forward_map[original] = placeholder
+        self._reverse_map[placeholder] = original
         return placeholder
 
     def mask(self, text: str) -> str:
-        # Regex replacement inside the wrapper
-        return text
+        if not text:
+            return text
+        out = text
+        # Sıra önemli: TC (11 hane) telefondan (10 hane) önce maskelenmeli.
+        out = self._email_re.sub(lambda m: self._placeholder("EMAIL", m.group(0)), out)
+        out = self._tc_re.sub(lambda m: self._placeholder("TC_ID", m.group(0)), out)
+        out = self._phone_re.sub(lambda m: self._placeholder("PHONE", m.group(0)), out)
+        for kw in self.custom_keywords:
+            out = re.sub(
+                re.escape(kw),
+                lambda m: self._placeholder("BRAND", m.group(0)),
+                out,
+                flags=re.IGNORECASE,
+            )
+        return out
 
     def unmask(self, text: str) -> str:
-        return text
+        if not text or not self._reverse_map:
+            return text
+        out = text
+        for placeholder, original in self._reverse_map.items():
+            out = out.replace(placeholder, original)
+        return out
+
 
 class PrivacyResearchModelWrapper:
+    """Modeli sarar: prompt LLM'e gitmeden maskelenir, yanıt kullanıcıya dönmeden açılır."""
+
     def __init__(self, model, masker: PrivacyMasker):
         self._model = model
         self.masker = masker
@@ -176,10 +216,26 @@ class PrivacyResearchModelWrapper:
         if callable(free):
             free()
 
-    def generate(self, system: str, prompt: str) -> str:
-        return self._model.generate(system, prompt)
+    def generate(self, system: str, prompt: str, response_format=None) -> str:
+        masked_system = self.masker.mask(system)
+        masked_prompt = self.masker.mask(prompt)
+        response = self._model.generate(masked_system, masked_prompt, response_format)
+        return self.masker.unmask(response)
 
-    def generate_stream(self, system: str, prompt: str):
-        for chunk in self._model.generate_stream(system, prompt):
-            yield chunk
+    def generate_stream(self, system: str, prompt: str, response_format=None):
+        masked_system = self.masker.mask(system)
+        masked_prompt = self.masker.mask(prompt)
+        buffer = ""
+        for chunk in self._model.generate_stream(masked_system, masked_prompt, response_format):
+            buffer += chunk
+            # Placeholder (`[PHONE_1]`) parçalanmasın: yarım kalan kuyruğu tamponla.
+            idx = buffer.rfind("[")
+            if idx != -1 and "]" not in buffer[idx:]:
+                emit, buffer = buffer[:idx], buffer[idx:]
+            else:
+                emit, buffer = buffer, ""
+            if emit:
+                yield self.masker.unmask(emit)
+        if buffer:
+            yield self.masker.unmask(buffer)
 

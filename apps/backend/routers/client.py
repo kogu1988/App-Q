@@ -1088,9 +1088,12 @@ def stream_interviews(request: Request, body: dict, x_username: str | None = Dep
         discovery_channels=brief_dict.get("discovery_channels", []),
     )
 
-    # Wrap model with PrivacyMasker — masks PII + competitor brand names before LLM call
+    # Wrap model with PrivacyMasker — PII (telefon/e-posta/TC) LLM'e gitmeden maskelenir.
+    # Rakip marka maskelemesi opsiyoneldir (varsayılan KAPALI): kamuya açık marka adları
+    # KVKK kapsamında değildir ve maskelenince analiz kalitesi düşer.
     base_model = get_model_provider("flash", user_id=x_username or "")
-    custom_keywords = brief_dict.get("competitors", [])  # mask competitor names
+    _mask_brands = os.getenv("PII_MASK_COMPETITORS", "false").lower() in {"1", "true", "yes"}
+    custom_keywords = brief_dict.get("competitors", []) if _mask_brands else []
     masker = PrivacyMasker(custom_keywords=custom_keywords)
     model = PrivacyResearchModelWrapper(base_model, masker)
 
