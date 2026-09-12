@@ -955,6 +955,21 @@ def run_full_research(request: ResearchRequest, x_username: str | None = Depends
 
     _enforce_token_budget(x_username, plan_type)
 
+    # ── Kota kontrolü (async `/research/jobs` ile PARİTE) ──
+    # NOT: `execute_research` sayacı yalnızca SONDA artırır; burada önceden kontrol
+    # edilmezse senkron yol (async 503 olunca frontend'in fallback'i) kotayı atlar.
+    can_run, used, max_s = check_simulation_limit(x_username) if x_username else (True, 0, 0)
+    if not can_run:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "QUOTA_EXCEEDED",
+                "used": used,
+                "limit": max_s,
+                "message": f"Aylık araştırma limitine ulaştınız ({used}/{max_s}). Planınızı yükseltin.",
+            },
+        )
+
     from packages.research_engine.research_runner import execute_research
     return execute_research(request.model_dump(), x_username or "", plan_type)
 

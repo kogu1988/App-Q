@@ -143,3 +143,20 @@ def test_5_9_free_report_excludes_paid_analyses():
 
     assert report["brand_health"] is None
     assert report["ses_cross_tab"] == []
+
+
+# ── 5.10 Senkron araştırma yolu da kota uygular (gelir sızıntısı regresyonu) ──
+
+def test_5_10_sync_research_enforces_quota():
+    """Senkron `/research`, async `/research/jobs` ile AYNI kota kontrolünü yapmalı.
+
+    Regresyon: `execute_research` sayacı yalnızca SONDA artırıyordu; senkron yol
+    (async 503 olunca frontend fallback'i) kotayı atlayıp Free kullanıcıya sınırsız
+    araştırma izni veriyordu.
+    """
+    source = pathlib.Path("apps/backend/routers/client.py").read_text(encoding="utf-8")
+    idx = source.index("def run_full_research")
+    body = source[idx: idx + 2500]
+
+    assert "check_simulation_limit" in body, "senkron /research kota kontrolü içermeli"
+    assert "QUOTA_EXCEEDED" in body, "kota aşımı QUOTA_EXCEEDED döndürmeli"
