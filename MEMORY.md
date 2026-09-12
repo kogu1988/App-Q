@@ -358,6 +358,8 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 15. ℹ️ **Canlıya geçiş** — `server_plan.md` fazları uygulanacak (VPS + Neon + Vercel).
 16. ✅ **Repo yeniden adlandırıldı** — `kogu1988/App-Q` → **`kogu1988/clarere`**. `git remote` + README/server_plan/SUNUM/ruff referansları güncellendi.
 17. ✅ **O-2 kararı** — `ai_semantic_cache` şeması **bilinçli korunuyor** (Enterprise vektör havuzu rezervi); kod içine açıklayıcı NOT eklendi.
+18. ✅ **Güvenlik yamaları (0 bilinen açık)** — Öncesi: npm 16 (1 kritik), pip-audit 75. Sonrası: **0 + 0**. `next`/`eslint-config-next` 16.3.5; `fastapi` 0.141.1, `starlette` 1.3.1, `pillow` 12.3.0, `GitPython` 3.1.59. ⚠️ `starlette` 1.3.1'e sabitlendi: tüm açıkları kapatır ve yine <1.4.0 kalır (paylaşılan global env'deki `streamlit` kısıtını bozmamak için). 304 test yeşil.
+19. ✅ **Yerel Docker :4001** — `docker-compose.local.yml`'de frontend doğrudan `http://localhost:4001`'de. `API_PROXY_TARGET` **BUILD ARG**: `next.config` rewrites derleme anında gömülür, runtime env etkisizdir.
 
 > **Test durumu:** 304 passed, 0 skipped (DB testleri dahil — `POSTGRES_HOST/PORT` env ile tam süit).
 
