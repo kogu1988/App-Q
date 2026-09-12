@@ -408,6 +408,11 @@ def init_db() -> None:
         except Exception as e:
             print(f"[DB] Studies RLS migration warning: {e}")
 
+        # NOTE (O-2 / karar 2026-09-12): ai_semantic_cache KASITLI olarak korunuyor.
+        # Şu an hiçbir kod yolu bu tabloyu okumuyor/yazmıyor (semantic cache kullanıcı
+        # isteğiyle devre dışı bırakıldı). Ancak Enterprise planındaki "vektör tabanlı
+        # persona havuzu / içerik eşleştirme" özelliği için altyapı rezervidir.
+        # SİLMEDEN ÖNCE: Enterprise yol haritası (MEMORY.md § Enterprise) ile birlikte karar ver.
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS ai_semantic_cache (
@@ -849,6 +854,15 @@ def init_db() -> None:
         cur.execute("INSERT INTO system_config (key, value) VALUES ('wizard_prompt', %s) ON CONFLICT (key) DO NOTHING", (default_wizard,))
         cur.execute("INSERT INTO system_config (key, value) VALUES ('persona_interview_prompt', %s) ON CONFLICT (key) DO NOTHING", (default_persona,))
         cur.execute("INSERT INTO system_config (key, value) VALUES ('synthesis_prompt', %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (default_synthesis,))
+
+        # Multi-user organizasyon tabloları (Enterprise) — DDL admin bağlantısı gerektirir.
+        # _ensure_app_role'dan ÖNCE oluşturulur ki "GRANT ... ON ALL TABLES" kapsamına girsin.
+        try:
+            from .db_org import _create_org_tables
+
+            _create_org_tables(cur)
+        except Exception as e:
+            logger.warning("Org tabloları oluşturulamadı (multi_user devre dışı kalabilir): %s", e)
 
         # App rolü (superuser olmayan, RLS'ye tabi) oluştur + yetkilendir
         _ensure_app_role(cur)

@@ -10,6 +10,8 @@ from __future__ import annotations
 import pytest
 
 DEMO_USER = "free"
+# Migration testinin insert ettiği study'nin sahibi (RLS: created_by = current_tenant).
+MIGRATION_TENANT = "migration_test_user"
 
 
 def _db_available() -> bool:
@@ -45,17 +47,22 @@ def test_12_1_init_db_is_idempotent():
 @DB_REQUIRED
 def test_12_2_existing_data_is_preserved():
     """init_db() mevcut veriyi silmemeli."""
-    from packages.research_engine.database import get_db, init_db
+    from packages.research_engine.database import current_tenant_var, get_db, init_db
 
     study_id = "migration_idempotency_test"
-    with get_db() as (_conn, cur):
-        cur.execute("DELETE FROM studies WHERE id = %s", (study_id,))
-        cur.execute(
-            "INSERT INTO studies (id, title, market, category) VALUES (%s, %s, %s, %s)",
-            (study_id, "Kalıcılık Testi", "Türkiye", "genel"),
-        )
-
+    # RLS aktiftir (FORCE ROW LEVEL SECURITY): studies insert/select yalnızca
+    # created_by = clarere.current_tenant eşleşmesiyle mümkündür. Tenant bağlamı
+    # set edilmezse insert politika ihlaliyle reddedilir.
+    token = current_tenant_var.set(MIGRATION_TENANT)
     try:
+        with get_db() as (_conn, cur):
+            cur.execute("DELETE FROM studies WHERE id = %s", (study_id,))
+            cur.execute(
+                "INSERT INTO studies (id, title, market, category, created_by)"
+                " VALUES (%s, %s, %s, %s, %s)",
+                (study_id, "Kalıcılık Testi", "Türkiye", "genel", MIGRATION_TENANT),
+            )
+
         init_db()
         with get_db() as (_conn, cur):
             cur.execute("SELECT title FROM studies WHERE id = %s", (study_id,))
@@ -65,6 +72,7 @@ def test_12_2_existing_data_is_preserved():
     finally:
         with get_db() as (_conn, cur):
             cur.execute("DELETE FROM studies WHERE id = %s", (study_id,))
+        current_tenant_var.reset(token)
 
 
 @DB_REQUIRED

@@ -50,7 +50,7 @@
 - [ ] 🔴 Neon hesabı (ücretsiz)
 - [ ] 🔴 Vercel hesabı (GitHub ile giriş)
 - [ ] 🔴 Squarespace DNS paneli erişimi (clarere.com)
-- [ ] 🔴 GitHub repo erişimi (`kogu1988/App-Q`)
+- [ ] 🔴 GitHub repo erişimi (`kogu1988/clarere`)
 - [ ] 🟢 Paddle sandbox katalogu — **TAMAMLANDI** (5 fiyat ID'si `.env`'de)
 - [ ] 🔴 Paddle webhook secret (Faz 6'da oluşturulacak)
 - [ ] 🔴 SSH anahtarı (VPS'e erişim için)
@@ -168,7 +168,7 @@ ufw status verbose
 
 ```bash
 mkdir -p /opt/clarere && cd /opt/clarere
-git clone https://github.com/kogu1988/App-Q.git .
+git clone https://github.com/kogu1988/clarere.git .
 ```
 
 ### 3.6 Doğrulama
@@ -446,7 +446,7 @@ CSP `connect-src` listesine `https://api.clarere.com` eklenir:
 
 ### 6.2 Vercel projesi
 
-1. https://vercel.com/new → GitHub → `kogu1988/App-Q` import et
+1. https://vercel.com/new → GitHub → `kogu1988/clarere` import et
 2. **Root Directory:** `apps/frontend`
 3. Framework: Next.js (otomatik algılanır)
 4. Environment Variables:

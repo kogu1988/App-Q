@@ -191,8 +191,8 @@ Kümülatif frekans eğrilerinin matematiksel kesişimleri ile:
 ### 1. Depoyu Klonla
 
 ```powershell
-git clone https://github.com/kogu1988/App-Q.git
-cd App-Q
+git clone https://github.com/kogu1988/clarere.git
+cd clarere
 ```
 
 ### 2. Ortam Değişkenlerini Ayarla

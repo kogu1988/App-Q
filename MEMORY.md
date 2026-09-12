@@ -12,7 +12,7 @@ Marka: **Clarere** | İletişim: **hiclarere@clarere.com**
 
 > **Son güncelleme (2026-08-10):** Articos Parity tamamlandı. 8 sprint'te Evidence Chain, Hypothesis-Blind, Adaptive Probe, Research Copilot, A/B Testing, Web Corroboration, Decision Layer ve RFI Benchmark eklendi. Backend 14 dosya, Frontend 1 dosya (2153 satır).
 
-> **Stabilizasyon (2026-08):** Duplicate `follow-up` endpoint + `FollowUpRequest` temizlendi (frontend 422/404 bug'ı). `test_semantic_router.py` bayat Ollama import'ları düzeltildi (süit koleksiyonunu engelliyordu → 126 test yeşil). `run_benchmark.py` Windows cp1254 emoji çökmesi giderildi. `.env.example` DeepSeek/Clarere'ye göre yeniden yazıldı, `run_backend.py` port 4000, App-Q kalıntıları temizlendi.
+> **Stabilizasyon (2026-08):** Duplicate `follow-up` endpoint + `FollowUpRequest` temizlendi (frontend 422/404 bug'ı). `test_semantic_router.py` bayat Ollama import'ları düzeltildi (süit koleksiyonunu engelliyordu → 126 test yeşil). `run_benchmark.py` Windows cp1254 emoji çökmesi giderildi. `.env.example` DeepSeek/Clarere'ye göre yeniden yazıldı, `run_backend.py` port 4000, eski marka kalıntıları temizlendi.
 
 > **Kurumsal Seviye (2026-08):** Rapor export'u tamamlandı. `render_markdown` + `render_report_html` artık Karar Katmanı (SHIP/ITERATE/ARAŞTIR/VAZGEÇ), Van Westendorp PSM, Harici Kanıt, SES×Stance tablosu, Marka Sağlığı, Keşif Kanalı ve RFI içeriyor. Güven skorları `%78` formatında. HTML raporu tamamen Türkçe (İngilizce başlıklar kaldırıldı). Frontend markdown parser'a tablo desteği eklendi. `scripts/generate_demo_study.py` sunum demo çalışması üretir (DB'ye kaydeder). Test: 158 passed + 1 skipped.
 
@@ -216,7 +216,7 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 6. **3 aşamalı flow** — Her aşama ayrı endpoint, model kafası karışmasın diye
 7. **Defne hızlı akış (Articos tarzı)** — Sokratik tek soru yerine 2 sorulu hızlı toplama + özet + onay. Max 5 tur. Prompt hem `intake.py` hardcoded fallback'te hem `database.py` DB default'unda güncellendi. ⚠️ DB'de `ON CONFLICT DO NOTHING` olduğu için mevcut DB'yi sıfırlamadan (`docker compose down -v && docker compose up -d`) yeni prompt aktif olmaz.
 8. **Enterprise feature'lar** — Yerel LLM fine-tuning, embedding, persona havuzu eşleştirme (ileride)
-9. **Tüm App-Q referansları Clarere olarak değiştirildi** — localStorage, PDF adı, API title, prompt'lar
+9. **Tüm eski marka referansları Clarere olarak değiştirildi** — localStorage, PDF adı, API title, prompt'lar
 10. **5 demo kullanıcı** — free, flex, starter, pro, enterprise (development modunda)
 11. **Free plan upsell** — Paywall (blur + Lock), "Planı Yükselt →" CTA
 12. **Evidence Chain (Sprint 1)** — Her bulgu persona → soru → alıntı → destek/karşı zinciriyle DB'ye kaydedilir. `research_findings` + `research_evidence` tabloları. `build_evidence_graph()` ile otomatik sentiment sınıflandırması.
@@ -291,7 +291,7 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 | Streaming / PDF export | Flex | ✅ |
 | White-label | Pro | ✅ client nav + PDF filename (backend + frontend); `render_report_html` ölü kod |
 | Fine-tuning export | Enterprise | ✅ `db_vectors.export_finetuning_data` + admin `/fine-tuning/export` |
-| Multi-user org | Enterprise | ✅ org/member CRUD (`db_org.py`) + studies RLS (tenant + org paylaşımı); DB testi gerekli |
+| Multi-user org | Enterprise | ✅ org/member CRUD (`db_org.py`) + studies RLS (tenant + org paylaşımı); **canlı DB testi tamam** (`test_rls_org_sharing.py`) |
 
 > ⚠️ Üç enterprise özelliği kod seviyesinde tamamlandı. `multi_user` RLS'i (`studies_tenant_policy`, `clarere.current_org`) gerçek DB'de test edilmeli: `docker compose up -d` + `python launch.py`.
 
@@ -356,11 +356,16 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 13. ✅ **Admin 'Maliyet' sekmesi** — `GET /api/admin/usage` verisini gösterir (kullanıcı bazlı token tüketimi + tahmini USD maliyet).
 14. ℹ️ **`models/` klasörü** sadece README.
 15. ℹ️ **Canlıya geçiş** — `server_plan.md` fazları uygulanacak (VPS + Neon + Vercel).
+16. ✅ **Repo yeniden adlandırıldı** — `kogu1988/App-Q` → **`kogu1988/clarere`**. `git remote` + README/server_plan/SUNUM/ruff referansları güncellendi.
+17. ✅ **O-2 kararı** — `ai_semantic_cache` şeması **bilinçli korunuyor** (Enterprise vektör havuzu rezervi); kod içine açıklayıcı NOT eklendi.
 
-> **Test durumu:** 290 passed + 10 skipped (DB gerektiren gruplar: RLS, kota atomikliği, migration idempotensi).
+> **Test durumu:** 304 passed, 0 skipped (DB testleri dahil — `POSTGRES_HOST/PORT` env ile tam süit).
 
 ### Test planı sonrası bulunan gerçek sorunlar
 
 - **`workflow.py`'de `os` importu eksikti** — P0-5 süre bütçesi `os.getenv` çağırıyordu ama import yoktu; `run_interviews_batch` **NameError ile çöküyordu**. GRUP 3 testleri yakaladı (commit `eeffd0f`).
 - **Gelir sızıntısı** — `brand_health` (Pro+) ve `ses_crosstab` (Flex+) hiçbir endpoint'te gate'lenmiyordu. `_synthesize_impl` artık plan yetersizse bu alanları rapor çıktısından çıkarır (commit `f8cef2c`).
-- ℹ️ **Probe heuristiği kısa-token zaafı** — `PRICING_KEYWORDS` içindeki `"tl"` alt-dizi olarak eşleştiği için "kayıtları" gibi kelimeler yanlış pozitif üretir. İyileştirme adayı (kelime sınırı/uzunluk kontrolü).
+- ✅ **Probe heuristiği kısa-token zaafı (O-1)** — `"tl"` alt-dizi olarak eşlendiği için "kayıtları" gibi kelimeler yanlış pozitif üretiyordu. Kısa/çok anlamlı tokenlar (`tl`, `try`) artık **kelime sınırı** ile eşleşir (`_has_pricing_signal`); uzun kelimeler substring kalmaya devam eder. Regresyon: `test_6_9`, `test_6_10`.
+- ✅ **Org tabloları oluşturulmuyordu (gerçek bug)** — `db_org.init_org_schema()` hiçbir kod yolundan çağrılmıyordu ve app rolü DDL yetkisine sahip değildi → Enterprise `multi_user` sessizce bozuktu. Düzeltme: DDL `db_org._create_org_tables(cur)`'a taşındı; `init_db()` admin bağlantısıyla (app role grant'ından önce) oluşturuyor. Regresyon testi: `test_rls_org_sharing.py`.
+- ✅ **Zaman-bağımlı test kırılganlığı** — `test_quota_atomicity._prepare_user` sabit geçmiş tarih (`2026-01-01`) kullanıyordu; 30 günü aştığı için `check_and_reset_period` sayacı sıfırlıyor ve testler yanlış başarısız oluyordu. Varsayılan period_start artık **bugün**.
+- ✅ **RLS bağlamı olmadan insert** — `test_migrations.test_12_2` tenant bağlamı olmadan studies insert ediyordu → politika ihlali. `current_tenant_var` + `created_by` eklendi.

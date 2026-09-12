@@ -20,13 +20,35 @@ import random
 # ---------------------------------------------------------------------------
 # Pricing keywords (Turkish)
 # ---------------------------------------------------------------------------
+# Uzun/ayırt edici kelimeler: alt-dizi eşleşmesi güvenlidir
+# ("fiyat" → "fiyatlandırma" gibi türevleri de yakalar).
 PRICING_KEYWORDS: list[str] = [
-    "pahalı", "ucuz", "fiyat", "tl", "lira", "bütçe", "ücret",
+    "pahalı", "ucuz", "fiyat", "lira", "bütçe", "ücret",
     "abonelik", "maliyet", "öde", "ödeme", "parası", "paraya",
     "taksit", "komisyon", "kargo",
 ]
 
+# Kısa/çok anlamlı tokenlar alt-dizi olarak YANLIŞ POZİTİF üretir
+# ("tl" → "kayıtları"). Bunlar YALNIZCA kelime sınırında eşleşmelidir.
+PRICING_SHORT_TOKENS: tuple[str, ...] = ("tl", "try")
+_PRICING_SHORT_RE = re.compile(
+    r"(?<!\w)(?:" + "|".join(PRICING_SHORT_TOKENS) + r")(?!\w)",
+    re.IGNORECASE,
+)
+
 TL_PATTERN = re.compile(r"\d{1,6}\s*(?:TL|₺|lira|türk lirası)", re.IGNORECASE)
+
+
+def _has_pricing_signal(text: str) -> bool:
+    """Metinde fiyat sinyali var mı?
+
+    Uzun kelimeler alt-dizi, kısa/çok anlamlı tokenlar kelime sınırı ile eşleşir;
+    böylece "kayıtları" gibi kelimeler yanlış pozitif üretmez.
+    """
+    lower = text.lower()
+    if any(kw in lower for kw in PRICING_KEYWORDS):
+        return True
+    return bool(_PRICING_SHORT_RE.search(lower))
 
 OBJECTION_KEYWORDS: list[str] = [
     "güvenmiyorum", "itiraz", "şüphe", "risk", "emin değil",
@@ -97,7 +119,7 @@ def should_probe(answer: str, question_label: str = "") -> bool:
         return True
 
     # 3. Pricing keywords present but no specific TL amount
-    has_pricing_kw = any(kw in lower for kw in PRICING_KEYWORDS)
+    has_pricing_kw = _has_pricing_signal(stripped)
     has_tl_amount = bool(TL_PATTERN.search(stripped))
     if has_pricing_kw and not has_tl_amount:
         return True
@@ -131,7 +153,7 @@ def generate_probe_question(
     lower = answer.lower()
 
     # Determine category
-    has_pricing = any(kw in lower for kw in PRICING_KEYWORDS)
+    has_pricing = _has_pricing_signal(answer)
     has_objection = any(kw in lower for kw in OBJECTION_KEYWORDS)
 
     if has_pricing:

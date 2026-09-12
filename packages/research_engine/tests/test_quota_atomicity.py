@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import pathlib
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 
 import pytest
 
@@ -33,6 +34,11 @@ TEST_USER = "quota_atomicity_test"
 def _prepare_user(simulations: int = 0, period_start: str | None = None) -> None:
     from packages.research_engine.database import get_db
 
+    # NOT: Varsayılan period_start BUGÜN olmalı. Sabit geçmiş bir tarih verilirse
+    # check_and_reset_period() dönem devri algılar ve sayacı sıfırlar (zaman-bağımlı
+    # kırılganlık). Dönem devrini test etmek için period_start açıkça verilir (bkz. 4.4).
+    effective_start = period_start or datetime.now(timezone.utc).date().isoformat()
+
     with get_db() as (conn, cur):
         cur.execute("DELETE FROM clients WHERE username = %s", (TEST_USER,))
         cur.execute(
@@ -41,7 +47,7 @@ def _prepare_user(simulations: int = 0, period_start: str | None = None) -> None
                                  max_tokens, billing_cycle, period_start, period_simulations)
             VALUES (%s, NOW(), %s, 'Free', 2, 100000, 'monthly', %s, %s)
             """,
-            (TEST_USER, f"{TEST_USER}@example.com", period_start or "2026-01-01", simulations),
+            (TEST_USER, f"{TEST_USER}@example.com", effective_start, simulations),
         )
 
 

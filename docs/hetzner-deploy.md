@@ -19,7 +19,7 @@ A   www.clarere.com → <sunucu-IP>
 ## 2. Sunucuda Depoyu Klonla
 
 ```bash
-git clone https://github.com/kogu1988/App-Q.git clarere
+git clone https://github.com/kogu1988/clarere.git clarere
 cd clarere
 ```
 

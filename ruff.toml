@@ -1,4 +1,4 @@
-# Ruff configuration for App-Q monorepo
+# Ruff configuration for Clarere monorepo
 # Ignore select legacy style/import warnings to allow master checklist to pass
 
 [lint]

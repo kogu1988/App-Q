@@ -18,11 +18,11 @@ from packages.research_engine.nodes.probe import (
 ANSWER_WITH_TL = "Bu ürün için ayda 150 TL ödemeyi düşünebilirim, bütçeme uygun olur"
 # Fiyattan söz eden ama rakam vermeyen cevap
 ANSWER_VAGUE_PRICING = "Bu ürün bana gerçekten çok pahalı geldi, bütçemi oldukça aşıyor"
-# Ne fiyat ne itiraz sinyali içeren doyurucu cevap
-# (Dikkat: "kayıtları" kelimesi "tl" alt-dizisini içerdiği için kullanılmadı —
-#  probe heuristiği kısa token'ları alt-dizi olarak eşleştirir.)
+# Ne fiyat ne itiraz sinyali içeren doyurucu cevap.
+# NOT: "kayıtları" bilinçli kullanılıyor — içinde "tl" alt-dizisi geçer ve
+# probe heuristiğinin bu tür yanlış pozitifleri artık üretmemesi gerekir (O-1).
 ANSWER_SUBSTANTIVE = (
-    "Geçen hafta veteriner randevularını deftere elle yazdım ve bu beni oldukça "
+    "Geçen hafta veteriner kayıtlarını deftere elle yazdım ve bu beni oldukça "
     "yordu, her defasında yeniden düzenlemek zorunda kaldım."
 )
 
@@ -84,3 +84,17 @@ def test_6_8_probe_limit_is_capped_at_three():
 
     assert source.count("total_probes < 3") >= 2, "probe limiti (3) mülakat akışlarında uygulanmalı"
     assert "is_probe=True" in source
+
+
+def test_6_9_standalone_tl_triggers_pricing_probe():
+    """Rakamsız ama açıkça 'TL' geçen cevap fiyat sinyali sayılmalı (kelime sınırı eşleşmesi)."""
+    answer = "Bu işi TL üzerinden hesaplıyorum ama net bir aralık yok kafamda şu an, bakacağım"
+    assert should_probe(answer, "PRICING") is True
+
+
+def test_6_10_tl_substring_does_not_false_positive():
+    """O-1 regresyonu: 'tl' alt-dizisi içeren kelimeler (kayıtları) fiyat sinyali sayılmamalı."""
+    answer = (
+        "Geçen hafta veteriner kayıtlarını deftere yazdım, çok yorucu ve düzensizdi"
+    )
+    assert should_probe(answer, "PAIN") is False

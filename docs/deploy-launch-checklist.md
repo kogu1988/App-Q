@@ -96,6 +96,6 @@ curl https://your-domain.com/api/client/me \
 
 ## 7. Bilinen Kalan İşler (opsiyonel)
 
-- [ ] GitHub repo adı `App-Q` olarak kalıyor (kullanıcı kararı) — README clone URL buna uygun
+- [x] GitHub repo adı **`clarere`** olarak değiştirildi — README clone URL buna uygun
 - [ ] Gözlemlenebilirlik: Langfuse (`docker compose --profile optional up -d langfuse-server`)
 - [ ] Yerel Türkçe LLM geçişi (Enterprise yol haritası — `docs/god_doc.md`) şu an aktif değil

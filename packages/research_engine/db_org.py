@@ -8,33 +8,43 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from .database import get_db
+from .database import get_admin_db, get_db
+
+
+def _create_org_tables(cur) -> None:
+    """Organizasyon tablolarını oluşturur (idempotent).
+
+    NOT: DDL yetkisi gerekir → yalnızca admin/superuser bağlantısı üzerinden
+    çağrılmalıdır (`init_db` veya `get_admin_db`). App rolü (clarere_app) DDL
+    yapamaz.
+    """
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS organizations (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            plan_type TEXT NOT NULL DEFAULT 'Enterprise',
+            created_at TEXT
+        )
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS organization_members (
+            org_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+            username TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'member',
+            created_at TEXT,
+            PRIMARY KEY (org_id, username)
+        )
+        """
+    )
 
 
 def init_org_schema() -> None:
-    """Organizasyon tablolarını oluşturur (idempotent)."""
-    with get_db() as (conn, cur):
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS organizations (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                plan_type TEXT NOT NULL DEFAULT 'Enterprise',
-                created_at TEXT
-            )
-            """
-        )
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS organization_members (
-                org_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
-                username TEXT NOT NULL,
-                role TEXT NOT NULL DEFAULT 'member',
-                created_at TEXT,
-                PRIMARY KEY (org_id, username)
-            )
-            """
-        )
+    """Organizasyon tablolarını oluşturur (idempotent, admin bağlantısı)."""
+    with get_admin_db(register_pgvector=False) as (_conn, cur):
+        _create_org_tables(cur)
 
 
 def create_organization(org_id: str, name: str, plan_type: str = "Enterprise", owner_username: str = "") -> None:
