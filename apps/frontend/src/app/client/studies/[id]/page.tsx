@@ -59,6 +59,7 @@ interface Persona {
   respondent_type?: string;
   settlement_type?: string;
   big_five?: Record<string, number>;
+  attributes?: Record<string, string>;
 }
 
 interface InterviewTurn {
@@ -102,6 +103,10 @@ interface StudyDetail {
     target_users?: string[];
     competitors?: string[];
     success_metric?: string;
+    sales_channel?: string;
+    discovery_channels?: string[];
+    panel_size?: string;
+    geography?: string;
   };
   plan?: ResearchPlan;
   personas?: Persona[];
@@ -1189,10 +1194,46 @@ export default function StudyDetailPage() {
                       <span className="text-xs font-semibold text-muted-foreground block uppercase">Marka / Ürün</span>
                       <span className="font-bold text-[#212121] dark:text-[#e5e7eb]">{brief?.title || metadata?.title || "Belirtilmemiş"}</span>
                     </div>
-                    <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg">
-                      <span className="text-xs font-semibold text-muted-foreground block uppercase">Fiyat</span>
-                      <span className="font-bold text-[#212121] dark:text-[#e5e7eb]">{brief?.expected_price || "Belirtilmedi"}</span>
+                    {(brief?.category || metadata?.category) && (
+                      <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg">
+                        <span className="text-xs font-semibold text-muted-foreground block uppercase">Kategori</span>
+                        <span className="font-bold text-[#212121] dark:text-[#e5e7eb]">{brief?.category || metadata?.category}</span>
+                      </div>
+                    )}
+                    <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg sm:col-span-2">
+                      <span className="text-xs font-semibold text-muted-foreground block uppercase">Fiyat Modeli</span>
+                      <span className="font-bold text-[#212121] dark:text-[#e5e7eb] leading-relaxed">{brief?.expected_price || "Belirtilmedi"}</span>
                     </div>
+                    {brief?.target_users && brief.target_users.length > 0 && (
+                      <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg sm:col-span-2">
+                        <span className="text-xs font-semibold text-muted-foreground block uppercase">Hedef Kitle</span>
+                        <span className="font-medium text-[#616161] dark:text-[#e5e7eb] text-sm leading-relaxed">{brief.target_users.join(" · ")}</span>
+                      </div>
+                    )}
+                    {brief?.competitors && brief.competitors.length > 0 && (
+                      <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg sm:col-span-2">
+                        <span className="text-xs font-semibold text-muted-foreground block uppercase">Rakipler</span>
+                        <span className="font-medium text-[#616161] dark:text-[#e5e7eb] text-sm leading-relaxed">{brief.competitors.join(" · ")}</span>
+                      </div>
+                    )}
+                    {brief?.success_metric && (
+                      <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg">
+                        <span className="text-xs font-semibold text-muted-foreground block uppercase">Başarı Kriteri</span>
+                        <span className="font-medium text-[#616161] dark:text-[#e5e7eb] text-sm leading-relaxed">{brief.success_metric}</span>
+                      </div>
+                    )}
+                    {brief?.sales_channel && (
+                      <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg">
+                        <span className="text-xs font-semibold text-muted-foreground block uppercase">Satış Kanalı</span>
+                        <span className="font-medium text-[#616161] dark:text-[#e5e7eb] text-sm leading-relaxed">{brief.sales_channel}</span>
+                      </div>
+                    )}
+                    {(brief?.panel_size || brief?.geography) && (
+                      <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg sm:col-span-2">
+                        <span className="text-xs font-semibold text-muted-foreground block uppercase">Panel & Coğrafya</span>
+                        <span className="font-medium text-[#616161] dark:text-[#e5e7eb] text-sm leading-relaxed">{[brief?.panel_size, brief?.geography].filter(Boolean).join(" · ")}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <span className="text-xs font-semibold text-muted-foreground uppercase block">Araştırma Problemi (Brief Context)</span>
@@ -1321,7 +1362,7 @@ export default function StudyDetailPage() {
                   const rq = study.research_quality!;
                   const rfi = rq.rfi ?? null;
                   const components = rq.components ?? {};
-                  const valid = rq.valid ?? (rfi !== null ? rfi >= 0.65 : false);
+                  const validity = rq.valid ?? (rfi !== null ? rfi >= 0.65 : null);
                   const warnings = rq.warning_count ?? 0;
                   const phasesPassed = rq.phases_passed ?? [];
                   const phasesFlagged = rq.phases_flagged ?? [];
@@ -1345,11 +1386,13 @@ export default function StudyDetailPage() {
                         <CardTitle className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
                           Araştırma Bütünlüğü (RFI)
                           <Badge
-                            className={valid
+                            className={validity === null
+                              ? "bg-[#f5f4f1] text-[#616161] border border-[#d9d9dd]"
+                              : validity
                               ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200"
                               : "bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400 border border-red-200 dark:border-red-900/40"}
                           >
-                            {valid ? "Geçerli" : "Eşik Altı"}
+                            {validity === null ? "Ölçülmedi" : validity ? "Geçerli" : "Eşik Altı"}
                           </Badge>
                         </CardTitle>
                         <CardDescription className="text-[10px]">Bilimsel simülasyon temelli bütünlük ölçütü — yanıt kalitesi ve tutarlılık denetimi.</CardDescription>
@@ -1409,7 +1452,7 @@ export default function StudyDetailPage() {
                             <p className="text-[10px] font-bold text-muted-foreground uppercase">Dikkat Gerektiren Noktalar ({warnings})</p>
                             {flags.filter(f => f.severity === "warning" || f.severity === "fail").slice(0, 3).map((f, i) => (
                               <div key={i} className="text-[10px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-md px-2.5 py-1.5 leading-relaxed">
-                                {f.message.slice(0, 140)}{f.message.length > 140 ? "..." : ""}
+                                {f.message}
                               </div>
                             ))}
                           </div>
@@ -1505,7 +1548,7 @@ export default function StudyDetailPage() {
                                 </div>
                                 <div className="h-1.5 w-full bg-[#eeece7] rounded-full overflow-hidden">
                                   <div 
-                                    className="h-full bg-[#f1f5ff]0 rounded-full" 
+                                    className="h-full bg-sky-500 rounded-full" 
                                     style={{ width: `${(persona.price_sensitivity / 5) * 100}%` }}
                                   />
                                 </div>
@@ -1563,6 +1606,21 @@ export default function StudyDetailPage() {
                             </div>
                           )}
                         </div>
+
+                        {persona.attributes && ["Current workflow", "Decision trigger", "Buying friction"].some(k => persona.attributes?.[k]) && (
+                          <div className="space-y-2 border-t border-border/50 pt-3">
+                            {[
+                              { key: "Current workflow", label: "Mevcut İş Akışı" },
+                              { key: "Decision trigger", label: "Karar Tetikleyicisi" },
+                              { key: "Buying friction", label: "Satın Alma Sürtünmesi" },
+                            ].filter(a => persona.attributes?.[a.key]).map(a => (
+                              <div key={a.key} className="text-[11px] leading-relaxed">
+                                <span className="font-bold text-[#93939f] uppercase tracking-wider">{a.label}: </span>
+                                <span className="text-[#616161] dark:text-[#93939f]">{persona.attributes?.[a.key]}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
 </div>
 
