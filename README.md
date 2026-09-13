@@ -42,7 +42,17 @@ Clarere/
 │   ├── backend/              FastAPI (Python 3.10+) — REST API
 │   │   ├── main.py           Uygulama başlatma, CORS, rate limiting
 │   │   └── routers/
-│   │       ├── client.py     İstemci API endpoint'leri
+│   │       ├── client/       İstemci API endpoint'leri (paket)
+│   │       │   ├── studies.py       Study CRUD / bulgular / PDF
+│   │       │   ├── research.py      Plan, persona üretimi, araştırma, stream
+│   │       │   ├── synthesis.py     Sentez raporu
+│   │       │   ├── interaction.py   Takip sorusu + copilot
+│   │       │   ├── intake.py        Defne intake + persona havuzu
+│   │       │   ├── account.py       Hesap/plan, iletişim, KVKK
+│   │       │   ├── ws.py            WebSocket ticket/durum
+│   │       │   ├── context.py       Araştırma bağlamı (PII)
+│   │       │   ├── _deps.py         Ortak bağımlılıklar (plan/kota/limit)
+│   │       │   └── _schemas.py      İstek modelleri
 │   │       └── admin.py      Operatör/admin API endpoint'leri
 │   │
 │   └── frontend/             Next.js 16 + React 19 + TypeScript

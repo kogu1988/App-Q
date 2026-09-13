@@ -120,7 +120,7 @@ python -m pytest packages/research_engine/tests/ -q
 | Dosya | Görev | Ne Zaman Bak |
 |---|---|---|
 | `main.py` | FastAPI app, CORS, rate limit, tenant middleware | Port/CORS değişikliği |
-| `routers/client.py` | Tüm client endpoint'leri (intake, research, synthesize, contact) | API endpoint ekleme/değiştirme |
+| `routers/client/` | Client API endpoint'leri (paket): studies, research, synthesis, interaction, intake, account, ws + `_deps`/`_schemas` | API endpoint ekleme/değiştirme |
 | `routers/admin.py` | Admin panel endpoint'leri | Admin özellikleri |
 
 ### Research Engine (`packages/research_engine/`)
@@ -535,6 +535,16 @@ python -m pytest packages/research_engine/tests/ -q
 - ✅ **Test güncellemesi:** `test_quota_atomicity.py::test_4_5` artık `database/clients.py` kaynağını okuyor (atomik UPDATE...RETURNING deseni).
 - ✅ **README** proje yapısı pakete göre güncellendi.
 - Doğrulama: `python scripts/run_tests.py` → **403 passed**; Playwright `01-ui` + `03-study-actions` → **5/5 passed**; `clarere-api` + `celery_worker` rebuild sonrası konteyner logu temiz.
-- ⚠️ **Kapsam dışı kalan bilinen bug (R5 değiştirmedi):** `apps/backend/routers/client.py:1701` `get_personas_pool`'u `packages.research_engine.database`'tan import ediyor; bu isim orada **tanımlı değil** (doğrusu `db_vectors`). `/api/client/personas/match` çağrıldığında ImportError verir. Refaktör "davranış dondurma" kuralı gereği dokunulmadı; ayrı bir hata düzeltmesi olarak ele alınmalı.
+- ⚠️ **Kapsam dışı kalan bilinen bug (R5 değiştirmedi, R6'da düzeltildi):** `match_personas` içinde `get_personas_pool` yanlış modülden import ediliyordu. Modül seviyesindeki import doğru olduğu için bozuk yerel import satırı R6'da kaldırıldı.
 - Not: `ruff check` sonrası BLE001 (blind-except) sayısı 26 → 32 (yeni paket yapısındaki mevcut catch-all desenleri); diğer kurallar taban çizgisiyle aynı.
 - **Sıradaki:** R6 — `routers/client.py` (1976) → alt router'lar.
+
+### Refaktör R6 — `routers/client.py` → alt router paketi (2026-09-13)
+
+- ✅ **1976 satırlık router pakete bölündü.** `client/` altında: `_deps.py` (plan çözümü, kota, limitler), `_schemas.py` (istek modelleri), `context.py` (araştırma bağlamı + PII), `studies.py`, `research.py`, `synthesis.py`, `interaction.py`, `intake.py`, `account.py`, `ws.py`, `__init__.py` (üst router + shim). En büyük dosya 374 satır (kabul: < 400).
+- ✅ **OpenAPI şeması birebir aynı.** R6 öncesi canlı `/openapi.json` ile karşılaştırıldı: 71 operation, path/metot kümesi, `components`, `tags`, `info` tamamen eşit (diff boş).
+- ✅ **`limiter` tek örnek:** `_deps`'te tanımlı; dekoratörlü rotalar aynı nesneyi kullanır (davranış korundu).
+- ✅ **Test uyarlamaları:** `test_plan_enforcement.py` kaynak taraması artık `client/` paketinin tamamını okuyor; `monkeypatch` hedefi `client._deps`; `pathlib` yolu `client/research.py`.
+- 🐛 **Gerçek bug düzeltildi:** `match_personas` içindeki bozuk `get_personas_pool` importu kaldırıldı (R5 notu). Yeni `test_router_imports.py` (7 test) router import'larının hedef modülde gerçekten var olduğunu ve shim'in genel isimleri dışa verdiğini doğrular.
+- Doğrulama: `python scripts/run_tests.py` → **410 passed**; Playwright `01-ui` + `03-study-actions` → **5/5 passed**; canlı `/openapi.json` diff boş; konteyner logu temiz.
+- **Sıradaki:** R7 — `analytics.py` (1585) → paket + `reporting` ince ayarı.

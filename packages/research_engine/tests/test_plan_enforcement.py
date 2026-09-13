@@ -28,7 +28,7 @@ from packages.research_engine.plan_config import (
 )
 
 _ROUTER_FILES = [
-    pathlib.Path("apps/backend/routers/client.py"),
+    *sorted(pathlib.Path("apps/backend/routers/client").glob("*.py")),
     pathlib.Path("apps/backend/routers/admin.py"),
 ]
 
@@ -156,7 +156,7 @@ def test_5_10_sync_research_enforces_quota():
     (async 503 olunca frontend fallback'i) kotayı atlayıp Free kullanıcıya sınırsız
     araştırma izni veriyordu.
     """
-    source = pathlib.Path("apps/backend/routers/client.py").read_text(encoding="utf-8")
+    source = pathlib.Path("apps/backend/routers/client/research.py").read_text(encoding="utf-8")
     idx = source.index("def run_full_research")
     body = source[idx: idx + 2500]
 
@@ -177,7 +177,7 @@ def test_5_11_free_trial_active_within_one_month(monkeypatch):
     """10 gün önce açılmış, 0 araştırma yapmış Free kullanıcı hÂLÂ aktif olmalı."""
     from apps.backend.routers.client import is_trial_expired
 
-    monkeypatch.setattr("apps.backend.routers.client.count_user_non_ab_simulations", lambda u: 0)
+    monkeypatch.setattr("apps.backend.routers.client._deps.count_user_non_ab_simulations", lambda u: 0)
 
     expired, _reason = is_trial_expired(_free_client(days_old=10))
     assert expired is False
@@ -187,7 +187,7 @@ def test_5_11b_free_trial_expires_after_one_month(monkeypatch):
     """31 gün geçmişse (0 araştırmaya rağmen) Free denemesi bitmeli."""
     from apps.backend.routers.client import is_trial_expired
 
-    monkeypatch.setattr("apps.backend.routers.client.count_user_non_ab_simulations", lambda u: 0)
+    monkeypatch.setattr("apps.backend.routers.client._deps.count_user_non_ab_simulations", lambda u: 0)
 
     expired, reason = is_trial_expired(_free_client(days_old=31))
     assert expired is True
@@ -198,7 +198,7 @@ def test_5_11c_free_trial_expires_after_two_researches(monkeypatch):
     """Yeni kullanıcı (1 gün) 2 araştırma yaptıysa deneme bitmeli (hangisi önce biterse)."""
     from apps.backend.routers.client import is_trial_expired
 
-    monkeypatch.setattr("apps.backend.routers.client.count_user_non_ab_simulations", lambda u: 2)
+    monkeypatch.setattr("apps.backend.routers.client._deps.count_user_non_ab_simulations", lambda u: 2)
 
     expired, reason = is_trial_expired(_free_client(days_old=1))
     assert expired is True
@@ -209,7 +209,7 @@ def test_5_11d_paid_plan_not_subject_to_trial(monkeypatch):
     """Ücretli planlar deneme penceresine tabi olmamalı."""
     from apps.backend.routers.client import is_trial_expired
 
-    monkeypatch.setattr("apps.backend.routers.client.count_user_non_ab_simulations", lambda u: 99)
+    monkeypatch.setattr("apps.backend.routers.client._deps.count_user_non_ab_simulations", lambda u: 99)
 
     expired, _reason = is_trial_expired(
         {"plan_type": "Starter", "created_at": (__import__("datetime").datetime.now()).isoformat(), "username": "s"}
