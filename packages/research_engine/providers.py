@@ -76,9 +76,10 @@ _LLM_CACHE_MISSES = 0
 
 
 def _cache_key(model_id: str, system: str, prompt: str,
-               response_format: str | None, max_tokens: int | None) -> str:
+               response_format: str | None, max_tokens: int | None,
+               effort: str = "") -> str:
     hasher = hashlib.sha256()
-    for part in (model_id, system, prompt, response_format or "", str(max_tokens or "")):
+    for part in (model_id, system, prompt, response_format or "", str(max_tokens or ""), effort or ""):
         hasher.update(part.encode("utf-8"))
         hasher.update(b"\x00")
     return hasher.hexdigest()
@@ -149,8 +150,21 @@ except ImportError:
 
 # — DeepSeek API config —
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
-DEEPSEEK_FLASH_MODEL = os.getenv("DEEPSEEK_FLASH_MODEL", "deepseek-v4-flash")
+# NOT (DeepSeek API değişikliği): Önerilen ad `deepseek-flash`. Eski `deepseek-v4-flash`
+# hâlâ kabul edilir ama ilgili model emekliye ayrıldı; istekler DeepSeek-V4.1-Flash
+# tarafından karşılanır ve Flash fiyatından faturalanır.
+DEEPSEEK_FLASH_MODEL = os.getenv("DEEPSEEK_FLASH_MODEL", "deepseek-flash")
 DEEPSEEK_PRO_MODEL = os.getenv("DEEPSEEK_PRO_MODEL", "deepseek-v4-pro")
+
+# Thinking effort (low | high | max). DeepSeek varsayılanı "high".
+# Maliyet kaldıracı: düşük effort = daha az reasoning token = daha az maliyet.
+_VALID_EFFORTS = {"low", "high", "max"}
+DEEPSEEK_REASONING_EFFORT = (os.getenv("DEEPSEEK_REASONING_EFFORT", "high") or "high").strip().lower()
+
+
+def _resolve_effort(override: str | None = None) -> str:
+    effort = (override or DEEPSEEK_REASONING_EFFORT or "high").strip().lower()
+    return effort if effort in _VALID_EFFORTS else "high"
 
 
 class ModelProviderError(RuntimeError):
@@ -182,11 +196,13 @@ class DeepSeekResearchModel:
         base_url: str = DEEPSEEK_BASE_URL,
         api_key: str | None = None,
         user_id: str = "",
+        reasoning_effort: str | None = None,
     ) -> None:
         self.model_id = model_id
         self.last_model_id = model_id
         self.base_url = base_url.rstrip("/")
         self.user_id = user_id  # KVCache isolation + content safety
+        self.reasoning_effort = _resolve_effort(reasoning_effort)
 
         api_key = api_key or os.getenv("DEEPSEEK_API_KEY", "")
         if not api_key:
@@ -272,6 +288,7 @@ class DeepSeekResearchModel:
             # temperature thinking mode'da etkisiz — kaldırıldı
             "extra_body": {
                 "thinking": {"type": "enabled"},
+                "reasoning_effort": self.reasoning_effort,
                 "user_id": self.user_id,
             },
         }
@@ -280,7 +297,10 @@ class DeepSeekResearchModel:
             kwargs["response_format"] = {"type": "json_object"}
 
         # İçerik-hash önbelleği: birebir aynı çağrı tekrar API'ye gitmez
-        cache_key = _cache_key(self.model_id, system, prompt, response_format, kwargs.get("max_tokens"))
+        cache_key = _cache_key(
+            self.model_id, system, prompt, response_format,
+            kwargs.get("max_tokens"), self.reasoning_effort,
+        )
         cached = _cache_get(cache_key)
         if cached is not None:
             return cached
@@ -337,6 +357,7 @@ class DeepSeekResearchModel:
             "stream": True,
             "extra_body": {
                 "thinking": {"type": "enabled"},
+                "reasoning_effort": self.reasoning_effort,
                 "user_id": self.user_id,
             },
         }
@@ -385,17 +406,23 @@ class DeepSeekResearchModel:
         pass  # Cloud API — no local memory to free
 
 
-def get_model_provider(provider: str | None = None, user_id: str = "") -> ResearchModel:
+def get_model_provider(
+    provider: str | None = None,
+    user_id: str = "",
+    effort: str | None = None,
+) -> ResearchModel:
     """
     Factory for model providers.
 
     provider:
-      - None / "flash" / "intake" / "persona"   → deepseek-v4-flash
+      - None / "flash" / "intake" / "persona"   → deepseek-flash
       - "pro" / "synthesis" / "report"           → deepseek-v4-pro
-      - Full model ID (e.g. "deepseek-v4-flash") → direkt kullan
+      - Full model ID (ör. "deepseek-flash")      → direkt kullan
 
     user_id: DeepSeek user_id isolation (KVCache, content safety, scheduling).
              Yalnizca [a-zA-Z0-9_-] karakterleri — otomatik temizlenir.
+    effort:  reasoning_effort (low | high | max). Verilmezse DEEPSEEK_REASONING_EFFORT
+             env'i (varsayılan "high") kullanılır. Derin analiz için "max".
     """
     flash_aliases = {None, "flash", "intake", "persona", "interview", "plan"}
     pro_aliases = {"pro", "synthesis", "report"}
@@ -414,4 +441,9 @@ def get_model_provider(provider: str | None = None, user_id: str = "") -> Resear
     safe_user_id = re.sub(r'[^a-zA-Z0-9\-_]', '', (user_id or "").strip())[:64] or "anonymous"
 
     api_key = os.getenv("DEEPSEEK_API_KEY", "")
-    return DeepSeekResearchModel(model_id=model_id, api_key=api_key, user_id=safe_user_id)
+    return DeepSeekResearchModel(
+        model_id=model_id,
+        api_key=api_key,
+        user_id=safe_user_id,
+        reasoning_effort=effort,
+    )

@@ -47,7 +47,7 @@ async def async_intake_and_reframing_node(state: GlobalResearchState) -> Dict[st
         search_context = "Arama yapılamadı."
 
     # 2. Input Reframing Katmanı (DeepSeek)
-    model = get_model_provider("flash")  # Hızlı model — input reframing
+    model = get_model_provider("flash", effort="low")  # Hızlı model — input reframing
     system_prompt = "Sen UK AISI standartlarında bir Girdi Yeniden Çerçeveleme (Input Reframing) modelisin. Girdiyi analiz edip JSON formatında 'objective_product_context' ve 'primary_research_questions' alanlarını döndür."
     user_prompt = f"Brief Fikri: \"{sanitized_text}\"\n\nCanlı Pazar Verisi (Web Search):\n{search_context}\n\nMetni tüm öznel başarı inançlarından arındırıp, canlı pazar verisini de dikkate alarak nesnelleştir."
     

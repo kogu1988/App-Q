@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 async def initial_coding_node(state: GlobalResearchState) -> Dict[str, Any]:
     logger.info("Ajan 3: Braun & Clarke Aşama 2 - Atomik Kodlama Başlatıldı.")
     transcripts = state.get("transcripts", [])
-    synthesis_model = get_model_provider("pro")  # Derin analiz için Pro
+    synthesis_model = get_model_provider("pro", effort="max")  # Derin analiz için Pro
     
     extracted_atomic_codes = []
     # HER BİR TRANSKRİPTİ LLM İLE ANALİZ ET, BOŞ BIRAKMA (BUG FIX)
@@ -109,7 +109,7 @@ async def adversarial_quality_audit_node(state: GlobalResearchState) -> Dict[str
     logger.info("Ajan 3: UK AISI Standartlarında Çekişmeli Kalite Denetimi (Stage 6).")
     
     # Derin akıl yürütme (DeepSeek Pro)
-    reasoning_model = get_model_provider("pro")
+    reasoning_model = get_model_provider("pro", effort="max")
     
     themes = state.get("extracted_themes", [])
     loops = state.get("adversarial_loops_count", 0) + 1

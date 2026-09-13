@@ -895,7 +895,7 @@ def create_plan(request: BriefRequest, x_username: str | None = Depends(get_curr
 
     # Reframing katmanı ile sübjektif girdileri nesnelleştir (Sycophancy Mitigation)
     try:
-        model = get_model_provider("flash", user_id=x_username or "")
+        model = get_model_provider("flash", user_id=x_username or "", effort="low")
         reframed = apply_input_reframing(brief, model)
 
         new_objective = reframed.get("objective_product_context", plan.objective)
@@ -1091,7 +1091,7 @@ def stream_interviews(request: Request, body: dict, x_username: str | None = Dep
     # Wrap model with PrivacyMasker — PII (telefon/e-posta/TC) LLM'e gitmeden maskelenir.
     # Rakip marka maskelemesi opsiyoneldir (varsayılan KAPALI): kamuya açık marka adları
     # KVKK kapsamında değildir ve maskelenince analiz kalitesi düşer.
-    base_model = get_model_provider("flash", user_id=x_username or "")
+    base_model = get_model_provider("flash", user_id=x_username or "", effort="high")
     _mask_brands = os.getenv("PII_MASK_COMPETITORS", "false").lower() in {"1", "true", "yes"}
     custom_keywords = brief_dict.get("competitors", []) if _mask_brands else []
     masker = PrivacyMasker(custom_keywords=custom_keywords)
@@ -1212,7 +1212,7 @@ def study_follow_up(study_id: str, data: FollowUpRequest, x_username: str | None
     prompt = f"Geçmiş:\n{history_text}\n\nYeni soru: {data.question}\nCevabın:"
 
     try:
-        model = get_model_provider("flash", user_id=x_username or "")
+        model = get_model_provider("flash", user_id=x_username or "", effort="high")
         response = model.generate(messages[0]["content"], prompt)
         answer = response.strip()
         _record_usage(x_username, model, "followup", study_id)
@@ -1350,7 +1350,7 @@ def _synthesize_impl(request, x_username: str | None):
     if os.getenv("REPORT_ENRICH_ENABLED", "true").lower() in {"1", "true", "yes"}:
         try:
             from packages.research_engine.analytics import enrich_report_narrative
-            _enrich_model = get_model_provider("pro", user_id=(x_username or "").strip() or "anonymous")
+            _enrich_model = get_model_provider("pro", user_id=(x_username or "").strip() or "anonymous", effort="max")
             _narrative, _recs = enrich_report_narrative(report, _enrich_model)
             if _narrative:
                 report = _dc_replace(
@@ -1546,7 +1546,7 @@ def research_chat(
 
     # ── DeepSeek Pro ile yanıt üret ──
     safe_user_id = (x_username or "").strip() or "anonymous"
-    model = get_model_provider("pro", user_id=safe_user_id)
+    model = get_model_provider("pro", user_id=safe_user_id, effort="high")
 
     try:
         answer = model.generate(system_prompt, user_prompt)
@@ -1666,7 +1666,7 @@ def match_personas(request: Request, data: dict, x_username: str | None = Depend
             '[\n  {"role": "Rol Adı", "why": "Bu projeye neden uygun?"}\n]'
         )
 
-        model = get_model_provider("flash", user_id=x_username or "")
+        model = get_model_provider("flash", user_id=x_username or "", effort="low")
         text = model.generate(system, prompt)
         _record_usage(x_username, model, "match")
 
@@ -1699,7 +1699,7 @@ def intake_chat(request: Request, data: IntakeChatRequest, x_username: str | Non
         from packages.research_engine.database import get_system_config
         plan_type, _ = _resolve_plan(x_username)
         _enforce_token_budget(x_username, plan_type)
-        model = get_model_provider("flash", user_id=(x_username or "").strip() or "anonymous")
+        model = get_model_provider("flash", user_id=(x_username or "").strip() or "anonymous", effort="low")
         # wizard_prompt DB'den okunur — admin panelinden kod deploy'u olmadan güncellenebilir
         try:
             config = get_system_config()

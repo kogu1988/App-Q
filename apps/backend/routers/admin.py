@@ -176,8 +176,8 @@ async def generate_personas_endpoint(req: GeneratePersonaRequest):
     from packages.research_engine.persona_generator import generate_and_save_personas
     from packages.research_engine.providers import get_model_provider
     
-    model = get_model_provider()
-    
+    model = get_model_provider(effort="high")
+
     personas = generate_and_save_personas(
         role_title=req.role_title,
         count=req.count,
@@ -216,8 +216,8 @@ async def get_random_persona_draft():
     from packages.research_engine.persona_generator import generate_random_persona_draft
     from packages.research_engine.providers import get_model_provider
     
-    model = get_model_provider()
-    
+    model = get_model_provider(effort="high")
+
     draft = generate_random_persona_draft(model)
     if not draft:
         raise HTTPException(status_code=500, detail="Taslak persona üretilemedi.")

@@ -22,7 +22,7 @@ async def hypothesis_blind_simulation_node(state: GlobalResearchState) -> Dict[s
     product_definition = objective_context.get("objective_product_context", state.get("sanitized_idea", ""))
     
     # Mülakat modeli (DeepSeek Flash)
-    interview_model = get_model_provider("flash")
+    interview_model = get_model_provider("flash", effort="high")
     simulated_transcripts = []
     
     # Donanım darboğazını (8GB VRAM) yönetmek adına mülakatları sıralı asenkron havuzda işliyoruz

@@ -61,7 +61,7 @@ def execute_research(
 
     _report_progress(on_progress, 5)
     brief = build_brief(payload)
-    model = get_model_provider("flash", user_id=username or "")
+    model = get_model_provider("flash", user_id=username or "", effort="high")
 
     # 1) Plan
     plan = build_research_plan(brief)

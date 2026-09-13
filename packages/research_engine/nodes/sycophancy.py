@@ -90,13 +90,19 @@ def build_elephant_system_prompt(persona: Any, hypothesis_blind: bool = True) ->
     else:
         openness_note = ""
 
-    return base + stance_directive + neuroticism_note + openness_note + HOFSTEDE_TURKEY_PROMPT + (
+    blind_block = (
         "\n[HİPOTEZ-KÖRÜ MÜLAKAT]\n"
         "Bu araştırmanın amacını veya hipotezini bilmiyorsun. Sana sadece sorular sorulacak.\n"
         "Araştırmacının ne duymak istediğini tahmin etmeye çalışma — sadece kendi deneyimlerine\n"
         "ve alışkanlıklarına göre dürüstçe cevap ver. Bilmediğin bir şeyi biliyormuş gibi yapma."
         if hypothesis_blind else ""
     )
+
+    # PREFIX-CACHE OPTİMİZASYONU (DeepSeek disk cache prefix tabanlıdır):
+    # Sabit bloklar (base + blind + Hofstede) ÖNCE, persona'ya göre değişen
+    # bloklar (stance/neuroticism/openness) SONDA. Böylece farklı personalar
+    # ortak öneki paylaşır ve cache hit artar. İçerik/sıra-dışı anlam değişmez.
+    return base + blind_block + HOFSTEDE_TURKEY_PROMPT + stance_directive + neuroticism_note + openness_note
 
 
 def judge_answer_quality(persona: Any, question: str, answer: str) -> List[str]:
