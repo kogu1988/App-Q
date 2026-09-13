@@ -2,6 +2,10 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Deterministik/paylaşımlı çalışma için bytecode ve tampon ayarları
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 # Install system dependencies if needed (e.g., for psycopg2)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
@@ -19,6 +23,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
 COPY . .
+
+# Non-root kullanıcı (güvenlik hardening) — Celery'nin "superuser" uyarısını giderir
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
 
 # Expose port for FastAPI
 EXPOSE 3000

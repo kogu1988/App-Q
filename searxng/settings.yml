@@ -1,0 +1,18 @@
+# Clarere — SearXNG özel ayarları
+# Amaç: Clarere API'sinin `/search?...&format=json` çağrısının çalışması.
+# Varsayılan SearXNG ayarında JSON formatı KAPALIDIR ve istek 403 döner.
+# `formats` listesine `json` eklendi. Limiter, yalnızca iç servisler arası
+# programatik erişim için kapatıldı (SearXNG dışarıya açık değil).
+use_default_settings: true
+
+server:
+  # Yalnızca SearXNG web arayüzü oturumu için; dışarıya açık değildir.
+  secret_key: "clarere-searxng-internal-secret"
+  limiter: false
+  image_proxy: false
+
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json

@@ -18,8 +18,20 @@ async def hypothesis_blind_simulation_node(state: GlobalResearchState) -> Dict[s
     
     allocated_personas = state.get("allocated_personas", [])
     objective_context = state.get("objective_context", {})
-    objective_questions = objective_context.get("primary_research_questions", [])
+    raw_questions = objective_context.get("primary_research_questions", []) or []
+    if isinstance(raw_questions, dict):
+        raw_questions = [raw_questions]
+    objective_questions = [
+        q if isinstance(q, str) else (q.get("question", "") if isinstance(q, dict) else str(q))
+        for q in raw_questions
+    ]
+    objective_questions = [q for q in objective_questions if q]
     product_definition = objective_context.get("objective_product_context", state.get("sanitized_idea", ""))
+    # Reframing katmanı `objective_product_context`ı bazen dict olarak döner;
+    # dilimleme/prompt için daima düz metne çevir (aksi halde `[:300]` KeyError verir).
+    if isinstance(product_definition, dict):
+        product_definition = " ".join(str(v) for v in product_definition.values())
+    product_definition = str(product_definition or "")
     
     # Mülakat modeli (DeepSeek Flash)
     interview_model = get_model_provider("flash", effort="high")

@@ -35,6 +35,9 @@ services:
     image: searxng/searxng:latest
     environment:
       - SEARXNG_BASE_URL=http://searxng:8080/
+    volumes:
+      - searxng_data:/etc/searxng
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     restart: unless-stopped
 
   clarere-api:
@@ -98,5 +101,6 @@ services:
 volumes:
   redis_data:
   postgres_data:
+  searxng_data:
   caddy_data:
   caddy_config:

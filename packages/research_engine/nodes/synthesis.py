@@ -134,14 +134,22 @@ async def adversarial_quality_audit_node(state: GlobalResearchState) -> Dict[str
     for t in themes:
         report_md += f"### {t['title']} (Görülme Sıklığı: %{t['prevalence']:.1f})\n"
         for ev in t["evidence_chain"]:
-            report_md += f"- *\"{ev.get('quote')}\"* (Persona: {ev.get('persona_id')})\n"
+            report_md += f"- \"{ev.get('quote')}\" (Persona: {ev.get('persona_id')})\n"
+
+    # Çekişmeli denetim REJECT verse bile KULLANILABİLİR bir rapor üretilir.
+    # Aksi halde max döngü sonunda study boş/placeholder kalıyordu (kullanıcı çıktısız).
+    if is_rejected:
+        report_md += (
+            "\n\n> Not: Çekişmeli kalite denetimi bu taslağı revizyon için işaretledi. "
+            "Bulgular yön gösterici niteliktedir; kritik kararlar için saha doğrulaması önerilir.\n"
+        )
     
     updates = {
         "adversarial_loops_count": loops,
         "is_rejected": is_rejected,
         "confidence_score": 0.75, # Bilimsel kararlılık gereği tavan kısıt
-        "final_report": report_md if not is_rejected else "Reddedilen Rapor (Revizyon Gerekiyor)",
-        "status": "completed" if not is_rejected else "in_progress"
+        "final_report": report_md,
+        "status": "completed"
     }
     
     temp_state = dict(state)

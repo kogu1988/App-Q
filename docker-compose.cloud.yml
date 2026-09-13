@@ -37,6 +37,7 @@ services:
     container_name: clarere-searxng
     volumes:
       - searxng_data:/etc/searxng
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     environment:
       - SEARXNG_BASE_URL=https://api.clarere.com/
     restart: unless-stopped
