@@ -127,6 +127,18 @@ def test_calculate_cost_unknown_model_is_zero_safe():
     assert calculate_cost("bilinmeyen-model", 1_000_000, 1_000_000) == 0.0
 
 
+def test_active_flash_model_has_pricing_entry():
+    """Aktif Flash model adı (deepseek-flash) fiyat tablosunda bulunmalı.
+
+    Regresyon: tablo yalnızca emekli `deepseek-v4-flash` adını taşıyordu → admin
+    maliyet paneli Flash çağrıları için $0 gösteriyordu.
+    """
+    from packages.research_engine.pricing_table import MODEL_PRICING
+
+    assert "deepseek-flash" in MODEL_PRICING
+    assert MODEL_PRICING["deepseek-flash"] is MODEL_PRICING["deepseek-v4-flash"]
+
+
 # ── P0-3: JWT secret guard ──
 
 def test_jwt_secret_production_requires_env(monkeypatch):

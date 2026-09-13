@@ -63,12 +63,16 @@ def execute_research(
     brief = build_brief(payload)
     model = get_model_provider("flash", user_id=username or "", effort="high")
 
+    # Panel boyutu plan katmanından gelir (SSOT: plan_config).
+    # Standart akışta üst sınır 10'dur; daha büyük özel paneller admin üzerinden yönetilir.
+    panel_size = min(get_max_personas(plan_type), 10)
+
     # 1) Plan
-    plan = build_research_plan(brief)
+    plan = build_research_plan(brief, panel_size=panel_size)
     _report_progress(on_progress, 15)
 
     # 2) Persona
-    personas = generate_personas(brief)
+    personas = generate_personas(brief, panel_size=panel_size)
     personas = personas[: get_max_personas(plan_type)]
     personas = enrich_persona_bios(personas, brief, model)
     _report_progress(on_progress, 30)

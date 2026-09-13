@@ -245,10 +245,14 @@ Docker stack kapalı olmalıdır (4001 portu paylaşılır).
 | Değişken | Varsayılan | Açıklama |
 |----------|-----------|---------|
 | `DEEPSEEK_API_KEY` | — | **Zorunlu** — DeepSeek API anahtarı |
-| `DEEPSEEK_FLASH_MODEL` | `deepseek-v4-flash` | Intake ve interview modeli |
+| `DEEPSEEK_FLASH_MODEL` | `deepseek-flash` | Intake ve interview modeli (eski `deepseek-v4-flash` emekli) |
 | `DEEPSEEK_PRO_MODEL` | `deepseek-v4-pro` | Sentez ve analiz modeli |
-| `DEEPSEEK_TIMEOUT` | `90` | LLM çağrısı zaman aşımı (saniye) |
+| `DEEPSEEK_TIMEOUT` | `120` | LLM çağrısı zaman aşımı (saniye) |
 | `DEEPSEEK_MAX_RETRIES` | `3` | LLM yeniden deneme sayısı (exponential backoff) |
+| `DEEPSEEK_MAX_TOKENS` | `8192` | Çağrı başına maksimum üretim token'ı |
+| `DEEPSEEK_REASONING_EFFORT` | `high` | Thinking effort: `low` \| `high` \| `max` (rol bazlı override edilir) |
+| `LLM_CACHE_ENABLED` | `true` | İçerik-hash LLM önbelleği (maliyet azaltma) |
+| `LLM_CACHE_MAX` / `LLM_CACHE_TTL` | `512` / `3600` | Önbellek boyutu / TTL (saniye) |
 | `RESEARCH_DEADLINE_SECONDS` | `300` | Araştırma süre bütçesi — aşılırsa kalan personalar atlanır |
 | `THREADPOOL_SIZE` | `64` | Senkron endpoint'ler için threadpool boyutu |
 | `APP_ENV` | `development` | `development` \| `production` |
@@ -293,7 +297,7 @@ Docker stack kapalı olmalıdır (4001 portu paylaşılır).
 | `POST` | `/research` | Plan + Persona + Batch Mülakat (senkron) | `X-Username` | Flash |
 | `POST` | `/research/jobs` | Async araştırma başlat → 202 `job_id` | `X-Username` | Flash |
 | `GET` | `/research/jobs/{id}` | Async araştırma durumu (queued/running/completed/failed) | `X-Username` | — |
-| `POST` | `/synthesize` | Sentez raporu üret | `X-Username` | — |
+| `POST` | `/synthesize` | Sentez raporu üret | `X-Username` | Pro (zenginleştirme) |
 | `GET` | `/studies` | Araştırma listesi | `X-Username` | — |
 | `GET` | `/studies/{id}` | Araştırma detayı | `X-Username` | — |
 | `GET` | `/me/export` | KVKK veri dışa aktarma (JSON indirme) | `X-Username` | — |
@@ -395,19 +399,29 @@ pytest packages/research_engine/tests/test_ewma_echo.py -v
 pytest packages/research_engine/tests/test_van_westendorp.py -v
 ```
 
-| Test Dosyası | Kapsam | Test Sayısı |
-|---|---|:---:|
-| `test_stance_diversity.py` | Shannon entropy, validate_stance_diversity, Skeptic garantisi | 23 |
-| `test_ewma_echo.py` | detect_echo, calculate_ewma, echo_drift_audit | 23 |
-| `test_van_westendorp.py` | PSM kesişim hesabı | 22 |
-| `test_intake.py` | Input reframing, Jaccard, loop detection, turn limit | 15 |
-| `test_workflow.py` | ELEPHANT prompt, agreeableness kalibrasyonu | 14 |
-| `test_quality.py` | Bias detection, acquiescence, meta-tone, research_quality | 14 |
-| `test_semantic_router.py` | Keyword fallback, route validasyonu | 12 |
-| `test_grounded.py` | ACT-R bellek, S-O-R sepet terk, Big Five | 3 |
-| `test_blockers_p0.py` | Paddle imza/plan eşlemesi, token fiyat, JWT/admin guard, usage | 20 |
-| `test_production_readiness.py` | KVKK silme onayı, e-posta fail-safe, Paddle iptali, job runner | 9 |
-| **Toplam** | | **187** (+1 skipped) |
+| Test Alanı | Kapsam |
+|---|---|
+| Stance diversity | Shannon entropy, Largest Remainder, Skeptic garantisi |
+| EWMA & echo | `detect_echo`, `calculate_ewma`, echo drift denetimi |
+| Van Westendorp | PSM kesişimleri (OPP/IPP/PMC/PME) |
+| Intake | Input reframing, Jaccard, loop detection, tur limiti |
+| Workflow & ELEPHANT | Sistem promptu, Agreeableness kalibrasyonu |
+| Quality | Bias, acquiescence, meta-tone, research quality |
+| Evidence chain & Decision layer | Kanıt grafiği, SHIP/ITERATE/INVESTIGATE/KILL |
+| Plan enforcement | Plan gate'leri, gelir sızıntısı regresyonu |
+| Paddle & fiyatlandırma | İmza doğrulama, plan eşlemesi, token maliyeti |
+| Güvenlik & KVKK | JWT/admin guard, PII maskeleme, veri silme |
+| Priv/privacy, RLS, org | Tenant/organizasyon izolasyonu |
+
+> **Test sayısı SSOT:** Kesin sayı **CI'nın güncel koşusudur** (`ci.yml` her push'ta job özetine yazar). Dokümanlarda sabit sayı tutmak yerine CI çıktısına bakın. Yerel tam süit için DB port-forward gerekir:
+>
+> ```bash
+> docker run --rm -d --name clarere-db-fwd --network clarere_default -p 5433:5432 \
+>   alpine/socat tcp-listen:5432,fork,reuseaddr tcp-connect:postgres:5432
+> POSTGRES_HOST=localhost POSTGRES_PORT=5433 POSTGRES_DB=clarere_db \
+>   POSTGRES_USER=clarere_user POSTGRES_PASSWORD=clarere_password \
+>   python -m pytest packages/research_engine/tests/ -q
+> ```
 
 ---
 
@@ -427,7 +441,12 @@ pytest packages/research_engine/tests/test_van_westendorp.py -v
 
 Canlıya geçiş için ayrıntılı, sıralı plan: **`server_plan.md`**
 
-**Mimari:** **Vercel** (frontend) + **netcup VPS** (FastAPI + Celery + Redis + Caddy + SearXNG) + **Neon** (PostgreSQL + pgvector).
+**Mimari (statüs için `server_plan.md` §Statü matrisi):**
+
+- **Birincil (aktif karar):** Oracle Cloud Always Free — **tek ARM VM**, self-hosted (PostgreSQL + pgvector + Redis + API + Celery + Caddy).
+- **İkincil (yedek):** **Vercel** (frontend) + **netcup VPS** (API + Celery + Redis + Caddy + SearXNG) + **Neon** (PostgreSQL + pgvector).
+
+> ⚠️ Aktif karar Oracle'dır; netcup + Neon + Vercel yedektir ve `docker-compose.cloud.yml` yedek mimariye aittir. Karar değişirse bu bölüm ve `server_plan.md` birlikte güncellenir.
 
 | Dosya | Görev |
 |---|---|

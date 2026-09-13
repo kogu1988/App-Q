@@ -10,7 +10,7 @@ Formül (workflow.persona_traits):
 """
 from __future__ import annotations
 
-from packages.research_engine.workflow import generate_personas, persona_traits
+from packages.research_engine.workflow import build_research_plan, generate_personas, persona_traits
 
 STANCES = ["Innovator", "EarlyAdopter", "Mainstream", "Laggard", "Skeptic"]
 
@@ -93,3 +93,38 @@ def test_13_8_big_five_is_populated_for_every_persona():
             "Openness", "Conscientiousness", "Extraversion", "Agreeableness", "Neuroticism",
         }
         assert all(v > 0 for v in persona.big_five.values()), persona.big_five
+
+
+def test_13_9_plan_panel_size_is_honored():
+    """Panel boyutu plan katmanından gelir: 10 kişilik panel 10 persona üretmeli.
+
+    Regresyon: dokümanlar "10 persona" vaat ederken motor 5 üretiyordu (S2-7).
+    """
+    from packages.research_engine.tests.helpers import make_brief
+
+    personas = generate_personas(make_brief(), panel_size=10)
+
+    assert len(personas) == 10
+    assert len({p.stance for p in personas}) == 5, "10'luk panelde de 5 duruş bulunmalı"
+    assert "Skeptic" in {p.stance for p in personas}
+    assert len({p.name for p in personas}) == 10, "isim havuzu 10'a kadar genişlemeli"
+    assert len({p.id for p in personas}) == 10
+
+
+def test_13_10_plan_ses_quota_matches_panel_size():
+    """build_research_plan SES kotası panel boyutuyla ölçeklenmeli."""
+    from packages.research_engine.tests.helpers import make_brief
+
+    plan = build_research_plan(make_brief(), panel_size=10)
+
+    assert plan.recommended_panel_size == 10
+    assert sum(plan.ses_quota.values()) >= 10, plan.ses_quota
+
+
+def test_13_11_default_panel_size_is_stable():
+    """Varsayılan (panel_size belirtilmeden) çağrı 5 persona dönmeli (geriye uyum)."""
+    from packages.research_engine.tests.helpers import make_brief
+
+    personas = generate_personas(make_brief())
+
+    assert len(personas) == 5

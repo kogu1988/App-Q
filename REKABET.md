@@ -12,10 +12,10 @@
 
 | Platform | Ne Yapar | vs Clarere |
 |---|---|---|
-| **UserTesting** | Gerçek kullanıcı testi | Onlar: gerçek insan. Biz: 2 dk'da sonuç, 0.25 TL |
+| **UserTesting** | Gerçek kullanıcı testi | Onlar: gerçek insan. Biz: dakikalar içinde ön hipotez, ~$0.01–0.04 |
 | **Maze** | Prototip testi | Onlar: UX metrikleri. Biz: pazar + fiyat araştırması |
 | **Typeform / SurveyMonkey** | Anket | Onlar: ölçeklenebilir. Biz: derinlemesine mülakat simülasyonu |
-| **ChatGPT (düz prompt)** | "Bu ürün hakkında ne düşünürsün?" | Onlar: bedava. Biz: metodoloji, 7.5× daha az gürültü |
+| **ChatGPT (düz prompt)** | "Bu ürün hakkında ne düşünürsün?" | Onlar: bedava. Biz: hipotez-kör tasarım, kanıt zinciri, anti-dalkavukluk denetimi |
 
 ## Türkiye Pazarı
 
@@ -29,11 +29,11 @@
 
 | Avantaj | Neden Önemli |
 |---|---|
-| 🔬 **Bilimsel metodoloji** | Rakiplerin hiçbirinde yok. Dalkavukluk yapmayan tek sistem |
-| 🇹🇷 **Türkiye odağı** | TÜAD SES, Hofstede TR, KVKK, BDDK, taksit — hiçbir global rakip yok |
-| 💰 **Birim ekonomisi** | Araştırma başına ~0.25 TL. UserTesting: $50-200 |
-| ⚡ **Hız** | 2 dakika. Geleneksel: 4-6 hafta |
-| 🛡️ **Anti-dalkavukluk** | Personalar "hayır" diyebiliyor. ChatGPT sadece "evet" der |
+| 🔬 **Metodolojik çerçeve** | Persona paneli ve bulgular davranış bilimi çerçevelerine dayanır; kanıt zinciriyle izlenir |
+| 🇹🇷 **Türkiye odağı** | TÜAD SES, Hofstede TR, KVKK, BDDK, taksit refleksleri |
+| 💰 **Birim ekonomisi** | Araştırma başına ~$0.01–0.04. UserTesting: $50-200 |
+| ⚡ **Hız** | Dakikalar. Geleneksel: 4-6 hafta |
+| 🛡️ **Anti-dalkavukluk** | Personalar "hayır" diyebiliyor; panelde Skeptic zorunlu |
 
 ## Clarere'nin Zayıf Yönü
 
@@ -57,8 +57,8 @@ GERÇEK İNSAN                     SENTETİK
         Haftalar / Binlerce TL       Dakikalar / Kuruşlar
 ```
 
-**Clarere = Bilimsel metodoloji + Türkiye odağı + 2 dakika + 0.25 TL.**
-Bu kombinasyonu yapan başka kimse yok.
+**Clarere = Davranış bilimi çerçeveleri + Türkiye odağı + dakikalar içinde ön hipotez + ~$0.01–0.04.**
+Bu kombinasyonu yapan başka bir yerli platform bilinmiyor.
 
 ---
 
@@ -71,7 +71,7 @@ Geleneksel anket şirketleri: 2-4 hafta, 100K+ TL, örneklem sorunu, sosyal beğ
 Clarere sentetik seçmen paneli:
 - **SES × Rogers × coğrafi dağılım** ile temsili panel
 - **ELEPHANT** sayesinde seçmenler "doğru cevabı" değil **gerçek fikrini** söyler
-- **2 dakikada** sonuç, araştırma başına **0.25 TL**
+- **Dakikalar içinde** sonuç, araştırma başına **~$0.01–0.04** model maliyeti
 - Parti programı, aday algısı, vaat testi, kriz senaryosu simülasyonu
 
 ### Örnek Kullanım Senaryoları
@@ -100,6 +100,6 @@ Clarere sentetik seçmen paneli:
 |---|---|---|
 | Sosyal beğeni yanlılığı | ❌ Yüksek | ✅ ELEPHANT ile minimize |
 | Hız | 2-4 hafta | 2 dakika |
-| Maliyet | 100K+ TL | 0.25 TL |
+| Maliyet | 100K+ TL | ~$0.01–0.04 |
 | Örneklem | Saha bağımlı | TÜİK oranlarına uygun matris |
 | Tekrar edilebilirlik | Düşük | Sonsuz (her seferinde yeni panel) |

@@ -26,7 +26,19 @@ jobs:
         env:
           APP_ENV: development
           # DB yok → RLS testi otomatik skip edilir
-        run: python -m pytest packages/research_engine/tests/ -q
+        run: |
+          set -o pipefail
+          python -m pytest packages/research_engine/tests/ -q | tee pytest-output.txt
+
+      - name: Test özetini raporla
+        if: always()
+        run: |
+          {
+            echo "### Backend test sonucu"
+            echo '```'
+            tail -n 3 pytest-output.txt 2>/dev/null || echo "çıktı yok"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   frontend:
     name: Frontend (typecheck + lint)

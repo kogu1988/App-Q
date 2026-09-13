@@ -22,17 +22,25 @@ def _price(env_key: str, default: float) -> float:
 
 
 # USD / 1M token. Değerler DeepSeek resmi fiyat sayfasından doğrulanmalıdır.
+# NOT: Aktif Flash model adı `deepseek-flash` (eski `deepseek-v4-flash` emekli).
+# Eski ad da korunur; ikisi aynı fiyata eşlenir (aksi halde maliyet 0 çıkar).
+_FLASH_PRICING: dict[str, float] = {
+    "input": _price("DEEPSEEK_PRICE_FLASH_INPUT", 0.0),
+    "output": _price("DEEPSEEK_PRICE_FLASH_OUTPUT", 0.0),
+    "cache_hit": _price("DEEPSEEK_PRICE_FLASH_CACHE_HIT", 0.0),
+}
+_PRO_PRICING: dict[str, float] = {
+    "input": _price("DEEPSEEK_PRICE_PRO_INPUT", 0.0),
+    "output": _price("DEEPSEEK_PRICE_PRO_OUTPUT", 0.0),
+    "cache_hit": _price("DEEPSEEK_PRICE_PRO_CACHE_HIT", 0.0),
+}
+
 MODEL_PRICING: dict[str, dict[str, float]] = {
-    "deepseek-v4-flash": {
-        "input": _price("DEEPSEEK_PRICE_FLASH_INPUT", 0.0),
-        "output": _price("DEEPSEEK_PRICE_FLASH_OUTPUT", 0.0),
-        "cache_hit": _price("DEEPSEEK_PRICE_FLASH_CACHE_HIT", 0.0),
-    },
-    "deepseek-v4-pro": {
-        "input": _price("DEEPSEEK_PRICE_PRO_INPUT", 0.0),
-        "output": _price("DEEPSEEK_PRICE_PRO_OUTPUT", 0.0),
-        "cache_hit": _price("DEEPSEEK_PRICE_PRO_CACHE_HIT", 0.0),
-    },
+    # Aktif model adları
+    "deepseek-flash": _FLASH_PRICING,
+    "deepseek-v4-pro": _PRO_PRICING,
+    # Geriye uyumlu (emekli) adlar
+    "deepseek-v4-flash": _FLASH_PRICING,
 }
 
 DEFAULT_PRICING: dict[str, float] = {"input": 0.0, "output": 0.0, "cache_hit": 0.0}

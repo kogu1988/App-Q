@@ -299,6 +299,7 @@ def _format_ab_question(brief: ResearchBrief, persona_index: int) -> tuple[str, 
 def build_research_plan(
     brief: ResearchBrief,
     panel_roles: List[PanelRole] | None = None,
+    panel_size: int = 5,
 ) -> ResearchPlan:
     assumptions = [
         f"Araştırma pazarı: {brief.market or 'Türkiye'}",
@@ -361,33 +362,57 @@ def build_research_plan(
         "itiraz, fiyat hassasiyeti ve konumlandırma risklerini sentetik persona görüşmeleriyle test etmek."
     )
     interview_script = generate_interview_script(brief, panel_roles)
-    ses_quota = apply_ses_quota(5)
+    panel_size = max(1, int(panel_size))
+    ses_quota = apply_ses_quota(panel_size)
     return ResearchPlan(
         objective=objective,
         assumptions=assumptions,
         clarifying_questions=clarifying_questions,
         interview_questions=[item.question for item in interview_script],
-        recommended_panel_size=5,
+        recommended_panel_size=panel_size,
         interview_script=interview_script,
         ses_quota=ses_quota,
     )
 
 
-def generate_personas(brief: ResearchBrief, panel_roles: List[PanelRole] | None = None, model: ResearchModel | None = None) -> List[Persona]:
+def generate_personas(
+    brief: ResearchBrief,
+    panel_roles: List[PanelRole] | None = None,
+    model: ResearchModel | None = None,
+    panel_size: int = 5,
+) -> List[Persona]:
     if panel_roles:
         return generate_personas_from_roles(brief, panel_roles, model)
 
     market = brief.market or "Türkiye"
+    from collections import Counter
+
     from .matrix import allocate_cohort_matrix
-    
-    allocations = allocate_cohort_matrix(5)
-    
-    # Stance diversity zorlaması: en az 3 farklı stance + Skeptic
-    present = set(a["stance"] for a in allocations)
-    if len(present) < 5:
-        target = ["Innovator", "EarlyAdopter", "Mainstream", "Laggard", "Skeptic"]
-        for i in range(min(5, len(allocations))):
-            allocations[i]["stance"] = target[i]
+
+    panel_size = max(1, int(panel_size))
+    allocations = allocate_cohort_matrix(panel_size)
+
+    # Stance diversity garantisi: N >= 5 ise 5 Rogers duruşunun tamamı bulunmalı.
+    stances_present = set(a["stance"] for a in allocations)
+    target_stances = ["Innovator", "EarlyAdopter", "Mainstream", "Laggard", "Skeptic"]
+    if len(stances_present) < 5 and len(allocations) >= len(target_stances):
+        counts = Counter(a["stance"] for a in allocations)
+        for target in target_stances:
+            if counts.get(target, 0) > 0:
+                continue
+            donor = max(counts.items(), key=lambda kv: kv[1])[0]
+            if donor != target and counts[donor] > 1:
+                for a in allocations:
+                    if a["stance"] == donor:
+                        a["stance"] = target
+                        break
+                counts[donor] -= 1
+                counts[target] = counts.get(target, 0) + 1
+    elif len(stances_present) < 5:
+        # Küçük panellerde de en az 3 farklı duruş ve Skeptic korunur.
+        for i, target in enumerate(target_stances):
+            if i < len(allocations):
+                allocations[i]["stance"] = target
     
     personas: List[Persona] = []
     
@@ -397,14 +422,26 @@ def generate_personas(brief: ResearchBrief, panel_roles: List[PanelRole] | None 
         "C2": ["Esnaf", "Teknisyen", "Mavi Yaka Ustabaşı"],
         "DE": ["Öğrenci", "Emekli", "Yarı Zamanlı Çalışan"],
     }
-    NAMES = ["Ahmet", "Ayşe", "Mehmet", "Zeynep", "Mustafa"]
-    CITIES = ["İstanbul", "Ankara", "İzmir", "Bursa", "Antalya"]
+    # 10 kişilik standart panele kadar isim/şehir/bağlam havuzu (fazlası modülo ile).
+    NAMES = [
+        "Ahmet", "Ayşe", "Mehmet", "Zeynep", "Mustafa",
+        "Elif", "Emre", "Selin", "Burak", "Deniz",
+    ]
+    CITIES = [
+        "İstanbul", "Ankara", "İzmir", "Bursa", "Antalya",
+        "Adana", "Konya", "Gaziantep", "Kayseri", "Eskişehir",
+    ]
     CONTEXTS = [
         f"{market} pazarında yeni ürünleri denemeye açık.",
         f"{market} pazarında fiyat-performans odaklı.",
         f"{market} pazarında güvenilir çözümler arıyor.",
         f"{market} pazarında mevcut alternatifleri değerlendiriyor.",
         f"{market} pazarında yeniliklere temkinli yaklaşıyor.",
+        f"{market} pazarında satın alma öncesi kanıt ve referans arıyor.",
+        f"{market} pazarında dijital araçlara mesafeli yaklaşıyor.",
+        f"{market} pazarında hızlı sonuç ve kolay kurulum bekliyor.",
+        f"{market} pazarında maliyet baskısıyla karar veriyor.",
+        f"{market} pazarında deneyimini çevresiyle paylaşan bir profil.",
     ]
     
     for idx, alloc in enumerate(allocations):
@@ -417,15 +454,15 @@ def generate_personas(brief: ResearchBrief, panel_roles: List[PanelRole] | None 
         
         personas.append(Persona(
             id=f"p{idx + 1}",
-            name=NAMES[idx],
+            name=NAMES[idx % len(NAMES)],
             age=25 + (idx * 7) % 30,
-            city=CITIES[idx],
+            city=CITIES[idx % len(CITIES)],
             segment=segment,
             role_title=segment,
             stance=stance,
             price_sensitivity=ps,
             digital_confidence=dc,
-            context=CONTEXTS[idx],
+            context=CONTEXTS[idx % len(CONTEXTS)],
             goals=["Ürünün faydasını değerlendirmek", "Fiyat-performans dengesini anlamak"],
             objections=["Değer önerisinin belirsizliği", "Alternatiflerin varlığı"],
             knowledge_boundary="Kendi deneyim ve alışkanlıkları hakkında konuşabilir.",

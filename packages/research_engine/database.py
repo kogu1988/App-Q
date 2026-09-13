@@ -825,7 +825,7 @@ def init_db() -> None:
                 """, (_uname, _now, _email, _plan, _sims, _tokens, _today))
         
         # Default system config
-        cur.execute("INSERT INTO system_config (key, value) VALUES ('b2c_model', 'DeepSeek V4 Flash (deepseek-v4-flash)') ON CONFLICT (key) DO NOTHING")
+        cur.execute("INSERT INTO system_config (key, value) VALUES ('b2c_model', 'DeepSeek Flash (deepseek-flash)') ON CONFLICT (key) DO NOTHING")
         cur.execute("INSERT INTO system_config (key, value) VALUES ('b2b_model', 'DeepSeek V4 Pro (deepseek-v4-pro)') ON CONFLICT (key) DO NOTHING")
         cur.execute("INSERT INTO system_config (key, value) VALUES ('pii_active', 'true') ON CONFLICT (key) DO NOTHING")
         cur.execute("INSERT INTO system_config (key, value) VALUES ('pii_terms', 'Trendyol, Hepsiburada, Amazon') ON CONFLICT (key) DO NOTHING")

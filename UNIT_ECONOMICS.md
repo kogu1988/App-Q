@@ -65,3 +65,24 @@
 2. **Ağır/batch işleri (async, benchmark) off-peak'e** planla → %50 tasarruf.
 3. Prefix cache'i koru: sistem promptunu **sabit tut, başa al** (mülakat promptu bu prensiple düzenlendi).
 4. `reasoning_effort` rol bazlı kal: intake/routing `low`, mülakat `high`, sentez `max`.
+
+## 6. Toplam sahip olma maliyeti (TCO) — LLM dışı kalemler
+
+> Yukarıdaki COGS yalnızca LLM maliyetidir. Satılabilir SaaS marjı için aşağıdakiler de hesaba katılmalıdır.
+
+| Kalem | Tahmini aylık | Not |
+|---|---|---|
+| **Paddle komisyonu** | İşlem başına ~%5 + sabit ücret | Merchant of Record; vergi/KDV Paddle tarafından yönetilir |
+| **Sunucu (VPS)** | ~$5–15 | Oracle Always Free seçilirse $0 |
+| **Neon (Postgres)** | $0 (free tier) | Yedek mimaride; limit aşılırsa ölçek |
+| **Vercel (frontend)** | $0 (hobby) | İkincil mimaride |
+| **Resend (e-posta)** | $0–20 | Hacme bağlı |
+| **Sentry** | $0–26 | Hacme bağlı |
+| **Alan adı** | ~$1 | Yıllık |
+| **Persona bio LLM çağrısı** | ~$0.001 / araştırma | `enrich_persona_bios` — araştırma başına +1 çağrı |
+| **Harici arama (SearXNG)** | $0 | Self-hosted |
+| **Destek zamanı** | Değişken | En büyük gizli maliyet; self-serve oranı artırılmalı |
+| **Chargeback / iade** | Değişken | Paddle politikası |
+| **Free kullanıcı edinimi** | ~$0.02 / kullanıcı | 2 araştırma × COGS |
+
+**Sonuç:** LLM COGS marjı bağlayıcı kısıt değildir. Marjı asıl belirleyen; Paddle komisyonu, destek yükü ve Pro planın sınırsız kullanım tail riskidir. Pro için fair-use politikası (ör. aylık ~100 araştırma) netleştirilmelidir.

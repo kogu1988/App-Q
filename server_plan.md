@@ -7,6 +7,21 @@
 >
 > **Sorumluluk ayrımı:** 🔴 = kullanıcı yapmalı (hesap/DNS/ödeme, browser+kimlik gerektirir) · 🟢 = ajan SSH/terminal üzerinden yapabilir
 
+### Statü matrisi (2026-09)
+
+| Alan | Birincil (aktif) | İkincil (yedek) | Durum |
+|---|---|---|---|
+| **Sunucu** | Oracle Cloud Always Free — tek ARM VM (Ampere A1) | netcup VPS (nano G11s) | 🔴 Oracle kapasitesi dolu ("Out of host capacity"); §0a retry script'i hazır |
+| **Veritabanı** | Aynı VM'de PostgreSQL + pgvector (self-hosted) | Neon (serverless Postgres) | ⏸️ VM açılmadı |
+| **Frontend** | Aynı VM'de Docker (Caddy) | Vercel | ⏸️ Karar bekliyor |
+| **Redis** | Aynı VM'de Redis | Upstash | ⏸️ |
+| **Ödeme** | Paddle (MoR) | — | 🟡 Sandbox hazır; live anahtarlar bekliyor |
+| **Domain** | clarere.com (Squarespace) | — | ⏸️ |
+| **E-posta** | Resend | — | 🟡 Env-gated, canlı bağlanmadı |
+| **İzleme** | Sentry | — | 🟡 Env-gated, canlı bağlanmadı |
+
+> **Tek doğru kaynak:** Aktif karar Oracle birincil plandır. §1–§14 ikincil (netcup + Neon + Vercel) plandır ve Oracle açılmazsa devreye alınır. `docker-compose.cloud.yml` **ikincil** plana aittir.
+
 ---
 
 ## 0a. Birincil Plan — Oracle Cloud Always Free (tek VM)
@@ -358,7 +373,7 @@ ADMIN_SECRET_KEY=<openssl rand -base64 48>
 
 # ── DeepSeek ──
 DEEPSEEK_API_KEY=<mevcut anahtar>
-DEEPSEEK_FLASH_MODEL=deepseek-v4-flash
+DEEPSEEK_FLASH_MODEL=deepseek-flash
 DEEPSEEK_PRO_MODEL=deepseek-v4-pro
 DEEPSEEK_TIMEOUT=90
 DEEPSEEK_MAX_RETRIES=3

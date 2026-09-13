@@ -73,8 +73,10 @@ python launch.py --dev  # Host dev: backend :4000 (--reload) + frontend :4001
 
 ## 🧪 Test Durumu
 
+> **SSOT = CI.** Kesin güncel sayı `.github/workflows/ci.yml` job özetinden okunur (her push'ta yazılır). Aşağıdaki komut yereldir; DB testleri için port-forward gerekir.
+
 ```bash
-python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
+python -m pytest packages/research_engine/tests/ -q
 ```
 
 | Test Dosyası | Kapsam |
@@ -440,3 +442,15 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 - ✅ **Frontend README** create-next-app boilerplate'inden Clarere'ye özgü dokümana çevrildi (port 4001, env, proxy build-arg, Docker, E2E).
 - ⚠️ **Secret taraması:** repoda gerçek secret yok (yalnızca `sk-...` placeholder'ları). Sohbette paylaşılan Paddle sandbox anahtarı için **rotasyon kullanıcı aksiyonu** gerektirir (dış etmen).
 - Doğrulama: `npx tsc --noEmit` + `npx eslint` temiz; backend tam süit **368 passed**.
+
+### Sprint 2 — Doküman & fiyat SSOT tutarlılığı (2026-09-13)
+
+- ✅ **Gerçek bug: Flash fiyat kaydı yoktu.** `pricing_table.MODEL_PRICING` yalnızca emekli `deepseek-v4-flash` anahtarını taşıyordu; aktif `deepseek-flash` çağrıları `DEFAULT_PRICING` (0.0)'a düşüyordu → **admin maliyet paneli Flash için $0 gösteriyordu.** Aktif ad eklendi, emekli ad aynı dict'e bağlandı. Regresyon: `test_active_flash_model_has_pricing_entry`.
+- ✅ **Panel boyutu tutarlılığı (S2-7).** Motor 5 persona üretirken planlar "10 persona" vaat ediyordu. `generate_personas(..., panel_size=)` ve `build_research_plan(..., panel_size=)` eklendi; `research_runner` panel boyutunu `plan_config.max_personas`'tan alır (standart akış üst sınırı 10). İsim/şehir/bağlam havuzları 10'a genişletildi; stance diversity 5 duruşu garanti eder. Varsayılan `panel_size=5` geriye uyumlu. Regresyon: `test_13_9`, `test_13_10`, `test_13_11`.
+- ✅ **Model adı drift'i:** `models/README.md`, `README.md`, `server_plan.md`, `.env.example`, `.env.production.example`, `database.py` system_config → `deepseek-flash`.
+- ✅ **Timeout/limit drift'i:** README ve prod env örneği `DEEPSEEK_TIMEOUT=120`, `DEEPSEEK_MAX_TOKENS=8192`, `DEEPSEEK_REASONING_EFFORT=high`; eksik env'ler dokümante edildi.
+- ✅ **Test sayısı SSOT:** README'deki sabit 187 sayılı tablo kaldırıldı; CI artık test özetini job summary'e yazıyor (`ci.yml`). MEMORY "Test Durumu" CI'ya yönlendiriyor.
+- ✅ **Fiyat/ödeme drift'i:** `SUNUM.md` TL → USD (Flex $49, Starter $69/$55, Pro $169/$135), Stripe → Paddle, marj tablosu gerçek COGS ile; "90x" → "~10–25x". `REKABET.md` 0.25 TL → ~$0.01–0.04 ve "7.5× az gürültü"/"dallavukluk yapmayan tek sistem" gibi kanıtsız üstünlük iddiaları temkinlilileştirildi.
+- ✅ **Altyapı statü matrisi:** `server_plan.md` başına aktif/yedek/durum tablosu (Oracle birincil, netcup+Neon+Vercel yedek); README production bölümü aynı çift-plana bağlandı.
+- ✅ **`UNIT_ECONOMICS.md` TCO bölümü:** Paddle komisyonu, sabit giderler, persona-bio çağrısı, destek yükü, chargeback, free edinim maliyeti ve Pro fair-use riski eklendi.
+- Doğrulama: backend tam süit **372 passed**.

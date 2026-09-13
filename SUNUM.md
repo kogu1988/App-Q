@@ -36,13 +36,13 @@
 3. **Mülakatları izle** — Her persona ürününü değerlendirir, itiraz eder, fiyat verir
 4. **Raporu al** — Van Westendorp fiyat analizi, pain point matrisi, aksiyon önerileri
 
-**Süre: 2 dakika. Maliyet: 0.25 TL.**
+**Süre: ~2 dakika. Model maliyeti: araştırma başına ~$0.01–0.04.**
 
 ---
 
 ## Slide 4: Bilimsel Altyapı
 
-### Grounded Simulation (Bilal, 2026)
+### Grounded Simulation (dahili mimari)
 
 | Metodoloji | Açıklama |
 |---|---|
@@ -52,7 +52,7 @@
 | **Van Westendorp PSM** | Fiyat hassasiyet analizi (OPP, IPP, PMC, PME) |
 | **ELEPHANT Çerçevesi** | Anti-dalkavukluk — personalar ürünü beğenmek zorunda değil |
 
-**Akademik doğrulama:** 46 çalışmada RFI = 0.815. Uzman referansın %93'ü.
+**Doğrulama yaklaşımı:** Her bulgu persona → soru → alıntı düzeyinde **kanıt zinciriyle** izlenir; panel anti-dalkavukluk (ELEPHANT) ve çeşitlilik denetiminden geçer. Çıktılar **yönlendirici hipotezdir**; istatistiksel temsil iddiası taşımaz ve yüksek riskli kararlar gerçek kullanıcı verisiyle doğrulanmalıdır.
 
 ---
 
@@ -62,7 +62,7 @@
 
 | Katman | Teknoloji |
 |---|---|
-| **LLM** | DeepSeek V4 (Flash + Pro) — araştırma başına ~0.25 TL |
+| **DeepSeek** | Flash + Pro — araştırma başına ~$0.01–0.04 |
 | **Backend** | FastAPI (Python) — 3 aşamalı REST API |
 | **Frontend** | Next.js 16 + React 19 + TypeScript + Tailwind |
 | **Veritabanı** | PostgreSQL + pgvector |
@@ -84,7 +84,7 @@
 1. Defne Sohbet        2. Mülakat             3. Rapor
    (Flash)                (Flash, batch)         (algoritmik)
 
-   "Fikrini anlat..."    5 sentetik persona      Findings
+   "Fikrini anlat..."    10 sentetik persona      Findings
                          Tüm sorular tek          Van Westendorp PSM
                          API çağrısı              Pain matrix
                                                   Aksiyon önerileri
@@ -98,12 +98,12 @@
 
 ### 5 Katmanlı Plan
 
-| Plan | Fiyat (aylık) | Araştırma | Hedef |
+| Plan | Fiyat (USD) | Araştırma | Hedef |
 |---|---|---|---|
-| **Free** | 0 TL | 2/ay | Deneme, değer kanıtlama |
-| **Flex** | 1.990 TL | 3/paket | Tek seferlik projeler |
-| **Starter** | 2.690 TL | 10/ay | Solo founder, küçük ekip |
-| **Pro** | 6.790 TL | Sınırsız | Ajans, ürün ekibi |
+| **Free** | $0 | 2 (veya 1 ay) | Deneme, değer kanıtlama |
+| **Flex** | $49 (tek seferlik) | 3 araştırma | Tek seferlik projeler |
+| **Starter** | $69/ay ($55/ay yıllık) | 10/ay | Solo founder, küçük ekip |
+| **Pro** | $169/ay ($135/ay yıllık) | Sınırsız | Ajans, ürün ekibi |
 | **Enterprise** | Özel | Sınırsız | Kurumsal, özelleştirilmiş |
 
 ### Upsell Stratejisi
@@ -118,19 +118,19 @@ Free'de **paywall + buzlu önizleme.** Kullanıcı değeri görür → yükseltm
 
 | Kaynak | Maliyet |
 |---|---|
-| DeepSeek API | ~0.25 TL |
-| Sunucu (VPS) | ~0.50 TL |
-| **Toplam** | **~0.75 TL** |
+| DeepSeek API | ~$0.008–0.024 / araştırma |
+| Sunucu (payı) | ~$0.01 / araştırma |
+| **Toplam** | **~$0.02–0.04** |
 
 ### Karlılık
 
-| Plan | Aylık Gelir | Max Maliyet | Marj |
+| Plan | Aylık Gelir | Max COGS | Marj |
 |---|---|---|---|
-| Flex | 1.990 TL | ~2 TL | %99.9 |
-| Starter | 2.690 TL | ~7 TL | %99.7 |
-| Pro | 6.790 TL | ~75 TL | %98.9 |
+| Flex | $49 | ~$0.05 | ~%99.9 |
+| Starter | $69 | ~$0.20 | ~%99.7 |
+| Pro | $169 | ~$2 | ~%98.8 |
 
-**1 Pro kullanıcı = tüm altyapı maliyetini 90x karşılar.**
+**1 Pro kullanıcı, tüm altyapı maliyetini ~10–25x karşılar.**
 
 ---
 
@@ -141,7 +141,7 @@ Free'de **paywall + buzlu önizleme.** Kullanıcı değeri görür → yükseltm
 | Türkiye odağı | ✅ KVKK, BDDK, SES | ❌ | ❌ |
 | Bilimsel metodoloji | ✅ Grounded Simulation | ⚠️ | ❌ |
 | Süre | 2 dakika | 4-6 hafta | Değişken |
-| Maliyet/araştırma | ~0.25 TL | 50.000+ TL | $10-100 |
+| Maliyet/araştırma | ~$0.01–0.04 | 50.000+ TL | $10-100 |
 | Fiyat analizi | ✅ Van Westendorp | ✅ | ❌ |
 | Anti-dalkavukluk | ✅ ELEPHANT | ❌ | ❌ |
 
@@ -170,7 +170,7 @@ Free'de **paywall + buzlu önizleme.** Kullanıcı değeri görür → yükseltm
 |---|---|---|
 | **Şu an** | MVP hazır, demo çalışıyor | ✅ |
 | **Faz 1** | Beta kullanıcı (50 kişi), geri bildirim | 1 ay |
-| **Faz 2** | JWT auth, Stripe ödeme, public launch | 2 ay |
+| **Faz 2** | JWT auth, Paddle ödeme, public launch | 2 ay |
 | **Faz 3** | Enterprise: yerel Türkçe LLM fine-tuning | 3-6 ay |
 | **Faz 4** | İngilizce, Arapça, Avrupa pazarları | 6-12 ay |
 
