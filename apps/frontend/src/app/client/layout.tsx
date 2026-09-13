@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
 import { useState, useEffect, Suspense } from "react";
 import { Menu, X, LogOut, User, Zap, ArrowUpRight, FileText } from "lucide-react";
@@ -160,6 +161,7 @@ function SidebarPlanWidget() {
 // ── Layout ───────────────────────────────────────────────────────────────────
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { plan } = useClientPlan();
   const brandName = plan.features.white_label ? "Panel" : "Clarere";
@@ -182,7 +184,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     localStorage.removeItem("clarere_username");
     localStorage.removeItem("clarere_token");
     clearSessionMarker();
-    window.location.href = "/";
+    router.push("/");
   }
 
   return (

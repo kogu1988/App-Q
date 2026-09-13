@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { getAuthHeaders } from "@/lib/auth";
@@ -286,7 +286,7 @@ export default function NewResearchWizard() {
         try {
           const errData = await res.json();
           if (errData.detail) errorMsg = errData.detail;
-        } catch (e) {}
+        } catch {}
         throw new Error(errorMsg);
       }
       const data = await res.json();
@@ -324,8 +324,7 @@ export default function NewResearchWizard() {
     }
     
     setStage("simulating");
-    const username = typeof window !== "undefined" ? localStorage.getItem("clarere_username") : null;
-    
+
     try {
       const data = await requestResearch({
         category: brief.category || "genel",
@@ -539,7 +538,7 @@ export default function NewResearchWizard() {
                 <div key={idx} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
                   {msg.role === "assistant" && (
                     <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-[#d9d9dd] ring-[#003c33]/40 shadow-sm mt-0.5">
-                      <img src="/agent.svg" alt="Defne" className="object-cover w-full h-full" />
+                      <Image src="/agent.svg" alt="Defne" width={36} height={36} className="object-cover w-full h-full" />
                     </div>
                   )}
                   <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
@@ -559,7 +558,7 @@ export default function NewResearchWizard() {
               {loading && (
                 <div className="flex gap-3 justify-start animate-in fade-in duration-200">
                   <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-[#d9d9dd] ring-[#003c33]/40 shadow-sm">
-                    <img src="/agent.svg" alt="Defne" className="object-cover w-full h-full" />
+                    <Image src="/agent.svg" alt="Defne" width={36} height={36} className="object-cover w-full h-full" />
                   </div>
                   <div className="px-4 py-3 bg-white  border border-[#d9d9dd]/60  rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
                     <Loader2 size={14} className="animate-spin text-[#ff7759]" />

@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Target, ShieldCheck, Zap, Brain, Layers, Clock, Check, X, ArrowRight, HelpCircle } from "lucide-react";
+import { ArrowLeft, Zap, Brain, Layers, ArrowRight } from "lucide-react";
 import Logo from "@/components/logo";
 
 export const metadata: Metadata = {

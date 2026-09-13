@@ -42,10 +42,6 @@ import {
   Cpu,
   Zap,
   Database,
-  ThumbsUp,
-  ThumbsDown,
-  Eye,
-  Info,
   DollarSign,
 } from "lucide-react";
 import Logo from "@/components/logo";
@@ -69,21 +65,6 @@ import { FeedbackTable } from "@/components/admin/feedback-table";
 import { ClientsTab } from "@/components/admin/clients-tab";
 import { ConfigTab } from "@/components/admin/config-tab";
 import { PersonasTab } from "@/components/admin/personas-tab";
-
-function InfoTooltip({ text }: { text: string }) {
-  return (
-    <div className="relative group inline-flex items-center ml-1.5 align-middle">
-      <div className="flex items-center justify-center w-4 h-4 rounded-full bg-[#eeece7] text-[#616161] text-[12px] cursor-help font-medium hover:bg-[#d9d9dd] transition-colors">
-        ?
-      </div>
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 px-3 py-2 bg-[#17171c] border border-[#212121] text-white text-[12px] rounded-[8px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] pointer-events-none font-normal normal-case leading-relaxed text-center">
-        {text}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-[#17171c]" />
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-[#212121] -z-10 mt-[1px]" />
-      </div>
-    </div>
-  );
-}
 
 // ─── Type Definitions ────────────────────────────────────────────────────────
 

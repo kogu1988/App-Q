@@ -685,7 +685,6 @@ export default function HomePage() {
 
         {/* Enterprise — full width banner below */}
         {PLAN_META.filter(p => p.name === "Enterprise").map((plan, idx) => {
-          const prices = PLAN_PRICES[plan.name];
           return (
             <Reveal key={plan.name} delay={idx * 60}>
               <div className="w-full rounded-[8px] border border-[#d9d9dd] bg-[#f5f4f1] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-12">

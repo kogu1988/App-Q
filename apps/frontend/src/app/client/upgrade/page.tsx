@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import { getAuthHeaders } from "@/lib/auth";
 import { openCheckout } from "@/lib/paddle";
@@ -107,6 +108,7 @@ const PLANS = [
 // ─── Upgrade Page ─────────────────────────────────────────────────────────────
 
 export default function UpgradePage() {
+  const router = useRouter();
   const { plan, loading } = useClientPlan();
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
   const [selected, setSelected] = useState<string | null>(null);
@@ -171,7 +173,7 @@ export default function UpgradePage() {
       setStep("done");
       // Force plan refresh
       setTimeout(() => {
-        window.location.href = "/client";
+        router.push("/client");
       }, 2500);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Bir hata oluştu.");

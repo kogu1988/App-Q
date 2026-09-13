@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { getAdminHeaders } from "@/lib/auth";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, Trash2, Eye, Zap, Info, AlertTriangle } from "lucide-react";
+import { Plus, Loader2, Trash2, Eye, AlertTriangle } from "lucide-react";
 
 // Big Five kaydırıcı alanları — dar (narrow) tipleme; `any` yerine güvenli indeksleme.
 type BigFiveSliderKey =
@@ -53,15 +53,15 @@ interface PersonaInfo {
 function InfoTooltip({ text, position = "top" }: { text: string; position?: "top" | "bottom" }) {
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
-  const [mounted, setMounted] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
+  // Hydration güvenli "istemci mi?" kontrolü — effect içinde setState YERİNE.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  const updateCoordinates = () => {
+  const updateCoordinates = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const scrollY = window.scrollY;
@@ -78,7 +78,7 @@ function InfoTooltip({ text, position = "top" }: { text: string; position?: "top
         left: rect.left + scrollX + rect.width / 2,
       });
     }
-  };
+  }, [position]);
 
   const handleMouseEnter = () => {
     updateCoordinates();
@@ -97,7 +97,7 @@ function InfoTooltip({ text, position = "top" }: { text: string; position?: "top
       window.removeEventListener("scroll", updateCoordinates);
       window.removeEventListener("resize", updateCoordinates);
     };
-  }, [visible]);
+  }, [visible, updateCoordinates]);
 
   const isTop = position === "top";
 
@@ -293,6 +293,8 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
       const pazarlik = manualForm.price_sensitivity >= 7 ? 0.8 : 0.3;
       const ccLimit = manualForm.ses_group === "DE" ? 0.85 : manualForm.ses_group === "C2" ? 0.65 : 0.40;
       
+      // grounded modda türetilen Big Five değerlerini forma yansıtır; bilinçli senkron.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setManualForm(f => ({
         ...f,
         openness: grounded.openness,

@@ -14,9 +14,7 @@ import {
   Calendar, 
   Compass, 
   AlertCircle,
-  HelpCircle,
   CheckCircle2,
-  Archive,
   ThumbsUp,
   ThumbsDown,
   ListTodo,
@@ -559,16 +557,10 @@ export default function StudyDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"summary" | "personas" | "script" | "interviews" | "findings" | "report">("summary");
-  const [selectedPersonaIdx, setSelectedPersonaIdx] = useState<number>(0);
-  const [archiving, setArchiving] = useState(false);
-  const [isArchived, setIsArchived] = useState(false);
+  const [, setSelectedPersonaIdx] = useState<number>(0);
   const [deleting, setDeleting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
-  // Map of turn votes: { "personaIdx-turnIdx": { vote: 1|-1, comment?: string } }
-  const [votes, setVotes] = useState<Record<string, { vote: number; comment: string }>>({});
-  // Track which turn has the comment box open
-  const [pendingComment, setPendingComment] = useState<{ key: string; vote: number; text: string } | null>(null);
   const [followUpText, setFollowUpText] = useState("");
   const [sendingFollowUp, setSendingFollowUp] = useState(false);
   const [synthesizing, setSynthesizing] = useState(false);
@@ -618,23 +610,8 @@ export default function StudyDetailPage() {
     fetchStudy();
   }, [studyId]);
 
-  const handleArchive = async () => {
-    setArchiving(true);
-    try {
-      const res = await fetch(`/api/client/studies/${studyId}/archive`, { method: "PUT", headers: getAuthHeaders() });
-      if (!res.ok) throw new Error();
-      setIsArchived(true);
-      toast.success("Araştırma arşivlendi.");
-    } catch {
-      toast.error("Arşivleme başarısız.");
-    } finally {
-      setArchiving(false);
-    }
-  };
-
   const handleDelete = async () => {
     setDeleting(true);
-    const username = typeof window !== "undefined" ? localStorage.getItem("clarere_username") : null;
     try {
       const res = await fetch(`/api/client/studies/${studyId}`, {
         method: "DELETE",
@@ -654,41 +631,9 @@ export default function StudyDetailPage() {
   };
 
 
-  const handleFeedback = (personaIdx: number, turnIdx: number, vote: number) => {
-    const key = `${personaIdx}-${turnIdx}`;
-    if (votes[key]?.vote === vote) return; // already voted same
-    // Open inline comment box
-    setPendingComment({ key, vote, text: "" });
-  };
-
-  const submitFeedback = async (key: string, vote: number, comment: string) => {
-    const [pIdx, tIdx] = key.split("-").map(Number);
-    const personaName = study?.interviews?.[pIdx]?.persona?.name || "unknown";
-    try {
-      await fetch("/api/client/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: "anonymous",
-          study_id: studyId,
-          item_type: "interview_turn",
-          item_id: `${personaName}-turn-${tIdx}`,
-          vote,
-          comment: comment.trim()
-        })
-      });
-      setVotes(prev => ({ ...prev, [key]: { vote, comment: comment.trim() } }));
-      setPendingComment(null);
-      toast.success(vote === 1 ? "Olumlu oy verildi." : "Olumsuz oy verildi.");
-    } catch {
-      toast.error("Oy gönderilemedi.");
-    }
-  };
-
   const handleFollowUp = async (personaId: string) => {
     if (!followUpText.trim()) return;
     setSendingFollowUp(true);
-    const username = typeof window !== "undefined" ? localStorage.getItem("clarere_username") : null;
     try {
       const res = await fetch(`/api/client/studies/${studyId}/follow-up`, {
         method: "POST",
@@ -714,7 +659,7 @@ export default function StudyDetailPage() {
       
       setFollowUpText("");
       toast.success("Soru soruldu!");
-    } catch (err) {
+    } catch {
       toast.error("Soru sorulurken bir hata oluştu.");
     } finally {
       setSendingFollowUp(false);
@@ -953,7 +898,6 @@ export default function StudyDetailPage() {
                 disabled={synthesizing}
                 onClick={async () => {
                   setSynthesizing(true);
-                  const username = typeof window !== "undefined" ? localStorage.getItem("clarere_username") : null;
                   try {
                     const res = await fetch(`/api/client/synthesize`, {
                       method: "POST",
@@ -1045,7 +989,6 @@ export default function StudyDetailPage() {
                 <Button 
                   className="w-full sm:w-auto btn-pill-primary gap-2"
                   onClick={async () => {
-                    const username = localStorage.getItem("clarere_username");
                     try {
                       const res = await fetch(`/api/client/studies/${studyId}/pdf`, {
                         method: "GET",
@@ -1075,7 +1018,7 @@ export default function StudyDetailPage() {
                       document.body.appendChild(a);
                       a.click();
                       a.remove();
-                    } catch (e) {
+                    } catch {
                       toast.error("İndirme işlemi başarısız oldu.");
                     }
                   }}
