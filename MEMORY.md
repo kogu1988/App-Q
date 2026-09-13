@@ -450,7 +450,7 @@ python -m pytest packages/research_engine/tests/ -q
 - ✅ **Model adı drift'i:** `models/README.md`, `README.md`, `server_plan.md`, `.env.example`, `.env.production.example`, `database.py` system_config → `deepseek-flash`.
 - ✅ **Timeout/limit drift'i:** README ve prod env örneği `DEEPSEEK_TIMEOUT=120`, `DEEPSEEK_MAX_TOKENS=8192`, `DEEPSEEK_REASONING_EFFORT=high`; eksik env'ler dokümante edildi.
 - ✅ **Test sayısı SSOT:** README'deki sabit 187 sayılı tablo kaldırıldı; CI artık test özetini job summary'e yazıyor (`ci.yml`). MEMORY "Test Durumu" CI'ya yönlendiriyor.
-- ✅ **Fiyat/ödeme drift'i:** `SUNUM.md` TL → USD (Flex $49, Starter $69/$55, Pro $169/$135), Stripe → Paddle, marj tablosu gerçek COGS ile; "90x" → "~10–25x". `REKABET.md` 0.25 TL → ~$0.01–0.04 ve "7.5× az gürültü"/"dallavukluk yapmayan tek sistem" gibi kanıtsız üstünlük iddiaları temkinlilileştirildi.
+- ✅ **Fiyat/ödeme drift'i:** `SUNUM.md` TL → USD (Flex $49, Starter $69/$55, Pro $169/$135), Stripe → Paddle, marj tablosu gerçek COGS ile; "90x" → "~10–25x". `REKABET.md` 0.25 TL → ~$0.01–0.04 ve "7.5× az gürültü"/"dalkavukluk yapmayan tek sistem" gibi kanıtsız üstünlük iddiaları temkinlilileştirildi.
 - ✅ **Altyapı statü matrisi:** `server_plan.md` başına aktif/yedek/durum tablosu (Oracle birincil, netcup+Neon+Vercel yedek); README production bölümü aynı çift-plana bağlandı.
 - ✅ **`UNIT_ECONOMICS.md` TCO bölümü:** Paddle komisyonu, sabit giderler, persona-bio çağrısı, destek yükü, chargeback, free edinim maliyeti ve Pro fair-use riski eklendi.
 - Doğrulama: backend tam süit **372 passed**.
