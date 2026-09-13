@@ -149,6 +149,19 @@ async def adversarial_quality_audit_node(state: GlobalResearchState) -> Dict[str
             "\n\n> Not: Çekişmeli kalite denetimi bu taslağı revizyon için işaretledi. "
             "Bulgular yön gösterici niteliktedir; kritik kararlar için saha doğrulaması önerilir.\n"
         )
+
+    # Yönetici anlatımı + stratejik öneriler — YALNIZCA son turda (döngüde tekrar çağrılmasın).
+    _max_loops = state.get("max_adversarial_loops", 2)
+    if (not is_rejected) or loops >= _max_loops:
+        try:
+            from packages.research_engine.analytics import enrich_themes_narrative
+            _narrative, _recs = enrich_themes_narrative(themes, reasoning_model)
+            if _narrative:
+                report_md += f"\n\n## Yönetici Anlatımı\n\n{_narrative}\n"
+            if _recs:
+                report_md += "\n## Stratejik Öneriler\n" + "\n".join(f"- {r}" for r in _recs) + "\n"
+        except Exception as e:
+            logger.warning("Tematik anlatım zenginleştirmesi atlandı: %s", e)
     
     updates = {
         "adversarial_loops_count": loops,

@@ -119,10 +119,10 @@ def render_markdown(report: ResearchReport) -> str:
         lines.append("- Model kullanımı kaydedilmedi.")
 
     lines.extend(["", "## Yönetici Özeti", ""])
-    lines.extend(f"- {item}" for item in report.executive_summary)
+    lines.extend(f"- {item}" for item in report.executive_summary if str(item).strip())
     # DeepSeek Pro ile üretilen kanıta bağlı anlatım (varsa)
     if getattr(report, "executive_narrative", ""):
-        lines.extend(["", report.executive_narrative])
+        lines.extend(["", "### Yönetici Anlatımı", "", report.executive_narrative])
 
     lines.extend(
         [
@@ -289,14 +289,25 @@ def render_markdown(report: ResearchReport) -> str:
     # ── Karar Katmanı (varsa) ──
     if getattr(report, "decision_items", None):
         lines.extend(["", "## Karar Katmanı", ""])
+        _sig_counts: dict[str, int] = {}
+        for d in report.decision_items:
+            _sig_counts[d.signal] = _sig_counts.get(d.signal, 0) + 1
+        lines.append(
+            "- Karar dağılımı: "
+            + " · ".join(
+                f"{_SIGNAL_TR.get(sig, sig)} ({_sig_counts.get(sig, 0)})"
+                for sig in ("SHIP", "ITERATE", "INVESTIGATE", "KILL")
+            )
+        )
         for d in report.decision_items:
             lines.extend(
                 [
+                    "",
                     f"### [{_SIGNAL_TR.get(d.signal, d.signal)}] {d.title}",
                     "",
                     f"- Güven: {int(d.confidence * 100)}% | Destek: {d.supporting_count} | Karşı: {d.refuting_count}",
+                    f"- Kanıt: {d.evidence_summary}",
                     f"- Önerilen aksiyon: {d.recommended_action}",
-                    "",
                 ]
             )
 

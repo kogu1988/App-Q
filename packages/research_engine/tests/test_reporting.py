@@ -198,5 +198,23 @@ def test_render_markdown_tolerates_dict_enhanced_findings():
     md = render_markdown(report)
     assert "Fiyat bariyeri" in md
     assert "Kanıtlar:" in md
+
+
+def test_render_markdown_decision_summary_is_clean():
+    """Karar özeti artık executive_summary'ye gömülü değil: ham HTML/boş madde olmamalı."""
+    md = render_markdown(_enterprise_report())
+    assert "Karar dağılımı:" in md
+    assert "<span" not in md  # ham HTML span yok
+    assert "\n- \n" not in md  # boş madde yok
+
+
+def test_render_markdown_includes_narrative_section():
+    """Zenginleştirme anlatımı net bir başlık altında gelmeli."""
+    from dataclasses import replace
+
+    report = replace(_enterprise_report(), executive_narrative="Örnek yönetici anlatımı metni.")
+    md = render_markdown(report)
+    assert "### Yönetici Anlatımı" in md
+    assert "Örnek yönetici anlatımı metni." in md
     assert "Çok pahalı" in md
     assert "Destekleyen: **2**" in md

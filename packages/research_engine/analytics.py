@@ -238,6 +238,60 @@ def enrich_report_narrative(
         return "", []
 
 
+def enrich_themes_narrative(
+    themes: list[dict],
+    model: Any,
+    *,
+    max_tokens: int | None = None,
+) -> tuple[str, list[str]]:
+    """Async "Research Studio" tematik çıktısını yönetici anlatımı + önerilerle zenginleştirir.
+
+    `enrich_report_narrative` ile aynı anti-halüsinasyon kuralı: YALNIZCA verilen
+    temalar ve alıntılar kullanılır; yeni veri/rakam/alıntı üretilmez. Hata durumunda
+    `("", [])` döner.
+    """
+    try:
+        payload = {
+            "temalar": [
+                {
+                    "baslik": t.get("title", ""),
+                    "yayginlik": t.get("prevalence"),
+                    "alintilar": [
+                        _shorten(ev.get("quote", ""), 160)
+                        for ev in (t.get("evidence_chain") or [])[:3]
+                    ],
+                }
+                for t in list(themes)[:8]
+            ]
+        }
+        system = (
+            "Sen kıdemli bir pazar araştırması analistisin. Sana VERİLEN temalar ve "
+            "alıntılar dışında HİÇBİR bilgi, rakam, marka veya alıntı UYDURMA. Yalnızca "
+            "verilen kanıtlardan çıkarım yap ve uygulanabilir öneri üret. Dil: profesyonel "
+            "Türkçe, danışman tonu. Cümlelerde '...' kullanma."
+        )
+        prompt = (
+            "Aşağıdaki JSON, tematik analizden çıkan pazar temalarıdır.\n"
+            f"{json.dumps(payload, ensure_ascii=False)}\n\n"
+            "Bu verilerden yola çıkarak SADECE şu JSON'u döndür:\n"
+            "{\n"
+            '  "yonetici_anlatimi": "3-5 cümlelik, temaları nedensel bağlayan yönetici özeti",\n'
+            '  "stratejik_oneriler": ["3 ila 5 adet, kanıta dayalı, uygulanabilir öneri"]\n'
+            "}\n"
+            "Başka hiçbir metin ekleme."
+        )
+        raw = model.generate(system=system, prompt=prompt, response_format="json", max_tokens=max_tokens)
+        data = json.loads(raw) if isinstance(raw, str) else raw
+        if not isinstance(data, dict):
+            return "", []
+        narrative = str(data.get("yonetici_anlatimi", "")).strip()
+        recs = [str(r).strip() for r in (data.get("stratejik_oneriler") or []) if str(r).strip()]
+        return narrative, recs
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Tematik anlatım zenginleştirmesi atlandı: %s", exc)
+        return "", []
+
+
 # Bulgu kategori ↔ görüşme sorusu etiketi eşlemesi. Bulgu kategorisi `risk` iken
 # senaryo soruları `objection` etiketi taşıdığı için kanıt hiç eşleşmiyordu
 # (karar öğeleri "0 destekleyici, 0 karşıt" gösteriyordu).
@@ -1249,35 +1303,6 @@ def synthesize_report(
             findings, brief.title, brief.category, degradation_notes=degradation_notes
         )
 
-        # Yönetici karar özetini executive_summary'e ekle
-        _sig_counts: dict[str, int] = {}
-        for di in decision_items:
-            _sig_counts[di.signal] = _sig_counts.get(di.signal, 0) + 1
-
-        decision_header = [
-            "",
-            "YÖNETİCİ KARAR ÖZETİ",
-            "═══════════════════════════",
-            f"YAYINLA ({_sig_counts.get('SHIP', 0)})            → Geliştirmeye/yayına hazır",
-            f"İYİLEŞTİR ({_sig_counts.get('ITERATE', 0)})         → Yayından önce iyileştirme gerekir",
-            f"ARAŞTIR ({_sig_counts.get('INVESTIGATE', 0)})   → Daha fazla araştırma gerekir",
-            f"VAZGEÇ ({_sig_counts.get('KILL', 0)})            → Bırak / kaçın",
-            "",
-            "BULGU KARARLARI",
-            "═════════════════",
-        ]
-        for di in decision_items:
-            _sig_color = _SIGNAL_COLORS.get(di.signal, "#616161")
-            badge = f'<span style="color:{_sig_color};font-weight:bold;">[{_SIGNAL_LABELS_TR.get(di.signal, di.signal)}]</span>'
-            decision_header.append(
-                f"{badge} {di.title}"
-            )
-            decision_header.append(f"         Kanıt: {di.evidence_summary}")
-            decision_header.append(f"         → {di.recommended_action}")
-            decision_header.append("")
-
-        executive_summary = executive_summary + decision_header
-
         return ResearchReport(
             title=f"A/B Simülasyonu: {brief.title}",
             plan=plan,
@@ -1468,35 +1493,6 @@ def synthesize_report(
     external_evidence = corroborate_findings(
         findings, brief.title, brief.category, degradation_notes=degradation_notes
     )
-
-    # Yönetici karar özetini executive_summary'e ekle
-    _sig_counts_std: dict[str, int] = {}
-    for di in decision_items:
-        _sig_counts_std[di.signal] = _sig_counts_std.get(di.signal, 0) + 1
-
-    decision_header_std = [
-        "",
-        "YÖNETİCİ KARAR ÖZETİ",
-        "═══════════════════════════",
-        f"YAYINLA ({_sig_counts_std.get('SHIP', 0)})            → Geliştirmeye/yayına hazır",
-        f"İYİLEŞTİR ({_sig_counts_std.get('ITERATE', 0)})         → Yayından önce iyileştirme gerekir",
-        f"ARAŞTIR ({_sig_counts_std.get('INVESTIGATE', 0)})   → Daha fazla araştırma gerekir",
-        f"VAZGEÇ ({_sig_counts_std.get('KILL', 0)})            → Bırak / kaçın",
-        "",
-        "BULGU KARARLARI",
-        "═════════════════",
-    ]
-    for di in decision_items:
-        _sig_color = _SIGNAL_COLORS.get(di.signal, "#616161")
-        badge = f'<span style="color:{_sig_color};font-weight:bold;">[{_SIGNAL_LABELS_TR.get(di.signal, di.signal)}]</span>'
-        decision_header_std.append(
-            f"{badge} {di.title}"
-        )
-        decision_header_std.append(f"         Kanıt: {di.evidence_summary}")
-        decision_header_std.append(f"         → {di.recommended_action}")
-        decision_header_std.append("")
-
-    executive_summary = executive_summary + decision_header_std
 
     return ResearchReport(
         title=f"Araştırma Raporu: {brief.title}",
