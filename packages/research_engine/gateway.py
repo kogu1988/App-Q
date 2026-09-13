@@ -122,8 +122,13 @@ def run_simulation_task(self, payload: dict):
     logger.info(f"Starting async simulation task for hash: {payload.get('hash')}")
     try:
         import uuid
-        from .database import get_db, save_study
+        from .database import get_db, save_study, current_tenant_var
         from .models import ResearchBrief, PanelRole
+
+        # Tenant bağlamı: Celery worker'da request middleware YOKTUR. Bu yüzden
+        # async çalışmanın `created_by` alanı boş kaydediliyor ve RLS nedeniyle
+        # kullanıcıya hiç görünmüyordu. Kullanıcı adını bağlama al.
+        current_tenant_var.set(payload.get("username") or "")
 
         # 1. Brief Oluştur
         # Başlık: '...' izi bırakmadan, kelime sınırında kısa bir başlık türet
@@ -183,7 +188,8 @@ def run_simulation_task(self, payload: dict):
             "has_report": True,
             "quality_score": int(rfi_score * 100),
             "quality_grade": "A" if rfi_score >= 0.8 else "B",
-            "quality_summary": "Simülasyon başarıyla tamamlandı (Modüler Super-Graph)."
+            "quality_summary": "Simülasyon başarıyla tamamlandı (Modüler Super-Graph).",
+            "created_by": payload.get("username") or "",
         }
         
         # Modüler mimariden gelen dictionary'i kaydediyoruz
