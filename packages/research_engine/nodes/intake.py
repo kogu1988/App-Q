@@ -66,14 +66,14 @@ async def async_intake_and_reframing_node(state: GlobalResearchState) -> Dict[st
         model.free_memory()
     
     # 3. Deterministik İstatistiksel Kota Tahsisi (Largest Remainder Fonksiyonu)
-    # Panel büyüklüğü env ile ayarlanır. Async yolda her persona için ayrı LLM
-    # çağrısı yapıldığından (ve kodlama adımı persona başına bir Pro çağrısı
-    # gerektirdiğinden) varsayılan 8 ile sınırlıdır — maliyet kontrolü.
+    # Panel boyutu PLAN'a bağlıdır (SSOT: plan_config.max_personas, varsayılan 10).
+    # Öncelik: state'teki plan limiti > ASYNC_PERSONA_COUNT env > 10.
     import os as _os
     try:
-        _panel_n = max(3, int(_os.getenv("ASYNC_PERSONA_COUNT", "8")))
-    except ValueError:
-        _panel_n = 8
+        _panel_n = int(state.get("max_personas") or _os.getenv("ASYNC_PERSONA_COUNT", "10"))
+    except (TypeError, ValueError):
+        _panel_n = 10
+    _panel_n = max(3, _panel_n)
     try:
         allocated_personas = allocate_cohort_matrix(N=_panel_n)
     except Exception as _e:

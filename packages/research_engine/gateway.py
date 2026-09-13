@@ -49,7 +49,7 @@ class ResearchInflowGateway:
         # Regex katmanı HER planda çalışır. Yerel NER modeli (isim/lokasyon) yalnızca
         # Enterprise planında denenir (`local_pii_scrubbing`); model yoksa regex'e düşer.
         from .privacy import LocalPIIScrubber, PrivacyFilterException
-        from .plan_config import has_feature
+        from .plan_config import has_feature, get_max_personas
         from .database import get_client_by_username
 
         plan_type = "Free"
@@ -99,7 +99,9 @@ class ResearchInflowGateway:
             "pricing": pricing,
             "panel_roles": panel_roles,
             "pii_context": sanitized_output.context.model_dump(), # Kaydet ama LLM görmesin
-            "max_adversarial_loops": max_adversarial_loops
+            "max_adversarial_loops": max_adversarial_loops,
+            # Panel boyutu plana bağlı (SSOT: plan_config.max_personas)
+            "max_personas": get_max_personas(plan_type),
         }
         
         # Celery görevini tetikle
@@ -155,7 +157,8 @@ def run_simulation_task(self, payload: dict):
             "raw_idea": payload.get("original_brief", ""),
             "status": "pending",
             "adversarial_loops_count": 0,
-            "max_adversarial_loops": 2
+            "max_adversarial_loops": 2,
+            "max_personas": int(payload.get("max_personas", 10)),
         }
         
         # Invoke is async, so we use asyncio.run in the celery worker

@@ -36,3 +36,5 @@ class GlobalResearchState(TypedDict):
     # Döngü Denetimleri
     adversarial_loops_count: int
     max_adversarial_loops: int
+    # Plan bazlı panel büyüklüğü (max_personas) — async simülasyonda kota
+    max_personas: int
