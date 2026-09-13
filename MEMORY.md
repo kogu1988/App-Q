@@ -135,7 +135,7 @@ python -m pytest packages/research_engine/tests/ -q
 | `matrix.py` | Rogers×SES kohort matrisi, stance diversity | Persona dağılımı |
 | `quality.py` | Kalite fonksiyonları (EWMA, echo, bias, acquiescence) | Kalite kontrolü |
 | `adversarial.py` | 4-aşamalı adversarial review | Rapor denetimi |
-| `database.py` | `init_db()`, bağlantı havuzu, tüm DB CRUD, 5 demo kullanıcı | Veritabanı değişikliği |
+| `database/` | DB paketi: `connection` (havuz/oturum), `studies`, `clients`, `usage`, `events`, `billing`, `findings`, `migrations/` (`init_db` + şema + seed) | Veritabanı değişikliği |
 | `plan_config.py` | Plan feature gate SSOT (Free/Flex/Starter/Pro/Enterprise) | Plan/özellik değişikliği |
 | `db_vectors.py` | pgvector tabanlı persona havuzu, curated questions | Vektör DB |
 | `gateway.py` | Celery async simulation gateway | Async işler |
@@ -525,3 +525,16 @@ python -m pytest packages/research_engine/tests/ -q
 - Not: `lib/format.ts` (R2-7) oluşturulmadı — paylaşılan bir biçimlendirme yardımcısı kalmadı (tek tarih formatı `page.tsx` başlığında inline).
 - Doğrulama: `tsc` + `eslint` temiz; Docker frontend rebuild; Playwright **5/5 passed** (`01-ui`, `03-study-actions`).
 - **Sıradaki:** R5 — `database.py` (2034) → paket (shim stratejisi).
+
+### Refaktör R5 — `database.py` → paket (2026-09-13)
+
+- ✅ **2034 satırlık tek modül pakete bölündü.** `database.py` silindi; `database/` paketi oluştu. **Hiçbir çağrı yeri değişmedi** (grep ile doğrulandı) — tüm genel isimler `database/__init__.py` shim'inden re-export edilir.
+- **Modüller:** `connection.py` (191), `studies.py` (309), `clients.py` (318), `usage.py` (159), `events.py` (87), `billing.py` (269), `findings.py` (170), `migrations/` (`__init__.py` 13, `prompts.py` 42, `schema_core.py` 182, `schema_infra.py` 355, `seed.py` 153). En büyük dosya 355 satır (kabul: < 500); shim 85 satır (kabul: < 250).
+- **`init_db()` sırası korundu:** `apply_core_schema` → `apply_infra_schema` → `seed_defaults`; import anında init denemesi (eski davranış) `database/__init__.py` sonuna taşındı.
+- 🐛 **Gerçek regresyon yakalandı ve düzeltildi:** `migrations/seed.py` içindeki `_create_org_tables` importu `..db_org` (yanlış kapsam) idi → container logunda `No module named 'packages.research_engine.database.db_org'` uyarısı; `...db_org` olarak düzeltildi, uyarı kayboldu. Test paketi bu yolu try/except içinde yuttuğu için **yeşil test yeterli olmadı** — konteyner logu kontrolü şart oldu.
+- ✅ **Test güncellemesi:** `test_quota_atomicity.py::test_4_5` artık `database/clients.py` kaynağını okuyor (atomik UPDATE...RETURNING deseni).
+- ✅ **README** proje yapısı pakete göre güncellendi.
+- Doğrulama: `python scripts/run_tests.py` → **403 passed**; Playwright `01-ui` + `03-study-actions` → **5/5 passed**; `clarere-api` + `celery_worker` rebuild sonrası konteyner logu temiz.
+- ⚠️ **Kapsam dışı kalan bilinen bug (R5 değiştirmedi):** `apps/backend/routers/client.py:1701` `get_personas_pool`'u `packages.research_engine.database`'tan import ediyor; bu isim orada **tanımlı değil** (doğrusu `db_vectors`). `/api/client/personas/match` çağrıldığında ImportError verir. Refaktör "davranış dondurma" kuralı gereği dokunulmadı; ayrı bir hata düzeltmesi olarak ele alınmalı.
+- Not: `ruff check` sonrası BLE001 (blind-except) sayısı 26 → 32 (yeni paket yapısındaki mevcut catch-all desenleri); diğer kurallar taban çizgisiyle aynı.
+- **Sıradaki:** R6 — `routers/client.py` (1976) → alt router'lar.

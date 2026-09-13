@@ -119,7 +119,7 @@ def test_4_4_period_rollover_resets_counter():
 
 def test_4_5_atomic_update_returning_pattern_is_used():
     """Kaynak kodda atomik UPDATE...RETURNING kullanılmalı (naif SELECT→UPDATE değil)."""
-    source = pathlib.Path("packages/research_engine/database.py").read_text(encoding="utf-8")
+    source = pathlib.Path("packages/research_engine/database/clients.py").read_text(encoding="utf-8")
 
     assert "atomic_increment_simulation_count" in source
     assert "RETURNING period_simulations, max_simulations" in source, (

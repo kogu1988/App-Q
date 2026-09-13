@@ -60,7 +60,15 @@ Clarere/
 │       ├── adversarial.py     4-aşamalı adversarial review motoru
 │       ├── intake.py          Defne chatbot akışı
 │       ├── providers.py       LLM adaptörü (DeepSeek API)
-│       ├── database.py        Tüm DB operasyonları + bağlantı havuzu
+│       ├── database/          DB katmanı (paket) — bağlantı, CRUD, migration, KPI
+│       │   ├── connection.py     Bağlantı havuzu + oturum yönetimi
+│       │   ├── studies.py        Çalışma CRUD + PDF + araştırma job kuyruğu
+│       │   ├── clients.py        İstemci CRUD + plan/kota + auth
+│       │   ├── usage.py          Token kullanımı + maliyet
+│       │   ├── events.py         Ürün (KPI) event'leri
+│       │   ├── billing.py        Paddle webhook durumu + KVKK veri işlemleri
+│       │   ├── findings.py       Kanıt zinciri + AI gerekçe kaydı
+│       │   └── migrations/       init_db() + şema/migration/seed
 │       ├── models.py          Dataclass veri sözleşmeleri
 │       ├── plan_config.py     Plan katmanı feature gate SSOT
 │       ├── pricing_table.py   DeepSeek token fiyatlandırma SSOT (USD/1M)
@@ -374,9 +382,10 @@ packages/research_engine/
 │                          → process_intake_chat()
 ├── providers.py         LLM adaptörü
 │                          → DeepSeekResearchModel  (Flash + Pro)
-├── database.py          DB operasyonları (~800 satır)
+├── database/            DB katmanı (paket)
 │                          → ThreadedConnectionPool (min=2, max=10)
-│                          → init_db() + migrations
+│                          → init_db() + migrations (migrations/)
+│                          → studies / clients / usage / events / billing / findings
 ├── nodes/               LangGraph node'ları
 │   ├── sycophancy.py    ELEPHANT anti-dalkavukluk prompt
 │   ├── culture.py       Hofstede TR + SES profilleri
