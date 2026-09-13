@@ -416,6 +416,15 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
     pricing = report_json.get("pricing", {})
     quality_issues = report_json.get("quality_issues", [])
     model_usage = report_json.get("model_usage", {})
+
+    # DeepSeek Pro zenginleştirmesi (varsa) için HTML blokları — üst düzey f-string
+    # içinde iç içe f-string kullanmamak adına önceden hazırlanır.
+    _narrative = report_json.get("executive_narrative") or ""
+    _strategic = report_json.get("strategic_recommendations") or []
+    narrative_block = f'<section class="card">{escape(_narrative)}</section>' if _narrative else ""
+    strategic_block = (
+        '<h2>Stratejik Öneriler</h2><section class="card">' + html_list(_strategic) + "</section>"
+    ) if _strategic else ""
     age_values = [persona.get("age") for persona in personas if persona.get("age")]
     roles = [
         persona.get("role_title") or persona.get("segment") or "Bilinmeyen"
@@ -729,6 +738,8 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
 
     <h2>Yönetici Özeti</h2>
     <section class="card">{html_list(report_json.get('executive_summary', []))}</section>
+    {narrative_block}
+    {strategic_block}
 
     <h2>Ticarileştirme Skor Kartı</h2>
     <p class="section-note">Bu skor kartı, sentetik görüşme sinyallerini ürün kararı için okunabilir bir yönetici özetine indirger.</p>
