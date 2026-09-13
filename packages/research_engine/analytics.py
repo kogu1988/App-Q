@@ -922,6 +922,80 @@ def corroborate_findings(
     return external
 
 
+# ---------------------------------------------------------------------------
+# Sprint 3 — Rapor kalite metrikleri
+# ---------------------------------------------------------------------------
+
+def build_report_metrics(
+    interviews: list[PersonaInterview],
+    findings: list[Finding],
+    enhanced_findings: list,
+    external_evidence: list[ExternalEvidence],
+    decision_items: list,
+) -> dict:
+    """Raporu yalnız uzunluğuyla değil, kanıt yoğunluğu ve izlenebilirlikle ölçer.
+
+    Çıktı, raporun “Rapor Metrikleri” bölümünde ve admin panelinde gösterilir.
+    """
+    total_findings = len(findings) or len(enhanced_findings)
+    evidence_total = 0
+    findings_with_evidence = 0
+    persona_ids: set[str] = set()
+    supporting = 0
+    refuting = 0
+    neutral = 0
+
+    for ef in enhanced_findings:
+        ev = getattr(ef, "evidence", None)
+        if ev is None and isinstance(ef, dict):
+            ev = ef.get("evidence", [])
+        ev = ev or []
+        if ev:
+            findings_with_evidence += 1
+        evidence_total += len(ev)
+        supporting += int(getattr(ef, "supporting_count", 0) or (ef.get("supporting_count", 0) if isinstance(ef, dict) else 0))
+        refuting += int(getattr(ef, "refuting_count", 0) or (ef.get("refuting_count", 0) if isinstance(ef, dict) else 0))
+        neutral += int(getattr(ef, "neutral_count", 0) or (ef.get("neutral_count", 0) if isinstance(ef, dict) else 0))
+        for e in ev:
+            pid = getattr(e, "persona_id", None) if not isinstance(e, dict) else e.get("persona_id")
+            if pid:
+                persona_ids.add(str(pid))
+
+    polarity_total = supporting + refuting
+    refuting_ratio = round(refuting / polarity_total, 3) if polarity_total else 0.0
+    answered_turns = sum(
+        1
+        for iv in interviews
+        for t in (getattr(iv, "turns", None) or [])
+        if (getattr(t, "answer", "") or "").strip() and "[Yanıt alınamadı]" not in (getattr(t, "answer", "") or "")
+    )
+    total_turns = sum(len(getattr(iv, "turns", None) or []) for iv in interviews)
+
+    signal_counts: dict[str, int] = {}
+    for di in decision_items:
+        sig = getattr(di, "signal", None) if not isinstance(di, dict) else di.get("signal")
+        if sig:
+            signal_counts[sig] = signal_counts.get(sig, 0) + 1
+
+    return {
+        "findings_total": total_findings,
+        "findings_with_evidence": findings_with_evidence,
+        "evidence_total": evidence_total,
+        "evidence_per_finding": round(evidence_total / total_findings, 2) if total_findings else 0.0,
+        "unsourced_findings": max(total_findings - findings_with_evidence, 0),
+        "unique_personas_in_evidence": len(persona_ids),
+        "refuting_ratio": refuting_ratio,
+        "supporting_count": supporting,
+        "refuting_count": refuting,
+        "neutral_count": neutral,
+        "answered_turns": answered_turns,
+        "total_turns": total_turns,
+        "answer_completion_rate": round(answered_turns / total_turns, 3) if total_turns else 0.0,
+        "external_evidence_count": len(external_evidence),
+        "decision_signals": signal_counts,
+    }
+
+
 # Sprint 7 — Decision Layer: kategori → ITERATE için odak alanı eşlemesi
 _ITERATE_ASPECT: dict[str, str] = {
     "pain_point": "kullanıcı deneyimi",
@@ -1434,23 +1508,33 @@ def synthesize_report(
         resistance_points=_resistance,
     )
 
+    # Sprint 3 — Bulgulara dayalı, şablondan bağımsız öneriler (kategori sızıntısını önler)
+    top_findings = sorted(findings, key=lambda f: f.confidence, reverse=True)[:3]
+    derived_recommendations = [
+        f"\u201c{f.title}\u201d bulgusunu ger\u00e7ek kullan\u0131c\u0131 g\u00f6r\u00fc\u015fmelerinde \u00f6ncelikli do\u011frulay\u0131n."
+        for f in top_findings
+    ] or [
+        "Bu sentetik raporun en g\u00fc\u00e7l\u00fc bulgular\u0131n\u0131 5-8 ger\u00e7ek kullan\u0131c\u0131yla k\u0131sa g\u00f6r\u00fc\u015fmelerle do\u011frulay\u0131n."
+    ]
+    derived_recommendations.append(
+        "Y\u00fcksek \u00e7eli\u015fki skorlu bulgular\u0131 segment baz\u0131nda ay\u0131r\u0131p hedef kitleyi daralt\u0131n."
+    )
+    derived_action_items = [
+        "En y\u00fcksek g\u00fcvenli bulguyu MVP kapsam\u0131na al\u0131n.",
+        "En g\u00fc\u00e7l\u00fc itiraz\u0131 azaltacak kan\u0131t veya demo ak\u0131\u015f\u0131n\u0131 haz\u0131rlay\u0131n.",
+    ]
+    derived_validation_steps = [
+        "Fiyat modelini ger\u00e7ek bir landing page \u00fc\u00e7zerinde A/B testine sokun.",
+        "En g\u00fc\u00e7l\u00fc 2-3 bulguyu 5-8 ger\u00e7ek kullan\u0131c\u0131yla k\u0131sa g\u00f6r\u00fc\u015fme (15-20 dk) arac\u0131l\u0131\u011f\u0131yla do\u011frulay\u0131n.",
+    ]
+
     report_dict_std = {
         "personas": [asdict(p) for p in personas],
         "findings": [asdict(f) for f in findings],
         "executive_summary": executive_summary,
-        "action_items": [
-            "Ürünün ilk sürümünde (MVP) güven bariyerini aşacak özelliklere odaklanın.",
-            "Rekabetten ayrışmak için ana sayfada hız vurgusunu artırın.",
-        ],
-        "recommendations": [
-            "Birebir müşteri görüşmelerinde bu sentetik rapordaki itirazları test edin.",
-            "Güven bariyerini aşmak için veri güvenliği (KVKK) ve klinik entegrasyonu vurgusunu öne çıkarın.",
-            "Fiyatlandırmayı esnek (aylık, kolay iptal) tutarak direnci azaltın.",
-        ],
-        "validation_next_steps": [
-            "Fiyat modelini gerçek bir landing page üzerinde A/B testine sokun.",
-            "En güçlü 2-3 bulguyu 5-8 gerçek kullanıcıyla kısa görüşme aracılığıyla doğrulayın.",
-        ],
+        "action_items": derived_action_items,
+        "recommendations": derived_recommendations,
+        "validation_next_steps": derived_validation_steps,
         "quality_issues": [],
     }
     adversarial_result = run_adversarial_review(report_dict_std)
@@ -1478,21 +1562,12 @@ def synthesize_report(
         pain_point_matrix=build_pain_point_matrix(interviews),
         findings=findings,
         pricing=pricing,
-        action_items=[
-            "Ürünün ilk sürümünde (MVP) güven bariyerini aşacak özelliklere odaklanın.",
-            "Rekabetten ayrışmak için ana sayfada hız vurgusunu artırın.",
-        ],
-        recommendations=[
-            "Birebir müşteri görüşmelerinde bu sentetik rapordaki itirazları test edin.",
-            "Güven bariyerini aşmak için veri güvenliği (KVKK) ve klinik entegrasyonu vurgusunu öne çıkarın.",
-            "Fiyatlandırmayı esnek (aylık, kolay iptal) tutarak direnci azaltın.",
-        ],
-        validation_next_steps=[
-            "Fiyat modelini gerçek bir landing page üzerinde A/B testine sokun.",
-            "En güçlü 2-3 bulguyu 5-8 gerçek kullanıcıyla kısa görüşme (15-20 dk) aracılığıyla doğrulayın.",
-        ],
+        action_items=derived_action_items,
+        recommendations=derived_recommendations,
+        validation_next_steps=derived_validation_steps,
         limitations=[
-            "Sentetik veriler gerçek pazar davranışını %100 yansıtmayabilir.",
+            "Sentetik veriler gerçek pazar davranışını tam olarak yansıtmaz; yönlendirici hipotez olarak ele alınmalıdır.",
+            "Bu çıktı istatistiksel temsil iddiası taşımaz.",
         ],
         ses_cross_tab=build_ses_cross_tab(interviews),
         respondent_type_summary=build_respondent_type_summary(interviews),
@@ -1504,4 +1579,7 @@ def synthesize_report(
         external_evidence=external_evidence,
         decision_items=decision_items,
         degradation_notes=degradation_notes,
+        report_metrics=build_report_metrics(
+            interviews, findings, enhanced, external_evidence, decision_items
+        ),
     )

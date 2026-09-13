@@ -125,6 +125,8 @@ Frontend (Next.js :4001)
 
 Clarere, grounded simulation akademik çerçevesine dayanır (Bilal 2026, Rogers 2003, TÜAD 2025 SES, Hofstede). Metodolojik detaylar `packages/research_engine/` içindeki modüller ve `MEMORY.md` dosyasında özetlenmiştir.
 
+> **Kapsam ve sınırlılık:** Clarere bir **hipotez ve araştırma triage** platformudur. Çıktılar istatistiksel temsil iddiası taşımaz; kişilik/dağılım modelleri kamuya açık çerçevelerden yararlanır. Rapor yüzeyleri veriyi kökenine göre **sentetik / algoritmik / harici** olarak etiketler. Yüksek riskli kararlar gerçek kullanıcı, satış veya saha verisiyle doğrulanmalıdır.
+
 ### Grounded Simulation Principle
 
 | Bileşen | Açıklama | Dosya |

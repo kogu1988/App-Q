@@ -762,6 +762,46 @@ def submit_feedback(data: FeedbackCreate):
     save_feedback(data.username, data.study_id, data.item_type, data.item_id, data.vote, data.comment)
     return {"status": "success"}
 
+
+# İzin verilen istemci taraflı KPI event'leri (funnel ölçümü).
+# Serbest metin kabul edilmez; yalnızca bu liste kaydedilir.
+_ALLOWED_CLIENT_EVENTS = {
+    "upgrade_cta_viewed",
+    "upgrade_cta_clicked",
+    "paywall_viewed",
+    "study_detail_viewed",
+    "report_tab_viewed",
+    "pdf_export_clicked",
+    "wizard_started",
+}
+
+
+@router.post("/events")
+def track_event(
+    data: dict,
+    x_username: str | None = Depends(get_current_username),
+):
+    """İstemci taraflı ürün event'i kaydeder (auth opsiyonel).
+
+    Yalnızca beyaz listedeki event adları kabul edilir; başarısızlık sessizdir.
+    """
+    event_name = (data.get("event_name") or "").strip()
+    if event_name not in _ALLOWED_CLIENT_EVENTS:
+        raise HTTPException(status_code=400, detail="Geçersiz event adı.")
+    try:
+        from packages.research_engine.database import record_product_event
+
+        props = data.get("props") if isinstance(data.get("props"), dict) else {}
+        record_product_event(
+            event_name,
+            username=x_username,
+            study_id=str(data.get("study_id") or ""),
+            props=props,
+        )
+    except Exception:
+        logger.debug("İstemci event'i kaydedilemedi: %s", event_name, exc_info=True)
+    return {"status": "ok"}
+
 @router.post("/studies")
 def create_or_update_study(data: StudyPayload, x_username: str | None = Depends(get_current_username)):
     if not x_username:
@@ -1394,6 +1434,20 @@ def _synthesize_impl(request, x_username: str | None):
         )
     except Exception as e:
         logger.warning(f"report_html üretilemedi: {e}")
+
+    # Sprint 3 — Ürün KPI event'i
+    try:
+        from packages.research_engine.database import record_product_event
+
+        _sid = ""
+        try:
+            _meta = getattr(request, "metadata", None) or {}
+            _sid = str(_meta.get("id", "") or "")
+        except Exception:
+            _sid = ""
+        record_product_event("report_synthesized", username=x_username, study_id=_sid)
+    except Exception:
+        logger.debug("report_synthesized event'i kaydedilemedi.", exc_info=True)
 
     return report_dict
 

@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { PlanGate } from "@/components/plan-gate";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import { getAuthHeaders } from "@/lib/auth";
+import { trackEvent } from "@/lib/events";
 
 // Interface definitions matching the backend Pydantic models
 interface Persona {
@@ -208,6 +209,18 @@ interface StudyDetail {
     snippet: string;
     relevance: string;
   }>;
+  report_metrics?: {
+    findings_total?: number;
+    findings_with_evidence?: number;
+    unsourced_findings?: number;
+    evidence_total?: number;
+    evidence_per_finding?: number;
+    unique_personas_in_evidence?: number;
+    refuting_ratio?: number;
+    answer_completion_rate?: number;
+    external_evidence_count?: number;
+    decision_signals?: Record<string, number>;
+  };
 }
 
 // ──────────────── Decision Signal Config ────────────────
@@ -573,6 +586,17 @@ export default function StudyDetailPage() {
   const [chatInput, setChatInput] = useState("");
   const [sendingChat, setSendingChat] = useState(false);
   const { plan: clientPlan } = useClientPlan();
+
+  // Sprint 3 — Funnel ölçümü: çalışma detayı ve rapor sekmesi görüntüleme
+  useEffect(() => {
+    if (!studyId) return;
+    trackEvent("study_detail_viewed", studyId);
+  }, [studyId]);
+
+  useEffect(() => {
+    if (!studyId || activeTab !== "report") return;
+    trackEvent("report_tab_viewed", studyId);
+  }, [studyId, activeTab]);
 
   useEffect(() => {
     if (!studyId) return;
@@ -2038,6 +2062,37 @@ export default function StudyDetailPage() {
               ))}
             </div>
 
+            {/* Rapor metrikleri + veri kökeni (S3) */}
+            {study?.report_metrics && (study.report_metrics.findings_total ?? 0) > 0 && (
+              <div className="rounded-xl border border-[#d9d9dd] bg-[#f5f4f1]/40 dark:bg-[#212121]/40 p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-[#93939f]">Rapor Metrikleri</span>
+                  <span className="text-[10px] text-[#93939f]">Yönlendirici hipotez — istatistiksel temsil iddiası taşımaz</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: "Kanıtlı Bulgu", value: `${study.report_metrics.findings_with_evidence ?? 0}/${study.report_metrics.findings_total ?? 0}` },
+                    { label: "Bulgu Başına Kanıt", value: study.report_metrics.evidence_per_finding ?? 0 },
+                    { label: "Kanıtta Persona", value: study.report_metrics.unique_personas_in_evidence ?? 0 },
+                    { label: "Karşı Kanıt Oranı", value: study.report_metrics.refuting_ratio ?? 0 },
+                    { label: "Yanıt Tamamlama", value: study.report_metrics.answer_completion_rate ?? 0 },
+                    { label: "Harici Kaynak", value: study.report_metrics.external_evidence_count ?? 0 },
+                    { label: "Kaynaksız Bulgu", value: study.report_metrics.unsourced_findings ?? 0 },
+                  ].map(m => (
+                    <div key={m.label} className="rounded-lg border border-[#d9d9dd]/70 bg-white dark:bg-[#17171c] px-3 py-2">
+                      <div className="text-lg font-black text-[#003c33] dark:text-[#edfce9]">{m.value}</div>
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-[#93939f]">{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-2 text-[10px]">
+                  <span className="px-2 py-0.5 rounded-full border border-[#d9d9dd] text-[#616161] dark:text-[#93939f]">Sentetik: persona mülakatları</span>
+                  <span className="px-2 py-0.5 rounded-full border border-[#d9d9dd] text-[#616161] dark:text-[#93939f]">Algoritmik: PSM / SES / kalite</span>
+                  <span className="px-2 py-0.5 rounded-full border border-[#d9d9dd] text-[#616161] dark:text-[#93939f]">Harici: web doğrulama</span>
+                </div>
+              </div>
+            )}
+
             {!isCompleted ? (
               <div className="text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl bg-[#f5f4f1]/50">
                 Bu araştırma henüz tamamlanmamış veya nihai sentez raporu üretilmemiş.
@@ -2073,7 +2128,7 @@ export default function StudyDetailPage() {
                           Planı Yükselt →
                         </Button>
                       </Link>
-                      <p className="text-[10px] text-muted-foreground">İlk 2 araştırma ücretsiz · Kredi kartı gerekmez</p>
+                      <p className="text-[10px] text-muted-foreground">2 araştırma hakkı veya 1 ay · Tam rapor için plan gerekir</p>
                     </div>
                   </div>
                 </div>

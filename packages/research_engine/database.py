@@ -489,6 +489,29 @@ def init_db() -> None:
             """
         )
 
+        # Sprint 3 — Ürün KPI event'leri (funnel ölçümü)
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS product_events (
+                id SERIAL PRIMARY KEY,
+                event_name TEXT NOT NULL,
+                username TEXT,
+                study_id TEXT,
+                props JSONB DEFAULT '{}'::jsonb,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+            """
+        )
+        try:
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_product_events_name_time ON product_events(event_name, created_at DESC);"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_product_events_user ON product_events(username);"
+            )
+        except Exception as e:
+            logger.warning("product_events index migration warning: %s", e)
+
         # Sprint 1 — Evidence Chain tabloları
         cur.execute(
             """
@@ -1363,6 +1386,63 @@ def record_token_usage(
             "Token muhasebesi kaydedilemedi (user=%s, op=%s).",
             username, operation, exc_info=True,
         )
+
+
+def record_product_event(
+    event_name: str,
+    username: str | None = None,
+    study_id: str | None = None,
+    props: dict | None = None,
+) -> None:
+    """Ürün KPI event'i kaydeder (funnel ölçümü).
+
+    Fail-safe: ölçüm hatası ürün akışını ÇÖKERTMEZ.
+    """
+    if not event_name:
+        return
+    try:
+        import json as _json
+
+        with get_db() as (conn, cur):
+            cur.execute(
+                "INSERT INTO product_events (event_name, username, study_id, props) VALUES (%s, %s, %s, %s)",
+                (event_name, username or "", study_id or "", _json.dumps(props or {}, ensure_ascii=False)),
+            )
+    except Exception:
+        logger.debug("Ürün event'i kaydedilemedi (%s).", event_name, exc_info=True)
+
+
+def get_product_event_summary(days: int = 30) -> dict:
+    """Son N gündeki event sayılarını ve temel funnel oranlarını döner."""
+    with get_db() as (conn, cur):
+        cur.execute(
+            """
+            SELECT event_name, COUNT(*) AS cnt
+            FROM product_events
+            WHERE created_at >= NOW() - (%s || ' days')::interval
+            GROUP BY event_name
+            ORDER BY cnt DESC
+            """,
+            (str(int(days)),),
+        )
+        counts = {row["event_name"]: int(row["cnt"]) for row in cur.fetchall()}
+
+    def _pct(numerator: int, denominator: int) -> float:
+        if not denominator:
+            return 0.0
+        return round(min(numerator / denominator, 1.0), 3)
+
+    started = counts.get("research_started", 0)
+    completed = counts.get("research_completed", 0)
+    synthesized = counts.get("report_synthesized", 0)
+    upgrade = counts.get("upgrade_cta_viewed", 0)
+    return {
+        "days": days,
+        "counts": counts,
+        "research_completion_rate": _pct(completed, started),
+        "report_rate": _pct(synthesized, completed),
+        "upgrade_cta_rate": _pct(upgrade, started),
+    }
 
 
 def check_token_budget(username: str | None, plan_type: str | None = None) -> tuple[bool, int, int]:

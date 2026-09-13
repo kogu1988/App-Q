@@ -393,6 +393,30 @@ def render_markdown(report: ResearchReport) -> str:
     lines.extend(["", "## Sonraki Doğrulama Adımları", ""])
     lines.extend(f"- {item}" for item in report.validation_next_steps)
 
+    # ── Sprint 3: Rapor metrikleri ve veri kökeni etiketleri ──
+    _rm = report.report_metrics or {}
+    if _rm:
+        lines.extend(["", "## Rapor Metrikleri", ""])
+        lines.append(
+            f"- Bulgu: {_rm.get('findings_total', 0)} · Kanıtlı bulgu: {_rm.get('findings_with_evidence', 0)} · "
+            f"Kaynaksız bulgu: {_rm.get('unsourced_findings', 0)}"
+        )
+        lines.append(
+            f"- Bulgu başına ortalama kanıt: {_rm.get('evidence_per_finding', 0)} · "
+            f"Kanıtta benzersiz persona: {_rm.get('unique_personas_in_evidence', 0)}"
+        )
+        lines.append(
+            f"- Karşı kanıt oranı: {_rm.get('refuting_ratio', 0)} · "
+            f"Yanıt tamamlanma oranı: {_rm.get('answer_completion_rate', 0)}"
+        )
+        lines.append(f"- Harici kanıt kaynağı: {_rm.get('external_evidence_count', 0)}")
+
+        lines.extend(["", "### Veri Kökeni", ""])
+        lines.append("- **Sentetik:** Persona mülakatlarından türeyen bulgular, alıntılar ve karşı kanıtlar (kanıt zinciri).")
+        lines.append("- **Algoritmik:** Van Westendorp PSM, SES × Stance tablosu, kalite ve bütünlük metrikleri.")
+        lines.append("- **Harici:** Web aramasından gelen doğrulama kaynakları (yoksa dış doğrulama yapılmamıştır).")
+        lines.append("- **Not:** Sentetik ve algoritmik çıktılar yönlendirici hipotezdir; istatistiksel temsil iddiası taşımaz.")
+
     lines.extend(["", "## Sınırlılıklar", ""])
     lines.extend(f"- {item}" for item in report.limitations)
     lines.append("")
@@ -570,6 +594,27 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
         "</section>"
         for ev in ext_evidence
     ) or '<p class="muted">Harici kanıt bulunamadı.</p>'
+
+    # Sprint 3 — Rapor metrikleri + veri kökeni
+    _rm = report_json.get("report_metrics", {}) or {}
+    metrics_block = ""
+    if _rm:
+        metrics_block = (
+            "<section class='card'>"
+            "<h3>Rapor Metrikleri</h3>"
+            f"<p>Bulgu: <strong>{escape(str(_rm.get('findings_total', 0)))}</strong> · "
+            f"Kanıtlı bulgu: <strong>{escape(str(_rm.get('findings_with_evidence', 0)))}</strong> · "
+            f"Kaynaksız bulgu: <strong>{escape(str(_rm.get('unsourced_findings', 0)))}</strong></p>"
+            f"<p>Bulgu başına ortalama kanıt: <strong>{escape(str(_rm.get('evidence_per_finding', 0)))}</strong> · "
+            f"Kanıtta benzersiz persona: <strong>{escape(str(_rm.get('unique_personas_in_evidence', 0)))}</strong></p>"
+            f"<p>Karşı kanıt oranı: <strong>{escape(str(_rm.get('refuting_ratio', 0)))}</strong> · "
+            f"Yanıt tamamlanma oranı: <strong>{escape(str(_rm.get('answer_completion_rate', 0)))}</strong> · "
+            f"Harici kaynak: <strong>{escape(str(_rm.get('external_evidence_count', 0)))}</strong></p>"
+            "<p class='muted'><strong>Veri kökeni:</strong> Sentetik = persona mülakatları; "
+            "Algoritmik = PSM/SES tabloları ve kalite metrikleri; Harici = web doğrulama kaynakları. "
+            "Sentetik ve algoritmik çıktılar yönlendirici hipotezdir; istatistiksel temsil iddiası taşımaz.</p>"
+            "</section>"
+        )
 
     return f"""<!doctype html>
 <html lang="tr">
@@ -812,6 +857,9 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
     <h2>Harici Kanıt Doğrulaması</h2>
     <p class="section-note">Sentetik bulguları destekleyen, harici aramadan gelen gerçek kaynaklar.</p>
     <div class="finding-grid">{ext_blocks}</div>
+
+    <h2>Rapor Metrikleri ve Veri Kökeni</h2>
+    {metrics_block or '<p class="muted">Metrik bulunmuyor.</p>'}
 
     <h2>Mülakat Kanıtı Önizlemesi</h2>
     <p class="section-note">Bu bölüm, rapordaki bulguların ham görüşme izlerine bağlanabildiğini gösterir.</p>

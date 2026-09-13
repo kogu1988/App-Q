@@ -63,6 +63,13 @@ def execute_research(
     brief = build_brief(payload)
     model = get_model_provider("flash", user_id=username or "", effort="high")
 
+    try:
+        from .database import record_product_event
+
+        record_product_event("research_started", username=username, props={"plan": plan_type})
+    except Exception:
+        logger.debug("research_started event'i kaydedilemedi.", exc_info=True)
+
     # Panel boyutu plan katmanından gelir (SSOT: plan_config).
     # Standart akışta üst sınır 10'dur; daha büyük özel paneller admin üzerinden yönetilir.
     panel_size = min(get_max_personas(plan_type), 10)
@@ -114,6 +121,16 @@ def execute_research(
             logger.warning("Simülasyon sayacı artırılamadı (user=%s)", username, exc_info=True)
 
     _report_progress(on_progress, 95)
+    try:
+        from .database import record_product_event
+
+        record_product_event(
+            "research_completed",
+            username=username,
+            props={"plan": plan_type, "personas": len(personas), "findings": len(interviews)},
+        )
+    except Exception:
+        logger.debug("research_completed event'i kaydedilemedi.", exc_info=True)
     return {
         "plan": asdict(plan),
         "personas": [asdict(p) for p in personas],

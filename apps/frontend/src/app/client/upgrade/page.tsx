@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import { getAuthHeaders } from "@/lib/auth";
+import { trackEvent } from "@/lib/events";
 import { openCheckout } from "@/lib/paddle";
 import { toast } from "sonner";
 import {
@@ -116,6 +117,11 @@ export default function UpgradePage() {
   const [upgrading, setUpgrading] = useState(false);
 
   const currentPlan = plan.plan_type;
+
+  // Sprint 3 — Funnel ölçümü: plan yükseltme görüntülemesi
+  useEffect(() => {
+    trackEvent("upgrade_cta_viewed", undefined, { current_plan: currentPlan });
+  }, [currentPlan]);
 
   const handleSelect = (planKey: string) => {
     if (planKey === currentPlan) return;

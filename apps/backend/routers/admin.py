@@ -598,3 +598,15 @@ async def get_usage_summary(
         logger.error("Kullanım özeti alınamadı: %s", e)
         raise HTTPException(status_code=500, detail="Kullanım özeti alınamadı.")
 
+
+@router.get("/product-events/summary")
+async def get_product_events_summary(days: int = 30):
+    """Ürün KPI event özeti ve temel funnel oranları (Sprint 3)."""
+    try:
+        from packages.research_engine.database import get_product_event_summary
+
+        return get_product_event_summary(days=days)
+    except Exception as e:
+        logger.error("Ürün event özeti alınamadı: %s", e)
+        raise HTTPException(status_code=500, detail="Ürün event özeti alınamadı.")
+

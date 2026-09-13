@@ -348,6 +348,8 @@ class ResearchReport:
     strategic_recommendations: list[str] = field(default_factory=list)
     # Sessiz degradasyon uyarıları (ör. harici kanıt doğrulaması yapılamadı)
     degradation_notes: list[str] = field(default_factory=list)
+    # Sprint 3 — Rapor kalite metrikleri (kanıt yoğunluğu, yankı, kaynaksızlık vb.)
+    report_metrics: dict = field(default_factory=dict)
 
 
 class ResearchModel(Protocol):

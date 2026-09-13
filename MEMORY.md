@@ -454,3 +454,14 @@ python -m pytest packages/research_engine/tests/ -q
 - ✅ **Altyapı statü matrisi:** `server_plan.md` başına aktif/yedek/durum tablosu (Oracle birincil, netcup+Neon+Vercel yedek); README production bölümü aynı çift-plana bağlandı.
 - ✅ **`UNIT_ECONOMICS.md` TCO bölümü:** Paddle komisyonu, sabit giderler, persona-bio çağrısı, destek yükü, chargeback, free edinim maliyeti ve Pro fair-use riski eklendi.
 - Doğrulama: backend tam süit **372 passed**.
+
+### Sprint 3 — Rapor kalitesi, veri etiketleme ve ölçüm (2026-09-13)
+
+- ✅ **Şablon sızıntısı düzeltildi (gerçek bug).** `synthesize_report` önerileri/aksiyonları tüm araştırmalarda sabitti ve sağlık örneğinden gelen **“klinik entegrasyonu”** gibi alakasız ifade içeriyordu. Artık öneriler **bulgulardan türetilir** (`derived_recommendations`, en yüksek güvenli 3 bulgu) ve `action_items`/`validation_next_steps` jeneriktir.
+- ✅ **Rapor metrikleri (S3-1/S3-3):** `analytics.build_report_metrics()` → kanıtlı bulgu, kaynaksız bulgu, bulgu başına kanıt, kanıtta benzersiz persona, karşı kanıt oranı, yanıt tamamlanma oranı, harici kaynak sayısı, karar sinyali dağılımı. `ResearchReport.report_metrics` alanı eklendi.
+- ✅ **Veri kökeni etiketleme (S3-2):** Rapor (markdown + HTML) ve study detay UI'ında **Sentetik / Algoritmik / Harici** etiketleri ve “istatistiksel temsil iddiası taşımaz” notu.
+- ✅ **Free plan mesaj netliği (S3-4):** Paywall metni “2 araştırma hakkı veya 1 ay · Tam rapor için plan gerekir” olarak netleştirildi.
+- ✅ **KPI event altyapısı (S3-5/S3-6):** `product_events` tablosu + `record_product_event()` + `get_product_event_summary()` (funnel oranları, [0,1] clamp'li). Backend event'leri: `research_started`, `research_completed`, `report_synthesized`. İstemci event'leri: `POST /api/client/events` (beyaz liste) + `src/lib/events.ts`; study detay/rapor sekmesi ve upgrade sayfası event gönderir.
+- ✅ **Admin kabul özeti (S3-8):** `GET /api/admin/product-events/summary?days=30` → event sayıları + funnel oranları.
+- ✅ **Metodolojik tutarlılık notu (S3-7):** README Bilimsel Altyapı bölümüne kapsam/sınırlılık notu; raporda veri kökeni bölümü.
+- Test: `test_report_metrics.py` (4), `test_product_events.py` (2, DB-gated). Doğrulama: backend tam süit **378 passed** (DB'li) / CI'da 363 passed + 15 skipped; `tsc` + `eslint` temiz.
