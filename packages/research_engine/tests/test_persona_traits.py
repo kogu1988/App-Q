@@ -113,7 +113,18 @@ def test_13_9_plan_panel_size_is_honored():
 
 def test_13_10_plan_ses_quota_matches_panel_size():
     """build_research_plan SES kotası panel boyutuyla ölçeklenmeli."""
+    import pytest
+
     from packages.research_engine.tests.helpers import make_brief
+
+    # build_research_plan → get_question_collection() DB erişimi gerektirir.
+    try:
+        from packages.research_engine.database import get_db
+
+        with get_db() as (_conn, cur):
+            cur.execute("SELECT 1")
+    except Exception:
+        pytest.skip("Canlı PostgreSQL gerekli (build_research_plan DB'ye bağlı)")
 
     plan = build_research_plan(make_brief(), panel_size=10)
 
