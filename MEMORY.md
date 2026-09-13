@@ -486,3 +486,10 @@ python -m pytest packages/research_engine/tests/ -q
 - ✅ **E2E/test dokümantasyonu (S7-8):** `TESTING.md` — tek komut, DB-gated testler, CI yapısı, E2E secret kurulumu ve **stack gerektiren testler** (mobil görsel regresyon, yük, Celery retry/idempotency, Paddle canlı, backup/restore) açıkça belgelendi. README testler bölümü bu dosyaya yönlendirildi.
 - Not: Stack gerektiren 5 test türü S7 kapsamında **belgelendi**, otomatikleştirilmesi altyapı (S10) sonrasına bırakıldı.
 - Doğrulama: `python scripts/run_tests.py` → **392 passed**.
+
+### Sprint 9 — Rekabet, GTM ve pilot program paketi (2026-09-13)
+
+- ✅ **`REKABET.md` derin matris (S9-1):** Kategori (sentetik / gerçek kullanıcı / survey / ajans / DIY) + 11 karşılaştırma boyutu + **doğrulama görev listesi**. Uydurma rakip fiyatı/özelliği YOK; doğrulanmamış hücreler `?` ve teyit yöntemiyle işaretli. "Rakiplerde yok" iddiası yerine "Clarere'de ürünleşmiş ve test edilmiş" dili kullanıldı.
+- ✅ **`GTM_PLAYBOOK.md` (S9-2/3/4/5/6):** Pilot program kiti (5–10 partner, 4 hafta, başarı kriterleri), fiyat doğrulama planı (Van Westendorp uyarlaması + karar kuralı), Free→paid funnel hipotezleri (H1–H4, `product_events` ile ölçülür), KPI dashboard tanımı (Edinim/Aktivasyon/Değer/Gelir/Kalite) ve yatırımcı deck tutarlılık kontrol listesi.
+- Not: Fiyat/rakip doğrulaması **gerçek partner verisi** gerektirir; plan hazır, uygulama canlı sonrası (S10).
+- Doğrulama: doküman değişikliği; CI yeşil.

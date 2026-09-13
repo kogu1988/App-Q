@@ -62,6 +62,61 @@ Bu kombinasyonu yapan başka bir yerli platform bilinmiyor.
 
 ---
 
+## 📊 Derin Rekabet Matrisi (Sprint 9)
+
+> **Veri disiplini:** Bu matriste **uydurma veri YOKTUR.** Doğrulanmamış hücreler `?` ile işaretlidir ve nasıl doğrulanacağı belirtilmiştir. Rakip fiyat/özellik bilgisi yayınlanmadan önce resmî kaynaktan teyit edilmelidir.
+
+### Kategoriler
+
+| Kategori | Temsilciler | Clarere ile ilişki |
+|---|---|---|
+| Sentetik araştırma | Synthetic Users, Articos, GPT wrapper'lar | Doğrudan |
+| Gerçek kullanıcı araştırma | UserTesting, Maze | Dolaylı (farklı değer) |
+| Survey / form | Typeform, SurveyMonkey | Dolaylı |
+| Araştırma ajansları | Yerel/global ajanslar | İkame (yüksek maliyet) |
+| DIY (LLM + Excel) | ChatGPT/Claude + tablo | **En büyük gerçek rakip** |
+
+### Karşılaştırma boyutları
+
+| Boyut | Neden önemli |
+|---|---|
+| Türkiye kültürel/SES desteği | Yerel geçerlilik |
+| Persona izolasyonu (hipotez-kör) | Sycophancy kontrolü |
+| Kanıt zinciri | İzlenebilirlik |
+| Karşı kanıt / çelişki raporlama | Dürüstlük |
+| Fiyat analizi (Van Westendorp) | Karar desteği |
+| Gerçek kullanıcıya köprü | Doğrulama yolu |
+| Metodoloji şeffaflığı | Güven |
+| Export / API | İş akışı entegrasyonu |
+| Kurumsal güvenlik (SSO, DPA) | Enterprise satın alma |
+| Veri işleme lokasyonu | KVKK |
+| Fiyat / şeffaf kotalar | Edinim |
+
+### Doğrulama görev listesi (yayımlamadan önce)
+
+| # | Doğrulanacak bilgi | Kaynak yöntemi |
+|---|---|---|
+| 1 | Rakiplerin güncel fiyatlandırması | Resmî fiyat sayfası ekran görüntüsü + tarih |
+| 2 | Persona üretim metodolojisi iddiaları | Resmî doküman/blog |
+| 3 | Türkiye/dil desteği | Ürün denemesi (kayıt) |
+| 4 | Veri işleme lokasyonu ve alt işleyenler | Gizlilik politikası / DPA |
+| 5 | Kanıt/atıf gösterimi | Ürün çıktısı örneği |
+| 6 | Gerçek kullanıcı entegrasyonu | Özellik dokümanı |
+
+> Bu görevler tamamlanana kadar dışa dönük karşılaştırma materyalinde rakam/özellik iddiası kullanılmaz.
+
+### Clarere'nin bugünkü savunulabilir konumu
+
+Aşağıdaki üçlü, mevcut kod tabanıyla **kanıtlanabilir** biçimde ayrışır:
+
+1. **Türkiye bağlamı:** TÜAD 2025 SES dağılımı + Hofstede TR + TL/taksit/BDDK refleksleri.
+2. **İzlenebilirlik:** Her bulgu persona → soru → alıntı → destek/karşı kanıt zinciriyle bağlı.
+3. **Dayanıklılık denetimi:** Hipotez-körlük, Skeptic zorunluluğu, echo/acquiescence kontrolü, uydurma dış kanıt yasağı.
+
+Bu üçlünün **hiçbiri** “rakiplerde yok” iddiası taşımaz; yalnızca Clarere'de **ürünleşmiş ve test edilmiş** olduğunu söyler.
+
+---
+
 ## 🗳️ Siyasi Parti / Seçim Araştırması
 
 ### Neden Clarere?
