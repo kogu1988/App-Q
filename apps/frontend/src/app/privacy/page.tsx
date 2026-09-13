@@ -139,9 +139,23 @@ export default function PrivacyPage() {
               Clarere, kişisel verilerinizi üçüncü şahıslara satmaz veya kiralamaz. Verileriniz sadece aşağıdaki durumlarda ve amaçlarla sınırlı olarak paylaşılabilir:
             </p>
             <ul className="space-y-3 text-sm text-body-muted list-disc pl-5 leading-relaxed">
-              <li><strong>Hizmet Sağlayıcılar (Alt İşleyiciler):</strong> Ödeme: <strong>Paddle</strong> (merchant of record) · Büyük dil modeli: <strong>DeepSeek API</strong> · Veritabanı: <strong>Neon</strong> (PostgreSQL) · Sunucu barındırma: <strong>netcup</strong> (VPS) · Arayüz barındırma: <strong>Vercel</strong> · İşlemsel e-posta: <strong>Resend</strong> · Hata izleme: <strong>Sentry</strong>. Bu sağlayıcılar yalnızca hizmeti sunmak için gereken veriyle sınırlıdır ve verileriniz hiçbir koşulda satılmaz veya kiralanmaz.</li>
+              <li><strong>Hizmet Sağlayıcılar (Alt İşleyiciler):</strong> Ödeme: <strong>Paddle</strong> (merchant of record) · Büyük dil modeli: <strong>DeepSeek API</strong> · Veritabanı ve barındırma: kendi sunucumuz (self-hosted) veya yönetilen bulut sağlayıcı · İşlemsel e-posta: <strong>Resend</strong> · Hata izleme: <strong>Sentry</strong>. Aktif barındırma sağlayıcıları dağıtım kararına göre değişebilir; güncel listeyi talep üzerine ve bu sayfada ilan ederiz. Bu sağlayıcılar yalnızca hizmeti sunmak için gereken veriyle sınırlıdır ve verileriniz hiçbir koşulda satılmaz veya kiralanmaz.</li>
               <li><strong>Yasal Zorunluluklar:</strong> Bir mahkeme kararı, savcılık talebi veya yürürlükteki yasal süreçlerin zorunlu kıldığı durumlarda yetkili resmi makamlarla.</li>
               <li><strong>Şirket Yapısı Değişiklikleri:</strong> Şirket birleşmesi, devri veya varlık satışı gibi yapısal durumlarda veriler, gizlilik taahhüdü korunarak halef kuruluşa aktarılabilir.</li>
+            </ul>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-primary tracking-tight">6A. Veri Akışı Özeti</h2>
+            <p className="text-body-muted leading-relaxed text-sm">
+              Hangi verinin hangi bileşene gittiğini şeffaf şekilde özetliyoruz:
+            </p>
+            <ul className="space-y-3 text-sm text-body-muted list-disc pl-5 leading-relaxed">
+              <li><strong>Araştırma brief&apos;i ve ürün fikri →</strong> Büyük dil modeli (DeepSeek API). Model çağrısı için gereklidir; bir PII maskeleme katmanı (telefon/e-posta/TC) bu veriyi gönderim öncesi temizler. İsim/lokasyon gibi alanlar için yerel NER modeli yalnızca kurumsal planda devreye girer.</li>
+              <li><strong>Ödeme bilgisi →</strong> Paddle (merchant of record). Clarere kart bilgisi <strong>saklamaz</strong>; ödeme Paddle altyapısında işlenir.</li>
+              <li><strong>Araştırma çıktıları ve raporlar →</strong> Kendi veritabanımız. KVKK kapsamındaki indirme ve silme haklarınızı hesabınızdan self-servis kullanabilirsiniz.</li>
+              <li><strong>Teknik hata kayıtları →</strong> Sentry (kişisel veri gönderimi devre dışı).</li>
+              <li><strong>İşlemsel e-postalar →</strong> Resend.</li>
             </ul>
           </section>
 

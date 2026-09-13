@@ -71,7 +71,7 @@ def get_personas_from_pool_by_role(role_title: str, limit: int = 5) -> list[dict
                         try:
                             # Postgres vector returns string like '[0.5, 0.2, ...]'
                             vector_vals = json.loads(big_five_vector)
-                        except:
+                        except (json.JSONDecodeError, TypeError, ValueError):
                             vector_vals = [0.5, 0.5, 0.5, 0.5, 0.5]
                     else:
                         vector_vals = list(big_five_vector)

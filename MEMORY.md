@@ -465,3 +465,14 @@ python -m pytest packages/research_engine/tests/ -q
 - ✅ **Admin kabul özeti (S3-8):** `GET /api/admin/product-events/summary?days=30` → event sayıları + funnel oranları.
 - ✅ **Metodolojik tutarlılık notu (S3-7):** README Bilimsel Altyapı bölümüne kapsam/sınırlılık notu; raporda veri kökeni bölümü.
 - Test: `test_report_metrics.py` (4), `test_product_events.py` (2, DB-gated). Doğrulama: backend tam süit **378 passed** (DB'li) / CI'da 363 passed + 15 skipped; `tsc` + `eslint` temiz.
+
+### Sprint 6 — Güvenlik, KVKK ve prod hazırlığı (yerel kısımlar) (2026-09-13)
+
+- ✅ **Bare `except:` temizliği.** `client.py` (WS mesaj/close, JSON parse) ve `db_vectors.py` (big_five vector parse) dar istisna tipleriyle (`json.JSONDecodeError`, `TypeError`, `ValueError`) değiştirildi; beklenmeyen hatalar artık `logger.debug` ile görünür.
+- ✅ **CORS production guard test edilebilir hale getirildi.** `main.resolve_allowed_origins(app_env, raw_origins)` ayrıştırıldı; production'da `ALLOWED_ORIGINS` yoksa `RuntimeError` (uygulama açılmaz). Regresyon: 4 test (production zorunlu, parse, dev wildcard, boş entry).
+- ✅ **Mevcut guard'lar doğrulandı:** JWT secret (production zorunlu/min 32), admin `X-Admin-Key` (production'da 503, timing-safe), `X-Username` fallback yalnızca development.
+- ✅ **Secret hijyeni:** tracked dosyalarda gerçek anahtar yok (yalnızca `sk-...` placeholder'ları). ⚠️ Sohbette paylaşılan Paddle sandbox anahtarı için rotasyon kullanıcı aksiyonudur.
+- ✅ **Bağımlılık denetimi:** `pip-audit -r requirements.txt` → 0 açık; `npm audit --omit=dev` → 0 açık.
+- ✅ **KVKK veri akışı:** `privacy/page.tsx` alt işleyen listesi mimariden bağımsız hale getirildi ve **"6A. Veri Akışı Özeti"** eklendi (brief→LLM + PII maskeleme, ödeme→Paddle, çıktılar→kendi DB, hata→Sentry PII kapalı, e-posta→Resend).
+- ⚠️ **Hukuki inceleme bekliyor (kullanıcı aksiyonu):** `terms/page.tsx` fikri mülkiyet/gizlilik ifadeleri ve `privacy/page.tsx` KVKK metni canlı öncesi **avukat incelemesinden** geçmeli. Kod tarafı hazır; metin hukuk onayı gerektirir.
+- Doğrulama: `test_blockers_p0.py` 25 passed; CI-safe tam süit **367 passed + 15 skipped**; `tsc` + `eslint` temiz.

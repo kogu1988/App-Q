@@ -76,17 +76,25 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 # CORS Güvenlik Katmanı — production'da ALLOWED_ORIGINS env var zorunluluğu korunuyor
+def resolve_allowed_origins(app_env: str, raw_origins: str | None) -> list[str]:
+    """İzinli CORS origin listesini çözer.
+
+    Production'da ALLOWED_ORIGINS zorunludur; yoksa RuntimeError (uygulama açılmaz).
+    Development'ta boşsa `['*']` döner.
+    """
+    raw = (raw_origins or "").strip()
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    if (app_env or "").lower() == "production":
+        raise RuntimeError(
+            "Production ortamında ALLOWED_ORIGINS env var zorunludur. "
+            "Örnek: ALLOWED_ORIGINS=https://clarere.com"
+        )
+    return ["*"]  # Sadece development
+
+
 _app_env = os.getenv("APP_ENV", "development").lower()
-_raw_origins = os.getenv("ALLOWED_ORIGINS", "")
-if _raw_origins:
-    _allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
-elif _app_env == "production":
-    raise RuntimeError(
-        "Production ortamında ALLOWED_ORIGINS env var zorunludur. "
-        "Örnek: ALLOWED_ORIGINS=https://clarere.com"
-    )
-else:
-    _allowed_origins = ["*"]  # Sadece development
+_allowed_origins = resolve_allowed_origins(_app_env, os.getenv("ALLOWED_ORIGINS", ""))
 
 app.add_middleware(
     CORSMiddleware,

@@ -1731,7 +1731,7 @@ def match_personas(request: Request, data: dict, x_username: str | None = Depend
 
         try:
             matched = json.loads(text)
-        except:
+        except (json.JSONDecodeError, TypeError):
             matched = []
         # For each matched role, find 1-2 sample personas from the pool to return for UI
         for m in matched:
@@ -1956,16 +1956,21 @@ async def ws_synthesis_status(websocket: WebSocket, research_id: str, ticket: st
                     if payload.get("status") in ("completed", "failed"):
                         await asyncio.sleep(0.5)
                         break
-                except:
-                    pass
+                except (json.JSONDecodeError, TypeError):
+                    # Beklenen: yayınlanan mesaj JSON değilse yok say (protokol toleransı).
+                    logger.debug("Synthesis WS: JSON olmayan mesaj atlandı.")
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for synthesis {research_id}")
     except Exception as e:
         logger.error(f"WebSocket error for synthesis {research_id}: {e}")
     finally:
         if pubsub:
-            await pubsub.unsubscribe()
+            try:
+                await pubsub.unsubscribe()
+            except Exception:
+                logger.debug("WS pubsub unsubscribe başarısız (zaten kapalı olabilir).")
         try:
             await websocket.close()
-        except:
-            pass
+        except Exception:
+            # Bağlantı zaten kapanmış olabilir; kapanış hatası beklenen durumdur.
+            logger.debug("WS close sırasında beklenen hata (bağlantı kapanmış).")

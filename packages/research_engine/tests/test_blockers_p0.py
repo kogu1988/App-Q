@@ -228,6 +228,36 @@ def test_admin_guard_dev_without_key_warns_only(monkeypatch):
     assert require_admin(_FakeRequest(), x_admin_key="") is None
 
 
+# ── CORS production guard (P0-3 türevi) ──
+
+def test_cors_production_requires_allowed_origins():
+    from apps.backend.main import resolve_allowed_origins
+
+    with pytest.raises(RuntimeError):
+        resolve_allowed_origins("production", "")
+
+
+def test_cors_production_parses_origins():
+    from apps.backend.main import resolve_allowed_origins
+
+    assert resolve_allowed_origins("production", "https://clarere.com, https://www.clarere.com") == [
+        "https://clarere.com",
+        "https://www.clarere.com",
+    ]
+
+
+def test_cors_development_defaults_to_wildcard():
+    from apps.backend.main import resolve_allowed_origins
+
+    assert resolve_allowed_origins("development", "") == ["*"]
+
+
+def test_cors_ignores_blank_entries():
+    from apps.backend.main import resolve_allowed_origins
+
+    assert resolve_allowed_origins("production", "https://a.com, ,") == ["https://a.com"]
+
+
 # ── P0-6: LLM kullanım birikimi ──
 
 class _Usage:
