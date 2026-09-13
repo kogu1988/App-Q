@@ -397,3 +397,30 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 - ✅ **Org tabloları oluşturulmuyordu (gerçek bug)** — `db_org.init_org_schema()` hiçbir kod yolundan çağrılmıyordu ve app rolü DDL yetkisine sahip değildi → Enterprise `multi_user` sessizce bozuktu. Düzeltme: DDL `db_org._create_org_tables(cur)`'a taşındı; `init_db()` admin bağlantısıyla (app role grant'ından önce) oluşturuyor. Regresyon testi: `test_rls_org_sharing.py`.
 - ✅ **Zaman-bağımlı test kırılganlığı** — `test_quota_atomicity._prepare_user` sabit geçmiş tarih (`2026-01-01`) kullanıyordu; 30 günü aştığı için `check_and_reset_period` sayacı sıfırlıyor ve testler yanlış başarısız oluyordu. Varsayılan period_start artık **bugün**.
 - ✅ **RLS bağlamı olmadan insert** — `test_migrations.test_12_2` tenant bağlamı olmadan studies insert ediyordu → politika ihlali. `current_tenant_var` + `created_by` eklendi.
+
+### Çalışma detay sekmeleri doğrulaması (2026-09-13)
+
+- **Tüm sekmeler dolu/çalışıyor** (E2E ile DOM denetimi, `pro` + `study_1789318823185`): Özet & Hedefler, Personalar, Senaryo, Mülakat Kayıtları, Kanıt Zinciri, Sentez Raporu — hiçbirinde placeholder (`Belirtilmemiş`, `bulunamadı` vb.) yok. Transkript dialogu açılıyor, tam Q&A gösteriyor.
+- ✅ **RFI rozeti tutarsızlığı** — `research_quality` payload'unda `rfi`/`components` yokken arayüz yanıltıcı şekilde **"Eşik Altı"** gösteriyordu. Artık `rfi` yoksa nötr **"Ölçülmedi"** (gri) gösterilir.
+- ✅ **Özet & Hedefler brief kartı zenginleşti** — yalnızca Marka/Fiyat/Problemi yerine artık Kategori, Hedef Kitle, Rakipler, Başarı Kriteri, Satış Kanalı, Panel & Coğrafya da gösteriliyor.
+- ✅ **Personalar kartı zenginleşti** — persona `attributes` alanından Mevcut İş Akışı, Karar Tetikleyicisi, Satın Alma Sürtünmesi ekleniyor (şablon bio tek başına yetersiz kalıyordu).
+- ✅ **Küçük düzeltmeler** — bozuk `bg-[#f1f5ff]0` Tailwind sınıfı, RFI uyarı metnindeki `...` kesmesi kaldırıldı.
+- Doğrulama: `npx tsc --noEmit` + `npx eslint` temiz; frontend imajı yeniden derlendi.
+
+### Persona biyografisi doğallaştırma (2026-09-13)
+
+- ✅ **`enrich_persona_bios()`** (`workflow.py`) — Persona `bio` alanı artık LLM ile doğal, TR pazarına bağlı biçimde yeniden yazılır. **Tek** ek API çağrısı (tüm panel için JSON `{"bios": {"<id>": "..."}}`).
+- **Anti-halüsinasyon:** Prompt yalnızca mevcut `attributes` (Current workflow, Decision trigger, Buying friction, Hobbies), SES, Rogers duruşu, şehir ve fiyat/dijital skorlarını kullanmaya zorlar; yeni sayı/marka/kurum uydurma yasak. `60–700` karakter dışı veya `...`/`…` içeren çıktı reddedilir.
+- **Fail-safe:** LLM hatası/geçersiz JSON → mevcut şablon bio korunur; akış çökmez. `generate_personas()` model'sız çağrıldığında (testler) davranış değişmez.
+- **Frozen dataclass:** `Persona` `frozen=True` olduğundan atama değil `dataclasses.replace()` kullanılır (aksi halde `FrozenInstanceError` sessizce yutuluyordu).
+- **Bağlantı:** `research_runner.execute_research` adım 2'den sonra çağrılır.
+- Test: `tests/test_persona_bio.py` (5). Canlı doğrulama: 5/5 persona doğal bio üretti. Tam süit **364 passed**.
+
+> **Maliyet notu:** Bu adım araştırma başına 1 ek LLM çağrısı ekler (küçük prompt/çıktı). Prefix-cache ve içerik-hash cache'ten pay almaz.
+
+#### Bilimsel bağlılık güvencesi (2026-09-13)
+
+- **`bio` mülakat davranışını ETKİLEMEZ** — `build_elephant_system_prompt` bio'yu kullanmaz; kalibrasyon Big Five/Agreeableness/Neuroticism/Openness üzerinden yürür. Bio yalnızca raporda ve persona havuzunda görünür.
+- **Bilimsel alanlar dokunulmaz** — `enrich_persona_bios` yalnızca `bio` metnini `dataclasses.replace()` ile değiştirir; `big_five`, `traits`, `neo_facets`, `stance`, `ses_group`, `diffusion_stage`, `price_sensitivity`, `digital_confidence`, `attributes` aynen korunur. Regresyon: `test_enrich_persona_bios_preserves_scientific_fields`.
+- **Psikometriye bağlı anlatım** — Prompt persona kataloğuna Big Five skorları ve Rogers aşama açıklaması eklenir; "bu atamalar bilimseldir, DEĞİŞTİRİLEMEZ" kuralı ve davranış dili zorunluluğu vardır (skorlar sayı olarak yazılmaz). Regresyon: `test_enrich_persona_bios_prompt_is_psychometrically_grounded`.
+- Tam süit: **366 passed**.

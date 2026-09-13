@@ -5,6 +5,7 @@ import os
 import random
 import re
 import uuid
+from dataclasses import replace
 from typing import Any, Generator, Dict, List, Optional
 
 from .models import (
@@ -437,6 +438,99 @@ def generate_personas(brief: ResearchBrief, panel_roles: List[PanelRole] | None 
             neo_facets=neo_facets_from_traits(tr, stance),
         ))
     
+    return personas
+
+
+def enrich_persona_bios(
+    personas: List[Persona],
+    brief: ResearchBrief,
+    model: ResearchModel | None = None,
+    max_len: int = 700,
+) -> List[Persona]:
+    """Persona biyografilerini, deterministik alanlara bağlı kalarak LLM ile doğallaştırır.
+
+    Anti-halüsinasyon: yalnızca verilen attribute'lardan yararlanır; yeni sayı, marka,
+    kurum veya olay uydurması yasaklanır. LLM erişilemezse ya da çıktı geçersizse
+    mevcut (şablon) biyografi korunur — akış asla çökmez.
+    """
+    if not personas or model is None:
+        return personas
+    try:
+        market = brief.market or "Türkiye"
+        catalog = []
+        for p in personas:
+            attrs = p.attributes or {}
+            bf = p.big_five or {}
+            bf_parts = [
+                f"{label} {(bf.get(key) if bf.get(key) is not None else '?')}"
+                for key, label in (
+                    ("Openness", "Açıklık"),
+                    ("Conscientiousness", "Sorumluluk"),
+                    ("Extraversion", "Dışadönüklük"),
+                    ("Agreeableness", "Uyumluluk"),
+                    ("Neuroticism", "Duygusal dengesizlik"),
+                )
+            ]
+            catalog.append(
+                f"- id: {p.id}\n"
+                f"  isim: {p.name}\n"
+                f"  yaş: {p.age}\n"
+                f"  şehir: {p.city}\n"
+                f"  rol/segment: {p.role_title or p.segment}\n"
+                f"  SES: {p.ses_group or 'C1'}\n"
+                f"  Rogers duruşu: {p.stance}\n"
+                f"  Rogers aşaması: {p.diffusion_stage or ''}\n"
+                f"  Big Five (0-100, bilimsel atama — değiştirilemez): {', '.join(bf_parts)}\n"
+                f"  fiyat hassasiyeti (0-10): {p.price_sensitivity}\n"
+                f"  dijital güven (0-10): {p.digital_confidence}\n"
+                f"  mevcut iş akışı: {attrs.get('Current workflow', '')}\n"
+                f"  karar tetikleyicisi: {attrs.get('Decision trigger', '')}\n"
+                f"  satın alma sürtünmesi: {attrs.get('Buying friction', '')}\n"
+                f"  hobiler: {attrs.get('Hobbies', '')}"
+            )
+        system = (
+            "Sen Clarere için persona biyografisi yazarsın. Verilen psikometrik profile (Big Five / Rogers) "
+            f"SADIK kalarak, {market} pazarına özgü, doğal ve akıcı üçüncü şahıs biyografiler yaz. "
+            "Verilmeyen sayı, marka, kurum, iş yeri veya olay uydurma. Yalnızca geçerli JSON döndür."
+        )
+        prompt = (
+            f"Kategori: {brief.category or 'genel'}\n"
+            f"Ürün fikri: {(brief.idea or '')[:400]}\n"
+            f"Hedef kullanıcı: {', '.join(brief.target_users or [])[:300]}\n\n"
+            "Aşağıdaki personaların her biri için 2-3 cümlelik, doğal akan, üçüncü şahıs bir biyografi yaz.\n"
+            "Kurallar:\n"
+            "- Yalnızca verilen alanları kullan; yeni sayı, isim, marka veya kurum uydurma.\n"
+            "- Big Five / Rogers atamaları bilimseldir ve DEĞİŞTİRİLEMEZ. Biyografiyi bu profile göre kur; çeliştirme.\n"
+            "- Psikometrik skorları sayı olarak yazma; bunları davranış ve tutum diline çevir "
+            "(ör. Openness yüksek → yeni çözümleri denemeye istekli; Neuroticism yüksek → fiyat/risk kaygısı; "
+            "Agreeableness düşük → şüpheci, itiraz etmeye hazır; Openness düşük → kanıtlanmış çözüm tercihi).\n"
+            "- Rogers duruşunu doğal biçimde yansıt (Innovator → öncü, Skeptic → temkinli/kanıt arayan).\n"
+            f"- {market} pazarı bağlamını koru (şehir, SES, TL).\n"
+            "- Cümleler yarım kalmasın; üç nokta (...) kullanma.\n"
+            "- Fiyat hassasiyeti yüksekse maliyet kaygısını, dijital güven düşükse adaptasyon zorluğunu yansıt.\n\n"
+            "Personalar:\n" + "\n".join(catalog) + "\n\n"
+            'Yalnızca şu formatta JSON döndür: {"bios": {"<id>": "<biyografi>"}}'
+        )
+        response_text = model.generate(system, prompt, response_format="json")
+        parsed = json.loads(response_text)
+        bios = parsed.get("bios", parsed) if isinstance(parsed, dict) else {}
+        if not isinstance(bios, dict):
+            return personas
+        enriched: List[Persona] = []
+        updated = 0
+        for p in personas:
+            candidate = bios.get(p.id)
+            if isinstance(candidate, str):
+                text = candidate.strip()
+                if 60 <= len(text) <= max_len and "..." not in text and "…" not in text:
+                    enriched.append(replace(p, bio=text))
+                    updated += 1
+                    continue
+            enriched.append(p)
+        logger.debug("Persona biyografileri doğallaştırıldı: %s/%s", updated, len(personas))
+        return enriched
+    except Exception:
+        logger.debug("Persona biyografi zenginleştirme başarısız; şablon bio korundu.", exc_info=True)
     return personas
 
 

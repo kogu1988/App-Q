@@ -57,7 +57,7 @@ def execute_research(
     from .db_vectors import save_persona_to_pool
     from .plan_config import get_max_personas
     from .providers import get_model_provider
-    from .workflow import build_research_plan, generate_personas, run_interviews_batch
+    from .workflow import build_research_plan, enrich_persona_bios, generate_personas, run_interviews_batch
 
     _report_progress(on_progress, 5)
     brief = build_brief(payload)
@@ -70,6 +70,7 @@ def execute_research(
     # 2) Persona
     personas = generate_personas(brief)
     personas = personas[: get_max_personas(plan_type)]
+    personas = enrich_persona_bios(personas, brief, model)
     _report_progress(on_progress, 30)
 
     # 3) Batch mülakat
