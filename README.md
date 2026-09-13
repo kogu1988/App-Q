@@ -415,15 +415,13 @@ pytest packages/research_engine/tests/test_van_westendorp.py -v
 | Güvenlik & KVKK | JWT/admin guard, PII maskeleme, veri silme |
 | Priv/privacy, RLS, org | Tenant/organizasyon izolasyonu |
 
-> **Test sayısı SSOT:** Kesin sayı **CI'nın güncel koşusudur** (`ci.yml` her push'ta job özetine yazar). Dokümanlarda sabit sayı tutmak yerine CI çıktısına bakın. Yerel tam süit için DB port-forward gerekir:
+> **Test sayısı SSOT:** Kesin sayı **CI'nın güncel koşusudur** (`ci.yml` her push'ta job özetine yazar). Tek komutla yerel çalıştırma (Postgres port-forward'ını otomatik kurar):
 >
 > ```bash
-> docker run --rm -d --name clarere-db-fwd --network clarere_default -p 5433:5432 \
->   alpine/socat tcp-listen:5432,fork,reuseaddr tcp-connect:postgres:5432
-> POSTGRES_HOST=localhost POSTGRES_PORT=5433 POSTGRES_DB=clarere_db \
->   POSTGRES_USER=clarere_user POSTGRES_PASSWORD=clarere_password \
->   python -m pytest packages/research_engine/tests/ -q
+> python scripts/run_tests.py
 > ```
+>
+> Ayrıntılar, DB-gated testler ve stack gerektiren testler: **[`TESTING.md`](./TESTING.md)**
 
 ---
 

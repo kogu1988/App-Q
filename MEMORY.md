@@ -476,3 +476,13 @@ python -m pytest packages/research_engine/tests/ -q
 - ✅ **KVKK veri akışı:** `privacy/page.tsx` alt işleyen listesi mimariden bağımsız hale getirildi ve **"6A. Veri Akışı Özeti"** eklendi (brief→LLM + PII maskeleme, ödeme→Paddle, çıktılar→kendi DB, hata→Sentry PII kapalı, e-posta→Resend).
 - ⚠️ **Hukuki inceleme bekliyor (kullanıcı aksiyonu):** `terms/page.tsx` fikri mülkiyet/gizlilik ifadeleri ve `privacy/page.tsx` KVKK metni canlı öncesi **avukat incelemesinden** geçmeli. Kod tarafı hazır; metin hukuk onayı gerektirir.
 - Doğrulama: `test_blockers_p0.py` 25 passed; CI-safe tam süit **367 passed + 15 skipped**; `tsc` + `eslint` temiz.
+
+### Sprint 7 — Test derinliği ve CI determinizmi (2026-09-13)
+
+- ✅ **Tek komut test koşucusu (S7-1):** `scripts/run_tests.py` — Postgres erişimini kontrol eder, yoksa Docker `socat` ile port-forward kurar, tam süiti çalıştırır, sonra temizler. `--no-db` (CI-benzeri) ve `-- <pytest args>` destekler. Windows `cp1254` Unicode çökmesi `stdout.reconfigure(utf-8)` ile engellendi. Canlı: **392 passed**.
+- ✅ **PDF yapısal testi (S7-2):** `test_pdf_golden.py` — geçerli `%PDF-` imzası, `%%EOF`, makul boyut ve üretim stabilitesi.
+- ✅ **LLM önbellek testleri (S7-6):** `test_llm_cache.py` — anahtar determinizmi, her girdi boyutunda değişim, roundtrip, boş değer reddi, istatistik şekli, LRU tahliyesi.
+- ✅ **Persona determinizmi (S7-7):** `test_13_12` — aynı girdi ile panel kimlik/isim/duruş/Big Five birebir aynı (model drift kontrolü).
+- ✅ **E2E/test dokümantasyonu (S7-8):** `TESTING.md` — tek komut, DB-gated testler, CI yapısı, E2E secret kurulumu ve **stack gerektiren testler** (mobil görsel regresyon, yük, Celery retry/idempotency, Paddle canlı, backup/restore) açıkça belgelendi. README testler bölümü bu dosyaya yönlendirildi.
+- Not: Stack gerektiren 5 test türü S7 kapsamında **belgelendi**, otomatikleştirilmesi altyapı (S10) sonrasına bırakıldı.
+- Doğrulama: `python scripts/run_tests.py` → **392 passed**.

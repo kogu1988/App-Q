@@ -139,3 +139,23 @@ def test_13_11_default_panel_size_is_stable():
     personas = generate_personas(make_brief())
 
     assert len(personas) == 5
+
+
+def test_13_12_persona_generation_is_deterministic():
+    """Aynı girdi ile panel deterministik olmalı (S7-7 model drift kontrolü).
+
+    Kimlik, isim, duruş ve psikometrik vektör birebir aynı olmalı; aksi halde
+    panel tekrarlanabilirliği ve karşılaştırılabilirlik bozulur.
+    """
+    from packages.research_engine.tests.helpers import make_brief
+
+    first = generate_personas(make_brief(), panel_size=10)
+    second = generate_personas(make_brief(), panel_size=10)
+
+    def fingerprint(ps):
+        return [
+            (p.id, p.name, p.stance, p.ses_group, tuple(sorted(p.big_five.items())))
+            for p in ps
+        ]
+
+    assert fingerprint(first) == fingerprint(second)
