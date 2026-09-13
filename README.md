@@ -63,7 +63,13 @@ Clarere/
 │
 ├── packages/
 │   └── research_engine/      Domain mantığı (Python)
-│       ├── workflow.py        Araştırma orkestrasyonu + batch interviews
+│       ├── workflow/          Araştırma orkestrasyonu (paket)
+│       │   ├── planning.py         Plan, varsayım, mülakat senaryosu
+│       │   ├── personas.py         Persona üretimi + bio zenginleştirme
+│       │   ├── interviews.py       Senkron mülakat
+│       │   ├── interviews_stream.py Streaming mülakat
+│       │   ├── interviews_batch.py  Batch mülakat + tur yenileme
+│       │   └── _constants.py        Paylaşılan sabitler
 │       ├── analytics/         Rapor sentezi (paket)
 │       │   ├── synthesis.py     synthesize_report orkestrasyonu
 │       │   ├── ab_report.py     A/B varyant raporu
@@ -380,7 +386,12 @@ Tüm endpoint'ler `X-Admin-Key: <ADMIN_SECRET_KEY>` header'ı gerektirir.
 ```
 packages/research_engine/
 ├── models.py            Veri sözleşmeleri (dataclass, frozen)
-├── workflow.py          Araştırma orkestrasyonu + batch interviews
+├── workflow/            Araştırma orkestrasyonu (paket)
+│                          → build_research_plan()      [planning.py]
+│                          → generate_personas()        [personas.py]
+│                          → run_interviews()           [interviews.py]
+│                          → run_interviews_stream()    [interviews_stream.py]
+│                          → run_interviews_batch()     [interviews_batch.py]
 │                          → build_research_plan()
 │                          → generate_personas()
 │                          → run_interviews_batch()

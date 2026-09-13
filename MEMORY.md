@@ -128,7 +128,7 @@ python -m pytest packages/research_engine/tests/ -q
 | Dosya | Görev | Ne Zaman Bak |
 |---|---|---|
 | `providers.py` | `DeepSeekResearchModel` + `get_model_provider()` | LLM değişikliği |
-| `workflow.py` | `build_research_plan()`, `generate_personas()`, `run_interviews_batch()` | Araştırma akışı |
+| `workflow/` | Araştırma orkestrasyonu (paket): `planning`, `personas`, `interviews`, `interviews_stream`, `interviews_batch` | Araştırma akışı |
 | `models.py` | Tüm dataclass'lar (ResearchBrief, Persona, vb.) | Veri modeli değişikliği |
 | `intake.py` | `process_intake_chat()` — Defne chatbot (Articos-tarzı hızlı akış, 3-5 tur) | Defne davranışı |
 | `analytics/` | Rapor sentezi (paket): `synthesis`, `ab_report`, `findings`, `evidence`, `pricing`, `corroboration`, `metrics`, `enrichment` | Rapor değişikliği |
@@ -558,3 +558,15 @@ python -m pytest packages/research_engine/tests/ -q
 - 🐛 İki kez yanlış ara slice sınırı yakalandı (`slice(996,1076)` bir fonksiyonun `}` satırından başlıyordu → `slice(999,1076)`). Ayrıca paket derinliği nedeniyle `from .models` → `from ..models` düzeltmesi gerekti (modül seviyesi relative import'lar ilk denemede atlanmıştı).
 - Doğrulama: `python scripts/run_tests.py` → **410 passed**; Playwright `01-ui` + `03-study-actions` → **5/5 passed**; `ruff` düzeltmeleri sonrası golden hâlâ birebir; konteyner logu temiz.
 - **Sıradaki:** R8 — `workflow.py` (1392) → paket + mapper/DTO + bağımlılık.
+
+### Refaktör R8 — `workflow.py` → paket (+ bağımlılık temizliği) (2026-09-13)
+
+- ✅ **`workflow.py` (1392) → `workflow/` paketi:** `planning.py` (280), `personas.py` (411), `interviews.py` (226), `interviews_stream.py` (258), `interviews_batch.py` (416), `_constants.py` (23), `__init__.py` (83). En büyük dosya 416 satır (kabul: < 500).
+- ✅ **Shim tam kapsamlı:** `__init__.py` eski dosyanın import bloğunu aynen taşıdığı için `build_elephant_system_prompt`, `STANCE_PROFILE`, `HOFSTEDE_*` gibi **node yardımcıları** da eskisi gibi `workflow` üzerinden erişilebilir (nodes/simulation.py bu yolu kullanıyor). `DEFAULT_QUESTIONS` (admin.py) ve `_format_ab_question` (test) dâhil.
+- ✅ **R8-8 bağımlılık temizliği:** `requirements.txt`'ten kullanılmayan görselleştirme/veri yığını kaldırıldı — `pandas`, `numpy`, `altair`, `plotly`, `pyarrow`, `GitPython` (kod tabanında **sıfır** referans; grep ile doğrulandı). İmaj yeniden derlendi, container açılışı + API smoke (study detail 200) + E2E yeşil. Not: `numpy` başka bir paketin transitif bağımlılığı olarak imajda kalıyor.
+- ✅ **R8-9 opsiyonel grup:** `requirements-optional.txt` eklendi (`crawl4ai` — `search.py` kurulu değilse mock'a düşüyor).
+- ✅ **R8-10 mimari testi:** `test_architecture.py::test_11_6_no_circular_imports_after_package_split` eklendi — paketler arası relative import grafiğini çıkarıp döngü arar. **Yalnızca modül seviyesi import'lar** sayılır; fonksiyon içi tembel import'lar (`...db_org`) yanlış pozitif üretmesin diye dışlanır.
+- ⏸️ **Ertelenen iş kalemleri (gerekçeli):** R8-6/R8-7 (yeni `mappers/` DTO katmanı ve tolerant alan okumanın tek yerde toplanması) **davranış dondurma** kuralıyla çelişiyor — çağrı yerlerinin değişmesini gerektirir. Ayrı bir "mimari sadeleştirme" işi olarak planlanmalı; bu sprintte shim tabanlı bölünme ile sınırlı kalındı.
+- 🐛 **İki test kaynak-yolu güncellemesi:** `test_probe_engine.py::test_6_8` artık `workflow/` paketinin tamamını tarıyor.
+- Doğrulama: `python scripts/run_tests.py` → **411 passed**; Playwright `01-ui` + `03-study-actions` → **5/5**; container logu temiz; API smoke 200.
+- **Sıradaki:** R3 — `admin/page.tsx` (1470) → bileşenler.

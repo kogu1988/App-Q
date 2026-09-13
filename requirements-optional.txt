@@ -1,0 +1,14 @@
+# Clarere — Opsiyonel Bağımlılıklar
+#
+# Bu paketler çekirdek çalışma için GEREKLİ DEĞİLDİR. Kurulmadıklarında ilgili
+# kod yolu zarif biçimde devre dışı kalır (mock/atlanmış davranış) ve uyarı loglar.
+# Üretim imajını küçük tutmak için `requirements.txt` dışında tutulur.
+#
+# Kurulum (gerekirse):  pip install -r requirements-optional.txt
+
+# Web kazıma (packages/research_engine/search.py)
+# Kurulu değilse: "Crawl4AI package not found. Web scraping will be mocked."
+crawl4ai>=0.4.0
+
+# OCR / görsel işleme yetenekleri gerekirse
+# (çekirdek PDF üretimi xhtml2pdf ile, bu olmadan da çalışır)

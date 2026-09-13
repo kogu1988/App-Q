@@ -80,7 +80,8 @@ def test_6_7_template_selection_is_label_driven():
 
 def test_6_8_probe_limit_is_capped_at_three():
     """Mülakat başına probe sayısı 3 ile sınırlı olmalı (kaynak kontrolü)."""
-    source = pathlib.Path("packages/research_engine/workflow.py").read_text(encoding="utf-8")
+    wf_dir = pathlib.Path("packages/research_engine/workflow")
+    source = "\n".join(p.read_text(encoding="utf-8") for p in sorted(wf_dir.glob("*.py")))
 
     assert source.count("total_probes < 3") >= 2, "probe limiti (3) mülakat akışlarında uygulanmalı"
     assert "is_probe=True" in source
