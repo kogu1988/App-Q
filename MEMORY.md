@@ -131,7 +131,7 @@ python -m pytest packages/research_engine/tests/ -q
 | `workflow.py` | `build_research_plan()`, `generate_personas()`, `run_interviews_batch()` | Araştırma akışı |
 | `models.py` | Tüm dataclass'lar (ResearchBrief, Persona, vb.) | Veri modeli değişikliği |
 | `intake.py` | `process_intake_chat()` — Defne chatbot (Articos-tarzı hızlı akış, 3-5 tur) | Defne davranışı |
-| `analytics.py` | `synthesize_report()` + Van Westendorp | Rapor değişikliği |
+| `analytics/` | Rapor sentezi (paket): `synthesis`, `ab_report`, `findings`, `evidence`, `pricing`, `corroboration`, `metrics`, `enrichment` | Rapor değişikliği |
 | `matrix.py` | Rogers×SES kohort matrisi, stance diversity | Persona dağılımı |
 | `quality.py` | Kalite fonksiyonları (EWMA, echo, bias, acquiescence) | Kalite kontrolü |
 | `adversarial.py` | 4-aşamalı adversarial review | Rapor denetimi |
@@ -143,7 +143,7 @@ python -m pytest packages/research_engine/tests/ -q
 | `privacy.py` | PII scrubbing | Güvenlik |
 | `reframing.py` | Input reframing (sycophancy mitigation) | Brief işleme |
 | `search.py` | SearXNG web search | Canlı arama |
-| `reporting.py` | Markdown/HTML rapor render | Rapor çıktısı |
+| `reporting/` | Markdown/HTML rapor render (paket: `markdown`, `html`, `_html_utils`) | Rapor çıktısı |
 | `pdf_generator.py` | PDF üretimi (xhtml2pdf) | PDF export |
 | `persona_generator.py` | Admin için LLM ile persona üretimi | Admin panel |
 | `synthesis_pipeline.py` | LangGraph tabanlı tematik sentez pipeline | Async sentez |
@@ -548,3 +548,13 @@ python -m pytest packages/research_engine/tests/ -q
 - 🐛 **Gerçek bug düzeltildi:** `match_personas` içindeki bozuk `get_personas_pool` importu kaldırıldı (R5 notu). Yeni `test_router_imports.py` (7 test) router import'larının hedef modülde gerçekten var olduğunu ve shim'in genel isimleri dışa verdiğini doğrular.
 - Doğrulama: `python scripts/run_tests.py` → **410 passed**; Playwright `01-ui` + `03-study-actions` → **5/5 passed**; canlı `/openapi.json` diff boş; konteyner logu temiz.
 - **Sıradaki:** R7 — `analytics.py` (1585) → paket + `reporting` ince ayarı.
+
+### Refaktör R7 — `analytics.py` + `reporting.py` → paketler (2026-09-13)
+
+- ✅ **`analytics.py` (1585) → `analytics/` paketi:** `synthesis.py` (251), `ab_report.py` (358), `findings.py` (248), `evidence.py` (288), `pricing.py` (205), `corroboration.py` (141), `metrics.py` (131), `enrichment.py` (197), `__init__.py` shim. En büyük dosya 358 satır.
+- ✅ **`reporting.py` (911) → `reporting/` paketi:** `markdown.py` (441), `html.py` (461), `_html_utils.py` (31), `__init__.py` shim.
+- ✅ **A/B dalı ayrıldı:** `synthesize_report` içindeki 305 satırlık A/B gövdesi `synthesize_ab_report()` oldu (varyant yoksa `None` → standart yol devralır). Davranış aynı.
+- ✅ **GOLDEN DOĞRULAMA (kabul kriteri):** deterministik fixture (2 persona, offline corroboration) ile `render_markdown(synthesize_report(...))` çıktısı refactor öncesi/sonrası **birebir aynı** (7023 karakter). `report_json` içindeki farklar yalnızca Python set sırası kaynaklı **mevcut nondeterminizm** (aynı kod ardışık iki çalıştırmada da farklı) — refactor kaynaklı değil.
+- 🐛 İki kez yanlış ara slice sınırı yakalandı (`slice(996,1076)` bir fonksiyonun `}` satırından başlıyordu → `slice(999,1076)`). Ayrıca paket derinliği nedeniyle `from .models` → `from ..models` düzeltmesi gerekti (modül seviyesi relative import'lar ilk denemede atlanmıştı).
+- Doğrulama: `python scripts/run_tests.py` → **410 passed**; Playwright `01-ui` + `03-study-actions` → **5/5 passed**; `ruff` düzeltmeleri sonrası golden hâlâ birebir; konteyner logu temiz.
+- **Sıradaki:** R8 — `workflow.py` (1392) → paket + mapper/DTO + bağımlılık.

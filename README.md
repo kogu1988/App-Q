@@ -64,7 +64,15 @@ Clarere/
 ├── packages/
 │   └── research_engine/      Domain mantığı (Python)
 │       ├── workflow.py        Araştırma orkestrasyonu + batch interviews
-│       ├── analytics.py       Rapor sentezi & Van Westendorp PSM
+│       ├── analytics/         Rapor sentezi (paket)
+│       │   ├── synthesis.py     synthesize_report orkestrasyonu
+│       │   ├── ab_report.py     A/B varyant raporu
+│       │   ├── findings.py      Bulgu çıkarımı + pain-point/segment özetleri
+│       │   ├── evidence.py      Kanıt zinciri + karar katmanı
+│       │   ├── pricing.py       Van Westendorp PSM
+│       │   ├── corroboration.py Harici kanıt (web)
+│       │   ├── metrics.py       Rapor metrikleri + kalite
+│       │   └── enrichment.py    Anlatı zenginleştirme (Pro LLM)
 │       ├── matrix.py          Rogers × SES kohort matrisi & stance diversity
 │       ├── quality.py         Kalite değerlendirmesi + EWMA + echo detection
 │       ├── adversarial.py     4-aşamalı adversarial review motoru
@@ -84,7 +92,10 @@ Clarere/
 │       ├── pricing_table.py   DeepSeek token fiyatlandırma SSOT (USD/1M)
 │       ├── paddle_config.py   Paddle price → plan eşlemesi SSOT
 │       ├── paddle_webhooks.py Paddle imza doğrulama + event işleme
-│       └── reporting.py       PDF/HTML rapor üretimi
+│       └── reporting/         Markdown/HTML rapor üretimi (paket)
+│           ├── markdown.py      render_markdown
+│           ├── html.py          render_report_html
+│           └── _html_utils.py   HTML yardımcıları
 │
 ├── launch.py                  Tek tıkla başlatma
 ├── docker-compose.yml         PostgreSQL (pgvector) + Redis
@@ -375,10 +386,14 @@ packages/research_engine/
 │                          → run_interviews_batch()
 │                          → run_interviews()
 │                          → run_interviews_stream()
-├── analytics.py         Rapor sentezi (~750 satır)
-│                          → synthesize_report()
-│                          → van_westendorp_analysis()
-│                          → build_ses_cross_tab()
+├── analytics/           Rapor sentezi (paket)
+│                          → synthesize_report()          [synthesis.py]
+│                          → synthesize_ab_report()       [ab_report.py]
+│                          → van_westendorp_analysis()    [pricing.py]
+│                          → build_ses_cross_tab()        [findings.py]
+│                          → build_evidence_graph()       [evidence.py]
+│                          → corroborate_findings()       [corroboration.py]
+│                          → build_report_metrics()       [metrics.py]
 ├── matrix.py            Rogers × SES kohort matrisi
 │                          → allocate_cohort_matrix()  [Largest Remainder]
 │                          → validate_stance_diversity()
@@ -402,7 +417,9 @@ packages/research_engine/
 │   ├── memory.py        ACT-R bilişsel bellek modeli
 │   └── router.py        Keyword-based routing
 ├── routers/             Streaming router
-├── reporting.py         PDF/HTML üretimi
+├── reporting/           Markdown/HTML üretimi (paket)
+│                          → render_markdown()            [markdown.py]
+│                          → render_report_html()         [html.py]
 └── plan_config.py       Plan feature gate SSOT
 ```
 
