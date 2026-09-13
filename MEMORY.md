@@ -515,3 +515,13 @@ python -m pytest packages/research_engine/tests/ -q
 - ✅ **Next.js anti-pattern düzeltmesi:** effect içinde `cancelled` guard eklendi (unmount sonrası `setState` engellendi). Davranış ve görsel çıktı birebir korundu.
 - Doğrulama: `npx tsc --noEmit` + `npx eslint` temiz (0 error, 0 warning); `page.tsx`'te fetch yok.
 - **Sıradaki:** R2 — 6 sekmeyi bağımsız bileşenlere ayır (`page.tsx` < 350 satır).
+
+### Refaktör R2 — Study detay sekme bileşenleri (2026-09-13)
+
+- ✅ **`studies/[id]/page.tsx` 1758 → 327 satır** (kabul: < 350). Her sekme dosyası < 600 satır.
+- ✅ **Yeni bileşenler:** `SummaryTab` (314), `PersonasTab` (293), `ReportTab` (359), `InterviewsTab` + `InterviewTranscriptDialog`, `ScriptTab`, `EvidenceTab`; yardımcılar `StudyTabNav`, `StudyHeaderActions`.
+- ✅ **Yeni lib:** `lib/render-markdown.tsx` (harici bağımlılıksız markdown ayrıştırıcı), `lib/synthesis.ts` (`synthesizeAndSaveReport`; sentez + kaydet + reload tek yerde).
+- ✅ **Davranış dondurma:** görsel çıktı ve metinler birebir korundu; state/handler'lar `page.tsx`'te kaldı, bileşenlere prop olarak geçti.
+- Not: `lib/format.ts` (R2-7) oluşturulmadı — paylaşılan bir biçimlendirme yardımcısı kalmadı (tek tarih formatı `page.tsx` başlığında inline).
+- Doğrulama: `tsc` + `eslint` temiz; Docker frontend rebuild; Playwright **5/5 passed** (`01-ui`, `03-study-actions`).
+- **Sıradaki:** R5 — `database.py` (2034) → paket (shim stratejisi).
