@@ -496,7 +496,7 @@ export default function NewResearchWizard() {
           <Loader2 size={40} className="animate-spin text-[#ff7759]" />
           <div className="text-[#003c33] font-medium text-lg">Araştırma devam ediyor</div>
           <div className="text-sm text-muted-foreground max-w-md text-center">
-            Defne brief'inizi analiz ediyor, personalar oluşturuluyor ve her biriyle mülakat yapılıyor. Bu işlem birkaç saniye sürebilir.
+            Defne brief&apos;inizi analiz ediyor, personalar oluşturuluyor ve her biriyle mülakat yapılıyor. Bu işlem birkaç saniye sürebilir.
           </div>
         </div>
       </div>

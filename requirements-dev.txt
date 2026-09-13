@@ -1,0 +1,6 @@
+# Clarere — geliştirme/CI bağımlılıkları (üretim imajına DAHİL EDİLMEZ)
+# Kullanım: pip install -r requirements-dev.txt
+-r requirements.txt
+
+# Test çalıştırıcısı (CI'da backend job'u bunu gerektirir)
+pytest==9.1.1

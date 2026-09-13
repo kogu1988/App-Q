@@ -1356,7 +1356,7 @@ export default function AdminPage() {
                         {metrics.persona_pool.total > 0 ? (
                           <>
                             <div className="space-y-2">
-                              {metrics.persona_pool.top_used.filter((p: any) => p.usage_count > 0).slice(0, 5).map((p: any) => (
+                              {metrics.persona_pool.top_used.filter((p: { usage_count: number }) => p.usage_count > 0).slice(0, 5).map((p: { name: string; stance: string; ses_group: string; usage_count: number }) => (
                                 <div key={p.name} className="flex items-center justify-between text-sm">
                                   <span className="font-medium">{p.name} <span className="text-xs text-muted-foreground">({p.stance}, {p.ses_group})</span></span>
                                   <Badge variant="secondary" className="text-xs">{p.usage_count} kullanım</Badge>
@@ -1365,7 +1365,7 @@ export default function AdminPage() {
                             </div>
                             {metrics.persona_pool.stances.length > 0 && (
                               <div className="flex flex-wrap gap-1.5 mt-3">
-                                {metrics.persona_pool.stances.map((s: any) => (
+                                {metrics.persona_pool.stances.map((s: { stance: string; count: number }) => (
                                   <Badge key={s.stance} variant="outline" className="text-[10px]">{s.stance}: {s.count}</Badge>
                                 ))}
                               </div>

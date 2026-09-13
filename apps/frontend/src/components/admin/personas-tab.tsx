@@ -13,6 +13,21 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Loader2, Trash2, Eye, Zap, Info, AlertTriangle } from "lucide-react";
 
+// Big Five kaydırıcı alanları — dar (narrow) tipleme; `any` yerine güvenli indeksleme.
+type BigFiveSliderKey =
+  | "openness"
+  | "conscientiousness"
+  | "extroversion"
+  | "agreeableness"
+  | "neuroticism";
+const BIG_FIVE_SLIDERS: { label: string; field: BigFiveSliderKey; color: string }[] = [
+  { label: "Openness (Deneyime Açıklık)", field: "openness", color: "accent-blue-500" },
+  { label: "Conscientiousness (Sorumluluk)", field: "conscientiousness", color: "accent-emerald-500" },
+  { label: "Extraversion (Dışadönüklük)", field: "extroversion", color: "accent-amber-500" },
+  { label: "Agreeableness (Geçimlilik)", field: "agreeableness", color: "accent-rose-500" },
+  { label: "Neuroticism (Duygusal Dengesizlik)", field: "neuroticism", color: "accent-red-500" },
+];
+
 interface PersonaInfo {
   id: string;
   name: string;
@@ -247,7 +262,7 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
 
   const getGroundedBigFive = (stance: string, sesGroup: string, priceSens: number, digConf: number) => {
     const seed = 1;
-    const stanceMods: Record<string, any> = {
+    const stanceMods: Record<string, { agreeableness_mod: number; openness_mod: number; neuroticism_mod: number }> = {
       Innovator: { agreeableness_mod: 4, openness_mod: 20, neuroticism_mod: -15 },
       EarlyAdopter: { agreeableness_mod: 3, openness_mod: 10, neuroticism_mod: -5 },
       Mainstream: { agreeableness_mod: 0, openness_mod: 0, neuroticism_mod: 0 },
@@ -702,23 +717,17 @@ export function PersonasTab({ personas, onRefresh }: { personas: PersonaInfo[]; 
                         3. Beş Büyük Kişilik Özelliği (OCEAN)
                       </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 bg-[#f5f4f1] dark:bg-[#17171c] border border-border/40 p-3 rounded-xl">
-                        {[
-                          { label: "Openness (Deneyime Açıklık)", field: "openness", color: "accent-blue-500" },
-                          { label: "Conscientiousness (Sorumluluk)", field: "conscientiousness", color: "accent-emerald-500" },
-                          { label: "Extraversion (Dışadönüklük)", field: "extroversion", color: "accent-amber-500" },
-                          { label: "Agreeableness (Geçimlilik)", field: "agreeableness", color: "accent-rose-500" },
-                          { label: "Neuroticism (Duygusal Dengesizlik)", field: "neuroticism", color: "accent-red-500" },
-                        ].map(item => (
+                        {BIG_FIVE_SLIDERS.map(item => (
                           <div key={item.field} className="space-y-1">
                             <div className="flex justify-between text-[10px] font-medium text-[#616161] dark:text-[#93939f]">
                               <span>{item.label}</span>
-                              <span className="font-bold">%{(manualForm as any)[item.field]}</span>
+                              <span className="font-bold">%{manualForm[item.field]}</span>
                             </div>
                             <input
                               type="range"
                               min="0"
                               max="100"
-                              value={(manualForm as any)[item.field]}
+                              value={manualForm[item.field]}
                               disabled={wizardMode === "grounded"}
                               onChange={e => setManualForm(f => ({ ...f, [item.field]: +e.target.value }))}
                               className={`w-full h-1 bg-[#d9d9dd] dark:bg-[#2c2c33] rounded-lg appearance-none cursor-pointer ${item.color} disabled:opacity-60 disabled:cursor-not-allowed`}
