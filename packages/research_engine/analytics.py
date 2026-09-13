@@ -817,6 +817,7 @@ def corroborate_findings(
     findings: list[Finding],
     brief_title: str,
     category: str,
+    degradation_notes: list[str] | None = None,
 ) -> list[ExternalEvidence]:
     """Her bulgu için web'de doğrulayıcı dış kanıt arar.
 
@@ -829,6 +830,7 @@ def corroborate_findings(
     logger = logging.getLogger(__name__)
 
     external: list[ExternalEvidence] = []
+    used_mock = False
 
     search_retriever = None
     search_available = False
@@ -863,6 +865,7 @@ def corroborate_findings(
                 {"title": s["title"], "url": s["url"], "content": s["snippet"]}
                 for s in _MOCK_EXTERNAL_SOURCES[:3]
             ]
+            used_mock = True
             logger.info(
                 f"'{finding.title}' için mock dış kanıt kullanılıyor."
             )
@@ -883,6 +886,12 @@ def corroborate_findings(
                 confidence_boost=boost,
             ))
 
+    # Sessiz degradasyonu önle: arama başarısızsa rapora uyarı notu düş.
+    if used_mock and degradation_notes is not None:
+        degradation_notes.append(
+            "Harici kanıt doğrulaması SearXNG'den alınamadı; TÜAD/Statista referansları "
+            "(yedek veri) kullanıldı. Dış doğrulama tamamlanmamıştır."
+        )
     return external
 
 
@@ -1235,8 +1244,9 @@ def synthesize_report(
         decision_items = generate_decision_summary(enhanced)
 
         # Sprint 6 — Web doğrulama (dış kanıt)
+        degradation_notes: list[str] = []
         external_evidence = corroborate_findings(
-            findings, brief.title, brief.category
+            findings, brief.title, brief.category, degradation_notes=degradation_notes
         )
 
         # Yönetici karar özetini executive_summary'e ekle
@@ -1304,6 +1314,7 @@ def synthesize_report(
             enhanced_findings=[asdict(e) for e in enhanced],
             external_evidence=external_evidence,
             decision_items=decision_items,
+            degradation_notes=degradation_notes,
         )
 
     # Standart Pazar Araştırması Modu (Orijinal)
@@ -1453,8 +1464,9 @@ def synthesize_report(
     decision_items = generate_decision_summary(enhanced)
 
     # Sprint 6 — Web doğrulama (dış kanıt)
+    degradation_notes: list[str] = []
     external_evidence = corroborate_findings(
-        findings, brief.title, brief.category
+        findings, brief.title, brief.category, degradation_notes=degradation_notes
     )
 
     # Yönetici karar özetini executive_summary'e ekle
@@ -1522,4 +1534,5 @@ def synthesize_report(
         enhanced_findings=[asdict(e) for e in enhanced],
         external_evidence=external_evidence,
         decision_items=decision_items,
+        degradation_notes=degradation_notes,
     )

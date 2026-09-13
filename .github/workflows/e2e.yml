@@ -1,0 +1,84 @@
+name: E2E (Playwright)
+
+# Elle tetiklenir; ayrıca haftalık (off-peak saatte) çalışır.
+# DEEPSEEK_API_KEY secret'i tanımlı DEĞİLSE sessizce atlanır (yeşil geçer),
+# böylece opsiyonel bir kontrol olarak kalır ve push/PR CI'ı bloklamaz.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 4 * * 1" # Pazartesi 04:30 UTC (off-peak)
+
+jobs:
+  e2e:
+    name: Playwright (Docker stack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secret kontrolü
+        id: guard
+        env:
+          KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=E2E atlandı::DEEPSEEK_API_KEY tanımlı değil."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: .env oluştur (CI)
+        if: steps.guard.outputs.run == 'true'
+        env:
+          DS_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          {
+            echo "DEEPSEEK_API_KEY=$DS_KEY"
+            echo "APP_ENV=development"
+            echo "POSTGRES_PASSWORD=ci_password"
+            echo "ADMIN_SECRET_KEY=ci_admin_key_change_me"
+            echo "JWT_SECRET=ci_jwt_secret_at_least_32_chars_long!!"
+          } > .env
+
+      - name: Stack'i başlat
+        if: steps.guard.outputs.run == 'true'
+        run: docker compose -f docker-compose.prod.yml -f docker-compose.local.yml up -d --build
+
+      - name: Sağlık bekle
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4001 || true)
+            if [ "$code" = "200" ]; then echo "frontend hazır"; exit 0; fi
+            sleep 5
+          done
+          echo "frontend zaman aşımı"; exit 1
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.run == 'true'
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Playwright kur
+        if: steps.guard.outputs.run == 'true'
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: E2E koş
+        if: steps.guard.outputs.run == 'true'
+        working-directory: e2e
+        run: npx playwright test
+
+      - name: Artefaktları yükle
+        if: always() && steps.guard.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: |
+            e2e/artifacts/
+          if-no-files-found: ignore

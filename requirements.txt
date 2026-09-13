@@ -14,12 +14,12 @@ psycopg2-binary==2.9.12
 pgvector==0.4.2
 
 # Async / Queue
-celery
-redis
+celery==5.6.3
+redis==8.1.0
 slowapi==0.1.9
 
 # LLM API
-openai>=1.0.0
+openai==3.13.0
 
 # Analytics / Viz
 pandas==2.3.3
@@ -28,14 +28,14 @@ altair==5.5.0
 plotly==6.7.0
 
 # Orchestration
-langgraph
-langchain-core
+langgraph==1.2.11
+langchain-core==1.6.3
 
 # Monitoring (SENTRY_DSN yoksa devre dışı)
-sentry-sdk[fastapi]>=2.0.0
+sentry-sdk[fastapi]==2.69.1
 
 # Reporting
-xhtml2pdf>=0.2.16
+xhtml2pdf==0.2.19
 
 # Utils
 tenacity==9.1.4

@@ -130,7 +130,13 @@ async def adversarial_quality_audit_node(state: GlobalResearchState) -> Dict[str
     is_rejected = "REJECT" in audit_decision
     
     # Build final report markdown
-    report_md = "# Araştırma Raporu\n\n## Temalar\n"
+    report_md = (
+        "# Araştırma Raporu — Tematik Ön Analiz (Research Studio)\n\n"
+        "> Bu çıktı, hızlı **tematik analiz** katmanıdır (Braun & Clarke). Fiyatlandırma (PSM), "
+        "kanıt zinciri, karar katmanı ve zengin anlatım içeren **Tam Sentez Raporu** ana "
+        "araştırma akışında (\u201cSentez Raporu Oluştur\u201d) üretilir.\n\n"
+        "## Temalar\n"
+    )
     for t in themes:
         report_md += f"### {t['title']} (Görülme Sıklığı: %{t['prevalence']:.1f})\n"
         for ev in t["evidence_chain"]:

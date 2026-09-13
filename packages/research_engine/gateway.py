@@ -116,19 +116,27 @@ class ResearchInflowGateway:
         }
 
 
+def bind_tenant_context(username: str | None) -> None:
+    """Celery worker'da request bağlamı olmadığı için RLS tenant'ını payload'dan kur.
+
+    Bu olmadan async çalışmalar `created_by=''` ile kaydedilir ve `studies`
+    tablosundaki Row Level Security nedeniyle hiçbir kullanıcıya görünmez.
+    """
+    from .database import current_tenant_var
+    current_tenant_var.set(username or "")
+
+
 @celery_app.task(bind=True, max_retries=3)
 def run_simulation_task(self, payload: dict):
     """Celery üzerinde çalışacak asıl simülasyon görevi."""
     logger.info(f"Starting async simulation task for hash: {payload.get('hash')}")
     try:
         import uuid
-        from .database import get_db, save_study, current_tenant_var
+        from .database import get_db, save_study
         from .models import ResearchBrief, PanelRole
 
-        # Tenant bağlamı: Celery worker'da request middleware YOKTUR. Bu yüzden
-        # async çalışmanın `created_by` alanı boş kaydediliyor ve RLS nedeniyle
-        # kullanıcıya hiç görünmüyordu. Kullanıcı adını bağlama al.
-        current_tenant_var.set(payload.get("username") or "")
+        # Tenant bağlamı: Celery worker'da request middleware YOKTUR; RLS için kur.
+        bind_tenant_context(payload.get("username"))
 
         # 1. Brief Oluştur
         # Başlık: '...' izi bırakmadan, kelime sınırında kısa bir başlık türet

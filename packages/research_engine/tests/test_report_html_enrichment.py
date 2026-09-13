@@ -24,3 +24,12 @@ def test_html_omits_blocks_when_enrichment_absent():
     html = render_report_html({"executive_summary": ["özet"]}, "# md")
 
     assert "Stratejik Öneriler" not in html
+
+
+def test_html_renders_degradation_notes():
+    html = render_report_html(
+        {"degradation_notes": ["Harici kanıt doğrulaması yapılamadı"]}, "# md"
+    )
+
+    assert "Metodolojik Uyarılar" in html
+    assert "Harici kanıt doğrulaması yapılamadı" in html

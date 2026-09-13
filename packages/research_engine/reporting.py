@@ -342,6 +342,10 @@ def render_markdown(report: ResearchReport) -> str:
     lines.extend(["", "## Aksiyon Listesi", ""])
     lines.extend(f"- {item}" for item in report.action_items)
 
+    if getattr(report, "degradation_notes", None):
+        lines.extend(["", "## Metodolojik Uyarılar", ""])
+        lines.extend(f"- {item}" for item in report.degradation_notes)
+
     lines.extend(["", "## Kalite Kontrol", ""])
 
     # ── Araştırma Bütünlüğü (RFI) ──
@@ -425,6 +429,10 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
     strategic_block = (
         '<h2>Stratejik Öneriler</h2><section class="card">' + html_list(_strategic) + "</section>"
     ) if _strategic else ""
+    _degradations = report_json.get("degradation_notes") or []
+    degradation_block = (
+        '<h2>Metodolojik Uyarılar</h2><section class="card">' + html_list(_degradations) + "</section>"
+    ) if _degradations else ""
     age_values = [persona.get("age") for persona in personas if persona.get("age")]
     roles = [
         persona.get("role_title") or persona.get("segment") or "Bilinmeyen"
@@ -740,6 +748,7 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
     <section class="card">{html_list(report_json.get('executive_summary', []))}</section>
     {narrative_block}
     {strategic_block}
+    {degradation_block}
 
     <h2>Ticarileştirme Skor Kartı</h2>
     <p class="section-note">Bu skor kartı, sentetik görüşme sinyallerini ürün kararı için okunabilir bir yönetici özetine indirger.</p>

@@ -341,6 +341,8 @@ class ResearchReport:
     # Rapor zenginleştirme — DeepSeek Pro ile üretilen, kanıta bağlı anlatım
     executive_narrative: str = ""
     strategic_recommendations: list[str] = field(default_factory=list)
+    # Sessiz degradasyon uyarıları (ör. harici kanıt doğrulaması yapılamadı)
+    degradation_notes: list[str] = field(default_factory=list)
 
 
 class ResearchModel(Protocol):
