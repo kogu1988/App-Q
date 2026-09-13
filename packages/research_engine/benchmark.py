@@ -39,11 +39,11 @@ def _rfi_grade(rfi: float) -> str:
 def _rfi_interpretation(rfi: float, grade: str) -> str:
     """RFI skoru için insan okunabilir yorum."""
     interpretations = {
-        "A": f"Mükemmel (RFI={rfi:.2f}) — Üretime hazır. LLM bulguları insan bulgularıyla yüksek uyum gösteriyor.",
-        "B": f"İyi (RFI={rfi:.2f}) — Küçük iyileştirmeler gerekli. Çoğu bulgu doğru fakat bazı boşluklar var.",
-        "C": f"Yeterli (RFI={rfi:.2f}) — Belirgin boşluklar mevcut. Kritik kararlar için manuel doğrulama önerilir.",
-        "D": f"Zayıf (RFI={rfi:.2f}) — Kapsamlı yeniden çalışma gerekli. Temel bulgularda dahi uyumsuzluk var.",
-        "F": f"Başarısız (RFI={rfi:.2f}) — Kullanılamaz durumda. Bulgular insan referansıyla örtüşmüyor.",
+        "A": f"Yüksek uyum (RFI={rfi:.2f}) — Bulgular referans bulgularla güçlü örtüşüyor; yine de yönlendirici hipotez olarak ele alınmalı.",
+        "B": f"İyi uyum (RFI={rfi:.2f}) — Çoğu bulgu referansla örtüşüyor; bazı boşluklar için manuel doğrulama önerilir.",
+        "C": f"Orta uyum (RFI={rfi:.2f}) — Belirgin boşluklar mevcut. Kritik kararlar için manuel doğrulama önerilir.",
+        "D": f"Düşük uyum (RFI={rfi:.2f}) — Kapsamlı yeniden çalışma gerekli. Temel bulgularda dahi uyumsuzluk var.",
+        "F": f"Yetersiz (RFI={rfi:.2f}) — Bulgular referansla örtüşmüyor; çıktı kullanılmamalı.",
     }
     return interpretations.get(grade, interpretations["F"])
 

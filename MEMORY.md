@@ -424,3 +424,19 @@ python -m pytest packages/research_engine/tests/ -q  # 290 passed + 10 skipped
 - **Bilimsel alanlar dokunulmaz** — `enrich_persona_bios` yalnızca `bio` metnini `dataclasses.replace()` ile değiştirir; `big_five`, `traits`, `neo_facets`, `stance`, `ses_group`, `diffusion_stage`, `price_sensitivity`, `digital_confidence`, `attributes` aynen korunur. Regresyon: `test_enrich_persona_bios_preserves_scientific_fields`.
 - **Psikometriye bağlı anlatım** — Prompt persona kataloğuna Big Five skorları ve Rogers aşama açıklaması eklenir; "bu atamalar bilimseldir, DEĞİŞTİRİLEMEZ" kuralı ve davranış dili zorunluluğu vardır (skorlar sayı olarak yazılmaz). Regresyon: `test_enrich_persona_bios_prompt_is_psychometrically_grounded`.
 - Tam süit: **366 passed**.
+
+### Sprint 1 — Güven, bilimsel iddia ve içerik temizliği (2026-09-13)
+
+> Kaynak plan: `analyze_plan.md` · Analiz: `claude_analyse.md`
+
+- ✅ **Uydurma dış kanıt kaynakları KALDIRILDI (kritik).** `analytics._MOCK_EXTERNAL_SOURCES` (TÜAD/Statista/Deloitte/TÜBİSAD/McKinsey adına uydurulmuş başlık, URL ve istatistikler) silindi. Artık web araması sonuç vermezse **uydurma kaynak üretilmez**; boş liste + "Metodolojik Uyarılar" notu döner. `ExternalEvidence`'a `source_domain` + `is_verified` eklendi. Testler: `test_web_corroboration.py` (8), `test_degradation_and_tenant.py` güncellendi.
+- ✅ **Crawl4AI mock sızıntısı engellendi.** `search.py` artık `APP_ENV=production` iken mock içerik döndürmez (boş + log); test/geliştirmede açıkça `[TEST FIXTURE …]` etiketli.
+- ✅ **Bilimsel iddialar temkinlileştirildi.** Frontend'ten kanıtsız sayısal/kesin iddialar kaldırıldı: `RFI 0.815`, `%93 tema doğruluğu`, `%86 eşleşme`, `7.5 kat`, `46 araştırma alanı`, `23 kör UX araştırmacısı`, `%90 risk`, `%85 korelasyon … bilimsel olarak kanıtlanmıştır`, `Baymard/NNg doğrulaması`. Yerine mekanizma odaklı, savunulabilir dil kullanıldı (`layout.tsx` JSON-LD/FAQ, `page.tsx`, `guide`, `b2b-saas`, `user-interviews`).
+- ✅ **"%100 Yerel Veri Lokalizasyonu (KVKK Uyumlu)" iddiası kaldırıldı** (`client/upgrade`). Aktif mimari DeepSeek API kullanıyor; metin artık "kurumsal veri işleme seçenekleri" diyor.
+- ✅ **Van Westendorp sentetik uyarısı** hem `models.VanWestendorpInsight.methodology_note` varsayılanına hem markdown/HTML raporuna eklendi (istatistiksel temsil iddiası taşımaz).
+- ✅ **RFI yorum dili** temkinlileştirildi (`benchmark._rfi_interpretation`): "Üretime hazır" → "Yüksek uyum".
+- ✅ **Yazım hataları:** yapıy zeka, büdçe, büyme, değlendirme, Clarere'nun, rekrutüman, "platformumuz and ilgili", `**…**` markdown artığı, "sistem and metodoloji".
+- ✅ **Panel boyutu drift'i** (`user-interviews`: "50'ye kadar persona" → "10 kişilik standart panel").
+- ✅ **Frontend README** create-next-app boilerplate'inden Clarere'ye özgü dokümana çevrildi (port 4001, env, proxy build-arg, Docker, E2E).
+- ⚠️ **Secret taraması:** repoda gerçek secret yok (yalnızca `sk-...` placeholder'ları). Sohbette paylaşılan Paddle sandbox anahtarı için **rotasyon kullanıcı aksiyonu** gerektirir (dış etmen).
+- Doğrulama: `npx tsc --noEmit` + `npx eslint` temiz; backend tam süit **368 passed**.

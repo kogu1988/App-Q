@@ -33,7 +33,7 @@ def _finding() -> Finding:
 
 
 def test_degradation_note_added_when_search_unavailable(monkeypatch):
-    # SearXNG yok → mock fallback → uyarı notu eklenmeli (ağ erişimi denemez)
+    # SearXNG yok → uydurma kaynak ÜRETİLMEZ; boş sonuç + metodolojik uyarı dönmeli.
     monkeypatch.setattr(search_mod, "search_retriever", None)
 
     notes: list[str] = []
@@ -41,8 +41,8 @@ def test_degradation_note_added_when_search_unavailable(monkeypatch):
         [_finding()], "Test", "genel", degradation_notes=notes
     )
 
-    assert result, "fallback kaynak dönmeli"
-    assert any("SearXNG" in note for note in notes), notes
+    assert result == [], "arama yokken dış kanıt üretilmemeli (uydurma yasak)"
+    assert any("Harici kanıt" in note for note in notes), notes
 
 
 def test_no_degradation_note_when_search_works(monkeypatch):

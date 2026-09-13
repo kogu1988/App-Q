@@ -837,34 +837,10 @@ def _relevance_score(snippet: str, finding_keywords: set[str]) -> tuple[str, flo
 # Sprint 6 — Web Corroboration (Dış Kanıt)
 # ---------------------------------------------------------------------------
 
-# TÜAD / Statista tarzı referans listesi — fallback mock verisi
-_MOCK_EXTERNAL_SOURCES: list[dict] = [
-    {
-        "title": "TÜAD 2025 Türkiye Dijital Tüketici Raporu",
-        "url": "https://tuad.org.tr/arastirmalar/tuketici-2025",
-        "snippet": "Türkiye'de dijital ürün kullanıcılarının %67'si şeffaf fiyatlandırmayı en önemli satın alma kriteri olarak belirtiyor.",
-    },
-    {
-        "title": "Statista Türkiye Pazar Analizi 2025",
-        "url": "https://statista.com/outlook/turkey-market-2025",
-        "snippet": "Türkiye pazarında kullanıcı deneyimi ve onboarding süresi, SaaS ürünlerinde churn oranını doğrudan etkileyen faktörler arasında ilk üçte yer alıyor.",
-    },
-    {
-        "title": "Deloitte Türkiye Teknoloji Sektörü Görünümü 2025",
-        "url": "https://deloitte.com/tr/tech-outlook-2025",
-        "snippet": "KOBİ segmentinde dijital dönüşüm harcamaları yıllık %22 büyüme gösteriyor. Kullanıcılar entegrasyon kolaylığı ve yerel destek talep ediyor.",
-    },
-    {
-        "title": "TÜBİSAD Türkiye Bilgi ve İletişim Teknolojileri Raporu",
-        "url": "https://tubisad.org.tr/raporlar/btk-2025",
-        "snippet": "BT sektöründe müşteri edinme maliyeti (CAC) geçen yıla göre %18 artarken, kullanıcı beklentileri de hızla yükseliyor.",
-    },
-    {
-        "title": "McKinsey Türkiye Tüketici Araştırması 2025",
-        "url": "https://mckinsey.com/tr/consumer-2025",
-        "snippet": "Türk tüketicilerin %74'ü satın alma öncesinde en az üç farklı kaynaktan ürün araştırması yapıyor; sosyal kanıt ve referans etkisi kritik.",
-    },
-]
+# NOT: Daha önce burada TÜAD/Statista/Deloitte/McKinsey adına uydurulmuş "yedek"
+# kaynak listesi vardı. Bu kaynaklar gerçek dış kanıt değildi ve rapora doğrulanmış
+# kanıt gibi girmesi ciddi bir güvenilirlik riskiydi. Kaldırıldı: harici arama
+# başarısız olursa rapor boş dış kanıt + "Metodolojik Uyarılar" notu ile ilerler.
 
 
 def corroborate_findings(
@@ -875,16 +851,17 @@ def corroborate_findings(
 ) -> list[ExternalEvidence]:
     """Her bulgu için web'de doğrulayıcı dış kanıt arar.
 
-    SearXNG üzerinden hedefli arama yapar; başarısız olursa
-    TÜAD/Statista referanslı mock verisine düşer.
-
-    Her bulgu için en fazla 3 kaynak döndürür.
+    SearXNG üzerinden hedefli arama yapar. Arama kullanılamıyorsa veya sonuç
+    dönmezse **uydurma kaynak üretilmez**; boş liste döner ve `degradation_notes`
+    içine metodolojik uyarı eklenir. Her bulgu için en fazla 3 kaynak döndürür.
     """
     import logging
+    from urllib.parse import urlparse
+
     logger = logging.getLogger(__name__)
 
     external: list[ExternalEvidence] = []
-    used_mock = False
+    search_unavailable = False
 
     search_retriever = None
     search_available = False
@@ -893,7 +870,8 @@ def corroborate_findings(
         if search_retriever is not None:
             search_available = True
     except (ImportError, ModuleNotFoundError):
-        logger.warning("SearXNG retriever import edilemedi, mock veri kullanılacak.")
+        search_unavailable = True
+        logger.warning("SearXNG retriever import edilemedi; harici kanıt atlanıyor.")
 
     for finding in findings:
         finding_keywords = set(
@@ -913,16 +891,8 @@ def corroborate_findings(
                 logger.warning(f"SearXNG araması başarısız: {e}")
                 results = []
 
-        # Fallback: mock veri kullan
         if not results:
-            results = [
-                {"title": s["title"], "url": s["url"], "content": s["snippet"]}
-                for s in _MOCK_EXTERNAL_SOURCES[:3]
-            ]
-            used_mock = True
-            logger.info(
-                f"'{finding.title}' için mock dış kanıt kullanılıyor."
-            )
+            search_unavailable = True
 
         for idx, res in enumerate(results):
             if idx >= 3:
@@ -930,21 +900,24 @@ def corroborate_findings(
 
             snippet = res.get("content", "") or res.get("snippet", "")
             relevance, boost = _relevance_score(snippet, finding_keywords)
+            url = res.get("url", "") or ""
 
             external.append(ExternalEvidence(
                 finding_title=finding.title,
                 source_title=res.get("title", "Bilinmeyen Kaynak"),
-                source_url=res.get("url", ""),
+                source_url=url,
                 snippet=snippet,
                 relevance=relevance,
                 confidence_boost=boost,
+                source_domain=urlparse(url).netloc if url else "",
+                is_verified=bool(url),
             ))
 
-    # Sessiz degradasyonu önle: arama başarısızsa rapora uyarı notu düş.
-    if used_mock and degradation_notes is not None:
+    # Sessiz degradasyonu önle: arama sonuç vermediyse rapora uyarı notu düş.
+    if search_unavailable and degradation_notes is not None:
         degradation_notes.append(
-            "Harici kanıt doğrulaması SearXNG'den alınamadı; TÜAD/Statista referansları "
-            "(yedek veri) kullanıldı. Dış doğrulama tamamlanmamıştır."
+            "Harici kanıt doğrulaması tamamlanamadı: web araması sonuç döndürmedi. "
+            "Rapor yalnızca sentetik mülakat bulgularına dayanmaktadır; dış doğrulama yapılmamıştır."
         )
     return external
 

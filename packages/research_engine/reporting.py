@@ -283,6 +283,7 @@ def render_markdown(report: ResearchReport) -> str:
                 f"- **PME** (Üst kabul sınırı): {vw.pme:.0f} TL",
                 f"- Kabul edilebilir fiyat aralığı: {vw.acceptable_range[0]:.0f} - {vw.acceptable_range[1]:.0f} TL",
                 f"- Metodoloji: {vw.methodology_note}",
+                "- **Uyarı:** Bu fiyat aralığı sentetik persona sinyallerine dayanır; istatistiksel temsil iddiası taşımaz. Gerçek fiyat kararı için gerçek kullanıcı/satış verisi gerekir.",
             ]
         )
 
@@ -556,6 +557,7 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
             f"<strong>IPP</strong> (Beklenti): {escape(str(round(vw.get('ipp', 0))))} TL · "
             f"<strong>PME</strong> (Üst kabul): {escape(str(round(vw.get('pme', 0))))} TL</p>"
             f"<p class='muted'>Kabul edilebilir aralık: {escape(str(round(vw.get('pmc', 0))))} - {escape(str(round(vw.get('pme', 0))))} TL</p>"
+            "<p class='muted'>Bu aralık sentetik persona sinyallerine dayanır; istatistiksel temsil iddiası taşımaz ve gerçek fiyat kararı için gerçek kullanıcı verisiyle doğrulanmalıdır.</p>"
             "</section>"
         )
 
@@ -808,7 +810,7 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
     {f"<h2>Van Westendorp Fiyat Analizi</h2><div class='grid'>{vw_blocks}</div>" if vw else ''}
 
     <h2>Harici Kanıt Doğrulaması</h2>
-    <p class="section-note">Sentetik bulguları destekleyen dış kaynaklar (TÜAD, Statista vb.).</p>
+    <p class="section-note">Sentetik bulguları destekleyen, harici aramadan gelen gerçek kaynaklar.</p>
     <div class="finding-grid">{ext_blocks}</div>
 
     <h2>Mülakat Kanıtı Önizlemesi</h2>

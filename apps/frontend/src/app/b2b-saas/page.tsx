@@ -169,7 +169,7 @@ export default function B2BSaaSPage() {
             <tbody>
               <tr className="border-b border-[#f2f2f2] bg-white">
                 <td className="px-5 py-4 font-bold text-[#17171c]">Doğruluk</td>
-                <td className="px-5 py-4 font-bold text-[#003c33] bg-[#edfce9]/40 border-l border-r border-[#003c33]/20">Uzman benchmark&apos;ları ile %86 eşleşme; ChatGPT/Claude&apos;dan 7.5 kat daha isabetli sonuçlar.</td>
+                <td className="px-5 py-4 font-bold text-[#003c33] bg-[#edfce9]/40 border-l border-r border-[#003c33]/20">Her bulgu kanıt zinciriyle persone ve soruya bağlanır; panel çeşitlilik ve anti-dalkavukluk denetiminden geçer.</td>
               </tr>
               <tr className="border-b border-[#f2f2f2] bg-[#fafafa]">
                 <td className="px-5 py-4 font-bold text-[#17171c]">Hız</td>

@@ -275,7 +275,10 @@ class VanWestendorpInsight:
     pme: float                          # Point of Marginal Expensiveness (üst kabul sınırı)
     acceptable_range: tuple[float, float]   # Kabul edilebilir fiyat aralığı (PMC, PME)
     currency: str = "TL"
-    methodology_note: str = "Van Westendorp PSM — Sentetik mülakat yanıtlarından çıkarılan heuristik fiyat aralıkları."
+    methodology_note: str = (
+        "Van Westendorp PSM — Sentetik mülakat yanıtlarından çıkarılan heuristik fiyat aralıkları. "
+        "Bu çıktı istatistiksel fiyat araştırması değildir; fiyatlandırma kararları gerçek kullanıcı verisiyle doğrulanmalıdır."
+    )
 
 
 @dataclass(frozen=True)
@@ -299,6 +302,8 @@ class ExternalEvidence:
     snippet: str
     relevance: str  # 'high', 'medium', 'low'
     confidence_boost: float = 0.0  # Bu kanıtın bulgu güvenine katkısı (0.0–0.15)
+    source_domain: str = ""  # Kaynak alan adı (ör. tuad.org.tr)
+    is_verified: bool = True  # Gerçek aramadan mı geldi (uydurma kaynak yok)
 
 
 @dataclass(frozen=True)

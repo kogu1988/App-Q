@@ -138,7 +138,7 @@ const faqJsonLd = {
       name: "Clarere nedir?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Clarere, yapıy zeka destekli sentetik pazar araştırması platformudur. Gerçek mülakat ve katılımcı rekrutümanı gerektirmeden, bilimsel olarak zemine oturtulmuş sentetik persona panelleriyle ürün fikirlerinizi, fiyatlandırmanızı ve mesajlaşmanızı test edersiniz.",
+        text: "Clarere, davranış bilimi ve araştırma metodolojisi çerçevelerinden yararlanan sentetik pazar araştırması platformudur. Gerçek mülakat ve katılımcı rekrutmanı gerektirmeden, yapılandırılmış sentetik persona panelleriyle ürün fikirlerinizi, fiyatlandırmanızı ve mesajlaşmanızı hızlıca sınarsınız.",
       },
     },
     {
@@ -146,7 +146,7 @@ const faqJsonLd = {
       name: "Sentetik araştırma gerçek müşteri araştırmasının yerini tutar mı?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Hayır. Clarere bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve büdçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel güven iddiasında bulunmaz.",
+        text: "Hayır. Clarere bir hipotez ve araştırma triage aracıdır. Gerçek pazar testlerinden önce zaman ve bütçe kaybını azaltmak için kullanılır; gerçek müşteri araştırmasının yerini almaz. Platform çıktıları istatistiksel temsil veya güven iddiasında bulunmaz.",
       },
     },
     {
@@ -154,7 +154,7 @@ const faqJsonLd = {
       name: "Metodoloji ne kadar güvenilir?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Clarere, Grounded Simulation mimarisini (Bilal, 2026) kullanır. Bağımsız akademik değlendirmede 46 çalışmada ortalama Araştırma Bütünlüğü Endeksi (RFI) = 0.815 elde edilmiştir. 23 kör UX araştırmacısının değlendirmesinde sistem uzman referans bulgularının %93\'lüne ulaşmış; değerlendiricilerin %65'i sistemin çıktısını insan üretimi olarak tanımlamıştır.",
+        text: "Clarere, Rogers Diffusion, OCEAN/NEO-PI-R psikometrisi, Hofstede kültürel boyut çerçeveleri ve Van Westendorp fiyat metodolojisinden yararlanan çok katmanlı bir sentetik araştırma mimarisi kullanır. Persona cevapları kanıt zinciriyle izlenir, anti-dalkavukluk (ELEPHANT) ve çeşitlilik denetimlerinden geçer. Çıktılar yönlendirici hipotezlerdir; istatistiksel temsil iddiası taşımaz ve yüksek riskli kararlar gerçek kullanıcı, satış veya saha verisiyle doğrulanmalıdır.",
       },
     },
     {
@@ -170,7 +170,7 @@ const faqJsonLd = {
       name: "Hangi sektör ve ekipler için uygundur?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Strateji ve kreatif ajanslar, B2B SaaS ürün ekipleri, e-ticaret kurucuları, büyme pazarlamacıları ve konumlandırma / fiyatlandırma / mesajlaşma testlerini hızla çalıştırmak isteyen ürün yöneticileri için tasarlandı.",
+        text: "Strateji ve kreatif ajanslar, B2B SaaS ürün ekipleri, e-ticaret kurucuları, büyüme pazarlamacıları ve konumlandırma / fiyatlandırma / mesajlaşma testlerini hızla çalıştırmak isteyen ürün yöneticileri için tasarlandı.",
       },
     },
   ],

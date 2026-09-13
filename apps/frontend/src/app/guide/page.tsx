@@ -103,7 +103,7 @@ export default function GuidePage() {
               <div>
                 <h3 className="font-semibold text-lg text-primary mb-2">1. Giriş: Davranış Bilimine Dayalı Metodoloji</h3>
                 <p>
-                  Clarere, sadece yapay zeka komutlarından (prompts) ibaret olmayan, arkasında <strong className="text-primary">davranış bilimlerine dayalı güçlü akademik temeller</strong> barındıran bilimsel bir platformdur. Platformdaki her mimari karar, hakemli kaynaklara ve bilişsel psikoloji teorilerine dayandırılmıştır.
+                  Clarere, sadece yapay zeka komutlarından (prompts) ibaret olmayan, arkasında <strong className="text-primary">davranış bilimi ve araştırma metodolojisi çerçeveleri</strong> barındıran bir platformdur. Temel mimari kararlar; Rogers Diffusion, OCEAN/NEO-PI-R psikometrisi, Hofstede kültürel boyutları ve Van Westendorp fiyat metodolojisi gibi kamuya açık çerçevelerden yararlanır. Çıktılar yönlendirici hipotezlerdir; istatistiksel temsil iddiası taşımaz.
                 </p>
               </div>
 
@@ -118,7 +118,7 @@ export default function GuidePage() {
                     <strong className="text-primary font-semibold text-base block mb-2">Kişilik Derinliği (Personality Depth)</strong>
                     <span className="text-xs font-mono text-error block mb-2">❌ Standart Sorun: Modeller klişelerden beslenir.</span>
                     <p className="text-sm text-body-muted leading-relaxed">
-                      <strong className="text-primary">Clarere Çözümü:</strong> 100&apos;den fazla akademik makale referansıyla; Big Five NEO-PI-R alt-boyutları, Rogers&apos;ın Teknoloji Benimseme Eğrisi ve ACT-R bilişsel mimarisi üzerine inşa edilen zeminli personalar kullanılır.
+                      <strong className="text-primary">Clarere Çözümü:</strong> Big Five NEO-PI-R alt-boyutları, Rogers&apos;ın Teknoloji Benimseme Eğrisi ve bilişsel bellek modeli üzerine inşa edilen zeminli personalar kullanılır.
                     </p>
                   </div>
 
@@ -186,27 +186,27 @@ export default function GuidePage() {
                 <h3 className="font-semibold text-lg text-primary mb-4">4. Bilimsel Kanıtlar ve Karşılaştırma</h3>
                 <div className="grid sm:grid-cols-2 gap-6 text-sm">
                   <div className="p-6 border border-hairline rounded-sm bg-soft-stone">
-                    <span className="mono-label text-coral block mb-2 font-semibold">YÜKSEK DOĞRULUK</span>
+                    <span className="mono-label text-coral block mb-2 font-semibold">HIZLI ÖN HİPOTEZ</span>
                     <p className="text-ink font-medium leading-relaxed">
-                      Clarere, uzman araştırma ekiplerinin aylar süren çalışmalarındaki kritik pazar bulgularının <strong className="text-primary">%86&apos;sını 2 dakikadan kısa sürede</strong> yakalar.
+                      Clarere, uzman araştırma ekiplerinin haftalar süren çalışmalarında ortaya çıkan kritik meseleleri <strong className="text-primary">dakikalar içinde ön hipotez</strong> olarak görünür kılmayı hedefler. Bu çıktı, gerçek araştırmanın yerine geçmez; onu daha hızlı ve odaklı planlamanıza yardımcı olur.
                     </p>
                   </div>
                   <div className="p-6 border border-hairline rounded-sm bg-soft-stone">
-                    <span className="mono-label text-coral block mb-2 font-semibold">AKADEMİK VALİDASYON</span>
+                    <span className="mono-label text-coral block mb-2 font-semibold">DİSİPLİNLİ DENETİM</span>
                     <p className="text-ink font-medium leading-relaxed">
-                      Baymard Institute ve Nielsen Norman Group (NNg) insan bulgularına karşı <strong className="text-primary">9 farklı sektörde gerçekleştirilen 46 bağımsız çalışma</strong> ile test edilmiş ve doğrulanmıştır.
+                      Her bulgu; persona, soru ve alıntı düzeyinde kanıt zinciriyle izlenir. Persona paneli çeşitlilik (stance diversity) ve anti-dalkavukluk kontrollerinden geçirilir; rapor hasmane (adversarial) bir denetim katmanından geçmeden sunulmaz.
                     </p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="font-semibold text-lg text-primary mb-4">5. Arka Plandaki 14 İnovatif Sistem</h3>
+                <h3 className="font-semibold text-lg text-primary mb-4">5. Arka Plandaki Sistemler</h3>
                 <p className="mb-4">Simülasyon hatalarını ve yapay zeka dalkavukluğunu aşmak için tasarlanmış entegre sistemlerden bazıları:</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                   <div className="p-4 border border-hairline rounded-sm bg-white">
                     <strong className="text-primary font-semibold block mb-1 text-sm">Context Isolation</strong>
-                    <p className="text-body-muted leading-relaxed">Personanın hipotezleri bilmesini engelleyerek yaranma çabasını (sycophancy) sıfırlar.</p>
+                    <p className="text-body-muted leading-relaxed">Personanın hipotezleri bilmesini engelleyerek yaranma çabasını (sycophancy) büyük ölçüde azaltır.</p>
                   </div>
                   <div className="p-4 border border-hairline rounded-sm bg-white">
                     <strong className="text-primary font-semibold block mb-1 text-sm">Realistic Memory</strong>
@@ -221,8 +221,8 @@ export default function GuidePage() {
                     <p className="text-body-muted leading-relaxed">Fazla uyumlu yanıtları gerçek zamanlı tespit eder ve personayı Zero-Sum Bet (finansal risk taahhüdü) ile sınayarak dürüstlüğe zorlar.</p>
                   </div>
                   <div className="p-4 border border-hairline rounded-sm bg-white">
-                    <strong className="text-primary font-semibold block mb-1 text-sm">6-Stage Review</strong>
-                    <p className="text-body-muted leading-relaxed">Rapor sunulmadan önce tema çıkarma, web pazar araştırması ve hasmane kalite denetimi gibi 6 farklı ajan katmanından geçer.</p>
+                    <strong className="text-primary font-semibold block mb-1 text-sm">Çok Aşamalı Denetim</strong>
+                    <p className="text-body-muted leading-relaxed">Rapor sunulmadan önce tema çıkarma, harici kanıt araması ve hasmane kalite denetimi gibi farklı ajan katmanlarından geçer.</p>
                   </div>
                   <div className="p-4 border border-hairline rounded-sm bg-white">
                     <strong className="text-primary font-semibold block mb-1 text-sm">Cultural Dimensions</strong>
@@ -232,8 +232,8 @@ export default function GuidePage() {
               </div>
 
               <div>
-                <h3 className="font-semibold text-lg text-primary mb-4">6. Sezgisel Olmayan Etkiler ve Araştırma Bulguları</h3>
-                <p className="mb-4">Clarere&apos;in kendi sistem and metodoloji araştırmalarından elde edilen şaşırtıcı bilimsel bulgular:</p>
+                <h3 className="font-semibold text-lg text-primary mb-4">6. Sezgisel Olmayan Etkiler ve Saha Notları</h3>
+                <p className="mb-4">Clarere&apos;in kendi sistem ve metodoloji araştırmalarından elde edilen gözlemler:</p>
                 <div className="space-y-4">
                   <div className="flex gap-4 border-b border-hairline pb-4">
                     <span className="mono-label text-coral font-bold shrink-0 mt-0.5">BULGU 1</span>

@@ -71,9 +71,9 @@ export default function UserInterviewsPage() {
           </div>
           <div className="p-6 rounded-[8px] border border-[#d9d9dd] bg-[#edfce9]/30 text-left">
             <span className="text-sm font-semibold text-[#003c33] block mb-1">Kritik Gerçeklik</span>
-            <div className="text-3xl font-bold text-[#003c33] font-mono mb-2">%90 Oranında Risk</div>
+            <div className="text-3xl font-bold text-[#003c33] font-mono mb-2">Araştırmasız Karar</div>
             <p className="text-xs text-[#616161] leading-relaxed">
-              Ürün kararlarının %90&apos;ı, bütçe ve zaman kısıtlılıkları sebebiyle kullanıcı araştırması ve mülakatlar yapılmadan körlemesine alınır.
+              Ürün kararlarının önemli bir bölümü, bütçe ve zaman kısıtlılıkları sebebiyle kullanıcı araştırması ve mülakatlar yapılmadan alınır.
             </p>
           </div>
         </div>
@@ -104,7 +104,7 @@ export default function UserInterviewsPage() {
               <span className="text-3xl font-mono font-extrabold text-[#ff7759] block mb-4">02</span>
               <h3 className="text-base font-bold text-[#17171c] mb-2">Yapay Zeka Paneli Oluşturun</h3>
               <p className="text-xs text-[#616161] leading-relaxed">
-                Rol, deneyim, bağlam ve kültürel arka plan seçin. 50&apos;ye kadar farklı demografik ve davranışsal sentetik tüketici personası otomatik olarak yapılandırılır.
+                Rol, deneyim, bağlam ve kültürel arka plan seçin. 10 kişilik standart sentetik tüketici paneli otomatik olarak yapılandırılır (kurumsal planlarda özelleştirilebilir).
               </p>
             </div>
           </div>
@@ -150,7 +150,7 @@ export default function UserInterviewsPage() {
             </div>
             <h3 className="text-base font-bold text-[#17171c] mb-2">Context Isolation (İzole Bağlam)</h3>
             <p className="text-xs text-[#616161] leading-relaxed">
-              Sentetik personaların sizin araştırma hedefinizi ve onaylanmasını beklediğiniz hipotezleri görmesi engellenir. Bu sayede yapay zekanın en büyük sorunu olan onaylama yanlılığı (sycophancy bias) mimari düzeyde sıfırlanır.
+              Sentetik personaların sizin araştırma hedefinizi ve onaylanmasını beklediğiniz hipotezleri görmesi engellenir. Bu sayede yapay zekanın en büyük sorunu olan onaylama yanlılığı (sycophancy bias) mimari düzeyde büyük ölçüde azaltılır.
             </p>
           </div>
 
@@ -250,7 +250,7 @@ export default function UserInterviewsPage() {
             },
             {
               q: "Sentetik mülakat verilerinin doğruluk payı nedir?",
-              a: "Bağımsız tüketici panelleri ve akademik çerçevelerle yürütülen karşılaştırmalı çalışmalarda Clarere sentetik görüşmelerinin, gerçek pazar mülakatı çıktıları ve tema dağılımlarıyla %85 oranında korelasyon gösterdiği bilimsel olarak kanıtlanmıştır.",
+              a: "Sentetik görüşmeler yönlendirici hipotezler üretir; istatistiksel temsil iddiası taşımaz. Clarere çıktıları, gerçek kullanıcı araştırmasının yerini almak yerine onu daha odaklı planlamanıza yardımcı olur. Yüksek riskli kararlar gerçek kullanıcı, satış veya saha verisiyle doğrulanmalıdır.",
             },
             {
               q: "Yapay zeka moderatörü mülakatlarda derinlemesine takip soruları sorar mı?",

@@ -48,7 +48,7 @@ export default function TermsPage() {
             <div className="p-6 bg-soft-stone rounded-sm border border-hairline space-y-4">
               <span className="mono-label text-coral block font-semibold">⚠️ BETA SÜRÜMÜ BİLDİRİMİ (BETA VERSION NOTICE)</span>
               <p className="text-ink text-xs leading-relaxed">
-                Sitemiz, platformumuz and ilgili araştırma hizmetleri şu anda erken <strong>BETA aşamasındadır</strong>; yazılımsal hatalar, bilgi eksiklikleri veya tamamlanmamış özellikler içerebilir. Platform, yalnızca ön kullanım, test, deneme ve bilimsel kalibrasyon değerlendirmesi amaçlıdır. Platformun tam sürümle piyasaya çıkacağı veya mevcut belirli özelliklerin kalıcı olacağı garanti edilmez.
+                Sitemiz, platformumuz ve ilgili araştırma hizmetleri şu anda erken <strong>BETA aşamasındadır</strong>; yazılımsal hatalar, bilgi eksiklikleri veya tamamlanmamış özellikler içerebilir. Platform, yalnızca ön kullanım, test, deneme ve bilimsel kalibrasyon değerlendirmesi amaçlıdır. Platformun tam sürümle piyasaya çıkacağı veya mevcut belirli özelliklerin kalıcı olacağı garanti edilmez.
               </p>
               <p className="text-ink text-xs leading-relaxed">
                 <strong>Kendi Riskinizle Kullanım (USE AT YOUR OWN RISK):</strong> Platformu kullanarak, teknik kesintiler dahil tüm olası operasyonel riskleri peşinen kabul etmiş olursunuz. Ürün deneyseldir ve nihai ticari/kritik kararlar için tek başına bu siteye güvenilmemelidir.

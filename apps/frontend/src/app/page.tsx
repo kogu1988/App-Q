@@ -414,13 +414,13 @@ export default function HomePage() {
             <div className="mt-16 pt-8 border-t border-white/12">
               <p className="mono-label mb-6 text-pale-green/50">Platform hakkında</p>
               <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 text-sm text-white/50">
-                <span>RFI Skoru 0.815</span>
+                <span>Kanıt zinciriyle izlenebilir bulgular</span>
                 <span className="text-white/20">·</span>
-                <span>46 araştırma alanında test edildi</span>
+                <span>Anti-dalkavukluk ve çeşitlilik denetimi</span>
                 <span className="text-white/20">·</span>
-                <span>%93 tema doğruluğu</span>
+                <span>Van Westendorp fiyat analizi</span>
                 <span className="text-white/20">·</span>
-                <span>Türkiye odaklı TÜAD 2025 veri seti</span>
+                <span>Türkiye odaklı TÜAD 2025 SES dağılımı</span>
               </div>
             </div>
           </Reveal>
@@ -801,7 +801,7 @@ export default function HomePage() {
               },
               {
                 q: "Metodoloji ne kadar güvenilir?",
-                a: "Clarere'nun araştırma motoru; kişilik psikolojisi, bilişsel mimari ve kültürel boyut çerçevelerine dayanan çok katmanlı bilimsel bir altyapı üzerinde çalışır. Bağımsız değerlendirmelerde sistem, 46 farklı araştırma alanında yüksek tema doğruluğu sergilemiş ve uzman UX araştırmacılarının büyük çoğunluğu tarafından insan kalitesinde üretim olarak nitelendirilmiştir.",
+                a: "Clarere'nin araştırma motoru; kişilik psikolojisi, bilişsel mimari ve kültürel boyut çerçevelerine dayanan çok katmanlı bir yapı üzerinde çalışır. Her bulgu kanıt zinciriyle persone ve soruya bağlanır; panel anti-dalkavukluk ve çeşitlilik denetimlerinden geçer. Bu çıktılar yönlendirici hipotezlerdir; istatistiksel temsil iddiası taşımaz ve yüksek riskli kararlar gerçek kullanıcı verisiyle doğrulanmalıdır.",
               },
               {
                 q: "Hangi sektör ve ekipler için uygundur?",

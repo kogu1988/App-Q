@@ -512,7 +512,7 @@ export default function UpgradePage() {
               <span className="font-extrabold text-base text-[#17171c]">Kurumsal Çözüm</span>
             </div>
             <p className="text-xs text-muted-foreground leading-tight max-w-xl">
-              Sınırsız her şey, custom metodolojiler, özel entegrasyonlar, atanmış destek ekibi ve **%100 Yerel Veri Lokalizasyonu (2026 KVKK Uyumlu)** kurumsal garantisi ile organizasyonunuzu ölçeklendirin.
+              Sınırsız kullanım, özel metodoloji ve entegrasyonlar, atanmış destek ekibi ve kurumsal veri işleme seçenekleri ile organizasyonunuzu ölçeklendirin.
             </p>
           </div>
           <a

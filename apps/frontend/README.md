@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Clarere — Frontend
 
-## Getting Started
+Clarere’nin Next.js tabanlı web arayüzü. Landing sayfaları, müşteri paneli, araştırma sihirbazı ve yönetici panelini içerir.
 
-First, run the development server:
+## Teknoloji
+
+- **Next.js 16** (App Router, Turbopack)
+- **React 19** + **TypeScript** (strict)
+- **Tailwind CSS 4**
+- **shadcn/ui** + Base UI bileşenleri
+- **recharts** (rapor grafikleri), **sonner** (bildirimler)
+
+## Geliştirme
+
+Bağımlılıkları kur:
+
+```bash
+npm ci
+```
+
+Geliştirme sunucusu (port **4001**):
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> Port `4001` sabittir ve backend proxy’si buna göre yapılandırılmıştır. Varsayılan Next.js `3000` portu kullanılmaz.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Diğer komutlar:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build     # production build
+npm start         # production sunucu
+npm run lint      # eslint
+npx tsc --noEmit  # tip kontrolü
+```
 
-## Learn More
+## Ortam Değişkenleri
 
-To learn more about Next.js, take a look at the following resources:
+`next.config.ts` içindeki rewrite kuralları `/api/*` isteklerini backend’e yönlendirir.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Değişken | Amaç |
+|---|---|
+| `API_PROXY_TARGET` | Backend hedefi (derleme zamanı build arg). Örn. `http://localhost:4000` |
+| `NEXT_PUBLIC_PADDLE_ENV` | Paddle.js ortamı (`sandbox` \| `production`) |
+| `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | Paddle.js client token (yayımlanması güvenlidir) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> **Not:** `API_PROXY_TARGET` bir **build arg**’dır; `next.config.ts` rewrite’ları derleme anında gömülür ve çalışma zamanı ortam değişkeninden etkilenmez. Değiştirince yeniden derlemek gerekir.
 
-## Deploy on Vercel
+## Yapı
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+├── app/
+│   ├── page.tsx                 Landing + fiyatlandırma + SSS + iletişim
+│   ├── layout.tsx               Kök layout, metadata, JSON-LD, Paddle.js
+│   ├── client/                  Müşteri paneli
+│   │   ├── page.tsx             Dashboard
+│   │   ├── new/page.tsx         Araştırma sihirbazı (Defne → Research)
+│   │   ├── studies/[id]/page.tsx Çalışma detay + rapor
+│   │   └── upgrade/page.tsx     Plan yükseltme (Paddle checkout)
+│   ├── admin/page.tsx           Operatör paneli
+│   └── {agencies,b2b-saas,...}  SEO landing sayfaları
+├── components/                  Paylaşılan bileşenler (plan-gate, logo, admin/*)
+├── hooks/                       use-client-plan vb.
+└── lib/                         auth, paddle, yardımcılar
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Auth
+
+Geliştirmede `X-Username` header’ı kullanılır. Token varsa `Authorization: Bearer <JWT>` de gönderilir. Production’da JWT zorunludur.
+
+## Docker
+
+Yerel tam yığın (önerilen) proje kökünden:
+
+```bash
+docker compose -f docker-compose.prod.yml -f docker-compose.local.yml up -d --build
+```
+
+Frontend `http://localhost:4001`, tam yığın (Caddy) `http://localhost:8080`.
+
+## Test
+
+E2E testleri kök dizindeki `e2e/` klasöründedir (ayrı `package.json`):
+
+```bash
+cd ../e2e && npx playwright test
+```
+
+Docker yığını çalışıyor olmalıdır.

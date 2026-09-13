@@ -50,7 +50,18 @@ class Crawl4AIExtractor:
     async def extract_content(self, url: str) -> str:
         """Extracts text content from a given URL using Crawl4AI."""
         if not self._crawler_class:
-            return f"[Mock Content for {url}] (Crawl4AI package not installed)"
+            # Production'da mock içerik ASLA kanıt olarak kullanılmaz.
+            if os.getenv("APP_ENV", "development") == "production":
+                logger.warning(
+                    "Crawl4AI kurulu değil; production'da derin web çıkarımı atlanıyor (url=%s).",
+                    url,
+                )
+                return ""
+            logger.debug(
+                "Crawl4AI yok; test/geliştirme bağlamında açıkça etiketli mock içerik döndürülüyor (url=%s).",
+                url,
+            )
+            return f"[TEST FIXTURE — Mock Content for {url}] (Crawl4AI not installed)"
             
         try:
             async with self._crawler_class() as crawler:
