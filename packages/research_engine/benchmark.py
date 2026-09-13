@@ -404,3 +404,96 @@ def calculate_rfi(
     }
 
     return result
+
+
+# ── Bağımsız benchmark: veri sözleşmesi, uyum ve özet ────────────────────────
+
+# Bir benchmark vakası için beklenen alanlar. İnsan alanları boş bırakılıp
+# uzman tarafından doldurulur; **uydurma veri kabul edilmez**.
+CASE_REQUIRED_FIELDS: tuple[str, ...] = (
+    "id",
+    "name",
+    "brief",
+    "llm_findings",
+    "human_findings",
+)
+
+
+def validate_case(case: dict) -> list[str]:
+    """Bir benchmark vakasının eksik/geçersiz alanlarını döner (boş = geçerli).
+
+    `human_findings` boş olabilir (henüz anotasyon yapılmamış); bu bir hata değil,
+    yalnızca "tamamlanmamış" demektir ve `case_is_annotated()` ile ayrılır.
+    """
+    problems: list[str] = []
+    for field_name in CASE_REQUIRED_FIELDS:
+        if field_name not in case:
+            problems.append(f"eksik alan: {field_name}")
+    if "human_findings" in case and not isinstance(case.get("human_findings"), list):
+        problems.append("human_findings liste olmalı")
+    if "llm_findings" in case and not isinstance(case.get("llm_findings"), list):
+        problems.append("llm_findings liste olmalı")
+    return problems
+
+
+def case_is_annotated(case: dict) -> bool:
+    """Uzman `human_findings` ve `synthetic_validation` alanlarını doldurmuş mu?"""
+    return bool(case.get("human_findings")) and bool(case.get("synthetic_validation"))
+
+
+def cohens_kappa(labels_a: list[Any], labels_b: list[Any]) -> float | None:
+    """İki bağımsız değerlendiricinin etiketleri arasında Cohen's kappa hesaplar.
+
+    Kör tema eşleme protokolünde ("bu iki bulgu aynı temayı mı anlatıyor?") iki
+    değerlendirici aynı çiftleri bağımsız etiketler; uyum kappa ile ölçülür.
+
+    Returns:
+        kappa (-1..1) veya yeterli veri yoksa None (aynı uzunlukta değilse/boşsa).
+    """
+    if not labels_a or not labels_b or len(labels_a) != len(labels_b):
+        return None
+
+    n = len(labels_a)
+    categories = sorted({str(x) for x in labels_a} | {str(x) for x in labels_b})
+    if len(categories) < 2:
+        # Tek kategori varsa şans düzeltmesi tanımsız; tam uyum döndür.
+        return 1.0 if all(str(a) == str(b) for a, b in zip(labels_a, labels_b)) else 0.0
+
+    observed = sum(1 for a, b in zip(labels_a, labels_b) if str(a) == str(b)) / n
+    expected = 0.0
+    for cat in categories:
+        p_a = sum(1 for a in labels_a if str(a) == cat) / n
+        p_b = sum(1 for b in labels_b if str(b) == cat) / n
+        expected += p_a * p_b
+
+    if expected >= 1.0:
+        return 1.0
+    return round((observed - expected) / (1.0 - expected), 4)
+
+
+def summarize_rfi(results: list[dict]) -> dict:
+    """RFI sonuç listesini karşılaştırma için özetler.
+
+    Args:
+        results: `calculate_rfi()` çıktılarının listesi.
+
+    Returns:
+        Ortalama/min/maks RFI, ortalama metrikler ve vaka sayısı.
+        (İddia üretmez; yalnızca ölçüm özetidir.)
+    """
+    if not results:
+        return {"cases": 0, "mean_rfi": 0.0, "min_rfi": 0.0, "max_rfi": 0.0, "mean_metrics": {}}
+
+    rfis = [float(r.get("overall_rfi", 0.0)) for r in results]
+    metric_names = ("theme_recall", "theme_precision", "critical_recall", "false_positive_rate", "segment_accuracy")
+    mean_metrics = {
+        name: round(sum(float(r.get(name, 0.0)) for r in results) / len(results), 4)
+        for name in metric_names
+    }
+    return {
+        "cases": len(results),
+        "mean_rfi": round(sum(rfis) / len(rfis), 4),
+        "min_rfi": round(min(rfis), 4),
+        "max_rfi": round(max(rfis), 4),
+        "mean_metrics": mean_metrics,
+    }

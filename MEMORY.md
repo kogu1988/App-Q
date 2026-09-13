@@ -493,3 +493,15 @@ python -m pytest packages/research_engine/tests/ -q
 - ✅ **`GTM_PLAYBOOK.md` (S9-2/3/4/5/6):** Pilot program kiti (5–10 partner, 4 hafta, başarı kriterleri), fiyat doğrulama planı (Van Westendorp uyarlaması + karar kuralı), Free→paid funnel hipotezleri (H1–H4, `product_events` ile ölçülür), KPI dashboard tanımı (Edinim/Aktivasyon/Değer/Gelir/Kalite) ve yatırımcı deck tutarlılık kontrol listesi.
 - Not: Fiyat/rakip doğrulaması **gerçek partner verisi** gerektirir; plan hazır, uygulama canlı sonrası (S10).
 - Doğrulama: doküman değişikliği; CI yeşil.
+
+### Sprint 8 — Bağımsız benchmark & RFI kalibrasyonu (KISMİ, 2026-09-13)
+
+> ⚠️ **Harness hazır; gerçek veri ve bağımsız insan değerlendirici bekliyor.** Bu sprint tek başına kapatılamaz — dış veri + insan gerektirir.
+
+- ✅ **`benchmark.py` genişletmeleri:** `validate_case()` (vaka sözleşmesi), `case_is_annotated()`, `cohens_kappa()` (iki bağımsız değerlendirici uyumu) ve `summarize_rfi()` (ortalama/min/maks + metrik ortalamaları). Regresyon: `test_benchmark_agreement.py` (12).
+- ✅ **`scripts/benchmark_collect.py`:** Bir `study_id`'nin Clarere bulgularını DB'den (yoksa `report_json`'dan) alıp **anotasyona hazır vaka iskeleti** üretir. `human_findings`/`critical`/`contradictions`/`synthetic_validation` alanlarını **insan doldurur**; script uydurma veri üretmez. Canlı doğrulandı (4 bulgu).
+- ✅ **`scripts/benchmark_report.py`:** Anotasyonlu vakalar için RFI + iki değerlendirici varsa `cohens_kappa` hesaplar, `--write-summary` ile `summary.json` yazar. Şablon dosyalarını (`_` öneki) atlar.
+- ✅ **`data/evals/benchmark/`:** `README.md` (kör tema eşleme protokolü, vaka şeması, etiket tanımları, kalibrasyon planı, yayımlama kuralı) + `cases/_template.json`.
+- **Bekleyen (dış):** 20 gerçek brief, uzman `human_findings`, 2 bağımsız değerlendirici, eşik kalibrasyonu (`_THEME_MATCH_THRESHOLD` vb. varsayılan), `summary.json` yayımı.
+- **Kural:** Bu adımlar tamamlanana kadar hiçbir yerde “bağımsız bilimsel doğrulama” iddiası kullanılmaz.
+- Doğrulama: CI-safe tam süit **388 passed + 15 skipped**.

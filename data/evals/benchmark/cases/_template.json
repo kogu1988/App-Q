@@ -1,0 +1,37 @@
+{
+  "id": "study_ORNEK",
+  "name": "Örnek vaka adı (uzman doldurur)",
+  "category": "kategori",
+  "brief": {
+    "title": "",
+    "idea": "",
+    "market": "Türkiye",
+    "target_users": []
+  },
+  "llm_findings": [
+    {
+      "title": "Clarere bulgusu başlığı",
+      "summary": "Clarere bulgusu özeti",
+      "category": "pain_point",
+      "confidence": 0.7
+    }
+  ],
+  "human_findings": [
+    {
+      "title": "Uzman/insan referans bulgu başlığı",
+      "summary": "Uzman referans özeti",
+      "category": "pain_point"
+    }
+  ],
+  "critical": [
+    "İnsan tarafından kritik işaretlenen bulgu metni"
+  ],
+  "contradictions": [
+    ["Çelişen bulgu A", "Çelişen bulgu B"]
+  ],
+  "synthetic_validation": {
+    "validated_by": [],
+    "method": "none",
+    "notes": ""
+  }
+}
