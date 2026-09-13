@@ -505,3 +505,13 @@ python -m pytest packages/research_engine/tests/ -q
 - **Bekleyen (dış):** 20 gerçek brief, uzman `human_findings`, 2 bağımsız değerlendirici, eşik kalibrasyonu (`_THEME_MATCH_THRESHOLD` vb. varsayılan), `summary.json` yayımı.
 - **Kural:** Bu adımlar tamamlanana kadar hiçbir yerde “bağımsız bilimsel doğrulama” iddiası kullanılmaz.
 - Doğrulama: CI-safe tam süit **388 passed + 15 skipped**.
+
+### Refaktör R1 — Study detay veri katmanı ayrımı (2026-09-13)
+
+> Kaynak plan: `refactor_plan.md` · Sprint sırası: R1 → R2 → R5 → R6 → R7 → R8 → R3 → R4. Kurallar: davranış dondurma, shim stratejisi, golden markdown + OpenAPI diff, modül başına < ~500 satır.
+
+- ✅ **Yeni feature katmanı:** `src/features/studies/` altında `types.ts` (tüm detay tipleri), `api/studies-api.ts` (fetch/response katmanı), `hooks/use-study-detail.ts` (veri + state + funnel event), `lib/normalize-study.ts` (Big Five toleranslı okuma), `lib/constants.ts` (`DECISION_CONFIG`, `STANCE_TR`), `components/` (FindingCard, ChannelBarChart, BigFiveRadar, PSMChart).
+- ✅ **`studies/[id]/page.tsx` 2364 → 1758 satır.** `fetch(` çağrısı kalmadı; veri/olay/sunum yardımcıları feature katmanına taşındı. Kabul kriteri (< 1800 satır) sağlandı.
+- ✅ **Next.js anti-pattern düzeltmesi:** effect içinde `cancelled` guard eklendi (unmount sonrası `setState` engellendi). Davranış ve görsel çıktı birebir korundu.
+- Doğrulama: `npx tsc --noEmit` + `npx eslint` temiz (0 error, 0 warning); `page.tsx`'te fetch yok.
+- **Sıradaki:** R2 — 6 sekmeyi bağımsız bileşenlere ayır (`page.tsx` < 350 satır).

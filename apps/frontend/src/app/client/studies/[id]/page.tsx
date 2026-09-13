@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -15,17 +15,12 @@ import {
   Compass, 
   AlertCircle,
   CheckCircle2,
-  ThumbsUp,
-  ThumbsDown,
   ListTodo,
   Lock,
   Trash2,
   Search,
   Globe,
   Send,
-  Ship,
-  GitBranch,
-  AlertTriangle,
   Zap
 } from "lucide-react";
 
@@ -38,543 +33,35 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { PlanGate } from "@/components/plan-gate";
 import { useClientPlan } from "@/hooks/use-client-plan";
-import { getAuthHeaders } from "@/lib/auth";
-import { trackEvent } from "@/lib/events";
+import type {
+  Persona,
+  InterviewTurn,
+  PersonaInterview,
+} from "@/features/studies/types";
+import {
+  askFollowUp,
+  askResearchChat,
+  deleteStudy,
+  fetchStudyDetail,
+  synthesizeReportRequest,
+  saveStudyRequest,
+  studyPdfRequest,
+} from "@/features/studies/api/studies-api";
+import { readTrait } from "@/features/studies/lib/normalize-study";
+import { useStudyDetail } from "@/features/studies/hooks/use-study-detail";
 
-// Interface definitions matching the backend Pydantic models
-interface Persona {
-  id: string;
-  name: string;
-  age: number;
-  city: string;
-  segment: string;
-  stance: string;
-  price_sensitivity: number;
-  digital_confidence: number;
-  context: string;
-  goals: string[];
-  objections: string[];
-  bio: string;
-  role_title?: string;
-  ses_group?: string;
-  respondent_type?: string;
-  settlement_type?: string;
-  big_five?: Record<string, number>;
-  attributes?: Record<string, string>;
-}
-
-interface InterviewTurn {
-  question: string;
-  answer: string;
-  tags?: string[];
-}
-
-interface PersonaInterview {
-  persona: Persona;
-  turns: InterviewTurn[];
-  consistency_notes?: string[];
-}
-
-interface ResearchPlan {
-  objective?: string;
-  assumptions?: string[];
-  interview_questions?: string[];
-  recommended_panel_size?: number;
-}
-
-interface StudyDetail {
-  metadata?: {
-    id: string;
-    title: string;
-    market: string;
-    category: string;
-    created_at: string;
-    updated_at: string;
-    has_report: boolean;
-    quality_score?: number;
-    quality_grade?: string;
-    quality_summary?: string;
-  };
-  brief?: {
-    title: string;
-    market?: string;
-    category?: string;
-    idea?: string;
-    expected_price?: string;
-    target_users?: string[];
-    competitors?: string[];
-    success_metric?: string;
-    sales_channel?: string;
-    discovery_channels?: string[];
-    panel_size?: string;
-    geography?: string;
-  };
-  plan?: ResearchPlan;
-  personas?: Persona[];
-  interviews?: PersonaInterview[];
-  report_markdown?: string;
-  report_html?: string;
-  ses_cross_tab?: Array<{
-    ses_group: string;
-    total: number;
-    dominant_stance: string;
-    stance_counts: Record<string, number>;
-  }>;
-  respondent_type_summary?: Array<{
-    respondent_type: string;
-    label: string;
-    count: number;
-    avg_price_sensitivity: number;
-    top_pain: string | null;
-    top_objection: string | null;
-  }>;
-  van_westendorp?: {
-    too_cheap_values: number[];
-    cheap_values: number[];
-    expensive_values: number[];
-    too_expensive_values: number[];
-    opp: number;
-    ipp: number;
-    pmc: number;
-    pme: number;
-    acceptable_range: [number, number];
-    currency: string;
-    methodology_note: string;
-  };
-  brand_health?: {
-    unaided_recall: Record<string, number>;
-    associations: Record<string, string[]>;
-    top_of_mind: string | null;
-    total_mentions: number;
-  };
-  channel_map?: Array<{ channel: string; count: number; pct: number }>;
-  research_quality?: {
-    // Eski format (backward compat)
-    overall_score?: number;
-    grade?: string;
-    bias_flags?: Record<string, string[]>;
-    straight_lining_count?: number;
-    acquiescence_count?: number;
-    social_desirability_count?: number;
-    summary?: string;
-    // Yeni adversarial review format (Grounded Simulation)
-    flags?: Array<{ phase: string; severity: string; code: string; message: string; finding?: string; suggested_confidence?: number; suggested_step?: string }>;
-    flag_count?: number;
-    warning_count?: number;
-    phases_passed?: string[];
-    phases_flagged?: string[];
-    // RFI
-    rfi?: number;
-    components?: Record<string, number>;
-    valid?: boolean;
-    validity_threshold?: number;
-    interpretation?: string;
-  };
-  findings?: Array<{
-    id: number;
-    title: string;
-    category: string;
-    summary: string;
-    confidence: number;
-    implication: string;
-    supporting_count: number;
-    refuting_count: number;
-    neutral_count: number;
-    contradiction_score: number;
-    decision_signal: string;
-    evidence?: Array<{
-      persona_id: string;
-      persona_name: string;
-      stance: string;
-      question: string;
-      quote: string;
-      sentiment: string;
-    }>;
-  }>;
-  recommendations?: string[];
-  action_items?: string[];
-  decision_items?: Array<{
-    signal: string;
-    title: string;
-    confidence: number;
-    supporting_count: number;
-    refuting_count: number;
-    evidence_summary: string;
-    recommended_action: string;
-  }>;
-  external_evidence?: Array<{
-    finding_title: string;
-    source_title: string;
-    source_url: string;
-    snippet: string;
-    relevance: string;
-  }>;
-  report_metrics?: {
-    findings_total?: number;
-    findings_with_evidence?: number;
-    unsourced_findings?: number;
-    evidence_total?: number;
-    evidence_per_finding?: number;
-    unique_personas_in_evidence?: number;
-    refuting_ratio?: number;
-    answer_completion_rate?: number;
-    external_evidence_count?: number;
-    decision_signals?: Record<string, number>;
-  };
-}
-
-// ──────────────── Decision Signal Config ────────────────
-const DECISION_CONFIG: Record<string, { icon: React.ComponentType<{ size?: number; className?: string }>; color: string; bg: string; label: string }> = {
-  SHIP: { icon: Ship, color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", label: "Yayınla" },
-  ITERATE: { icon: GitBranch, color: "text-amber-700", bg: "bg-amber-50 border-amber-200", label: "İyileştir" },
-  INVESTIGATE: { icon: AlertTriangle, color: "text-sky-700", bg: "bg-sky-50 border-sky-200", label: "Araştır" },
-  KILL: { icon: Trash2, color: "text-red-700", bg: "bg-red-50 border-red-200", label: "Vazgeç" },
-};
-
-// Duruş (stance) etiketlerinin Türkçe karşılıkları
-const STANCE_TR: Record<string, string> = {
-  "Champion": "Öncü",
-  "Pragmatist": "Pragmatist",
-  "Observer": "Gözlemci",
-  "Skeptic": "Şüpheci",
-  "Blocker": "Engelleyici",
-  "Innovator": "Öncü",
-  "EarlyAdopter": "Erken Benimseyen",
-  "Mainstream": "Ana Akım",
-  "Laggard": "Geciken",
-};
-
-// ──────────────── Finding Card Component ────────────────
-function FindingCard({ finding, dc, DcIcon, confPct, barColor }: {
-  finding: NonNullable<StudyDetail["findings"]>[number];
-  dc: typeof DECISION_CONFIG[string];
-  DcIcon: React.ComponentType<{ size?: number; className?: string }>;
-  confPct: number;
-  barColor: string;
-}) {
-  const [showEvidence, setShowEvidence] = useState(false);
-
-  return (
-    <Card className="shadow-sm border-[#d9d9dd]/60 hover:border-[#003c33]/30 transition-colors">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <CardTitle className="text-base">{finding.title}</CardTitle>
-              <Badge className={`text-[10px] font-bold ${dc.bg} ${dc.color}`}>
-                <DcIcon size={12} className="mr-1 inline" />
-                {dc.label}
-              </Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1.5">{finding.summary}</p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4 pt-0">
-        {/* Confidence Bar */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-medium text-[#616161]">Güven Skoru</span>
-            <span className="font-bold text-[#212121]">%{confPct}</span>
-          </div>
-          <div className="h-2 w-full bg-[#eeece7] rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-700 ${barColor}`}
-              style={{ width: `${confPct}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Support / Refute counts */}
-        <div className="flex items-center gap-4 text-xs">
-          <span className="flex items-center gap-1 text-emerald-600 font-medium">
-            <ThumbsUp size={12} />
-            Destekleyen: {finding.supporting_count} persona
-          </span>
-          <span className="flex items-center gap-1 text-red-500 font-medium">
-            <ThumbsDown size={12} />
-            İtiraz: {finding.refuting_count}
-          </span>
-          {finding.neutral_count > 0 && (
-            <span className="text-muted-foreground">
-              Nötr: {finding.neutral_count}
-            </span>
-          )}
-        </div>
-
-        {/* Contradiction Score */}
-        {finding.contradiction_score > 0 && (
-          <div className="flex items-center gap-2 p-2 rounded-md bg-amber-50 border border-amber-200 text-xs text-amber-700">
-            <AlertTriangle size={14} />
-            <span>Çelişki Skoru: {(finding.contradiction_score * 100).toFixed(0)}% — bu bulgu persona grupları arasında görüş ayrılığı içeriyor.</span>
-          </div>
-        )}
-
-        {/* Evidence Quotes (collapsible) */}
-        {finding.evidence && finding.evidence.length > 0 && (
-          <div className="border-t border-border pt-3">
-            <button
-              onClick={() => setShowEvidence(!showEvidence)}
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#1863dc] hover:text-[#1863dc]/80 transition-colors"
-            >
-              <MessageSquare size={12} />
-              Kanıt Alıntıları ({finding.evidence.length})
-              <span className="text-[10px]">{showEvidence ? "▲" : "▼"}</span>
-            </button>
-            {showEvidence && (
-              <div className="space-y-2 mt-2">
-                {finding.evidence.slice(0, 3).map((ev, ei) => (
-                  <div key={ei} className="flex gap-2 p-2.5 bg-[#f5f4f1] rounded-lg border border-border/60 text-xs">
-                    <div className="shrink-0">
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                        (ev.stance === "Innovator" || ev.stance === "EarlyAdopter") ? "bg-emerald-100 text-emerald-700" :
-                        ev.stance === "Skeptic" ? "bg-amber-100 text-amber-700" :
-                        ev.stance === "Laggard" ? "bg-red-100 text-red-700" :
-                        "bg-[#eeece7] text-[#616161]"
-                      }`}>{STANCE_TR[ev.stance] || ev.stance}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="font-semibold text-[#212121]">{ev.persona_name}</span>
-                      <span className="text-muted-foreground ml-1">({ev.sentiment})</span>
-                      <p className="italic text-[#616161] mt-0.5 line-clamp-2">&ldquo;{ev.quote}&rdquo;</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Implication */}
-        {finding.implication && (
-          <div className="border-t border-border pt-3">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Çıkarım</span>
-            <p className="text-xs text-[#616161] leading-relaxed">{finding.implication}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ──────────────── Channel Discovery Bar Chart ────────────────
-function ChannelBarChart({ data }: { data: NonNullable<StudyDetail["channel_map"]> }) {
-  if (!data.length) return null;
-  const maxCount = Math.max(...data.map(d => d.count));
-  const COLORS = ["#6366f1","#14b8a6","#0ea5e9","#22c55e","#f97316","#ec4899","#f59e0b"];
-  return (
-    <div className="space-y-2.5">
-      {data.map((row, i) => (
-        <div key={row.channel} className="flex items-center gap-3">
-          <span className="text-xs font-medium text-[#616161] w-40 shrink-0 truncate">{row.channel}</span>
-          <div className="flex-1 bg-[#eeece7] rounded-full h-2.5 overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${(row.count / maxCount) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }}
-            />
-          </div>
-          <span className="text-xs font-bold tabular-nums w-10 text-right" style={{ color: COLORS[i % COLORS.length] }}>
-            %{row.pct}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ──────────────── Büyük Beşli Radar Grafiği ────────────────
-function BigFiveRadar({ bigFive }: { bigFive: Record<string, number> }) {
-  const W = 240, H = 240, cx = W / 2, cy = H / 2, R = 82;
-  const axes = [
-    { label: "Açıklık", value: bigFive?.Openness ?? bigFive?.openness ?? 50 },
-    { label: "Sorumluluk", value: bigFive?.Conscientiousness ?? bigFive?.conscientiousness ?? 50 },
-    { label: "Dışadönüklük", value: bigFive?.Extraversion ?? bigFive?.extraversion ?? 50 },
-    { label: "Uyumluluk", value: bigFive?.Agreeableness ?? bigFive?.agreeableness ?? 50 },
-    { label: "Denge", value: bigFive?.Neuroticism ?? bigFive?.neuroticism ?? 50 },
-  ];
-  const N = axes.length;
-  const angle = (i: number) => (Math.PI * 2 * i) / N - Math.PI / 2;
-  const pt = (i: number, r: number) => [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))] as const;
-
-  const rings = [0.34, 0.67, 1].map((f, ri) => {
-    const pts = Array.from({ length: N }, (_, i) => pt(i, R * f).map(n => n.toFixed(1)).join(",")).join(" ");
-    return <polygon key={ri} points={pts} fill="none" stroke="#d9d9dd" strokeWidth="1" />;
-  });
-  const spokes = Array.from({ length: N }, (_, i) => {
-    const [x, y] = pt(i, R);
-    return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#d9d9dd" strokeWidth="1" />;
-  });
-  const valuePts = Array.from(
-    { length: N },
-    (_, i) => pt(i, (R * Math.min(100, axes[i].value)) / 100).map(n => n.toFixed(1)).join(",")
-  ).join(" ");
-  const labels = Array.from({ length: N }, (_, i) => {
-    const [x, y] = pt(i, R + 20);
-    return (
-      <text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="9" fill="#616161">
-        {axes[i].label}
-      </text>
-    );
-  });
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-[220px] mx-auto" role="img" aria-label="Büyük Beşli kişilik radarı">
-      {rings}{spokes}
-      <polygon points={valuePts} fill="#003c33" fillOpacity="0.22" stroke="#003c33" strokeWidth="2" />
-      {labels}
-    </svg>
-  );
-}
-
-// ──────────────── Van Westendorp PSM Chart ────────────────
-function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendorp"]> }) {
-  const W = 600, H = 260, PAD = { left: 56, right: 24, top: 16, bottom: 40 };
-  const innerW = W - PAD.left - PAD.right;
-  const innerH = H - PAD.top - PAD.bottom;
-
-  // Tüm fiyat değerlerini birleştir ve X eksenini belirle
-  const allVals = [
-    ...data.too_cheap_values,
-    ...data.cheap_values,
-    ...data.expensive_values,
-    ...data.too_expensive_values,
-  ];
-  const xMin = Math.min(...allVals) * 0.8;
-  const xMax = Math.max(...allVals) * 1.15;
-
-  const xScale = (v: number) => PAD.left + ((v - xMin) / (xMax - xMin)) * innerW;
-
-  // Kümülatif dağılım (CDF) hesapla
-  function buildCDF(values: number[]): Array<[number, number]> {
-    if (!values.length) return [];
-    const sorted = [...values].sort((a, b) => a - b);
-    const pts: Array<[number, number]> = [];
-    // Eksen genişliğinde eşit aralıklı örnek nokta
-    const steps = 60;
-    for (let i = 0; i <= steps; i++) {
-      const x = xMin + (i / steps) * (xMax - xMin);
-      const pct = sorted.filter(v => v <= x).length / sorted.length;
-      pts.push([x, pct]);
-    }
-    return pts;
-  }
-
-  const cdfTooExpensive = buildCDF(data.too_expensive_values); // Azalan (1 - ...)
-  const cdfCheap        = buildCDF(data.cheap_values);
-  const cdfExpensive    = buildCDF(data.expensive_values);
-  const cdfTooCheap     = buildCDF(data.too_cheap_values);     // Azalan
-
-  function toPolyline(pts: Array<[number, number]>, invert = false): string {
-    return pts
-      .map(([x, y]) => `${xScale(x).toFixed(1)},${(PAD.top + innerH * (1 - (invert ? 1 - y : y))).toFixed(1)}`)
-      .join(" ");
-  }
-
-  const yTicks = [0, 25, 50, 75, 100];
-  const priceTicks = Array.from({ length: 6 }, (_, i) =>
-    Math.round(xMin + (i / 5) * (xMax - xMin))
-  );
-
-  const LINES = [
-    { pts: toPolyline(cdfTooCheap, true),     color: "#f59e0b", label: "Çok Ucuz",  dash: "4 2" },
-    { pts: toPolyline(cdfCheap),               color: "#22c55e", label: "Makul",     dash: "" },
-    { pts: toPolyline(cdfExpensive),            color: "#f97316", label: "Pahalı",   dash: "" },
-    { pts: toPolyline(cdfTooExpensive, true),  color: "#ef4444", label: "Çok Pahalı", dash: "4 2" },
-  ];
-
-  const markers = [
-    { x: data.pmc, label: "PMC", color: "#6366f1" },
-    { x: data.opp, label: "OPP", color: "#0d9488" },
-    { x: data.ipp, label: "IPP", color: "#0ea5e9" },
-    { x: data.pme, label: "PME", color: "#ec4899" },
-  ];
-
-  return (
-    <div className="w-full overflow-x-auto">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-2xl" style={{ fontFamily: "inherit" }}>
-        {/* Grid lines */}
-        {yTicks.map(t => (
-          <g key={t}>
-            <line
-              x1={PAD.left} y1={PAD.top + innerH * (1 - t / 100)}
-              x2={PAD.left + innerW} y2={PAD.top + innerH * (1 - t / 100)}
-              stroke="#e2e8f0" strokeWidth="1"
-            />
-            <text x={PAD.left - 6} y={PAD.top + innerH * (1 - t / 100) + 4} textAnchor="end"
-              className="fill-[#93939f]" fontSize="10">{t}%</text>
-          </g>
-        ))}
-
-        {/* X axis ticks */}
-        {priceTicks.map(v => (
-          <g key={v}>
-            <line x1={xScale(v)} y1={PAD.top + innerH} x2={xScale(v)} y2={PAD.top + innerH + 4}
-              stroke="#cbd5e1" strokeWidth="1" />
-            <text x={xScale(v)} y={PAD.top + innerH + 16} textAnchor="middle"
-              className="fill-[#93939f]" fontSize="10">{v.toLocaleString("tr-TR")} ₺</text>
-          </g>
-        ))}
-
-        {/* Acceptable range band */}
-        <rect
-          x={xScale(data.pmc)} y={PAD.top}
-          width={xScale(data.pme) - xScale(data.pmc)}
-          height={innerH}
-          fill="#6366f1" fillOpacity="0.06"
-        />
-
-        {/* PSM Curves */}
-        {LINES.map(l => (
-          <polyline key={l.label} points={l.pts}
-            fill="none" stroke={l.color} strokeWidth="2"
-            strokeDasharray={l.dash || undefined}
-            strokeLinecap="round" strokeLinejoin="round" />
-        ))}
-
-        {/* Vertical markers */}
-        {markers.map(m => (
-          <g key={m.label}>
-            <line x1={xScale(m.x)} y1={PAD.top} x2={xScale(m.x)} y2={PAD.top + innerH}
-              stroke={m.color} strokeWidth="1.5" strokeDasharray="3 3" />
-            <rect x={xScale(m.x) - 14} y={PAD.top} width={28} height={16} rx="3"
-              fill={m.color} fillOpacity="0.9" />
-            <text x={xScale(m.x)} y={PAD.top + 11} textAnchor="middle"
-              fill="white" fontSize="9" fontWeight="bold">{m.label}</text>
-          </g>
-        ))}
-
-        {/* Axes */}
-        <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + innerH}
-          stroke="#94a3b8" strokeWidth="1" />
-        <line x1={PAD.left} y1={PAD.top + innerH} x2={PAD.left + innerW} y2={PAD.top + innerH}
-          stroke="#94a3b8" strokeWidth="1" />
-      </svg>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 mt-2 text-xs">
-        {LINES.map(l => (
-          <div key={l.label} className="flex items-center gap-1.5">
-            <svg width="24" height="10">
-              <line x1="0" y1="5" x2="24" y2="5" stroke={l.color} strokeWidth="2"
-                strokeDasharray={l.dash || undefined} />
-            </svg>
-            <span className="text-[#616161] ">{l.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+import { DECISION_CONFIG, STANCE_TR } from "@/features/studies/lib/constants";
+import { FindingCard } from "@/features/studies/components/FindingCard";
+import { ChannelBarChart } from "@/features/studies/components/ChannelBarChart";
+import { BigFiveRadar } from "@/features/studies/components/BigFiveRadar";
+import { PSMChart } from "@/features/studies/components/PSMChart";
 
 export default function StudyDetailPage() {
   const params = useParams();
   const router = useRouter();
   const studyId = params.id as string;
 
-  const [study, setStudy] = useState<StudyDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"summary" | "personas" | "script" | "interviews" | "findings" | "report">("summary");
+  const { study, setStudy, loading, error, activeTab, setActiveTab } = useStudyDetail(studyId);
   const [, setSelectedPersonaIdx] = useState<number>(0);
   const [deleting, setDeleting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -587,69 +74,10 @@ export default function StudyDetailPage() {
   const [sendingChat, setSendingChat] = useState(false);
   const { plan: clientPlan } = useClientPlan();
 
-  // Sprint 3 — Funnel ölçümü: çalışma detayı ve rapor sekmesi görüntüleme
-  useEffect(() => {
-    if (!studyId) return;
-    trackEvent("study_detail_viewed", studyId);
-  }, [studyId]);
-
-  useEffect(() => {
-    if (!studyId || activeTab !== "report") return;
-    trackEvent("report_tab_viewed", studyId);
-  }, [studyId, activeTab]);
-
-  useEffect(() => {
-    if (!studyId) return;
-
-    const fetchStudy = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/client/studies/${studyId}`, { headers: getAuthHeaders() });
-        if (!res.ok) {
-          if (res.status === 404) {
-            throw new Error("Araştırma bulunamadı.");
-          }
-          throw new Error("Veriler yüklenirken bir hata oluştu.");
-        }
-        const data = await res.json();
-        setStudy(data);
-        
-        // Fetch findings if report is available
-        if (data.metadata?.has_report) {
-          try {
-            const findingsRes = await fetch(`/api/client/studies/${studyId}/findings`, { headers: getAuthHeaders() });
-            if (findingsRes.ok) {
-              const findingsData = await findingsRes.json();
-              setStudy(prev => prev ? { ...prev, findings: findingsData.findings || [], decision_items: findingsData.decision_items || [] } : prev);
-            }
-          } catch { /* findings optional */ }
-        }
-        
-        // Default to report tab if it's already generated and completed
-        if (data.metadata?.has_report) {
-          setActiveTab("report");
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Bir hata oluştu.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStudy();
-  }, [studyId]);
-
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      const res = await fetch(`/api/client/studies/${studyId}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.detail || "Silme başarısız.");
-      }
+      await deleteStudy(studyId);
       toast.success("Araştırma kalıcı olarak silindi.");
       router.push("/client");
     } catch (e) {
@@ -664,28 +92,19 @@ export default function StudyDetailPage() {
     if (!followUpText.trim()) return;
     setSendingFollowUp(true);
     try {
-      const res = await fetch(`/api/client/studies/${studyId}/follow-up`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({ persona_id: personaId, question: followUpText })
-      });
-      if (!res.ok) throw new Error("API hatası");
-      const data = await res.json();
-      
-      // Update local state to show the new turn immediately
+      const turn = await askFollowUp(studyId, personaId, followUpText);
+
+      // Yeni turu anında göster
       setStudy(prev => {
         if (!prev) return prev;
         const newInterviews = [...(prev.interviews || [])];
         const idx = newInterviews.findIndex(i => i.persona.id === personaId);
         if (idx !== -1) {
-          newInterviews[idx].turns.push(data.turn);
+          newInterviews[idx].turns.push(turn);
         }
         return { ...prev, interviews: newInterviews };
       });
-      
+
       setFollowUpText("");
       toast.success("Soru soruldu!");
     } catch {
@@ -702,27 +121,11 @@ export default function StudyDetailPage() {
     setChatInput("");
     setSendingChat(true);
     try {
-      const res = await fetch(`/api/client/studies/${studyId}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ question }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setChatMessages(prev => [...prev, { role: "assistant", content: data.answer || data.response || "" }]);
-      } else {
-        let errMsg = "Yanıt alınamadı. Lütfen tekrar deneyin.";
-        try {
-          const errData = await res.json();
-          const d = errData?.detail;
-          if (typeof d === "string") errMsg = d;
-          else if (d?.message) errMsg = d.message;
-          else if (d?.required_plan) errMsg = `Bu özellik ${d.required_plan} planı gerektirir.`;
-        } catch {}
-        setChatMessages(prev => [...prev, { role: "assistant", content: errMsg }]);
-      }
-    } catch {
-      setChatMessages(prev => [...prev, { role: "assistant", content: "Bir hata oluştu. Lütfen tekrar deneyin." }]);
+      const answer = await askResearchChat(studyId, question);
+      setChatMessages(prev => [...prev, { role: "assistant", content: answer }]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Bir hata oluştu. Lütfen tekrar deneyin.";
+      setChatMessages(prev => [...prev, { role: "assistant", content: msg }]);
     } finally {
       setSendingChat(false);
     }
@@ -928,18 +331,11 @@ export default function StudyDetailPage() {
                 onClick={async () => {
                   setSynthesizing(true);
                   try {
-                    const res = await fetch(`/api/client/synthesize`, {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        ...getAuthHeaders(),
-                      },
-                      body: JSON.stringify({
-                        brief: brief || { title: metadata?.title || "", market: "TR", category: metadata?.category || "genel", context: "" },
-                        plan: plan || {},
-                        interviews: interviews,
-                        personas: personas,
-                      }),
+                    const res = await synthesizeReportRequest({
+                      brief: brief || { title: metadata?.title || "", market: "TR", category: metadata?.category || "genel", context: "" },
+                      plan: plan || {},
+                      interviews: interviews,
+                      personas: personas,
                     });
                     if (!res.ok) throw new Error("Rapor olusturulamadi.");
                     const report = await res.json();
@@ -961,27 +357,19 @@ export default function StudyDetailPage() {
                       ses_cross_tab: report.ses_cross_tab || [],
                       research_quality: report.research_quality || null,
                     };
-                    await fetch(`/api/client/studies`, {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        ...getAuthHeaders(),
+                    await saveStudyRequest({
+                      metadata: {
+                        ...metadata,
+                        has_report: true,
+                        quality_score: report.quality_score ?? metadata?.quality_score ?? 0,
+                        quality_grade: report.quality_grade ?? metadata?.quality_grade ?? "N/A",
                       },
-                      body: JSON.stringify({
-                        metadata: {
-                          ...metadata,
-                          has_report: true,
-                          quality_score: report.quality_score ?? metadata?.quality_score ?? 0,
-                          quality_grade: report.quality_grade ?? metadata?.quality_grade ?? "N/A",
-                        },
-                        payload: reportPayload,
-                      }),
+                      payload: reportPayload,
                     });
                     
                     toast.success("Rapor olusturuldu!");
-                    // Reload study data
-                    const updated = await fetch(`/api/client/studies/${studyId}`, { headers: getAuthHeaders() });
-                    if (updated.ok) setStudy(await updated.json());
+                    // Reload study data (hata sessizce yok sayilir)
+                    await fetchStudyDetail(studyId).then(setStudy).catch(() => {});
                     setActiveTab("report");
                   } catch (err) {
                     toast.error(err instanceof Error ? err.message : "Rapor olusturulamadi.");
@@ -1019,10 +407,7 @@ export default function StudyDetailPage() {
                   className="w-full sm:w-auto btn-pill-primary gap-2"
                   onClick={async () => {
                     try {
-                      const res = await fetch(`/api/client/studies/${studyId}/pdf`, {
-                        method: "GET",
-                        headers: getAuthHeaders()
-                      });
+                      const res = await studyPdfRequest(studyId);
                       if (!res.ok) {
                         const errData = await res.json().catch(() => ({}));
                         if (errData?.detail?.code === "PLAN_GATE" || (typeof errData?.detail === "string" && errData.detail.includes("plan"))) {
@@ -1543,25 +928,28 @@ export default function StudyDetailPage() {
                               <span className="text-[10px] font-bold text-[#93939f] uppercase tracking-wider block mb-2">Kişilik Profili (Büyük Beşli)</span>
                               <BigFiveRadar bigFive={persona.big_five || {}} />
                               {[
-                                { label: "Açıklık (Openness)",      value: persona.big_five?.Openness      ?? persona.big_five?.openness      ?? 50, color: "bg-sky-500" },
-                                { label: "Sorumluluk (Conscientiousness)", value: persona.big_five?.Conscientiousness ?? persona.big_five?.conscientiousness ?? 50, color: "bg-blue-500" },
-                                { label: "Dışadönüklük (Extraversion)",    value: persona.big_five?.Extraversion    ?? persona.big_five?.extraversion    ?? 50, color: "bg-orange-500" },
-                                { label: "Uyumluluk (Agreeableness)",      value: persona.big_five?.Agreeableness   ?? persona.big_five?.agreeableness   ?? 50, color: "bg-teal-500" },
-                                { label: "Duygusal Denge (Neuroticism)",   value: persona.big_five?.Neuroticism     ?? persona.big_five?.neuroticism     ?? 50, color: "bg-rose-500" },
-                              ].map(trait => (
+                                { label: "Açıklık (Openness)",              key: "Openness" as const,          color: "bg-sky-500" },
+                                { label: "Sorumluluk (Conscientiousness)",   key: "Conscientiousness" as const, color: "bg-blue-500" },
+                                { label: "Dışadönüklük (Extraversion)",      key: "Extraversion" as const,      color: "bg-orange-500" },
+                                { label: "Uyumluluk (Agreeableness)",        key: "Agreeableness" as const,     color: "bg-teal-500" },
+                                { label: "Duygusal Denge (Neuroticism)",     key: "Neuroticism" as const,       color: "bg-rose-500" },
+                              ].map(trait => {
+                                const value = readTrait(persona.big_five, trait.key);
+                                return (
                                 <div key={trait.label} className="space-y-1">
                                   <div className="flex justify-between text-[10px] font-semibold">
                                     <span className="text-muted-foreground">{trait.label}</span>
-                                    <span className="text-[#212121] ">{trait.value}%</span>
+                                    <span className="text-[#212121] ">{value}%</span>
                                   </div>
                                   <div className="h-1.5 w-full bg-[#eeece7] rounded-full overflow-hidden">
                                     <div 
                                       className={`h-full ${trait.color} rounded-full`} 
-                                      style={{ width: `${trait.value}%` }}
+                                      style={{ width: `${value}%` }}
                                     />
                                   </div>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </>
                           ) : (
                             <div className="grid grid-cols-2 gap-4">
