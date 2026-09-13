@@ -196,3 +196,47 @@ def test_research_quality_score_does_not_collapse_to_zero():
         assert q["grade"] == "yellow"
     else:
         assert q["grade"] == "red"
+
+
+# ── P4: Alıntı kesimi kelime sınırında olmalı (rapor metni yarım kalmasın) ──
+
+QUOTE_WITH_110 = (
+    "Açıkçası 'bunu telefon notlarımla da yapıyorum' hissini kırması lazım, "
+    "çünkü şu an para vermeden idare ediyorum ve ekstra bir uygulamaya geçmek istemiyorum."
+)
+
+
+def test_shorten_does_not_cut_mid_word_and_adds_no_ellipsis():
+    """`_shorten` kelimeyi ortasından kesmemeli ve sonuna '...' eklememeli."""
+    from packages.research_engine.analytics import _shorten
+
+    out = _shorten(QUOTE_WITH_110, 110)
+
+    assert "…" not in out and "..." not in out
+    assert len(out) <= 110
+    # Kesim sonrası son kelime, orijinal metinde tam bir kelime olmalı
+    assert out.split()[-1] in QUOTE_WITH_110.split()
+
+
+def test_shorten_prefers_complete_sentences():
+    """Limite sığan TAM cümleler döndürülmeli; yarım cümle verilmemeli."""
+    from packages.research_engine.analytics import _shorten
+
+    text = "Birinci cümle burada biter. İkinci cümle devam eder ve oldukça uzundur."
+    out = _shorten(text, 30)
+
+    assert out == "Birinci cümle burada biter."
+    assert "…" not in out
+
+
+def test_shorten_returns_full_text_when_under_limit():
+    from packages.research_engine.analytics import _shorten
+
+    assert _shorten("kısa bir metin", 100) == "kısa bir metin"
+
+
+def test_shorten_handles_empty_and_none():
+    from packages.research_engine.analytics import _shorten
+
+    assert _shorten(None) == ""
+    assert _shorten("") == ""

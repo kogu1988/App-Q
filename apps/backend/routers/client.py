@@ -1343,6 +1343,24 @@ def _synthesize_impl(request, x_username: str | None):
     if gated:
         report = _dc_replace(report, **gated)
 
+    # ── Rapor zenginleştirme (DeepSeek Pro, kanıta bağlı anlatım) ──
+    # Algoritmik raporu, YALNIZCA mevcut bulgular/kanıtlar üzerinden yazılmış
+    # yönetici anlatımı + stratejik önerilerle zenginleştirir. Hata/eksiklikte
+    # rapor olduğu gibi kalır (graceful degradation).
+    if os.getenv("REPORT_ENRICH_ENABLED", "true").lower() in {"1", "true", "yes"}:
+        try:
+            from packages.research_engine.analytics import enrich_report_narrative
+            _enrich_model = get_model_provider("pro", user_id=(x_username or "").strip() or "anonymous")
+            _narrative, _recs = enrich_report_narrative(report, _enrich_model)
+            if _narrative:
+                report = _dc_replace(
+                    report,
+                    executive_narrative=_narrative,
+                    strategic_recommendations=_recs,
+                )
+        except Exception as e:
+            logger.warning("Rapor zenginleştirme atlandı: %s", e)
+
     from dataclasses import asdict
     report_dict = asdict(report)
 

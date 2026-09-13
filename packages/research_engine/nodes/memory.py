@@ -48,12 +48,20 @@ def calculate_act_r_memory_prompt(turns: List[Any], script_question: Any) -> str
         answer_text = getattr(t, "answer", "")
         question_text = getattr(t, "question", "")
 
+        # Kelime sınırında kırp, '...' izi bırakma
+        q_txt = " ".join(question_text.split())
+        if len(q_txt) > 60:
+            q_txt = q_txt[:60].rsplit(" ", 1)[0]
+        a_txt = " ".join(answer_text.split())
+        if len(a_txt) > length:
+            a_txt = a_txt[:length].rsplit(" ", 1)[0]
+
         # Egocentric Context Projection: [self] = persona, [partner] = mülakat
         weighted_lines.append(
-            f"[partner | {tag}] {question_text[:60].strip()}"
+            f"[partner | {tag}] {q_txt}"
         )
         weighted_lines.append(
-            f"[self | {tag} | Akt={a_i:.2f}] {answer_text[:length].strip()}..."
+            f"[self | {tag} | Akt={a_i:.2f}] {a_txt}"
         )
 
     return "\nACT-R Bellek (Egocentric — En Aktif Sönümlü Anılar):\n" + "\n".join(weighted_lines)

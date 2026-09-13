@@ -1,8 +1,12 @@
 from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
+import json
+import logging
 import re
 import statistics
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     ResearchBrief,
@@ -117,6 +121,122 @@ _REFUTING_KEYWORDS: set[str] = {
 # "Sorun/bariyer VAR" iddiası taşıyan bulgu kategorileri — bu bulgularda olumsuz
 # dil DESTEK, olumlu dil (inkar) KARŞI kanıttır.
 _NEGATIVE_CLAIM_CATEGORIES: set[str] = {"pain_point", "risk"}
+
+
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def _shorten(text: str | None, limit: int = 160) -> str:
+    """Alıntıdan **tam cümle(ler)'den oluşan bir özet** çıkarır.
+
+    Kurallar:
+    - Metin limite sığıyorsa aynen döner.
+    - Sığmıyorsa, limite sığan tam cümleler birleştirilir (kelime veya cümle
+      ortasından kesilmez).
+    - Tek bir cümle bile limitten uzunsa kelime sınırında kırpılır.
+    - **Sonuna '...' / '…' EKLENMEZ** — çıktı metinleri kırpma izi taşımaz.
+    """
+    if not text:
+        return ""
+    text = " ".join(str(text).split())  # fazla boşluk/satır sonlarını normalize et
+    if len(text) <= limit:
+        return text
+
+    # Limite sığan tam cümleleri biriktir
+    excerpt = ""
+    for sentence in _SENTENCE_SPLIT_RE.split(text):
+        candidate = f"{excerpt} {sentence}".strip()
+        if len(candidate) <= limit:
+            excerpt = candidate
+        else:
+            break
+    if excerpt:
+        return excerpt
+
+    # İlk cümle bile limitten uzun → kelime sınırında kırp (iz bırakmadan)
+    cut = text[:limit]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.rstrip(" ,.;:!?-")
+
+
+def _field(obj: Any, key: str, default: Any = None) -> Any:
+    """dict VEYA nesne üzerinden güvenli alan erişimi."""
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
+def enrich_report_narrative(
+    report: Any,
+    model: Any,
+    *,
+    max_tokens: int | None = None,
+) -> tuple[str, list[str]]:
+    """Raporu DeepSeek Pro ile zenginleştirir: yönetici anlatımı + stratejik öneriler.
+
+    **Anti-halüsinasyon:** Model YALNIZCA verilen bulgular/kanıtlar üzerinden yazmalıdır;
+    yeni veri, rakam, marka veya alıntı üretmesi açıkça yasaklanır. Hata durumunda
+    `("", [])` döner ve rapor algoritmik haliyle kalır (graceful degradation).
+    """
+    try:
+        findings = getattr(report, "enhanced_findings", None) or report.findings
+        payload = {
+            "baslik": report.title,
+            "amac": getattr(report.plan, "objective", ""),
+            "bulgular": [
+                {
+                    "baslik": _field(f, "title", ""),
+                    "kategori": _field(f, "category", ""),
+                    "ozet": _field(f, "summary", ""),
+                    "etki": _field(f, "implication", ""),
+                    "destek": _field(f, "supporting_count"),
+                    "karsi": _field(f, "refuting_count"),
+                    "kanitlar": [
+                        {
+                            "persona": _field(ev, "persona_name", ""),
+                            "alinti": _shorten(_field(ev, "quote", ""), 180),
+                        }
+                        for ev in (_field(f, "evidence", []) or [])[:3]
+                    ],
+                }
+                for f in list(findings)[:8]
+            ],
+            "fiyat": {
+                "kabul_araligi": report.pricing.acceptable_range,
+                "paket_onerisi": report.pricing.packaging_suggestion,
+                "direnc_noktalari": list(report.pricing.resistance_points),
+            },
+            "aksiyonlar": list(report.action_items),
+            "kisitlar": list(report.limitations),
+        }
+        system = (
+            "Sen kıdemli bir pazar araştırması analistisin. Sana VERİLEN veriler dışında "
+            "HİÇBİR bilgi, rakam, marka veya alıntı UYDURMA. Yalnızca verilen kanıtlardan "
+            "çıkarım yap, neden-sonuç kur ve uygulanabilir strateji üret. Dil: profesyonel "
+            "Türkçe, danışman tonu; pazarlama süslü dili ve abartı YOK. Cümlelerde '...' kullanma."
+        )
+        prompt = (
+            "Aşağıdaki JSON, tamamlanmış bir sentetik pazar araştırmasının bulgularıdır.\n"
+            f"{json.dumps(payload, ensure_ascii=False)}\n\n"
+            "Bu verilerden yola çıkarak SADECE şu JSON'u döndür:\n"
+            "{\n"
+            '  "yonetici_anlatimi": "3-5 cümlelik, bulguları nedensel olarak bağlayan yönetici özeti",\n'
+            '  "stratejik_oneriler": ["3 ila 5 adet, kanıta dayalı, uygulanabilir öneri"]\n'
+            "}\n"
+            "Başka hiçbir metin ekleme."
+        )
+        raw = model.generate(system=system, prompt=prompt, response_format="json", max_tokens=max_tokens)
+        data = json.loads(raw) if isinstance(raw, str) else raw
+        if not isinstance(data, dict):
+            return "", []
+        narrative = str(data.get("yonetici_anlatimi", "")).strip()
+        recs = [str(r).strip() for r in (data.get("stratejik_oneriler") or []) if str(r).strip()]
+        return narrative, recs
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Rapor anlatım zenginleştirmesi atlandı: %s", exc)
+        return "", []
+
 
 # Bulgu kategori ↔ görüşme sorusu etiketi eşlemesi. Bulgu kategorisi `risk` iken
 # senaryo soruları `objection` etiketi taşıdığı için kanıt hiç eşleşmiyordu
@@ -340,9 +460,9 @@ def build_respondent_type_summary(interviews: list[PersonaInterview]) -> list[di
         )
         for turn in iv.turns:
             if "pain_point" in (turn.tags or []) and not g["top_pain"]:
-                g["top_pain"] = turn.answer[:200]
+                g["top_pain"] = _shorten(turn.answer, 240)
             if "objection" in (turn.tags or []) and not g["top_objection"]:
-                g["top_objection"] = turn.answer[:200]
+                g["top_objection"] = _shorten(turn.answer, 240)
 
     return list(groups.values())
 
@@ -998,8 +1118,8 @@ def synthesize_report(
         # Build reason summaries from collected evidence
         reasons_a = ab_reasons.get("A", [])
         reasons_b = ab_reasons.get("B", [])
-        top_reason_a = reasons_a[0][:120] if reasons_a else "Guven ve netlik odakli tercih."
-        top_reason_b = reasons_b[0][:120] if reasons_b else "Esneklik ve yenilik odakli tercih."
+        top_reason_a = _shorten(reasons_a[0], 160) if reasons_a else "Guven ve netlik odakli tercih."
+        top_reason_b = _shorten(reasons_b[0], 160) if reasons_b else "Esneklik ve yenilik odakli tercih."
 
         # Recommendation
         if margin >= 0.4:
@@ -1011,7 +1131,7 @@ def synthesize_report(
 
         executive_summary = [
             f"A/B Simulasyonu sonucunda **{winner}** one cikmistir (guven: %{int(ab_confidence * 100)}).",
-            f"Katilimcilarin %{pct_a}'si Varyant A'yi ('{brief.variant_a[:60]}'), %{pct_b}'si Varyant B'yi ('{brief.variant_b[:60]}') tercih etmistir. Kararsiz orani: %{pct_undecided}.",
+            f"Katilimcilarin %{pct_a}'si Varyant A'yi ('{_shorten(brief.variant_a, 60)}'), %{pct_b}'si Varyant B'yi ('{_shorten(brief.variant_b, 60)}') tercih etmistir. Kararsiz orani: %{pct_undecided}.",
             f"Oneri: {recommendation}",
             f"Stance kazananlari: {' | '.join(stance_lines) if stance_lines else 'Veri yetersiz.'}",
             f"SES kazananlari: {' | '.join(ses_lines) if ses_lines else 'Veri yetersiz.'}",
@@ -1039,7 +1159,7 @@ def synthesize_report(
                 title="Varyant A Kurgusu Tercih Sebepleri",
                 category="value",
                 summary=(
-                    f"Varyant A ('{brief.variant_a[:60]}...'), ozellikle risk toleransi dusuk ve butce hassasiyeti yuksek segmentlerde "
+                    f"Varyant A ('{_shorten(brief.variant_a, 60)}'), ozellikle risk toleransi dusuk ve butce hassasiyeti yuksek segmentlerde "
                     f"tercih ediliyor. Ornek sebep: '{top_reason_a}'"
                 ),
                 confidence=0.78,
@@ -1050,7 +1170,7 @@ def synthesize_report(
                 title="Varyant B Kurgusu Tercih Sebepleri",
                 category="value",
                 summary=(
-                    f"Varyant B ('{brief.variant_b[:60]}...'), esneklik ve yenilik arayan segmentler tarafindan tercih ediliyor. "
+                    f"Varyant B ('{_shorten(brief.variant_b, 60)}'), esneklik ve yenilik arayan segmentler tarafindan tercih ediliyor. "
                     f"Ornek sebep: '{top_reason_b}'"
                 ),
                 confidence=0.72,
@@ -1197,12 +1317,12 @@ def synthesize_report(
         summary_pain = "Hedef kitlede bu problemle ilgili aciliyet tespit edilemedi."
 
     objection_hint = (
-        f"En güçlü bariyer güven/KVKK ve entegrasyon endişesi: \"{objections[0].quote[:110]}\""
+        f"En güçlü bariyer güven/KVKK ve entegrasyon endişesi: \"{_shorten(objections[0].quote, 140)}\""
         if objections and objections[0].quote
         else "Belirgin bir satın alma bariyeri öne çıkmadı."
     )
     price_hint = (
-        f"Fiyat beklentisi orta seviyede kümeleniyor: \"{pricing_evidence[0].quote[:110]}\""
+        f"Fiyat beklentisi orta seviyede kümeleniyor: \"{_shorten(pricing_evidence[0].quote, 140)}\""
         if pricing_evidence and pricing_evidence[0].quote
         else "Fiyat beklentisi konusunda net bir sinyal toplanamadı."
     )
@@ -1220,13 +1340,13 @@ def synthesize_report(
 
     # Finding 1: Pain point (varsa)
     if pain_points:
-        top_quote = pain_points[0].quote[:120] if pain_points[0].quote else ""
+        top_quote = _shorten(pain_points[0].quote, 160)
         findings.append(Finding(
             title="Temel İhtiyaç ve Acı Noktası",
             category="pain_point",
             summary=(
                 f"Katılımcıların büyük bölümü mevcut çözümlerde ciddi sürtüşme noktaları bildirdi. "
-                f"Öne çıkan alıntı: \"{top_quote}{'...' if len(top_quote) == 120 else ''}\""
+                f"Öne çıkan alıntı: \"{top_quote}\""
             ),
             confidence=min(0.5 + len(pain_points) * 0.07, 0.95),
             evidence=pain_points,
@@ -1235,13 +1355,13 @@ def synthesize_report(
 
     # Finding 2: Objections / satın alma bariyerleri (varsa)
     if objections:
-        top_obj = objections[0].quote[:120] if objections[0].quote else ""
+        top_obj = _shorten(objections[0].quote, 160)
         findings.append(Finding(
             title="Satın Alma Bariyerleri ve İtirazlar",
             category="risk",
             summary=(
                 f"{len(objections)} persona itiraz içeren sinyal verdi. "
-                f"Öne çıkan itiraz: \"{top_obj}{'...' if len(top_obj) == 120 else ''}\""
+                f"Öne çıkan itiraz: \"{top_obj}\""
             ),
             confidence=min(0.55 + len(objections) * 0.06, 0.92),
             evidence=objections,
@@ -1251,13 +1371,13 @@ def synthesize_report(
     # Finding 3: Değer algısı (varsa)
     value_evidence = collect_evidence(interviews, "value")
     if value_evidence:
-        top_val = value_evidence[0].quote[:120] if value_evidence[0].quote else ""
+        top_val = _shorten(value_evidence[0].quote, 160)
         findings.append(Finding(
             title="Değer Algısı ve Fiyat Toleransı",
             category="value",
             summary=(
                 f"Değer vurgusu yapan personalar fiyat bariyer eşiğini daha yüksek tuttu. "
-                f"Örnek: \"{top_val}{'...' if len(top_val) == 120 else ''}\""
+                f"Örnek: \"{top_val}\""
             ),
             confidence=min(0.60 + len(value_evidence) * 0.05, 0.90),
             evidence=value_evidence,
@@ -1294,7 +1414,7 @@ def synthesize_report(
 
     _resistance = ["Peşin yıllık ödeme istenmesi", "Ekstra gizli ücretler", "Kurulum maliyeti"]
     if objections and objections[0].quote:
-        _resistance.insert(0, f"Güven/KVKK ve klinik entegrasyonu endişesi (örn: \"{objections[0].quote[:80]}\")")
+        _resistance.insert(0, f"Güven/KVKK ve klinik entegrasyonu endişesi (örn: \"{_shorten(objections[0].quote, 100)}\")")
 
     pricing = PricingInsight(
         acceptable_range=brief.expected_price or "Aylık 200-500 TL (Tahmini)",

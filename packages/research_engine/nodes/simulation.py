@@ -29,16 +29,36 @@ async def hypothesis_blind_simulation_node(state: GlobalResearchState) -> Dict[s
     for idx, persona_meta in enumerate(allocated_personas):
         # Sahte pozitifliği kıran ELEPHANT anti-sycophancy prompt inşası
         from packages.research_engine.models import Persona
-        
-        # Determine traits safely
-        traits = persona_meta.get("big_five_constraints", {})
-        
+        from packages.research_engine.workflow import persona_traits
+
+        stance = persona_meta.get("stance", "Observer")
+        ses_group = persona_meta.get("ses_group", "C1")
+        price_sensitivity = int(persona_meta.get("price_sensitivity", 5))
+        digital_confidence = int(persona_meta.get("digital_confidence", 6))
+        # Big Five domain skorları (radar grafiği + ELEPHANT kalibrasyonu için sayısal)
+        big_five = persona_meta.get("big_five") or persona_traits(
+            idx, stance, price_sensitivity, digital_confidence
+        )
+
+        # Not: matris yalnızca stance/ses/big_five_constraints üretir; Persona'nın
+        # zorunlu alanları burada makul varsayımlarla doldurulur (aks/i akışta
+        # Persona.__init__ eksik argüman hatası veriyordu).
         p_obj = Persona(
-            id=f"p_{idx}", 
-            name=f"Katılımcı_{idx}", 
-            stance=persona_meta.get("stance", "Observer"), 
-            traits=traits, 
-            ses_group=persona_meta.get("ses_group", "C1")
+            id=f"p_{idx}",
+            name=f"Katılımcı_{idx}",
+            age=int(persona_meta.get("age", 32)),
+            city=persona_meta.get("city", "İstanbul"),
+            segment=persona_meta.get("segment", ses_group),
+            stance=stance,
+            price_sensitivity=price_sensitivity,
+            digital_confidence=digital_confidence,
+            context=(product_definition or "")[:300],
+            goals=[],
+            objections=[],
+            knowledge_boundary="orta",
+            traits=big_five,
+            big_five=big_five,
+            ses_group=ses_group,
         )
         system_instruction = build_elephant_system_prompt(p_obj)
         

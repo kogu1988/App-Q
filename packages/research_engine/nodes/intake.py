@@ -66,9 +66,16 @@ async def async_intake_and_reframing_node(state: GlobalResearchState) -> Dict[st
         model.free_memory()
     
     # 3. Deterministik İstatistiksel Kota Tahsisi (Largest Remainder Fonksiyonu)
-    # Sabit 15 personalık kararlı bir panel büyüklüğü simüle ediliyor
+    # Panel büyüklüğü env ile ayarlanır. Async yolda her persona için ayrı LLM
+    # çağrısı yapıldığından (ve kodlama adımı persona başına bir Pro çağrısı
+    # gerektirdiğinden) varsayılan 8 ile sınırlıdır — maliyet kontrolü.
+    import os as _os
     try:
-        allocated_personas = allocate_cohort_matrix(N=15)
+        _panel_n = max(3, int(_os.getenv("ASYNC_PERSONA_COUNT", "8")))
+    except ValueError:
+        _panel_n = 8
+    try:
+        allocated_personas = allocate_cohort_matrix(N=_panel_n)
     except Exception as _e:
         logger.warning("allocate_cohort_matrix başarısız, tek-persona fallback kullanılıyor: %s", _e)
         allocated_personas = [

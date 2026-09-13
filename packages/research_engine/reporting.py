@@ -1,7 +1,36 @@
 from __future__ import annotations
 
+import re
 from html import escape
 from .models import ResearchReport
+
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def _clip(text: str | None, limit: int = 160) -> str:
+    """Tam cümlelerden özet çıkarır; sonuna '...'/'…' EKLEMEZ.
+
+    Limite sığan tam cümleler birleştirilir; tek cümle bile uzunsa kelime
+    sınırında kırpılır.
+    """
+    if not text:
+        return ""
+    text = " ".join(str(text).split())
+    if len(text) <= limit:
+        return text
+    excerpt = ""
+    for sentence in _SENTENCE_SPLIT_RE.split(text):
+        candidate = f"{excerpt} {sentence}".strip()
+        if len(candidate) <= limit:
+            excerpt = candidate
+        else:
+            break
+    if excerpt:
+        return excerpt
+    cut = text[:limit]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.rstrip(" ,.;:!?-")
 
 # ── Rapor çıktısı için Türkçe etiket eşlemeleri ──────────────────────────────
 _STANCE_TR = {
@@ -91,6 +120,9 @@ def render_markdown(report: ResearchReport) -> str:
 
     lines.extend(["", "## Yönetici Özeti", ""])
     lines.extend(f"- {item}" for item in report.executive_summary)
+    # DeepSeek Pro ile üretilen kanıta bağlı anlatım (varsa)
+    if getattr(report, "executive_narrative", ""):
+        lines.extend(["", report.executive_narrative])
 
     lines.extend(
         [
@@ -157,15 +189,15 @@ def render_markdown(report: ResearchReport) -> str:
             ]
         )
         if persona.attributes:
-            lines.extend(["Davranış alanları:"])
+            lines.extend(["", "**Davranış alanları:**", ""])
             lines.extend(f"- {_ATTR_TR.get(key, key)}: {value}" for key, value in persona.attributes.items())
             lines.append("")
         if persona.traits:
-            lines.extend(["Kişilik skorları:"])
+            lines.extend(["", "**Kişilik skorları:**", ""])
             lines.extend(f"- {_TRAIT_TR.get(key, key)}: {value}/100" for key, value in persona.traits.items())
             lines.append("")
 
-    lines.extend(["## Pain Point Matrisi", ""])
+    lines.extend(["", "## Pain Point Matrisi", ""])
     lines.extend(
         [
             "| Persona | Segment | Ana Sorun | Ana İtiraz | Fiyat Beklentisi |",
@@ -184,7 +216,7 @@ def render_markdown(report: ResearchReport) -> str:
         )
     lines.append("")
 
-    lines.extend(["## Bulgular", ""])
+    lines.extend(["", "## Bulgular", ""])
     # Enhanced findings varsa onları kullan (kanıt sayıları + karar sinyali ile)
     _source_findings = getattr(report, "enhanced_findings", None) or report.findings
     for finding in _source_findings:
@@ -221,7 +253,7 @@ def render_markdown(report: ResearchReport) -> str:
             e_stance = _g(evidence, "stance", "")
             e_quote = _g(evidence, "quote", "")
             lines.append(
-                f"- {e_persona} ({_STANCE_TR.get(e_stance, e_stance)}) - \"{e_quote}\""
+                f"- {e_persona} ({_STANCE_TR.get(e_stance, e_stance)}) - \"{_clip(e_quote, 220)}\""
             )
         lines.append("")
 
@@ -270,13 +302,13 @@ def render_markdown(report: ResearchReport) -> str:
 
     # ── Harici Kanıtlar (varsa) ──
     if getattr(report, "external_evidence", None):
-        lines.extend(["## Harici Kanıt Doğrulaması", ""])
+        lines.extend(["", "## Harici Kanıt Doğrulaması", ""])
         lines.append("Sentetik bulguları destekleyen dış kaynaklar:")
         for ev in report.external_evidence:
             _rel = {"high": "Yüksek", "medium": "Orta", "low": "Düşük"}.get(ev.relevance, ev.relevance)
             lines.append(f"- **{ev.source_title}** (İlgi: {_rel})")
             if ev.snippet:
-                lines.append(f"  - {ev.snippet[:160]}")
+                lines.append(f"  - {_clip(ev.snippet, 160)}")
 
     # ── SES × Stance Çapraz Tablosu (varsa) ──
     if getattr(report, "ses_cross_tab", None):
@@ -301,6 +333,11 @@ def render_markdown(report: ResearchReport) -> str:
         lines.extend(["", "## Keşif Kanalı Haritası", ""])
         for ch in report.channel_map:
             lines.append(f"- {ch.get('channel', '')}: %{ch.get('pct', 0)}")
+
+    # DeepSeek Pro ile üretilen stratejik öneriler (varsa)
+    if getattr(report, "strategic_recommendations", None):
+        lines.extend(["", "## Stratejik Öneriler", ""])
+        lines.extend(f"- {item}" for item in report.strategic_recommendations)
 
     lines.extend(["", "## Aksiyon Listesi", ""])
     lines.extend(f"- {item}" for item in report.action_items)
@@ -499,7 +536,7 @@ def render_report_html(report_json: dict, report_markdown: str) -> str:
         "<section class='card'>"
         f"<h3>{escape(ev.get('source_title', ''))}</h3>"
         f"<p class='muted'>{escape(str(ev.get('relevance', '')))} ilgi · {escape(ev.get('finding_title', ''))}</p>"
-        f"<p>{escape((ev.get('snippet') or '')[:160])}</p>"
+        f"<p>{escape(_clip(ev.get('snippet'), 160))}</p>"
         "</section>"
         for ev in ext_evidence
     ) or '<p class="muted">Harici kanıt bulunamadı.</p>'

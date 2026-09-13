@@ -123,8 +123,13 @@ def run_simulation_task(self, payload: dict):
         from .models import ResearchBrief, PanelRole
 
         # 1. Brief Oluştur
+        # Başlık: '...' izi bırakmadan, kelime sınırında kısa bir başlık türet
+        _raw = " ".join((payload.get("original_brief") or "").split())
+        _first_sentence = _raw.split(".")[0].strip() or _raw
+        if len(_first_sentence) > 60:
+            _first_sentence = _first_sentence[:60].rsplit(" ", 1)[0]
         brief = ResearchBrief(
-            title=f"Araştırma: {payload.get('original_brief')[:30]}...",
+            title=f"Araştırma: {_first_sentence}",
             market="Türkiye",
             category=payload.get("category"),
             idea=payload.get("original_brief"),
@@ -154,7 +159,14 @@ def run_simulation_task(self, payload: dict):
         }
         
         # Invoke is async, so we use asyncio.run in the celery worker
-        final_state = asyncio.run(app_q_orchestrator.ainvoke(initial_state))
+        # Graph, MemorySaver checkpointer ile derlendiği için `thread_id` ZORUNLUDUR.
+        # Verilmezse LangGraph "Checkpointer requires ... 'configurable' keys" hatası verir.
+        final_state = asyncio.run(
+            app_q_orchestrator.ainvoke(
+                initial_state,
+                config={"configurable": {"thread_id": study_id}},
+            )
+        )
         
         if final_state.get("status") == "failed":
             raise Exception(f"Super-Graph failed: {final_state.get('error_message')}")

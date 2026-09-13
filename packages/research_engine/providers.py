@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
 import re
+import threading
+import time
+from collections import OrderedDict
 
 from tenacity import (
     Retrying,
@@ -38,9 +42,86 @@ except ImportError:  # openai yoksa retry devre dışı
 
 
 # LLM çağrısı zaman aşımı (saniye) — asılı kalmayı önler (P0-5)
-DEEPSEEK_TIMEOUT = float(os.getenv("DEEPSEEK_TIMEOUT", "90"))
+# Uzun sentez/mülakatlar için 120sn makul; gerektiğinde DEEPSEEK_TIMEOUT ile artırılır.
+DEEPSEEK_TIMEOUT = float(os.getenv("DEEPSEEK_TIMEOUT", "120"))
+# Maksimum üretim token sayısı (nihai içerik; thinking modunda reasoning ayrı alandır).
+# Uzun raporlar kesilmesin diye env ile artırılabilir (ör. DEEPSEEK_MAX_TOKENS=16384).
+DEEPSEEK_MAX_TOKENS = int(os.getenv("DEEPSEEK_MAX_TOKENS", "8192"))
 # Maksimum yeniden deneme sayısı (ilk deneme dahil)
 DEEPSEEK_MAX_RETRIES = int(os.getenv("DEEPSEEK_MAX_RETRIES", "3"))
+
+
+def _resolve_max_tokens(override: int | None = None) -> int:
+    """Çağrı anında geçerli max_tokens değerini döndürür (env her çağrıda okunur).
+
+    Öncelik: açık `override` > `DEEPSEEK_MAX_TOKENS` env > modül varsayılanı.
+    """
+    if override and override > 0:
+        return int(override)
+    return int(os.getenv("DEEPSEEK_MAX_TOKENS", str(DEEPSEEK_MAX_TOKENS)))
+
+
+# ── LLM içerik-hash önbelleği (maliyet azaltma) ────────────────────────────
+# Aynı (model, system, prompt, response_format, max_tokens) için ikinci çağrı
+# API'ye gitmez. Adversarial döngülerde aynı transkriptlerin tekrar kodlanması
+# gibi tekrarlı çağrıları ucuza indirir. Semantik (embedding) DEĞİL, birebir
+# içerik hash'idir; bu yüzden yanlış eşleşme riski yoktur.
+LLM_CACHE_ENABLED = os.getenv("LLM_CACHE_ENABLED", "true").lower() in {"1", "true", "yes"}
+_LLM_CACHE_MAX = int(os.getenv("LLM_CACHE_MAX", "512"))
+_LLM_CACHE_TTL = float(os.getenv("LLM_CACHE_TTL", "3600"))
+_LLM_CACHE: "OrderedDict[str, tuple[float, str]]" = OrderedDict()
+_LLM_CACHE_LOCK = threading.Lock()
+_LLM_CACHE_HITS = 0
+_LLM_CACHE_MISSES = 0
+
+
+def _cache_key(model_id: str, system: str, prompt: str,
+               response_format: str | None, max_tokens: int | None) -> str:
+    hasher = hashlib.sha256()
+    for part in (model_id, system, prompt, response_format or "", str(max_tokens or "")):
+        hasher.update(part.encode("utf-8"))
+        hasher.update(b"\x00")
+    return hasher.hexdigest()
+
+
+def _cache_get(key: str) -> str | None:
+    global _LLM_CACHE_HITS, _LLM_CACHE_MISSES
+    if not LLM_CACHE_ENABLED:
+        return None
+    with _LLM_CACHE_LOCK:
+        entry = _LLM_CACHE.get(key)
+        if not entry:
+            _LLM_CACHE_MISSES += 1
+            return None
+        ts, value = entry
+        if _LLM_CACHE_TTL > 0 and (time.time() - ts) > _LLM_CACHE_TTL:
+            _LLM_CACHE.pop(key, None)
+            _LLM_CACHE_MISSES += 1
+            return None
+        _LLM_CACHE.move_to_end(key)
+        _LLM_CACHE_HITS += 1
+        return value
+
+
+def _cache_set(key: str, value: str) -> None:
+    if not LLM_CACHE_ENABLED or not value:
+        return
+    with _LLM_CACHE_LOCK:
+        _LLM_CACHE[key] = (time.time(), value)
+        _LLM_CACHE.move_to_end(key)
+        while len(_LLM_CACHE) > _LLM_CACHE_MAX:
+            _LLM_CACHE.popitem(last=False)
+
+
+def get_llm_cache_stats() -> dict:
+    """Önbellek istatistikleri (maliyet gözlemi için)."""
+    with _LLM_CACHE_LOCK:
+        return {
+            "enabled": LLM_CACHE_ENABLED,
+            "size": len(_LLM_CACHE),
+            "hits": _LLM_CACHE_HITS,
+            "misses": _LLM_CACHE_MISSES,
+        }
 
 
 def _retry_policy() -> Retrying:
@@ -169,7 +250,13 @@ class DeepSeekResearchModel:
             self.cumulative_usage[key] = self.cumulative_usage.get(key, 0) + int(value or 0)
 
     @observe(as_type="generation")
-    def generate(self, system: str, prompt: str, response_format: str | None = None) -> str:
+    def generate(
+        self,
+        system: str,
+        prompt: str,
+        response_format: str | None = None,
+        max_tokens: int | None = None,
+    ) -> str:
         self.last_model_id = self.model_id
 
         if not self.client:
@@ -181,7 +268,7 @@ class DeepSeekResearchModel:
                 {"role": "system", "content": system},
                 {"role": "user", "content": prompt},
             ],
-            "max_tokens": 8192,
+            "max_tokens": _resolve_max_tokens(max_tokens),
             # temperature thinking mode'da etkisiz — kaldırıldı
             "extra_body": {
                 "thinking": {"type": "enabled"},
@@ -191,6 +278,12 @@ class DeepSeekResearchModel:
 
         if response_format == "json":
             kwargs["response_format"] = {"type": "json_object"}
+
+        # İçerik-hash önbelleği: birebir aynı çağrı tekrar API'ye gitmez
+        cache_key = _cache_key(self.model_id, system, prompt, response_format, kwargs.get("max_tokens"))
+        cached = _cache_get(cache_key)
+        if cached is not None:
+            return cached
 
         try:
             response = self._chat(**kwargs)
@@ -210,18 +303,25 @@ class DeepSeekResearchModel:
 
         # Log rationale if reasoning was present
         if reasoning:
-            import hashlib
-            prompt_hash = hashlib.md5((system + prompt).encode("utf-8")).hexdigest()
+            import hashlib as _hashlib
+            prompt_hash = _hashlib.md5((system + prompt).encode("utf-8")).hexdigest()
             try:
                 from .database import log_ai_rationale
                 log_ai_rationale(prompt_hash, self.model_id, reasoning, content)
             except ImportError:
                 pass
 
+        _cache_set(cache_key, content)
         return content
 
     @observe(as_type="generation")
-    def generate_stream(self, system: str, prompt: str, response_format: str | None = None):
+    def generate_stream(
+        self,
+        system: str,
+        prompt: str,
+        response_format: str | None = None,
+        max_tokens: int | None = None,
+    ):
         self.last_model_id = self.model_id
 
         if not self.client:
@@ -233,7 +333,7 @@ class DeepSeekResearchModel:
                 {"role": "system", "content": system},
                 {"role": "user", "content": prompt},
             ],
-            "max_tokens": 8192,
+            "max_tokens": _resolve_max_tokens(max_tokens),
             "stream": True,
             "extra_body": {
                 "thinking": {"type": "enabled"},

@@ -28,6 +28,95 @@ taşınabilir (Neon'a geçiş = sadece `POSTGRES_HOST` değişikliği).
 4. **Security List / NSG** — giriş portları: **22, 80, 443**.
 5. (Opsiyonel) İlk girişte disk/swap ve `ufw` ayarı ajan tarafından yapılır.
 
+### Kapasite hatası — "Out of host capacity" (🔴, uygulanacak)
+
+> **Durum (2026-09):** Oracle Frankfurt'ta Ampere A1 (ARM, Always Free) kapasitesi **dolu**. Instance
+> oluşturulamıyor. Aşağıdaki retry döngüsüyle boşalan kapasite otomatik yakalanır. **Bu blok tamamlanana
+> kadar canlıya geçiş bekler; yerel geliştirme etkilenmez.**
+
+**Yöntem: Oracle Cloud Shell** (yerelde SDK/API key/config GEREKMEZ; Cloud Shell'de `oci` CLI zaten
+kurulu ve oturum yetkili).
+
+1. **Cloud Shell aç:** Konsol sağ üstteki `>_` simgesi.
+2. **ID'leri topla:**
+   ```bash
+   echo $OCI_TENANCY                                                   # compartment/tenancy
+   oci iam availability-domain list --compartment-id $OCI_TENANCY \
+     --query 'data[].name' --raw-output                                # AD adları (1-3)
+   oci network subnet list --compartment-id $OCI_TENANCY \
+     --display-name "public subnet-clarere-vcn" --query 'data[0].id' --raw-output   # subnet
+   oci compute image list --compartment-id $OCI_TENANCY \
+     --operating-system "Canonical Ubuntu" --shape "VM.Standard.A1.Flex" \
+     --sort-by TIMECREATED --sort-order DESC \
+     --query 'data[?"display-name"!=null].["display-name",id]' --output table | head -15   # image
+   ```
+3. **SSH public key yaz** (`launch_arm.sh` bunu `--ssh-authorized-keys-file` ile kullanır):
+   ```bash
+   mkdir -p ~/.ssh
+   cat > ~/.ssh/instance_key.pub <<'EOF'
+   ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELHN1I7M6lXloAw20dR7naupagZbKb684g7XuhgxplK oguzk@ACER-Nitro5
+   EOF
+   ```
+4. **Retry script** (`launch_arm.sh`) — AD'leri sırayla dener; **yalnızca "capacity" hatasında**
+   döner (diğer hatada durur ve basar), başarıda RUNNING bekleyip **public IP** yazar:
+
+   ```bash
+   #!/bin/bash
+   set -uo pipefail
+   COMPARTMENT_ID="$OCI_TENANCY"
+   SUBNET_ID="BURAYA_SUBNET_OCID"
+   IMAGE_ID="BURAYA_IMAGE_OCID"
+   SSH_KEY_PATH="$HOME/.ssh/instance_key.pub"
+   DISPLAY_NAME="clarere"
+   ADS=( "BURAYA_AD_1" "BURAYA_AD_2" "BURAYA_AD_3" )
+   OCPUS=2; MEMORY=12; RETRY=60
+
+   while true; do
+     for AD in "${ADS[@]}"; do
+       OUT=$(oci compute instance launch \
+         --compartment-id "$COMPARTMENT_ID" --availability-domain "$AD" \
+         --shape "VM.Standard.A1.Flex" \
+         --shape-config "{\"ocpus\": $OCPUS, \"memoryInGBs\": $MEMORY}" \
+         --subnet-id "$SUBNET_ID" --image-id "$IMAGE_ID" \
+         --ssh-authorized-keys-file "$SSH_KEY_PATH" \
+         --assign-public-ip true --display-name "$DISPLAY_NAME" 2>&1)
+       STATUS=$?
+       if [ $STATUS -eq 0 ]; then
+         OCID=$(echo "$OUT" | grep -o 'ocid1.instance[^"]*' | head -1)
+         echo "BASARILI ($AD): $OCID"
+         for i in $(seq 1 40); do
+           STATE=$(oci compute instance get --instance-id "$OCID" --query 'data."lifecycle-state"' --raw-output 2>/dev/null)
+           [ "$STATE" = "RUNNING" ] && {
+             VNIC=$(oci compute instance list-vnics --instance-id "$OCID" --query 'data[0].id' --raw-output)
+             IP=$(oci network vnic get --vnic-id "$VNIC" --query 'data."public-ip"' --raw-output)
+             echo "PUBLIC IP: $IP"; exit 0; }
+           sleep 15
+         done
+         exit 0
+       fi
+       if echo "$OUT" | grep -qi "capacity"; then
+         echo "[$(date +%H:%M:%S)] $AD dolu, ${RETRY}s sonra..."
+       else
+         echo "!!! KAPASITE DISI HATA - DURDURULDU !!!"; echo "$OUT"; exit 1
+       fi
+       sleep $RETRY
+     done
+   done
+   ```
+5. **Çalıştır:** `chmod +x launch_arm.sh && nohup ./launch_arm.sh > launch.log 2>&1 &` → `tail -f launch.log`
+
+**Notlar / tuzaklar:**
+- ⚠️ **Cloud Shell ~20 dk boşta kalınca oturumu kapatır** ve `nohup` işi ölür. Sekmeyi açık tut,
+  arada Enter'a bas. Ölürse komutu tekrar çalıştır (kapasite yakalanmadıysa kayıp yok).
+- **2 OCPU / 12 GB** Always Free'nin tam sınırı değil → sığması 4/24'ten çok daha kolay. Sığmazsa
+  `OCPUS=1, MEMORY=6` dene (SearXNG o durumda kapatılır; 4 GB swap yeter).
+- Instance açılınca **VCN Security List'e TCP 80 ve 443 ingress** ekle (ufw tek başına yetmez; Oracle
+  VCN ayrı bir katmandır, varsayılan olarak yalnızca 22 açıktır).
+- **Public IPv4** formda pasif kaldıysa: VCN'i ayrı oluşturup "select existing" ile seç, ya da
+  instance'ı public IP'siz açıp sonra **Reserved public IP → Create → VNIC'e ata**.
+- Otomatik retry yerine yerel Python/OCI SDK script'i de mümkündür (API key + `~/.oci/config` gerekir);
+  Cloud Shell yolu SDK kurulumu gerektirmediği için tercih edildi.
+
 ### Ajan adımları (🟢 — SSH erişimi verildikten sonra)
 
 6. Sistem güncelleme, 3–4 GB swap, Docker + compose kurulumu, `ufw allow 22/80/443`.

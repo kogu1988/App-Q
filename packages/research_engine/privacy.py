@@ -216,17 +216,25 @@ class PrivacyResearchModelWrapper:
         if callable(free):
             free()
 
-    def generate(self, system: str, prompt: str, response_format=None) -> str:
+    def generate(self, system: str, prompt: str, response_format=None, max_tokens: int | None = None) -> str:
         masked_system = self.masker.mask(system)
         masked_prompt = self.masker.mask(prompt)
-        response = self._model.generate(masked_system, masked_prompt, response_format)
+        if max_tokens is not None:
+            response = self._model.generate(masked_system, masked_prompt, response_format, max_tokens)
+        else:
+            response = self._model.generate(masked_system, masked_prompt, response_format)
         return self.masker.unmask(response)
 
-    def generate_stream(self, system: str, prompt: str, response_format=None):
+    def generate_stream(self, system: str, prompt: str, response_format=None, max_tokens: int | None = None):
         masked_system = self.masker.mask(system)
         masked_prompt = self.masker.mask(prompt)
         buffer = ""
-        for chunk in self._model.generate_stream(masked_system, masked_prompt, response_format):
+        stream = (
+            self._model.generate_stream(masked_system, masked_prompt, response_format, max_tokens)
+            if max_tokens is not None
+            else self._model.generate_stream(masked_system, masked_prompt, response_format)
+        )
+        for chunk in stream:
             buffer += chunk
             # Placeholder (`[PHONE_1]`) parçalanmasın: yarım kalan kuyruğu tamponla.
             idx = buffer.rfind("[")

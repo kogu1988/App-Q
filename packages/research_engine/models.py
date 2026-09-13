@@ -338,13 +338,31 @@ class ResearchReport:
     rfi_benchmark_note: str = ""
     # Sprint 7 — Karar katmanı öğeleri
     decision_items: list[DecisionItem] = field(default_factory=list)
+    # Rapor zenginleştirme — DeepSeek Pro ile üretilen, kanıta bağlı anlatım
+    executive_narrative: str = ""
+    strategic_recommendations: list[str] = field(default_factory=list)
 
 
 class ResearchModel(Protocol):
-    def generate(self, system: str, prompt: str, response_format: Literal["json"] | None = None) -> str:
-        """Generate a response from the configured model provider."""
+    def generate(
+        self,
+        system: str,
+        prompt: str,
+        response_format: Literal["json"] | None = None,
+        max_tokens: int | None = None,
+    ) -> str:
+        """Generate a response from the configured model provider.
 
-    def generate_stream(self, system: str, prompt: str, response_format: Literal["json"] | None = None):
+        `max_tokens` verilmezse sağlayıcı varsayılanı (env `DEEPSEEK_MAX_TOKENS`) kullanılır.
+        """
+
+    def generate_stream(
+        self,
+        system: str,
+        prompt: str,
+        response_format: Literal["json"] | None = None,
+        max_tokens: int | None = None,
+    ):
         """Generate a response as a stream of chunks."""
 
     def free_memory(self) -> None:

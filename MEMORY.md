@@ -16,6 +16,10 @@ Marka: **Clarere** | İletişim: **hiclarere@clarere.com**
 
 > **Kurumsal Seviye (2026-08):** Rapor export'u tamamlandı. `render_markdown` + `render_report_html` artık Karar Katmanı (SHIP/ITERATE/ARAŞTIR/VAZGEÇ), Van Westendorp PSM, Harici Kanıt, SES×Stance tablosu, Marka Sağlığı, Keşif Kanalı ve RFI içeriyor. Güven skorları `%78` formatında. HTML raporu tamamen Türkçe (İngilizce başlıklar kaldırıldı). Frontend markdown parser'a tablo desteği eklendi. `scripts/generate_demo_study.py` sunum demo çalışması üretir (DB'ye kaydeder). Test: 158 passed + 1 skipped.
 
+> **Deploy blocker (2026-09):** Oracle Cloud Always Free'de **Ampere A1 (ARM) kapasitesi dolu** ("Out of host capacity"). Instance açılamıyor. **Yerel geliştirmeye devam ediliyor**; canlıya geçiş bu blok çözülene kadar bekler. Çözüm adımları + Cloud Shell retry script'i **`server_plan.md §0a` "Kapasite hatası"** bölümünde. İkincil plan (netcup + Neon + Vercel) yedekte.
+
+> **Kalite & Maliyet turu (2026-09):** (1) Alıntı kesilmesi kök nedeni düzeltildi — `quote[:110]` gibi ham dilimler yerine `analytics._shorten()` / `reporting._clip()` **tam cümle özeti** çıkarır ve **`...`/`…` eklemez**. (2) `providers.py`'ye **içerik-hash LLM önbelleği** eklendi (`LLM_CACHE_ENABLED`, `LLM_CACHE_MAX`, `LLM_CACHE_TTL`, `get_llm_cache_stats()`); adversarial döngülerde tekrar kodlamayı ucuza indirir. `DEEPSEEK_MAX_TOKENS` (varsayılan 8192) + timeout 120sn + çağrı başına `max_tokens` eklendi. (3) **Celery async hat tamir edildi**: `gateway` checkpointer `thread_id` eksikliği + `nodes/simulation.py` `Persona` eksik alanları (`persona_traits` ile `big_five`). Async panel `ASYNC_PERSONA_COUNT` (varsayılan 8) ile sınırlı. (4) **Rapor zenginleştirme**: `analytics.enrich_report_narrative()` DeepSeek Pro ile kanıta bağlı yönetici anlatımı + stratejik öneriler üretir; `ResearchReport.executive_narrative` / `strategic_recommendations`; `REPORT_ENRICH_ENABLED` ile kapatılabilir; `render_markdown` yeni bölümleri basar. (5) Markdown başlık boşlukları/etiket biçimi düzeltildi. Testler: **344 passed**.
+
 ## 🏗️ Mimari (3 Aşamalı API)
 
 ```
