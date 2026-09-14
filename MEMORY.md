@@ -170,8 +170,11 @@ python -m pytest packages/research_engine/tests/ -q
 
 | Dosya | Görev |
 |---|---|
-| `src/app/page.tsx` | Landing page + fiyatlandırma + SSS + iletişim formu |
-| `src/app/client/new/page.tsx` | Araştırma sihirbazı (Defne → Research) |
+| `src/app/page.tsx` | Landing shell (49 satır) — bölümler `features/landing`, fiyat `features/pricing` |
+| `src/features/landing/` | Hero, manifesto, özellik bandı, iletişim, SSS, CTA, footer, nav + `use-reveal` |
+| `src/features/pricing/plans.ts` | Landing plan/fiyat SSOT (PLAN_PRICES, PLAN_META, FEATURES) |
+| `src/features/wizard/` | Sihirbaz tipleri, `research-client` (job + senkron fallback), `BriefPreview`, `ModeSelection`, `SimulatingScreen` |
+| `src/app/client/new/page.tsx` | Araştırma sihirbazı (ince sayfa; adımlar `features/wizard`'da) |
 | `src/app/client/studies/[id]/page.tsx` | Araştırma detay/rapor sayfası + "Raporu Oluştur" |
 | `src/app/client/page.tsx` | Client dashboard |
 | `src/app/client/upgrade/page.tsx` | Plan yükseltme sayfası — Paddle checkout + ödeme yoklama |
@@ -582,3 +585,18 @@ python -m pytest packages/research_engine/tests/ -q
 - ⏸️ **R3-7 ertelendi:** `EventsTab` (ürün event/funnel özeti) **yeni bir sekme/özellik** demektir; davranış dondurma kuralı gereği refaktör kapsamına alınmadı. API (`GET /api/admin/product-events/summary`) hazır, UI eklenmesi ayrı bir özellik işi.
 - Doğrulama: `npx tsc --noEmit` + `npx eslint` **0 error / 0 warning**; Docker frontend rebuild; Playwright `01-ui` (5) + `03-study-actions` (1) → **6/6 passed**.
 - **Sıradaki:** R4 — `page.tsx` + `client/new/page.tsx` + tasarım tokenları.
+
+### Refaktör R4 — Landing / Wizard ayrımı (2026-09-13)
+
+- ✅ **`src/app/page.tsx` 869 → 45 satır** (kabul: < 350); **`client/new/page.tsx` 620 → 342 satır** (kabul: < 400).
+- ✅ **Landing bölümleri ayrıldı (`features/landing/`):** `SiteNav` (79), `HeroSection` (88), `ManifestoSection` (71), `FeatureBand` (57), `ContactSection` (27), `ContactForm` (80), `FaqSection` (69), `CtaBand` (31), `SiteFooter` (30), `hooks/use-reveal.tsx` (44), `data.ts` (34).
+- ✅ **Fiyat/plan TEK KAYNAK (`features/pricing/plans.ts` + `PricingSection.tsx`):** `PLAN_PRICES`, `PLAN_META`, `FEATURES` buraya taşındı; kart bazlı aylık/yıllık toggle state'i bileşen içine alındı (gözlemlenebilir davranış aynı).
+- ✅ **Sihirbaz adımları ayrıldı (`features/wizard/`):** `types.ts`, `lib/research-client.ts` (job + senkron fallback), `components/{BriefPreview, ModeSelection, SimulatingScreen}`.
+- ✅ **BİREBİRLİK DOĞRULAMASI:** 9 landing bölümü + ModeSelection + SimulatingScreen gövdeleri refactor öncesiyle **birebir aynı** (boşluk-duyarsız karşılaştırma; 441–6.777 karakter). Yalnızca `setResearchMode → onModeChange`, `router.push → onUpgrade`, başlatma bloğu → `onStart` yeniden adlandırmaları yapıldı.
+- ✅ **E2E güçlendirildi:** `01-ui.spec.ts`'e sihirbaz mod seçimi + Defne sohbeti testi eklendi (LLM çağrısı yapmaz). Playwright **7/7 passed**.
+- ⏸️ **Ertelenen iş kalemleri (gerekçeli):**
+  - **R4-4 (tasarım tokenları):** inline hex'lerin `tokens.css`'e taşınması tüm frontend'i kapsayan görsel bir iş; `DESIGN.md` karşılaştırması ve ayrı bir görsel regresyon turu gerektirir → ayrı iş olarak planlandı.
+  - **R4-5 (kart yoğunluğu azaltma):** planın kendisi "görsel iyileştirme, **ayrı commit**" diyor; davranış dondurma kuralı gereği bu sprintte yapılmadı.
+  - **E2E `02-research-flow` çalıştırılmadı:** uçtan uca gerçek DeepSeek çağrıları yapıyor (maliyet + ~20 dk). Yerine sihirbazın aynı giriş adımlarını LLM'siz doğrulayan test eklendi; kod birebirliği ayrıca kanıtlandı.
+- Doğrulama: `npx tsc --noEmit` + `npx eslint` **0 error / 0 warning**; Docker frontend rebuild; Playwright **7/7**.
+- **Refaktör bloğu tamamlandı:** R1, R2, R5, R6, R7, R8, R3, R4 — planlanan sıranın tamamı uygulandı (ertelenen kalemler gerekçeleriyle yukarıda).

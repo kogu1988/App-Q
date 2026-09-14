@@ -1,213 +1,26 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { BriefPreview } from "@/features/wizard/components/BriefPreview";
+import { ModeSelection } from "@/features/wizard/components/ModeSelection";
+import { SimulatingScreen } from "@/features/wizard/components/SimulatingScreen";
+import { requestResearch } from "@/features/wizard/lib/research-client";
+import { toArray } from "@/features/wizard/types";
+import type { Brief, ChatMessage } from "@/features/wizard/types";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { getAuthHeaders } from "@/lib/auth";
 import {
   Loader2, Send, User, ChevronRight,
-  FileText, Target, Users, DollarSign, Layers,
+  FileText,
   FlaskConical, BarChart2, CheckCircle2, Lock
 } from "lucide-react";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import Link from "next/link";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
-interface Brief {
-  title?: string;
-  market?: string;
-  category?: string;
-  idea?: string;
-  target_users?: string | string[];
-  questions?: string | string[];
-  competitors?: string | string[];
-  expected_price?: string;
-  sales_channel?: string;
-  success_metric?: string;
-  variant_a?: string;
-  variant_b?: string;
-}
-
-/** Backend bazen string, bazen string[] döner — her ikisini de handle eder */
-const toArray = (val: string | string[] | undefined): string[] => {
-  if (!val) return [];
-  if (Array.isArray(val)) return val;
-  return [val];
-};
-
-// ─── Brief Preview Card ───────────────────────────────────────────────────────
-
-function renderBriefValue(value: unknown) {
-  if (!value) return null;
-  const strValue = Array.isArray(value) ? value.join(", ") : typeof value === "string" ? value : JSON.stringify(value);
-  // Numbered list detection: "1. xxx 2. xxx" or newline-separated
-  const numbered = strValue.split(/(?=\d+\.\s)/).map(s => s.replace(/^\d+\.\s*/, "").trim()).filter(Boolean);
-  if (numbered.length > 1) {
-    return (
-      <ul className="space-y-1 mt-0.5">
-        {numbered.map((item, i) => (
-          <li key={i} className="flex gap-1.5 text-xs text-[#212121] font-medium leading-relaxed">
-            <span className="text-[#ff7759] shrink-0 mt-px">·</span>
-            <span className="break-words">{item}</span>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-  return <div className="text-xs text-[#212121] font-medium leading-relaxed break-words whitespace-pre-wrap">{strValue}</div>;
-}
-
-function BriefPreview({ brief, mode, onToggleMobile }: { brief: Brief; mode: "research" | "ab_test"; onToggleMobile?: () => void }) {
-  const fields = mode === "ab_test"
-    ? [
-      { icon: FileText, label: "Başlık", value: brief.title },
-      { icon: Target, label: "Ürün Fikri", value: brief.idea },
-      { icon: Layers, label: "Varyant A", value: brief.variant_a },
-      { icon: Layers, label: "Varyant B", value: brief.variant_b },
-      { icon: Users, label: "Hedef Kitle", value: toArray(brief.target_users).join(", ") || undefined },
-      { icon: CheckCircle2, label: "Başarı Kriteri", value: brief.success_metric },
-    ]
-    : [
-      { icon: FileText, label: "Başlık", value: brief.title },
-      { icon: Target, label: "Ürün Fikri", value: brief.idea },
-      { icon: Users, label: "Hedef Kitle", value: toArray(brief.target_users).join(", ") || undefined },
-      { icon: DollarSign, label: "Fiyat Modeli", value: brief.expected_price },
-      { icon: Layers, label: "Rakipler", value: toArray(brief.competitors).join(", ") || undefined },
-      { icon: CheckCircle2, label: "Başarı Kriteri", value: brief.success_metric },
-    ];
-
-  const filled = fields.filter(f => f.value && f.value.length > 0).length;
-  const total = fields.length;
-  const pct = Math.round((filled / total) * 100);
-
-  return (
-    <Card className="sticky top-6 shadow-sm border-[#d9d9dd] ">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-bold text-[#003c33] flex items-center gap-2">
-            <FileText size={14} />
-            Canlı Brief Özeti
-          </CardTitle>
-          {onToggleMobile && (
-            <button onClick={onToggleMobile} className="lg:hidden text-xs text-[#003c33] font-bold flex items-center gap-1 bg-[#edfce9] px-2 py-1 rounded-md">
-              Sohbete Dön
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="flex-1 h-1.5 bg-[#eeece7]  rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#003c33] rounded-full transition-all duration-500"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <span className="text-xs font-bold text-[#ff7759]/80 tabular-nums">{pct}%</span>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2.5">
-        {fields.map(({ icon: Icon, label, value }) => (
-          <div key={label} className={`flex gap-2 p-2 rounded-lg transition-colors ${value ? "bg-[#edfce9]/50 " : "bg-transparent grayscale"}`}>
-            <Icon size={13} className={value ? "text-[#ff7759] shrink-0 mt-0.5" : "text-[#93939f] shrink-0 mt-0.5"} />
-            <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{label}</div>
-              {value
-                ? renderBriefValue(value)
-                : <div className="text-xs text-[#93939f] italic">Henüz doldurulmadı</div>
-              }
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
-// ── Araştırma isteği: async job (tercih) → senkron fallback ──
-
-const RESEARCH_POLL_INTERVAL_MS = 2000;
-const RESEARCH_POLL_TIMEOUT_MS = 6 * 60 * 1000;
-
-type ResearchResult = {
-  plan?: unknown;
-  personas?: unknown[];
-  interviews?: unknown[];
-};
-
-async function pollResearchJob(
-  jobId: string,
-  apiBase: string,
-  headers: Record<string, string>,
-): Promise<ResearchResult> {
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < RESEARCH_POLL_TIMEOUT_MS) {
-    await new Promise((resolve) => setTimeout(resolve, RESEARCH_POLL_INTERVAL_MS));
-    const res = await fetch(`${apiBase}/api/client/research/jobs/${jobId}`, { headers });
-    if (!res.ok) continue;
-
-    const data = await res.json();
-    if (data.status === "completed") return data.result as ResearchResult;
-    if (data.status === "failed") {
-      throw new Error(data.error || "Araştırma tamamlanamadı.");
-    }
-  }
-  throw new Error("Araştırma zaman aşımına uğradı. Lütfen tekrar deneyin.");
-}
-
-/**
- * Araştırmayı önce async job olarak dener (API threadpool'unu meşgul etmez);
- * arka plan işleyicisi yoksa (yerel geliştirme) senkron endpoint'e düşer.
- */
-async function requestResearch(payload: Record<string, unknown>): Promise<ResearchResult> {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
-  const headers = { "Content-Type": "application/json", ...getAuthHeaders() };
-
-  const jobRes = await fetch(`${apiBase}/api/client/research/jobs`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(payload),
-  });
-
-  if (jobRes.ok) {
-    const jobData = await jobRes.json().catch(() => ({}));
-    if (jobData?.job_id) {
-      return pollResearchJob(jobData.job_id, apiBase, headers);
-    }
-    if (jobData?.plan) return jobData as ResearchResult;
-  } else if (![503, 404, 405].includes(jobRes.status)) {
-    const errData = await jobRes.json().catch(() => ({}));
-    const detail = errData?.detail;
-    throw new Error(
-      typeof detail === "string" ? detail : detail?.message || `Sunucu hatası: ${jobRes.status}`,
-    );
-  }
-
-  // Senkron fallback
-  const res = await fetch(`${apiBase}/api/client/research`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    const detail = errData?.detail;
-    throw new Error(
-      typeof detail === "string" ? detail : detail?.message || `Sunucu hatası: ${res.status}`,
-    );
-  }
-  return (await res.json()) as ResearchResult;
-}
 
 export default function NewResearchWizard() {
   const router = useRouter();
@@ -390,116 +203,25 @@ export default function NewResearchWizard() {
   // ── STEP 0: Mode Selection ──────────────────────────────────────────────────
   if (stage === "mode") {
     return (
-      <div className="p-4 sm:p-8 max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Yeni Araştırma</h1>
-          <p className="text-muted-foreground mt-1">Araştırma türünü seçin — Defne sizi yönlendirecek.</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button
-            type="button"
-            onClick={() => setResearchMode("research")}
-            className={`flex flex-col gap-3 p-6 rounded-2xl border-2 transition-all text-left ${
-              researchMode === "research"
-                ? "border-[#17171c] bg-[#edfce9]/60  shadow-md"
-                : "border-border hover:border-[#17171c] dark:hover:border-[#17171c] hover:shadow-sm"
-            }`}
-          >
-            <div className={`p-2.5 rounded-xl w-fit ${researchMode === "research" ? "bg-[#edfce9] " : "bg-[#eeece7] "}`}>
-              <BarChart2 size={22} className={researchMode === "research" ? "text-[#ff7759]" : "text-muted-foreground"} />
-            </div>
-            <div>
-              <div className="font-bold text-base">Pazar Araştırması</div>
-              <div className="text-sm text-muted-foreground mt-0.5">Ürün/hizmet fikri doğrulama, hedef kitle ve fiyat araştırması</div>
-            </div>
-            {researchMode === "research" && (
-                            <Badge className="w-fit bg-[#17171c] hover:bg-[#17171c] text-white text-xs">Seçildi</Badge>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (abTestLocked) {
-                toast.error(
-                  "A/B Test Modu Flex planında kullanılabilir.",
-                  { action: { label: "Planı Yükselt", onClick: () => router.push("/client/upgrade") } }
-                );
-                return;
-              }
-              setResearchMode("ab_test");
-            }}
-            className={`relative flex flex-col gap-3 p-6 rounded-2xl border-2 transition-all text-left ${
-              abTestLocked
-                ? "border-border opacity-60 cursor-not-allowed"
-                : researchMode === "ab_test"
-                ? "border-[#17171c] bg-[#edfce9]/60  shadow-md"
-                : "border-border hover:border-[#17171c] dark:hover:border-[#17171c] hover:shadow-sm"
-            }`}
-          >
-            {abTestLocked && (
-              <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                <Lock size={9} /> Flex
-              </span>
-            )}
-            <div className={`p-2.5 rounded-xl w-fit ${researchMode === "ab_test" && !abTestLocked ? "bg-[#edfce9] " : "bg-[#eeece7] "}`}>
-              <FlaskConical size={22} className={researchMode === "ab_test" && !abTestLocked ? "text-[#ff7759]" : "text-muted-foreground"} />
-            </div>
-            <div>
-              <div className="font-bold text-base">A/B Test Simülasyonu</div>
-              <div className="text-sm text-muted-foreground mt-0.5">İki farklı mesaj, fiyat veya özellik varyantını karşılaştır</div>
-            </div>
-            {researchMode === "ab_test" && !abTestLocked && (
-                            <Badge className="w-fit bg-[#17171c] hover:bg-[#17171c] text-white text-xs">Seçildi</Badge>
-            )}
-          </button>
-        </div>
-
-        <Button
-          size="lg"
-          disabled={researchMode === "ab_test" && abTestLocked}
-          onClick={() => {
-            setStage("chat");
-            const greeting = researchMode === "ab_test"
-              ? "Merhaba! Ben Defne. A/B test simülasyonu için buradayım. Hangi iki varyantı karşılaştırmak istiyorsunuz? Önce ürün/hizmet fikrinizi kısaca anlatın."
-              : "Merhaba! Ben Defne — kıdemli pazar araştırması mimarınız. Ürün veya hizmet fikrinizi anlatın. Adım adım ihtiyacınız olan tüm araştırma verisini birlikte çıkaralım.";
-            setMessages([{ role: "assistant", content: greeting }]);
-          }}
-          className="w-full gap-2 bg-[#17171c] hover:opacity-85 text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Defne ile Başla
-          <ChevronRight size={18} />
-        </Button>
-
-        {abTestLocked && researchMode === "ab_test" && (
-          <p className="text-center text-xs text-muted-foreground">
-            A/B Test modu{" "}
-            <Link href="/client/upgrade" className="text-accent underline underline-offset-2 font-medium">Flex planında</Link>
-            {" "}kullanılabilir.
-          </p>
-        )}
-      </div>
+      <ModeSelection
+        researchMode={researchMode}
+        onModeChange={setResearchMode}
+        abTestLocked={abTestLocked}
+        onUpgrade={() => router.push("/client/upgrade")}
+        onStart={() => {
+          setStage("chat");
+          const greeting = researchMode === "ab_test"
+            ? "Merhaba! Ben Defne. A/B test simülasyonu için buradayım. Hangi iki varyantı karşılaştırmak istiyorsunuz? Önce ürün/hizmet fikrinizi kısaca anlatın."
+            : "Merhaba! Ben Defne — kıdemli pazar araştırması mimarınız. Ürün veya hizmet fikrinizi anlatın. Adım adım ihtiyacınız olan tüm araştırma verisini birlikte çıkaralım.";
+          setMessages([{ role: "assistant", content: greeting }]);
+        }}
+      />
     );
   }
 
   // ── STEP 2: Simulating ────────────────────────────────────────────────────
   if (stage === "simulating") {
-    return (
-      <div className="p-4 sm:p-8 max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Araştırma Başlatılıyor</h1>
-          <p className="text-muted-foreground mt-1">Sentetik personalar oluşturuluyor ve mülakatlar yapılıyor...</p>
-        </div>
-        <div className="flex flex-col items-center justify-center py-16 gap-4">
-          <Loader2 size={40} className="animate-spin text-[#ff7759]" />
-          <div className="text-[#003c33] font-medium text-lg">Araştırma devam ediyor</div>
-          <div className="text-sm text-muted-foreground max-w-md text-center">
-            Defne brief&apos;inizi analiz ediyor, personalar oluşturuluyor ve her biriyle mülakat yapılıyor. Bu işlem birkaç saniye sürebilir.
-          </div>
-        </div>
-      </div>
-    );
+    return <SimulatingScreen />;
   }
 
   // ── STEP 1: Defne Chat ──────────────────────────────────────────────────────

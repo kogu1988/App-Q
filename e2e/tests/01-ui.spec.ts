@@ -62,4 +62,16 @@ test.describe.serial('UI akışları', () => {
       await expect(page.getByText(expected).first()).toBeVisible({ timeout: 30_000 });
     }
   });
+
+  test('sihirbaz mod seçimi ve Defne sohbeti açılır (R4 refaktörü)', async ({ page }) => {
+    await login(page, 'pro');
+    await page.goto('/client/new');
+
+    await expect(page.getByText(/Pazar Araştırması/).first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/A\/B Test Simülasyonu/).first()).toBeVisible();
+
+    await page.getByRole('button', { name: /Defne ile Başla/ }).click();
+    await expect(page.getByPlaceholder(/Yanıtınızı yazın/)).toBeVisible({ timeout: 30_000 });
+    await shot(page, '06-wizard-chat');
+  });
 });
