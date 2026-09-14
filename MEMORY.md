@@ -215,6 +215,8 @@ python -m pytest packages/research_engine/tests/ -q
 | `scripts/generate_demo_study.py` | Sunum demo çalışması üretici (DB'ye kaydeder) |
 | `docs/TEST_PLAN.md` | ⚠️ gitignored — Güçlü yönleri koruma test planı (15 grup, ~110 test) |
 | `docs/CRITICAL_BLOCKERS_PLAN.md` | ⚠️ gitignored — P0 blocker'lar + Paddle entegrasyon spesifikasyonu |
+| `docs/ANALYSIS_FINDINGS_STATUS.md` | ⚠️ gitignored — **Konsolide bulgu/kapanış takip dosyası** (denetim bulguları: kapalı/açık/sunucuya bağlı). Taze clone'da yoktur. |
+| `docs/REPORT_QUALITY_FIXES.md` | ⚠️ gitignored — Rapor kalitesi düzeltme planı (bkz. "Bilinen Sorunlar" #22) |
 | `data/evals/rfi_benchmark_samples.json` | 5 Türkiye pazarı benchmark senaryosu (Sprint 8) |
 
 ---
@@ -375,7 +377,7 @@ python -m pytest packages/research_engine/tests/ -q
 19. ✅ **Yerel Docker :4001** — `docker-compose.local.yml`'de frontend doğrudan `http://localhost:4001`'de. `API_PROXY_TARGET` **BUILD ARG**: `next.config` rewrites derleme anında gömülür, runtime env etkisizdir.
 20. 🔴→✅ **KRİTİK: tenacity kwargs hatası (düzeltildi)** — `providers.py::_chat` içinde `_retry_policy()(fn)(**kwargs)` yazımı `fn`'i **argümansız** çağırıyordu → OpenAI SDK "Missing required arguments" → **gerçek DeepSeek çağrılarının TAMAMI başarısız** (Defne fallback yanıtı, brief %0, mülakat/sentez boş). Doğrusu: `_retry_policy()(fn, **kwargs)`. Testler `FakeModel` kullandığı için yakalanmamıştı. Regresyon: `test_providers.py` (4 test).
 21. ✅ **E2E harness (Playwright)** — `e2e/` klasörü (ayrı package.json, frontend build'ini etkilemez). `tests/01-ui` (landing/giriş/upgrade/admin), `tests/02-research-flow` (tam akış, gerçek LLM), `tests/03-study-actions` (mevcut çalışma: sekmeler+transkript+sentez). Ekran görüntüleri `e2e/artifacts/screens/`. Çalıştır: `cd e2e && npx playwright test` (Docker stack açık olmalı).
-22. ✅ **Rapor kalitesi bulguları (DÜZELTİLDİ — E2E ile doğrulandı)** — plan: `docs/REPORT_QUALITY_FIXES.md`.
+22. ✅ **Rapor kalitesi bulguları (DÜZELTİLDİ — E2E ile doğrulandı)** — plan: `docs/REPORT_QUALITY_FIXES.md` (⚠️ gitignored, yerelde mevcut).
     - ✅ **Rapor zayıftı:** `render_markdown` `enhanced_findings` dict'lerinde `.title` çağırıp çöküyordu (`'dict' object has no attribute 'title'`) → fallback (~2 KB). Tolerant `_g()` eklendi. **Sonuç: 2 KB → 33,7 KB**, tam başlıklı rapor (Bulgular/Karar Katmanı/Van Westendorp/SES×Stance/Marka Sağlığı).
     - ✅ **Karar katmanı tutarsızlığı:** (a) `risk` bulgusu `objection` etiketli turlarla eşleşmiyordu → `_CATEGORY_TAG_ALIASES`; (b) pain_point'te acı dili 'karşı kanıt' sayılıp KILL veriyordu → kategori-farkında polarite (`_NEGATIVE_CLAIM_CATEGORIES`). **Sonuç: kanıt 0 → 5/bulgu; pain point KILL(0/3) → INVESTIGATE(1/1).**
     - ✅ **Kişiler arası yankı:** `quality.detect_cross_persona_echo` + `workflow._regen_persona_turns` ile yankılanan persona 'kaçın' listesiyle yeniden üretilir. **Sonuç: 5/5 persona aynı adı ("Pamuk") yerine farklı adlar (Şila, Zeytin, Paşa, Pamuk, Poyraz).**
