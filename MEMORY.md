@@ -643,3 +643,14 @@ R4-4 sırasında bulunan 3 kusur kapatıldı. **İkisi yüzeysel değil, aynı k
 - `03-study-actions.spec.ts`'e odak testi eklendi — `[data-interview-index="1"].ring-2` tam 1 elemanda bulunmalı.
 
 Doğrulama: `npx tsc --noEmit` **0 hata**; `npx eslint src` **0 error / 0 warning**; Docker frontend rebuild; Playwright `01-ui` + `03-study-actions` + `04-session` → **10/10 passed**. Kanıt: giriş öncesi veri çağrısı **0**, giriş sonrası `BuddyNote` görünür, plan etiketi `Pro`, hatalı istek **0**, konsol hatası **0**.
+
+### Demo fixture düzeltmesi — Free demo kullanıcısı kilitliydi (2026-09-14)
+
+- 🔴→✅ **Bulgu:** `free` demo kullanıcısı `/api/client/me` → `trial_expired: true`, `period_simulations: 2/2`; **araştırma başlatamıyordu (403)**. Yatırımcı/yönetici demosunda Free plan akışı gösterilemezdi. **Hiçbir plana veya takip dosyasına kayıtlı değildi** (durum turu sırasında bulundu).
+- **Kök neden:** `migrations/seed.py` fixture senkronu (`ON CONFLICT (username) DO UPDATE`) yalnızca `email`, `plan_type`, `max_simulations`, `max_tokens` alanlarını güncelliyordu. `created_at` hiç güncellenmediği için demo kullanıcı **10 Ağustos**'ta oluşturulmuş kalıyordu → `is_trial_expired`'in **ay kapısı** (`elapsed.days >= 30`) tetikleniyordu. `period_start` ve `period_simulations` da senkron dışıydı.
+- **Teşhis ayrımı (önemli):** İkinci kapı (2 araştırma limiti) `count_user_non_ab_simulations` → `interview_responses` tablosundan sayılır; `free` için bu sayı **0** olduğundan tek bağlayıcı kapı ay kapısıydı. Yani bu bir **seed kusuru**; gating mantığı doğru çalışıyordu.
+- **Düzeltme:** fixture senkronuna `created_at`, `period_start`, `period_simulations` eklendi → demo kullanıcılar her `init_db()`'de tam deterministik (taze deneme penceresi + sıfır dönem kotası). Production'da demo seed zaten yok (`APP_ENV != production` guard'ı).
+- **Test:** `test_12_4_demo_users_are_synced_to_fixtures` güçlendirildi — `created_at` 2020'ye çekilir, `init_db()` sonrası `is_trial_expired(...) is False` doğrulanır (kullanıcıya görünen değişmez).
+- **Canlı doğrulama:** 5 demo kullanıcının tamamı `trial_expired=false`; `free` = `0/2`. API log'unda seed hatası yok.
+- ⚠️ **Yan etki (kabul edilen):** Demo kullanıcıların `period_simulations` sayacı her `init_db()`'de sıfırlanır — fixture'ın "deterministik" tanımıyla uyumlu; yalnızca dev'de geçerli.
+- Doğrulama: backend **411 passed** (DB ile, 0 skipped); Playwright **10/10**; `clarere-api` + `celery_worker` birlikte rebuild edildi.

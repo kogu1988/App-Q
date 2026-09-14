@@ -94,7 +94,9 @@ def test_12_4_demo_users_are_synced_to_fixtures():
     """init_db() demo kullanıcıları fixture planına senkronize etmeli (dev).
 
     Dev'de demo kullanıcılar deterministik fixture'dır: eski/yanlış bir plan
-    kaydı kalıcı olmamalı (ör. `free` yanlışlıkla Flex kalmamalı).
+    kaydı kalıcı olmamalı (ör. `free` yanlışlıkla Flex kalmamalı) ve **deneme
+    penceresi de tazelenmeli** — aksi halde eski `created_at` yüzünden Free
+    demo kullanıcısı 403 alır ve demo yapılamaz.
     Production'da demo kullanıcı hiç seed edilmez.
     """
     from packages.research_engine.database import get_client_by_username, get_db, init_db
@@ -104,13 +106,24 @@ def test_12_4_demo_users_are_synced_to_fixtures():
         pytest.skip(f"demo kullanıcı '{DEMO_USER}' yok")
 
     with get_db() as (_conn, cur):
-        cur.execute("UPDATE clients SET plan_type = 'Flex' WHERE username = %s", (DEMO_USER,))
+        cur.execute(
+            "UPDATE clients SET plan_type = 'Flex', created_at = %s WHERE username = %s",
+            ("2020-01-01T00:00:00", DEMO_USER),
+        )
 
     try:
         init_db()
         after = get_client_by_username(DEMO_USER)
         assert after["plan_type"] == "Free", (
             "init_db() demo kullanıcının planını fixture değerine (Free) senkronize etmeli"
+        )
+
+        # Deneme penceresi de sıfırlanmalı (ay kapısı `created_at`'e bağlı).
+        from apps.backend.routers.client import is_trial_expired
+
+        expired, reason = is_trial_expired(after)
+        assert expired is False, (
+            f"demo '{DEMO_USER}' kullanıcısı araştırma yapabilmeli (reason: {reason})"
         )
     finally:
         with get_db() as (_conn, cur):

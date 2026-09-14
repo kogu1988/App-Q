@@ -77,9 +77,10 @@ def seed_defaults(conn, cur) -> None:
         logger.warning("Migration 005-evidence-indexes atlandı: %s", e)
 
     # Production'da bu kayıtlar X-Username backdoor riski oluşturur.
-    # Dev'de demo kullanıcılar DETERMİNİSTİK fixture'dır: plan/limitleri her
-    # başlatmada senkronize edilir (aksi halde eski bir plan kaydı kalıcı olur,
-    # ör. `free` kullanıcısı yanlışlıkla Flex kalır).
+    # Dev'de demo kullanıcılar DETERMİNİSTİK fixture'dır: plan/limitleri VE deneme
+    # penceresi her başlatmada senkronize edilir (aksi halde eski bir plan kaydı
+    # kalıcı olur, ör. `free` kullanıcısı yanlışlıkla Flex kalır — ya da eski
+    # `created_at` yüzünden Free deneme süresi dolar ve demo yapılamaz).
     _app_env = os.getenv("APP_ENV", "development").lower()
     if _app_env != "production":
         _now = datetime.now().isoformat()
@@ -99,7 +100,10 @@ def seed_defaults(conn, cur) -> None:
                     email = EXCLUDED.email,
                     plan_type = EXCLUDED.plan_type,
                     max_simulations = EXCLUDED.max_simulations,
-                    max_tokens = EXCLUDED.max_tokens
+                    max_tokens = EXCLUDED.max_tokens,
+                    created_at = EXCLUDED.created_at,
+                    period_start = EXCLUDED.period_start,
+                    period_simulations = EXCLUDED.period_simulations
             """, (_uname, _now, _email, _plan, _sims, _tokens, _today))
 
     # Default system config
