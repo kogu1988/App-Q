@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InterviewTranscriptDialog } from "./InterviewTranscriptDialog";
@@ -13,6 +14,8 @@ interface InterviewsTabProps {
   onFollowUpTextChange: (value: string) => void;
   sendingFollowUp: boolean;
   onFollowUp: (personaId: string) => void;
+  /** Persona kartındaki "Mülakat Kayıtlarını İncele" ile gelindiğinde odaklanacak indeks. */
+  focusIndex?: number | null;
 }
 
 /** Mülakat kayıtları sekmesi (refactor R2-4). */
@@ -24,7 +27,21 @@ export function InterviewsTab({
   onFollowUpTextChange,
   sendingFollowUp,
   onFollowUp,
+  focusIndex = null,
 }: InterviewsTabProps) {
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // Persona kartındaki "Mülakat Kayıtlarını İncele" bu sekmeye geçirir.
+  // İlgili kaydı görünür alana getiririz; hangi kartın istendiği `focusIndex`
+  // üzerinden kalıcı bir vurgu halkasıyla gösterilir (bkz. aşağıdaki Card).
+  useEffect(() => {
+    if (focusIndex == null) return;
+    const el = gridRef.current?.querySelector(`[data-interview-index="${focusIndex}"]`);
+    if (!el) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  }, [focusIndex]);
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div>
@@ -37,9 +54,15 @@ export function InterviewsTab({
           Bu araştırmaya ait mülakat kaydı bulunamadı.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {interviews.map((item: PersonaInterview, idx: number) => (
-            <Card key={idx} className="shadow-sm border hover:border-border-light dark:hover:border-action-blue/[0.175] hover:shadow-md transition-all duration-300">
+            <Card
+              key={idx}
+              data-interview-index={idx}
+              className={`shadow-sm border hover:border-border-light dark:hover:border-action-blue/[0.175] hover:shadow-md transition-all duration-300 ${
+                focusIndex === idx ? "ring-2 ring-action-blue" : ""
+              }`}
+            >
               <CardHeader className="p-5 pb-3">
                 <div className="flex justify-between items-start">
                   <div>

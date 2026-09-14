@@ -3,17 +3,13 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Logo from "@/components/logo";
-import { setSessionMarker } from "@/lib/auth";
-
-interface UsernameModalProps {
-  onComplete: (username: string) => void;
-}
+import { setAuthUsername, setSessionMarker } from "@/lib/auth";
 
 function isValidUsername(v: string) {
   return /^[a-zA-Z0-9_-]{2,20}$/.test(v);
 }
 
-export function UsernameModal({ onComplete }: UsernameModalProps) {
+export function UsernameModal() {
   const [value, setValue] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -82,10 +78,9 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
         return;
       }
 
-      // Başarılı: localStorage'a kaydet
-      localStorage.setItem("clarere_username", value);
+      // Başarılı: oturumu kaydet (dinleyiciler `useSyncExternalStore` ile yenilenir)
+      setAuthUsername(value);
       setSessionMarker(); // middleware derin bağlantı koruması
-      onComplete(value);
     } catch {
       setError("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
     } finally {

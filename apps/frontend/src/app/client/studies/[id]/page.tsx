@@ -40,7 +40,7 @@ export default function StudyDetailPage() {
   const studyId = params.id as string;
 
   const { study, setStudy, loading, error, activeTab, setActiveTab } = useStudyDetail(studyId);
-  const [, setSelectedPersonaIdx] = useState<number>(0);
+  const [selectedPersonaIdx, setSelectedPersonaIdx] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
@@ -293,6 +293,7 @@ export default function StudyDetailPage() {
             onFollowUpTextChange={setFollowUpText}
             sendingFollowUp={sendingFollowUp}
             onFollowUp={handleFollowUp}
+            focusIndex={selectedPersonaIdx}
           />
         )}
 

@@ -170,7 +170,7 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
                     </div>
                   )}
                 </CardContent>
-</div>
+              </div>
 
               <div className="px-6 pb-6 pt-0 flex justify-end border-t border-border/40 mt-auto">
                 <Button 

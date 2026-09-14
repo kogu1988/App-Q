@@ -78,4 +78,27 @@ test.describe.serial('Çalışma detayı (pro, mevcut çalışma)', () => {
       await shot(page, '37-report-tab');
     }
   });
+
+  test('persona kartından gelen odak, ilgili mülakat kartını vurgular', async ({ page }) => {
+    await login(page, 'pro');
+
+    const res = await page.request.get('/api/client/studies', {
+      headers: { 'X-Username': 'pro' },
+    });
+    const studies = await res.json();
+    const study = studies[0];
+
+    await page.goto(`/client/studies/${study.id}`);
+    await page.getByRole('button', { name: /^Personalar \(\d+\)/ }).click();
+    await page.waitForTimeout(1200);
+
+    // İkinci persona kartındaki "İncele" → Mülakat sekmesinde 2. kart vurgulanır.
+    const jump = page.getByRole('button', { name: /Mülakat Kayıtlarını İncele/ });
+    await expect(jump.nth(1)).toBeVisible({ timeout: 30_000 });
+    await jump.nth(1).click();
+    await page.waitForTimeout(2000);
+
+    await expect(page.locator('[data-interview-index="1"].ring-2')).toHaveCount(1);
+    await shot(page, '38-transcript-focus');
+  });
 });

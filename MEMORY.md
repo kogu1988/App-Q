@@ -614,7 +614,31 @@ python -m pytest packages/research_engine/tests/ -q
 - ✅ **KANIT — renk eşdeğerliği:** 42 token'ın CSS değeri, eşlendiği hex ile **birebir** doğrulandı. Üretim CSS'inde 143 referanslı token'ın 124'ü literal hex, 19'u **mevcut** shadcn tema-duyarlı katman (`var(--x)`; değişiklikten önce de böyleydi). `--color-primary = #17171c` → alias çakışması YOK.
 - ✅ **Üretilen sınıf doğrulaması:** `border-action-blue/[0.175]` → `#1863dc2d` (45/255 = 0.176), `border-canvas/10` → `#ffffff1a` (26/255 = 0.102), `bg-action-blue/25` → `#1863dc40` (64/255 = 0.251) — hepsi beklenen alfaya eşit.
 - **Davranış dondurma korundu:** hiçbir metin, özellik veya veri akışı değişmedi; yalnızca renk kaynağı token'a taşındı.
-- ⚠️ **R4-4 DIŞI bulgu (mevcut kusur, ayrı düzeltilmeli):** `app/client/page.tsx` içindeki `SubscriptionCard`, boş dependency array'li `useEffect` ile **giriş öncesi** mount'ta `/api/billing/subscription` çağırıyor → **401**; giriş sonrası tekrar denemediği için kart boş kalıyor.
-- ⚠️ **Mevcut kusur (not):** `PersonasTab.tsx` satır 172-175 arasında girintisi bozuk bir JSX bloğu var (`</div>` ardından girintisiz `<div className="px-6 pb-6 ...">`). İşlevsel hata üretmiyor ama okunabilirliği bozuyor.
+- ✅ **Bulunan kusurlar kapatıldı** → bkz. aşağıdaki **R4-4b** kaydı.
 - ⚠️ **Kapsam dışı bırakıldı:** shadcn katmanından gelen `bg-secondary` / `bg-muted` / `border-border` gibi tema-duyarlı alias'lar bilinçli olarak `var()` tabanlı bırakıldı (dark-mode davranışı bunlara bağlı).
 - Doğrulama: `npx tsc --noEmit` **0 hata**; `npx eslint src` **0 error / 0 warning** (97 dosya); `npx next build` **19 sayfa, başarılı**; Docker frontend rebuild; Playwright `01-ui` + `03-study-actions` + kapsamlı teşhis (konsol/sayfa hatası, token renk çözümlemesi, transkript dialog) → **9/9 passed**, beklenmeyen konsol hatası **0**.
+
+### R4-4b — Bulguların kapatılması (2026-09-14)
+
+R4-4 sırasında bulunan 3 kusur kapatıldı. **İkisi yüzeysel değil, aynı kök nedene bağlıydı.**
+
+**1) KÖK NEDEN — oturum çözülmeden alt bileşenler mount ediliyordu.**
+`ClientLayout` `children`'ı auth'tan bağımsız render edip giriş modalını üstte açıyordu. Bu yüzden `SubscriptionCard`, `ClientDashboard` araştırma listesi, `SidebarStudiesWidget` ve `useClientPlan()` **giriş öncesi** mount olup boş `getAuthHeaders()` ile fetch atıyor, 401/boş veri alıyor ve boş dependency array yüzünden **bir daha denemiyordu**. Sonuç: doğrudan `/client`'a gelen bir kullanıcıda abonelik kartı, araştırma geçmişi, kenar çubuğu ve **plan bilgisi boş/yanlış** kalıyordu (giriş sonrası elle yenileme gerekiyordu).
+
+Çözüm (kök neden):
+- `lib/auth.ts`'e **oturum deposu** eklendi: `subscribeAuth`, `getAuthUsernameSnapshot`, `getAuthUsernameServerSnapshot`, `setAuthUsername`, `clearAuth`. localStorage bir **dış sistem** olduğu için oturum `useSyncExternalStore` ile okunur (React 19'un doğru deseni; `set-state-in-effect` lint kuralına da uygun).
+- `ClientLayout` artık üç durumlu: **bilinmiyor** (hydration; sadece iskelet), **anonim** (yalnızca modal), **oturumlu** (shell + `children`). Oturum bilinmeden **hiçbir veri çeken bileşen mount edilmez**.
+- Auth'a bağlı tüm markup + `useClientPlan()` `AuthenticatedShell` bileşenine taşındı → hook'lar yalnızca oturum çözüldükten sonra çalışır.
+- `UsernameModal` `onComplete` prop'unu bıraktı; `setAuthUsername(value)` çağırır (dinleyiciler kendiliğinden yenilenir). Çıkışta `clearAuth()`.
+
+**2) `PersonasTab` bozuk JSX girintisi düzeltildi.** Yapı aslında dengeliydi (derleniyordu); sorun `</div>` kapanışının kolon 0'da kalmasıydı → okunabilirlik bozuluyordu. Doğru derinliğe alındı.
+
+**3) Ölü `selectedPersonaIdx` state'i işlevsel hale getirildi.** Persona kartındaki "Mülakat Kayıtlarını İncele" sekmeyi değiştiriyordu ama kullanıcıya **hangi kaydı** göreceğini göstermiyordu.
+- `StudyDetailPage` artık indeksi gerçekten okuyup `InterviewsTab`'a `focusIndex` olarak geçiriyor.
+- `InterviewsTab`: ilgili kart `scrollIntoView` ile görünür alana gelir ve kalıcı `ring-2 ring-action-blue` vurgusu alır. `prefers-reduced-motion` durumunda kaydırma animasyonsuz yapılır. (Vurgu için React state **kullanılmadı** → `set-state-in-effect` uyarısı yok.)
+
+**Kalıcı regresyon testleri eklendi** (bu hata sınıfı mevcut E2E tarafından görülmüyordu):
+- `e2e/tests/04-session.spec.ts` — giriş öncesi kimlik gerektiren veri çağrısı **yapılmadığını** ve giriş sonrası panelin **dolu** geldiğini (araştırma geçmişi + plan etiketi) doğrular.
+- `03-study-actions.spec.ts`'e odak testi eklendi — `[data-interview-index="1"].ring-2` tam 1 elemanda bulunmalı.
+
+Doğrulama: `npx tsc --noEmit` **0 hata**; `npx eslint src` **0 error / 0 warning**; Docker frontend rebuild; Playwright `01-ui` + `03-study-actions` + `04-session` → **10/10 passed**. Kanıt: giriş öncesi veri çağrısı **0**, giriş sonrası `BuddyNote` görünür, plan etiketi `Pro`, hatalı istek **0**, konsol hatası **0**.

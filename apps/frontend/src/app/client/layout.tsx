@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useSyncExternalStore } from "react";
 import { Menu, X, LogOut, User, Zap, ArrowUpRight, FileText } from "lucide-react";
 import { UsernameModal } from "@/components/username-modal";
 import { useClientPlan } from "@/hooks/use-client-plan";
 import Logo from "@/components/logo";
 import { getAuthHeaders } from "@/lib/auth";
-import { clearSessionMarker } from "@/lib/auth";
+import { clearAuth, subscribeAuth, getAuthUsernameSnapshot, getAuthUsernameServerSnapshot } from "@/lib/auth";
 
 interface SidebarStudy {
   id: string;
@@ -158,46 +158,30 @@ function SidebarPlanWidget() {
   );
 }
 
-// ── Layout ───────────────────────────────────────────────────────────────────
+// ── Authenticated Shell ──────────────────────────────────────────────────────
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
+/**
+ * Sadece oturum çözüldükten SONRA mount edilir. Böylece buradaki ve
+ * `children` içindeki tüm veri çeken bileşenler `getAuthHeaders()` ile
+ * geçerli kimlik bilgisi gönderir. (Daha önce alt bileşenler giriş öncesi
+ * mount olup 401 alıyor ve boş dependency array yüzünden bir daha
+ * denemiyordu.)
+ */
+function AuthenticatedShell({
+  username,
+  onLogout,
+  children,
+}: {
+  username: string | null;
+  onLogout: () => void;
+  children: React.ReactNode;
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { plan } = useClientPlan();
   const brandName = plan.features.white_label ? "Panel" : "Clarere";
-  const [showModal, setShowModal] = useState(false);
-  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
-
-  useEffect(() => {
-    const username = localStorage.getItem("clarere_username");
-    const timer = setTimeout(() => {
-      if (!username) {
-        setShowModal(true);
-      } else {
-        setCurrentUsername(username);
-      }
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
-
-  function handleLogout() {
-    localStorage.removeItem("clarere_username");
-    localStorage.removeItem("clarere_token");
-    clearSessionMarker();
-    router.push("/");
-  }
 
   return (
     <div className="h-screen bg-background text-foreground flex flex-col md:flex-row overflow-hidden">
-
-      {showModal && (
-        <Suspense>
-          <UsernameModal onComplete={(username) => {
-            setCurrentUsername(username);
-            setShowModal(false);
-          }} />
-        </Suspense>
-      )}
 
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-sidebar">
@@ -264,11 +248,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <div className="flex items-center gap-1.5 min-w-0">
               <User size={13} className="text-muted-foreground shrink-0" />
               <span className="text-xs font-medium text-foreground truncate">
-                {currentUsername ?? "Misafir"}
+                {username ?? "Misafir"}
               </span>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={onLogout}
               className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
               title="Çıkış Yap"
             >
@@ -290,7 +274,61 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <main className="flex-1 overflow-auto flex flex-col relative">
         {children}
       </main>
-      <Toaster />
     </div>
+  );
+}
+
+// ── Layout ───────────────────────────────────────────────────────────────────
+
+/**
+ * Oturumu `useSyncExternalStore` ile okur: localStorage bir dış sistemdir ve
+ * hydration sırasında `getServerSnapshot` "henüz bilinmiyor" döner.
+ *
+ * Kritik: oturum bilinmeden hiçbir veri çeken bileşen MOUNT EDİLMEZ. Daha önce
+ * alt bileşenler giriş öncesi mount olup boş `getAuthHeaders()` ile 401 alıyor ve
+ * boş dependency array yüzünden bir daha denemiyordu (abonelik kartı, araştırma
+ * geçmişi, kenar çubuğu ve plan bilgisi boş/yanlış kalıyordu).
+ */
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const username = useSyncExternalStore(
+    subscribeAuth,
+    getAuthUsernameSnapshot,
+    getAuthUsernameServerSnapshot,
+  );
+
+  function handleLogout() {
+    clearAuth();
+    router.push("/");
+  }
+
+  if (username === undefined) {
+    // Oturum okunana kadar iskelet — veri çeken bileşenler mount edilmez.
+    return (
+      <>
+        <div className="h-screen bg-background" aria-hidden />
+        <Toaster />
+      </>
+    );
+  }
+
+  if (username === null) {
+    return (
+      <>
+        <Suspense>
+          <UsernameModal />
+        </Suspense>
+        <Toaster />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <AuthenticatedShell username={username} onLogout={handleLogout}>
+        {children}
+      </AuthenticatedShell>
+      <Toaster />
+    </>
   );
 }
