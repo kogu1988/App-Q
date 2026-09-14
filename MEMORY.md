@@ -656,3 +656,16 @@ Doğrulama: `npx tsc --noEmit` **0 hata**; `npx eslint src` **0 error / 0 warnin
 - **Canlı doğrulama:** 5 demo kullanıcının tamamı `trial_expired=false`; `free` = `0/2`. API log'unda seed hatası yok.
 - ⚠️ **Yan etki (kabul edilen):** Demo kullanıcıların `period_simulations` sayacı her `init_db()`'de sıfırlanır — fixture'ın "deterministik" tanımıyla uyumlu; yalnızca dev'de geçerli.
 - Doğrulama: backend **411 passed** (DB ile, 0 skipped); Playwright **10/10**; `clarere-api` + `celery_worker` birlikte rebuild edildi.
+
+### Deploy blocker listesi — koddan kapatılabilenler (2026-09-14)
+
+`server_plan.md §10` (deploy öncesi kod değişiklikleri) madde madde denetlendi. Kullanıcıya/dış etmene bağlı OLMAYAN iki kalem kapatıldı:
+
+- ✅ **§10-8 `sslmode` desteği (Neon rotası).** Bağlantı havuzları `host/port/user/password/dbname` parçalarından kuruluyordu ve **SSL modu geçirilemiyordu** — yönetilen PostgreSQL (Neon) SSL'i zorunlu kıldığı için bu, yedek rotada gerçek bir blocker'dı.
+  - `connection.py`: `POSTGRES_SSLMODE` env'i + `_conn_params(user, password)` yardımcısı. `sslmode` **yalnızca env ayarlıysa** eklenir → self-hosted (Oracle VM) davranışı **birebir aynı** kalır.
+  - `.env.production.example` global `private_files` kapsamında olduğu için **okunmadı/değiştirilmedi**; env referansı `server_plan.md §11`'e eklendi (`POSTGRES_SSLMODE` → Neon rotasında `require`).
+  - Test: `test_production_readiness.py` → `test_conn_params_omits_sslmode_by_default` + `test_conn_params_includes_sslmode_when_set`.
+- ✅ **§10-7 `.dockerignore`.** Kök `.dockerignore` mevcut ve cloud compose `context: .` kullandığı için backend'i kapsıyor. Ancak frontend'in build context'i `./apps/frontend` olduğundan kök dosya oraya uygulanmıyordu → `node_modules` (618 MB) ve `.next` build context'ine gönderiliyordu.
+  - Eklendi: `apps/frontend/.dockerignore`. **Kritik gerekçe:** `node_modules`/`.next` hariç tutulmazsa `COPY . .` (Dockerfile'da `npm ci`'den SONRA çalışır) host'un Windows ikililerini Linux imajına kopyalar ve `next build` platform uyumsuzluğuyla çökebilir; `.next` de bayat derleme çıktısı taşır.
+- **Kalan:** §10-1…§10-6 zaten kapalı (doğrulandı: `_ensure_app_role` non-fatal, `API_PROXY_TARGET`, CSP `api.clarere.com`, `docker-compose.cloud.yml`, `Caddyfile.cloud`, `.env.production.example` mevcut). Yani **deploy blocker listesinde açık kalem yok**.
+- Doğrulama: backend **413 passed** (DB ile); frontend imajı `.dockerignore` ile yeniden derlendi ve konteyner sağlıklı (5 sayfa 200); API log'unda iki bağlantı havuzu da kuruldu, hata yok.

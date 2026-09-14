@@ -104,3 +104,36 @@ def test_research_job_task_is_registered():
     from packages.research_engine.jobs import run_research_job
 
     assert run_research_job.name == "clarere.run_research_job"
+
+
+# ── PostgreSQL SSL modu (yönetilen DB / Neon rotası) ──
+
+def test_conn_params_omits_sslmode_by_default(monkeypatch):
+    """`POSTGRES_SSLMODE` boşken bağlantı parametreleri DEĞİŞMEMELİ.
+
+    Self-hosted (Oracle VM) kurulumda davranış aynı kalmalı; `sslmode`
+    psycopg2'ye hiç geçirilmemeli.
+    """
+    from packages.research_engine.database import connection as conn
+
+    monkeypatch.setattr(conn, "PG_SSLMODE", "")
+    params = conn._conn_params("u", "p")
+
+    assert "sslmode" not in params
+    assert params["host"] == conn.PG_HOST
+    assert params["dbname"] == conn.PG_DB
+    assert params["user"] == "u"
+
+
+def test_conn_params_includes_sslmode_when_set(monkeypatch):
+    """`POSTGRES_SSLMODE` verilirse `sslmode` bağlantıya eklenmeli.
+
+    Neon SSL zorunlu kılar; bu alan olmadan bağlantı kurulamaz.
+    """
+    from packages.research_engine.database import connection as conn
+
+    monkeypatch.setattr(conn, "PG_SSLMODE", "require")
+    params = conn._conn_params("u", "p")
+
+    assert params["sslmode"] == "require"
+    assert params["password"] == "p"

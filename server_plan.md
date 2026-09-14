@@ -745,8 +745,8 @@ chmod +x /opt/clarere/backup.sh
 | 4 | `docker-compose.cloud.yml` *(yeni)* | Postgres'siz, Caddy'li, portsuz stack | Production topolojisi |
 | 5 | `Caddyfile.cloud` *(yeni)* | `api.clarere.com` + otomatik SSL | TLS + reverse proxy |
 | 6 | `.env.production.example` *(yeni)* | Sunucu env şablonu (secretsiz) | Kurulum kolaylığı |
-| 7 | `apps/backend/Dockerfile` | `.dockerignore` kontrolü (node_modules, data) | Build boyutu/RAM |
-| 8 | `packages/research_engine/database.py` | Neon için `sslmode` desteği (gerekirse DSN'e ekle) | Neon SSL zorunlu |
+| 7 | `.dockerignore` | ✅ **kapalı** — kök `.dockerignore` (`node_modules`, `data/`, `docs/`); frontend için `apps/frontend/.dockerignore` eklendi (context `./apps/frontend`) | Build boyutu/RAM |
+| 8 | `packages/research_engine/database/connection.py` | ✅ **kapalı** — `POSTGRES_SSLMODE` env'i eklendi (`_conn_params`); Neon SSL zorunlu kılar, self-hosted'da boş bırakılır | Neon SSL zorunlu |
 
 ---
 
@@ -760,6 +760,7 @@ chmod +x /opt/clarere/backup.sh
 | `ALLOWED_ORIGINS` | ✅ | `https://clarere.com,https://www.clarere.com` |
 | `DEEPSEEK_API_KEY` | ✅ | Flash + Pro |
 | `POSTGRES_*` / `APP_DB_*` | ✅ | Neon pooled host |
+| `POSTGRES_SSLMODE` | ➖ | **Neon rotasında `require`** (yönetilen PostgreSQL SSL zorunlu kılar). Boş bırakılırsa bağlantı davranışı değişmez — self-hosted Oracle VM'de gerekmez. |
 | `PG_POOL_MAX` | ✅ | **5** (Neon bağlantı limiti) |
 | `VALKEY_URL` / `REDIS_*` | ✅ | `redis://redis:6379/0` |
 | `CELERY_CONCURRENCY` | ✅ | **1** (2 GB sunucu) |

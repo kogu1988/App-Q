@@ -40,6 +40,10 @@ if not PG_PASS:
         logger.warning("POSTGRES_PASSWORD ayarlanmamış — geliştirme varsayılanı kullanılıyor")
 PG_DB = os.getenv("POSTGRES_DB", "clarere_db")
 
+# SSL modu — yönetilen PostgreSQL (Neon vb.) SSL'i ZORUNLU kılar; self-hosted
+# kurulumda boş bırakılır ve bağlantı davranışı değişmez. Örnek: `require`.
+PG_SSLMODE = os.getenv("POSTGRES_SSLMODE", "").strip()
+
 # App bağlantısı — RLS'yi uygulayan superuser OLMAYAN rol (tenant izolasyonu için)
 APP_DB_USER = os.getenv("APP_DB_USER", "clarere_app")
 APP_DB_PASS = os.getenv("APP_DB_PASSWORD", PG_PASS or "clarere_password")
@@ -51,6 +55,24 @@ _pool: pg_pool.ThreadedConnectionPool | None = None
 _pool_lock = threading.Lock()
 
 
+def _conn_params(user: str, password: str) -> dict:
+    """Bağlantı havuzu parametreleri.
+
+    `sslmode` yalnızca `POSTGRES_SSLMODE` ayarlıysa eklenir; aksi halde
+    psycopg2/libpq varsayılanı (ve gerekirse `PGSSLMODE` env'i) geçerlidir.
+    """
+    params: dict = {
+        "host": PG_HOST,
+        "port": PG_PORT,
+        "user": user,
+        "password": password,
+        "dbname": PG_DB,
+    }
+    if PG_SSLMODE:
+        params["sslmode"] = PG_SSLMODE
+    return params
+
+
 def _get_pool() -> pg_pool.ThreadedConnectionPool:
     """Lazy-init edilmiş thread-safe bağlantı havuzunu döner."""
     global _pool
@@ -60,11 +82,7 @@ def _get_pool() -> pg_pool.ThreadedConnectionPool:
                 _pool = pg_pool.ThreadedConnectionPool(
                     minconn=_POOL_MIN,
                     maxconn=_POOL_MAX,
-                    host=PG_HOST,
-                    port=PG_PORT,
-                    user=PG_USER,
-                    password=PG_PASS,
-                    dbname=PG_DB,
+                    **_conn_params(PG_USER, PG_PASS),
                 )
                 logger.info(f"PostgreSQL bağlantı havuzu oluşturuldu (min={_POOL_MIN}, max={_POOL_MAX})")
     return _pool
@@ -82,11 +100,7 @@ def _get_app_pool() -> pg_pool.ThreadedConnectionPool:
                 _app_pool = pg_pool.ThreadedConnectionPool(
                     minconn=_POOL_MIN,
                     maxconn=_POOL_MAX,
-                    host=PG_HOST,
-                    port=PG_PORT,
-                    user=APP_DB_USER,
-                    password=APP_DB_PASS,
-                    dbname=PG_DB,
+                    **_conn_params(APP_DB_USER, APP_DB_PASS),
                 )
                 logger.info(f"App bağlantı havuzu oluşturuldu (user={APP_DB_USER})")
     return _app_pool
