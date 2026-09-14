@@ -22,7 +22,7 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div>
-        <h2 className="text-xl font-bold text-[#17171c] dark:text-white">Sentetik Kitle Paneli ({personas.length})</h2>
+        <h2 className="text-xl font-bold text-primary dark:text-white">Sentetik Kitle Paneli ({personas.length})</h2>
         <p className="text-muted-foreground text-sm">Araştırmada simüle edilen ve mülakat gerçekleştirilen hedef kitle profilleri.</p>
       </div>
 
@@ -33,26 +33,26 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {personas.map((persona: Persona, index: number) => (
-            <Card key={persona.id || index} className="shadow-sm border hover:border-[#e5e7eb] dark:hover:border-[rgba(24,99,220,0.35)]/50 hover:shadow-md transition-all duration-300 group flex flex-col justify-between overflow-hidden">
+            <Card key={persona.id || index} className="shadow-sm border hover:border-border-light dark:hover:border-action-blue/[0.175] hover:shadow-md transition-all duration-300 group flex flex-col justify-between overflow-hidden">
               <div>
-                <div className="p-6 bg-[#f5f4f1]/50 border-b border-border/50 flex justify-between items-start gap-2">
+                <div className="p-6 bg-muted-surface/50 border-b border-border/50 flex justify-between items-start gap-2">
                   <div className="space-y-0.5">
-                    <h3 className="font-bold text-lg text-[#17171c] dark:text-white group-hover:text-[#1863dc] dark:group-hover:text-[#4c6ee6] transition-colors">
+                    <h3 className="font-bold text-lg text-primary dark:text-white group-hover:text-action-blue dark:group-hover:text-focus-blue transition-colors">
                       {persona.name}
                     </h3>
                     <p className="text-xs text-muted-foreground font-semibold">
                       {persona.role_title || "Sentetik Tüketici"} • {persona.age} Yaşında
                     </p>
                   </div>
-                  <Badge className="bg-[#f1f5ff] text-[#1863dc] dark:bg-[#071829]/20 dark:text-[#4c6ee6] hover:bg-[#f1f5ff] border border-[#e5e7eb] dark:border-[rgba(24,99,220,0.15)] text-xs">
+                  <Badge className="bg-pale-blue text-action-blue dark:bg-dark-navy/20 dark:text-focus-blue hover:bg-pale-blue border border-border-light dark:border-action-blue/15 text-xs">
                     {persona.segment}
                   </Badge>
                 </div>
 
                 <CardContent className="p-6 space-y-4">
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-bold text-[#93939f] uppercase tracking-wider block">Biyografi & Karakteristik</span>
-                    <p className="text-[#616161] text-xs leading-relaxed italic line-clamp-3">
+                    <span className="text-[10px] font-bold text-muted-text uppercase tracking-wider block">Biyografi & Karakteristik</span>
+                    <p className="text-body-muted text-xs leading-relaxed italic line-clamp-3">
                       &quot;{persona.bio || persona.context}&quot;
                     </p>
                   </div>
@@ -61,7 +61,7 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
                   <div className="space-y-3 border-t border-border pt-4">
                     {persona.big_five ? (
                       <>
-                        <span className="text-[10px] font-bold text-[#93939f] uppercase tracking-wider block mb-2">Kişilik Profili (Büyük Beşli)</span>
+                        <span className="text-[10px] font-bold text-muted-text uppercase tracking-wider block mb-2">Kişilik Profili (Büyük Beşli)</span>
                         <BigFiveRadar bigFive={persona.big_five || {}} />
                         {[
                           { label: "Açıklık (Openness)",              key: "Openness" as const,          color: "bg-sky-500" },
@@ -75,9 +75,9 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
                           <div key={trait.label} className="space-y-1">
                             <div className="flex justify-between text-[10px] font-semibold">
                               <span className="text-muted-foreground">{trait.label}</span>
-                              <span className="text-[#212121] ">{value}%</span>
+                              <span className="text-ink ">{value}%</span>
                             </div>
-                            <div className="h-1.5 w-full bg-[#eeece7] rounded-full overflow-hidden">
+                            <div className="h-1.5 w-full bg-soft-stone rounded-full overflow-hidden">
                               <div 
                                 className={`h-full ${trait.color} rounded-full`} 
                                 style={{ width: `${value}%` }}
@@ -92,9 +92,9 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
                         <div className="space-y-1">
                           <div className="flex justify-between text-[10px] font-semibold">
                             <span className="text-muted-foreground">Fiyat Hassasiyeti</span>
-                            <span className="text-[#212121] ">{persona.price_sensitivity}/5</span>
+                            <span className="text-ink ">{persona.price_sensitivity}/5</span>
                           </div>
-                          <div className="h-1.5 w-full bg-[#eeece7] rounded-full overflow-hidden">
+                          <div className="h-1.5 w-full bg-soft-stone rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-sky-500 rounded-full" 
                               style={{ width: `${(persona.price_sensitivity / 5) * 100}%` }}
@@ -104,9 +104,9 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
                         <div className="space-y-1">
                           <div className="flex justify-between text-[10px] font-semibold">
                             <span className="text-muted-foreground">Dijital Güven</span>
-                            <span className="text-[#212121] ">{persona.digital_confidence}/5</span>
+                            <span className="text-ink ">{persona.digital_confidence}/5</span>
                           </div>
-                          <div className="h-1.5 w-full bg-[#eeece7] rounded-full overflow-hidden">
+                          <div className="h-1.5 w-full bg-soft-stone rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-blue-500 rounded-full" 
                               style={{ width: `${(persona.digital_confidence / 5) * 100}%` }}
@@ -121,7 +121,7 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
                   <div className="space-y-2 border-t border-border/50 pt-3">
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-muted-foreground">Pazar Yaklaşımı:</span>
-                      <Badge variant="outline" className="font-semibold text-[#616161] ">
+                      <Badge variant="outline" className="font-semibold text-body-muted ">
                         {STANCE_TR[persona.stance] || persona.stance}
                       </Badge>
                     </div>
@@ -131,12 +131,12 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                             persona.ses_group === "AB" ? "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-400" :
                             persona.ses_group === "C1" ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/20 dark:border-blue-800 " :
-                            persona.ses_group === "C2" ? "bg-[#f5f4f1] border-[#d9d9dd] text-[#616161] " :
+                            persona.ses_group === "C2" ? "bg-muted-surface border-hairline text-body-muted " :
                             "bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/20 dark:border-rose-800 dark:text-rose-400"
                           }`}>SES {persona.ses_group}</span>
                         )}
                         {persona.respondent_type && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#f1f5ff] border border-[#e5e7eb] text-[#1863dc] dark:bg-[#071829]/20 dark:border-[#1863dc]/60 dark:text-[#4c6ee6]">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-pale-blue border border-border-light text-action-blue dark:bg-dark-navy/20 dark:border-action-blue/60 dark:text-focus-blue">
                             {({
                               potential_customer: "Potansiyel",
                               competitor_user: "Rakip",
@@ -163,8 +163,8 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
                         { key: "Buying friction", label: "Satın Alma Sürtünmesi" },
                       ].filter(a => persona.attributes?.[a.key]).map(a => (
                         <div key={a.key} className="text-[11px] leading-relaxed">
-                          <span className="font-bold text-[#93939f] uppercase tracking-wider">{a.label}: </span>
-                          <span className="text-[#616161] dark:text-[#93939f]">{persona.attributes?.[a.key]}</span>
+                          <span className="font-bold text-muted-text uppercase tracking-wider">{a.label}: </span>
+                          <span className="text-body-muted dark:text-muted-text">{persona.attributes?.[a.key]}</span>
                         </div>
                       ))}
                     </div>
@@ -176,7 +176,7 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="text-xs text-[#1863dc] dark:text-[#4c6ee6] hover:text-[#1863dc] dark:hover:text-[#4c6ee6] font-semibold gap-1.5 p-0 hover:bg-transparent"
+                  className="text-xs text-action-blue dark:text-focus-blue hover:text-action-blue dark:hover:text-focus-blue font-semibold gap-1.5 p-0 hover:bg-transparent"
                   onClick={() => {
                     // Find index in interviews list
                     const intIdx = interviews.findIndex((i: PersonaInterview) => i.persona?.name === persona.name);
@@ -196,7 +196,7 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
 
       {/* SES x Stance Cross-Tab */}
       {study?.ses_cross_tab && study.ses_cross_tab.length > 0 && (
-        <Card className="shadow-sm border-[#e5e7eb] dark:border-[rgba(24,99,220,0.15)]">
+        <Card className="shadow-sm border-border-light dark:border-action-blue/15">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Sosyo-Ekonomik Grup × Duruş</CardTitle>
             <CardDescription>Sosyo-ekonomik gruplara göre pazar yaklaşımı dağılımı.</CardDescription>
@@ -216,12 +216,12 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
                 </thead>
                 <tbody>
                   {study.ses_cross_tab.map(row => (
-                    <tr key={row.ses_group} className="border-b border-border/50 hover:bg-[#f5f4f1] dark:hover:bg-[#212121]/30">
+                    <tr key={row.ses_group} className="border-b border-border/50 hover:bg-muted-surface dark:hover:bg-ink/30">
                       <td className="py-2 pr-4">
                         <span className={`px-2 py-0.5 rounded text-xs font-bold ${
                           row.ses_group === "AB" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" :
                           row.ses_group === "C1" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 " :
-                          row.ses_group === "C2" ? "bg-[#eeece7] text-[#616161] " :
+                          row.ses_group === "C2" ? "bg-soft-stone text-body-muted " :
                           "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400"
                         }`}>{row.ses_group}</span>
                       </td>
@@ -235,8 +235,11 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
                               <span
                                 className="inline-flex w-8 h-8 rounded-md text-xs font-bold items-center justify-center transition-colors"
                                 style={{
-                                  backgroundColor: count === max ? "#1863dc" : `rgba(24, 99, 220, ${0.15 + (count / max) * 0.55})`,
-                                  color: count === max ? "#ffffff" : "#17171c",
+                                  backgroundColor:
+                                    count === max
+                                      ? "var(--color-action-blue)"
+                                      : `color-mix(in srgb, var(--color-action-blue) ${((0.15 + (count / max) * 0.55) * 100).toFixed(1)}%, transparent)`,
+                                  color: count === max ? "var(--color-on-primary)" : "var(--color-primary)",
                                 }}
                               >{count}</span>
                             ) : <span className="text-muted-foreground">—</span>}
@@ -264,13 +267,13 @@ export function PersonasTab({ personas, interviews, study, onOpenTranscript }: P
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {study.respondent_type_summary.map(rt => (
-                <div key={rt.respondent_type} className="p-4 border border-border rounded-xl space-y-2 hover:border-[#e5e7eb] dark:hover:border-[rgba(24,99,220,0.35)]/40 transition-colors">
+                <div key={rt.respondent_type} className="p-4 border border-border rounded-xl space-y-2 hover:border-border-light dark:hover:border-action-blue/[0.14] transition-colors">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sm text-[#212121] dark:text-[#e5e7eb]">{rt.label}</span>
+                    <span className="font-semibold text-sm text-ink dark:text-border-light">{rt.label}</span>
                     <Badge variant="secondary" className="text-xs">{rt.count} kişi</Badge>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Ort. fiyat hassasiyeti: <strong className="text-[#616161] ">{rt.avg_price_sensitivity.toFixed(1)}/10</strong>
+                    Ort. fiyat hassasiyeti: <strong className="text-body-muted ">{rt.avg_price_sensitivity.toFixed(1)}/10</strong>
                   </div>
                   {rt.top_pain && (
                     <div className="text-xs bg-rose-50 dark:bg-rose-950/20 border border-rose-100 rounded-lg p-2 text-rose-700 dark:text-rose-400 italic line-clamp-2">

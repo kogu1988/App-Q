@@ -41,10 +41,10 @@ export function FeedbackTab({ feedbacks }: FeedbackTabProps) {
 
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="border-l-4 border-l-[#93939f] shadow-sm">
+        <Card className="border-l-4 border-l-muted-text shadow-sm">
           <CardContent className="pt-5 pb-4">
-            <p className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Toplam Kayıt</p>
-            <p className="text-4xl font-black text-[#17171c] dark:text-[#e5e7eb] mt-1">{total}</p>
+            <p className="text-[11px] font-mono uppercase tracking-wider text-muted-text">Toplam Kayıt</p>
+            <p className="text-4xl font-black text-primary dark:text-border-light mt-1">{total}</p>
             <p className="text-xs text-muted-foreground mt-1">
               <span className="text-emerald-600 font-semibold">{likes} beğeni</span>
               {" · "}
@@ -63,7 +63,7 @@ export function FeedbackTab({ feedbacks }: FeedbackTabProps) {
           }`}
         >
           <CardContent className="pt-5 pb-4">
-            <p className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Beğeni Oranı</p>
+            <p className="text-[11px] font-mono uppercase tracking-wider text-muted-text">Beğeni Oranı</p>
             <p
               className={`text-4xl font-black mt-1 ${
                 likeRate >= 70
@@ -75,7 +75,7 @@ export function FeedbackTab({ feedbacks }: FeedbackTabProps) {
             >
               %{likeRate}
             </p>
-            <div className="mt-2 h-1.5 bg-[#eeece7] dark:bg-[#2c2c33] rounded-full overflow-hidden">
+            <div className="mt-2 h-1.5 bg-soft-stone dark:bg-surface-dark rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-700 ${
                   likeRate >= 70 ? "bg-emerald-500" : likeRate >= 40 ? "bg-amber-500" : "bg-red-500"
@@ -88,7 +88,7 @@ export function FeedbackTab({ feedbacks }: FeedbackTabProps) {
 
         <Card className="border-l-4 border-l-sky-400 shadow-sm">
           <CardContent className="pt-5 pb-4">
-            <p className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Yorum İçeren</p>
+            <p className="text-[11px] font-mono uppercase tracking-wider text-muted-text">Yorum İçeren</p>
             <p className="text-4xl font-black text-sky-600 dark:text-sky-400 mt-1">%{commentRate}</p>
             <p className="text-xs text-muted-foreground mt-1">{withComment} kayıtta yorum var</p>
           </CardContent>
@@ -96,10 +96,10 @@ export function FeedbackTab({ feedbacks }: FeedbackTabProps) {
 
         <Card className="border-l-4 border-l-indigo-400 shadow-sm">
           <CardContent className="pt-5 pb-4">
-            <p className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">
+            <p className="text-[11px] font-mono uppercase tracking-wider text-muted-text">
               En Çok Değerlendirilen
             </p>
-            <p className="text-lg font-black text-[#1863dc] dark:text-[#4c6ee6] mt-1 truncate">{topType}</p>
+            <p className="text-lg font-black text-action-blue dark:text-focus-blue mt-1 truncate">{topType}</p>
             <p className="text-xs text-muted-foreground mt-1">{typeCounts[topType] ?? 0} kayıt</p>
           </CardContent>
         </Card>

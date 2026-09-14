@@ -600,3 +600,21 @@ python -m pytest packages/research_engine/tests/ -q
   - **E2E `02-research-flow` çalıştırılmadı:** uçtan uca gerçek DeepSeek çağrıları yapıyor (maliyet + ~20 dk). Yerine sihirbazın aynı giriş adımlarını LLM'siz doğrulayan test eklendi; kod birebirliği ayrıca kanıtlandı.
 - Doğrulama: `npx tsc --noEmit` + `npx eslint` **0 error / 0 warning**; Docker frontend rebuild; Playwright **7/7**.
 - **Refaktör bloğu tamamlandı:** R1, R2, R5, R6, R7, R8, R3, R4 — planlanan sıranın tamamı uygulandı (ertelenen kalemler gerekçeleriyle yukarıda).
+
+### Refaktör R4-4 — Tasarım tokenları: inline renk → token (2026-09-14)
+
+- ✅ **1.533 Tailwind arbitrary hex → token sınıfı**, 48 dosya. Örnek eşleme: `bg-[#17171c]` → `bg-primary`, `text-[#616161]` → `text-body-muted`, `border-[#d9d9dd]` → `border-hairline`, `text-[#ff7759]` → `text-coral`, `bg-[#eeece7]` → `bg-soft-stone`.
+- ✅ **72 çıplak (prop/JS) hex temizlendi:**
+  - `Logo`'dan `strokeColor` prop'u **kaldırıldı** (`stroke="currentColor"` + Tailwind `text-*`); 23 çağrı yeri 14 dosyada güncellendi.
+  - `AgentLogo`'dan `strokeColor` / `innerStrokeColor` / `dotColor` kaldırıldı → `stroke-deep-green`, `stroke-coral`, `stroke-action-blue`, `fill-deep-green` sınıfları. `think-glow` keyframe'i `color-mix(in srgb, var(--color-coral) N%, transparent)` kullanır.
+  - `BigFiveRadar` ve `PSMChart` SVG presentation attribute'ları → `stroke-*` / `fill-*` sınıfları (**SVG attribute'ları `var()` kabul etmez**).
+  - Veri görselleştirme paletleri token'a bağlandı: `--color-series-1..7`, `--color-series-neutral`, `--color-price-*`, `--color-psm-*`, `--color-chart-*`.
+- ✅ **21 `rgba()` literali** → token + slash-opacity. Çarpanlı ikisi birebir korundu: `[rgba(24,99,220,0.35)]/50` → `action-blue/[0.175]`, `[rgba(24,99,220,0.35)]/40` → `action-blue/[0.14]`.
+- ✅ **`globals.css` genişletildi:** 10 yeni semantik yüzey token'ı, `on-primary`/`on-dark`, 8 seri + 3 chart + 4 fiyat + 4 PSM token'ı. Utility katmanındaki hex'ler `var(--color-*)`'a bağlandı. Ölü radius çakışması temizlendi: Cohere ölçeği `--radius-cohere-*` olarak korundu (shadcn alias'ları canlı `rounded-sm/md/lg/xl` değerleri).
+- ✅ **KANIT — renk eşdeğerliği:** 42 token'ın CSS değeri, eşlendiği hex ile **birebir** doğrulandı. Üretim CSS'inde 143 referanslı token'ın 124'ü literal hex, 19'u **mevcut** shadcn tema-duyarlı katman (`var(--x)`; değişiklikten önce de böyleydi). `--color-primary = #17171c` → alias çakışması YOK.
+- ✅ **Üretilen sınıf doğrulaması:** `border-action-blue/[0.175]` → `#1863dc2d` (45/255 = 0.176), `border-canvas/10` → `#ffffff1a` (26/255 = 0.102), `bg-action-blue/25` → `#1863dc40` (64/255 = 0.251) — hepsi beklenen alfaya eşit.
+- **Davranış dondurma korundu:** hiçbir metin, özellik veya veri akışı değişmedi; yalnızca renk kaynağı token'a taşındı.
+- ⚠️ **R4-4 DIŞI bulgu (mevcut kusur, ayrı düzeltilmeli):** `app/client/page.tsx` içindeki `SubscriptionCard`, boş dependency array'li `useEffect` ile **giriş öncesi** mount'ta `/api/billing/subscription` çağırıyor → **401**; giriş sonrası tekrar denemediği için kart boş kalıyor.
+- ⚠️ **Mevcut kusur (not):** `PersonasTab.tsx` satır 172-175 arasında girintisi bozuk bir JSX bloğu var (`</div>` ardından girintisiz `<div className="px-6 pb-6 ...">`). İşlevsel hata üretmiyor ama okunabilirliği bozuyor.
+- ⚠️ **Kapsam dışı bırakıldı:** shadcn katmanından gelen `bg-secondary` / `bg-muted` / `border-border` gibi tema-duyarlı alias'lar bilinçli olarak `var()` tabanlı bırakıldı (dark-mode davranışı bunlara bağlı).
+- Doğrulama: `npx tsc --noEmit` **0 hata**; `npx eslint src` **0 error / 0 warning** (97 dosya); `npx next build` **19 sayfa, başarılı**; Docker frontend rebuild; Playwright `01-ui` + `03-study-actions` + kapsamlı teşhis (konsol/sayfa hatası, token renk çözümlemesi, transkript dialog) → **9/9 passed**, beklenmeyen konsol hatası **0**.

@@ -58,8 +58,8 @@ export function FeedbackTable({ feedbacks }: { feedbacks: FeedbackItem[] }) {
                         ? "bg-emerald-600 text-white"
                         : v === "dislike"
                         ? "bg-red-500 text-white"
-                        : "bg-[#17171c] text-white dark:bg-[#e5e7eb] dark:text-[#17171c]"
-                      : "bg-card text-muted-foreground hover:bg-[#eeece7] dark:hover:bg-[#2c2c33]"
+                        : "bg-primary text-white dark:bg-border-light dark:text-primary"
+                      : "bg-card text-muted-foreground hover:bg-soft-stone dark:hover:bg-surface-dark"
                   }`}
                 >
                   {v === "all" ? (
@@ -82,7 +82,7 @@ export function FeedbackTable({ feedbacks }: { feedbacks: FeedbackItem[] }) {
               <select
                 value={typeFilter}
                 onChange={e => setTypeFilter(e.target.value)}
-                className="text-xs border border-border rounded-lg px-2.5 py-1.5 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-[#4c6ee6] cursor-pointer"
+                className="text-xs border border-border rounded-lg px-2.5 py-1.5 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-focus-blue cursor-pointer"
               >
                 {itemTypes.map(t => (
                   <option key={t} value={t}>
@@ -105,12 +105,12 @@ export function FeedbackTable({ feedbacks }: { feedbacks: FeedbackItem[] }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Tarih</TableHead>
-                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Kullanıcı</TableHead>
-                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Araştırma</TableHead>
-                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Tür</TableHead>
-                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Oy</TableHead>
-                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Yorum</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-muted-text">Tarih</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-muted-text">Kullanıcı</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-muted-text">Araştırma</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-muted-text">Tür</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-muted-text">Oy</TableHead>
+                  <TableHead className="text-[11px] font-mono uppercase tracking-wider text-muted-text">Yorum</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -133,6 +133,49 @@
   --color-coral-soft:      #ffad9b;
   --color-error:           #b30000;
 
+  /* Extended semantic tokens (R4-4) — surface shades and states */
+  --color-muted-surface:   #f5f4f1;
+  --color-gray-surface:    #fafafa;
+  --color-surface-dark:    #2c2c33;
+  --color-stone-deep:      #b8b7b3;
+  --color-slate-soft:      #a1a1aa;
+  --color-info-blue:       #1d4ed8;
+  --color-warning:         #c2410c;
+  --color-error-dark:      #8b1e1e;
+  --color-error-soft:      #fff3f0;
+  --color-warm-surface:    #fff5e6;
+
+  /* On-color tokens (DESIGN.md parity) */
+  --color-on-primary:      #ffffff;
+  --color-on-dark:         #ffffff;
+
+  /* Data-viz: categorical series scale (series-1..7 + neutral) */
+  --color-series-1:        #6366f1;
+  --color-series-2:        #14b8a6;
+  --color-series-3:        #0ea5e9;
+  --color-series-4:        #22c55e;
+  --color-series-5:        #f97316;
+  --color-series-6:        #ec4899;
+  --color-series-7:        #f59e0b;
+  --color-series-neutral:  #94a3b8;
+
+  /* Data-viz: chart chrome */
+  --color-chart-grid:         #e2e8f0;
+  --color-chart-axis:         #cbd5e1;
+  --color-chart-axis-strong:  #94a3b8;
+
+  /* Data-viz: Van Westendorp price-sensitivity scale */
+  --color-price-too-cheap:      #f59e0b;
+  --color-price-fair:           #22c55e;
+  --color-price-expensive:      #f97316;
+  --color-price-too-expensive:  #ef4444;
+
+  /* Data-viz: PSM marker accents */
+  --color-psm-pmc:  #6366f1;
+  --color-psm-opp:  #0d9488;
+  --color-psm-ipp:  #0ea5e9;
+  --color-psm-pme:  #ec4899;
+
   /* shadcn compat tokens — mapped to Cohere palette */
   --color-background:        var(--background);
   --color-foreground:        var(--foreground);
@@ -164,16 +207,23 @@
   --color-chart-2:           var(--chart-2);
   --color-chart-1:           var(--chart-1);
 
-  /* Radius — Cohere scale */
+  /* Radius — Cohere scale (DESIGN.md). Prefixed to avoid colliding with
+     the shadcn --radius-* aliases below, which are the live runtime values
+     for rounded-sm/md/lg/xl. Unprefixed Cohere names used to be shadowed
+     by the aliases, so the scale is preserved under --radius-cohere-*. */
+  --radius-cohere-xs:   4px;
+  --radius-cohere-sm:   8px;
+  --radius-cohere-md:   16px;
+  --radius-cohere-lg:   22px;
+  --radius-cohere-xl:   30px;
+  --radius-cohere-pill: 32px;
+
+  /* Unambiguous radii — not overridden by the aliases */
   --radius-xs:   4px;
-  --radius-sm:   8px;
-  --radius-md:   16px;
-  --radius-lg:   22px;
-  --radius-xl:   30px;
   --radius-pill: 32px;
   --radius-full: 9999px;
 
-  /* radius aliases for shadcn */
+  /* radius aliases for shadcn (live values for rounded-sm/md/lg/xl) */
   --radius-sm:   calc(var(--radius) * 0.6);
   --radius-md:   calc(var(--radius) * 0.8);
   --radius-lg:   var(--radius);
@@ -311,22 +361,22 @@
 
   /* Dark product bands */
   .band-deep-green {
-    background-color: #003c33;
-    color: #ffffff;
+    background-color: var(--color-deep-green);
+    color: var(--color-on-dark);
   }
   .band-dark-navy {
-    background-color: #071829;
-    color: #ffffff;
+    background-color: var(--color-dark-navy);
+    color: var(--color-on-dark);
   }
   .band-primary {
-    background-color: #17171c;
-    color: #ffffff;
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
   }
 
   /* Soft stone surface */
   .surface-stone {
-    background-color: #eeece7;
-    color: #212121;
+    background-color: var(--color-soft-stone);
+    color: var(--color-ink);
   }
 
   /* Pill CTA — Cohere's primary action style */
@@ -335,8 +385,8 @@
     align-items: center;
     padding: 0.75rem 1.75rem;
     border-radius: 9999px;
-    background-color: #17171c;
-    color: #ffffff;
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
     font-size: 0.875rem;
     font-weight: 500;
     transition: opacity 0.15s ease;
@@ -359,13 +409,16 @@
     align-items: center;
     padding: 0.375rem 1rem;
     border-radius: 9999px;
-    border: 1px solid #d9d9dd;
+    border: 1px solid var(--color-hairline);
     font-size: 0.875rem;
     font-weight: 400;
     background: transparent;
     transition: border-color 0.15s, background 0.15s;
   }
-  .btn-pill-outline:hover { border-color: #17171c; background: #f5f4f1; }
+  .btn-pill-outline:hover {
+    border-color: var(--color-primary);
+    background: var(--color-muted-surface);
+  }
 
   /* Coral chip */
   .chip-coral {
@@ -373,8 +426,8 @@
     align-items: center;
     padding: 0.125rem 0.625rem;
     border-radius: 9999px;
-    border: 1px solid #ff7759;
-    color: #ff7759;
+    border: 1px solid var(--color-coral);
+    color: var(--color-coral);
     font-size: 0.75rem;
     font-weight: 500;
     background: transparent;
@@ -383,8 +436,8 @@
   /* Announcement bar */
   .announcement-bar {
     height: 36px;
-    background-color: #000000;
-    color: #ffffff;
+    background-color: var(--color-cohere-black);
+    color: var(--color-on-dark);
     display: flex;
     align-items: center;
     justify-content: center;

@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       <nav className="sticky top-0 z-50 bg-canvas/90 backdrop-blur-md border-b border-hairline px-6 h-16 flex items-center justify-between">
         <div className="max-w-4xl mx-auto w-full flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-85 transition-opacity">
-            <Logo size={24} strokeColor="#17171c" />
+            <Logo size={24} className="text-primary" />
             <span className="font-semibold text-primary tracking-tight text-lg">Clarere</span>
           </Link>
           <Link href="/" className="text-sm font-medium text-body-muted hover:text-primary transition-colors">
@@ -278,7 +278,7 @@ export default function PrivacyPage() {
       <footer className="border-t border-hairline py-8 mt-16">
         <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-body-muted">
           <div className="flex items-center gap-2">
-            <Logo size={24} strokeColor="#93939f" />
+            <Logo size={24} className="text-muted-text" />
             <span>Clarere © 2026</span>
           </div>
           <div className="flex gap-6">

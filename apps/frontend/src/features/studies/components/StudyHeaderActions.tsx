@@ -35,7 +35,7 @@ export function StudyHeaderActions({
       {/* Raporu Olustur — sadece henüz tamamlanmamıs arastirmalarda */}
       {!isCompleted && interviewsCount > 0 && (
         <Button
-          className="w-full sm:w-auto gap-2 bg-[#003c33] hover:bg-[#003c33]/85 text-white font-semibold"
+          className="w-full sm:w-auto gap-2 bg-deep-green hover:bg-deep-green/85 text-white font-semibold"
           disabled={synthesizing}
           onClick={onSynthesize}
         >
@@ -48,7 +48,7 @@ export function StudyHeaderActions({
         !pdfExportEnabled ? (
           <Button
             variant="outline"
-            className="w-full sm:w-auto gap-2 text-[#93939f] border-[#d9d9dd] cursor-not-allowed"
+            className="w-full sm:w-auto gap-2 text-muted-text border-hairline cursor-not-allowed"
             onClick={() =>
               toast.error(
                 <div className="flex flex-col gap-1.5">

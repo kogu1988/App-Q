@@ -471,3 +471,25 @@ Primary CTAs and pills meet comfortable touch sizing through 12px-24px padding a
 - Exact proprietary font files are not bundled; use the documented fallbacks when implementing externally.
 - Mobile screenshots were not regenerated in this public update, so mobile behavior is documented from the desktop system and existing responsive patterns.
 - Some live pages lazy-load content blocks late; blank testimonial placeholders are documented as placeholder skeleton surfaces rather than filled testimonial cards.
+- The Cohere radius scale (`--radius-cohere-md` 16px, `--radius-cohere-lg` 22px, `--radius-cohere-xl` 30px) is **defined but not yet applied**: live `rounded-sm/md/lg/xl` resolve to the shadcn aliases (`calc(var(--radius) * n)`, base 8px). Aligning cards/pills with this spec is a visual change and needs its own review pass.
+
+## Implementation Tokens (Clarere)
+
+> Bu bölüm tasarım sisteminin koddaki karşılığını tanımlar. **Tek kaynak:** `apps/frontend/src/app/globals.css` içindeki `@theme` bloğu (Tailwind 4). Bileşenlerde hardcoded hex/rgba **kullanılmaz** (R4-4).
+
+| Token grubu | Token'lar | Kullanım |
+|---|---|---|
+| Marka / metin | `primary`, `ink`, `canvas`, `cohere-black`, `body-muted`, `muted-text`, `slate`, `slate-soft` | Metin, zemin, logo |
+| Yüzeyler | `soft-stone`, `muted-surface`, `gray-surface`, `card-border`, `border-light`, `hairline`, `surface-dark` | Kart, çerçeve, ayraç |
+| Aksan / durum | `coral`, `coral-soft`, `action-blue`, `focus-blue`, `info-blue`, `warning`, `error`, `error-dark`, `error-soft`, `warm-surface` | CTA, uyarı, form odak |
+| Ürün bantları | `deep-green`, `dark-navy`, `pale-green`, `pale-blue`, `stone-deep` | Koyu bant, chip, rozet |
+| On-color | `on-primary`, `on-dark` | Renkli zemin üstü metin |
+| Veri görselleştirme | `series-1` ... `series-7`, `series-neutral`, `chart-grid`, `chart-axis`, `chart-axis-strong` | Kategorik seri, grafik ızgarası |
+| Van Westendorp | `price-too-cheap`, `price-fair`, `price-expensive`, `price-too-expensive`, `psm-pmc`, `psm-opp`, `psm-ipp`, `psm-pme` | PSM eğrileri ve işaretçiler |
+
+**Uygulama kuralları**
+
+1. Yeni bir renk gerekiyorsa önce mevcut token'lardan türetilmeye çalışılır; gerçekten yeni bir anlam taşıyorsa `@theme` bloğuna eklenir.
+2. SVG **presentation attribute**'ları (`stroke="#..."`, `fill="#..."`) `var()` kabul etmez; `stroke-*` / `fill-*` Tailwind sınıfları kullanılır.
+3. Alfa gerektiğinde slash sözdizimi kullanılır: `bg-coral/20`, `border-canvas/10`. Çarpanlı Tailwind opacity (`[...]/50`) arbitrary değerle birleşecekse `token/[0.175]` biçimi tercih edilir.
+4. shadcn uyumluluk katmanı (`background`, `card`, `muted`, `secondary`, `accent`, `border`, `input`, `ring`, `sidebar-*`, `chart-1..5`) kasıtlı olarak `var(--x)` tabanlıdır; `.dark` altında yeniden tanımlandığı için tema-duyarlı davranır ve doğrudan hex ile ezilmez.

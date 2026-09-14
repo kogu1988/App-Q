@@ -11,8 +11,8 @@ export function SimulatingScreen() {
       <p className="text-muted-foreground mt-1">Sentetik personalar oluşturuluyor ve mülakatlar yapılıyor...</p>
     </div>
     <div className="flex flex-col items-center justify-center py-16 gap-4">
-      <Loader2 size={40} className="animate-spin text-[#ff7759]" />
-      <div className="text-[#003c33] font-medium text-lg">Araştırma devam ediyor</div>
+      <Loader2 size={40} className="animate-spin text-coral" />
+      <div className="text-deep-green font-medium text-lg">Araştırma devam ediyor</div>
       <div className="text-sm text-muted-foreground max-w-md text-center">
         Defne brief&apos;inizi analiz ediyor, personalar oluşturuluyor ve her biriyle mülakat yapılıyor. Bu işlem birkaç saniye sürebilir.
       </div>

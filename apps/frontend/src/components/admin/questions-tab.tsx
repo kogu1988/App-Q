@@ -62,10 +62,10 @@ export function QuestionsTab({
           {questions.map(q => (
             <div
               key={q.id}
-              className="p-4 border border-border rounded-xl hover:border-[#d9d9dd] transition-colors space-y-2"
+              className="p-4 border border-border rounded-xl hover:border-hairline transition-colors space-y-2"
             >
               <div className="flex items-start justify-between gap-3">
-                <p className="text-sm text-[#212121] font-medium leading-relaxed flex-1">{q.question}</p>
+                <p className="text-sm text-ink font-medium leading-relaxed flex-1">{q.question}</p>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Button
                     size="sm"
@@ -103,7 +103,7 @@ export function QuestionsTab({
                 {q.research_category && <Badge variant="outline" className="text-[10px]">{q.research_category}</Badge>}
                 {q.research_title && <span>&quot;{q.research_title}&quot;</span>}
                 {!q.is_liked && (
-                  <Badge variant="secondary" className="text-[10px] text-[#93939f]">
+                  <Badge variant="secondary" className="text-[10px] text-muted-text">
                     Pasif (simülasyonda kullanılmıyor)
                   </Badge>
                 )}
@@ -119,7 +119,7 @@ export function QuestionsTab({
                   />
                   <Button
                     size="sm"
-                    className="h-8 gap-1.5 text-xs bg-[#17171c] text-white hover:opacity-85"
+                    className="h-8 gap-1.5 text-xs bg-primary text-white hover:opacity-85"
                     onClick={() => onSavePurpose(q.id)}
                   >
                     <Check size={13} />
@@ -131,7 +131,7 @@ export function QuestionsTab({
                 </div>
               )}
               {q.purpose_context && editingQuestion !== q.id && (
-                <p className="text-xs text-[#ff7759]/80 italic">Amaç: {q.purpose_context}</p>
+                <p className="text-xs text-coral/80 italic">Amaç: {q.purpose_context}</p>
               )}
             </div>
           ))}

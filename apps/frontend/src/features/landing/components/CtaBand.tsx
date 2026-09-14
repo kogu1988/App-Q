@@ -19,7 +19,7 @@ export function CtaBand() {
         </p>
         <Link
           href="/client"
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white text-[#17171c] font-medium text-sm hover:bg-white/90 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu group md:hover:scale-[1.02] md:active:scale-[0.98]"
+          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white text-primary font-medium text-sm hover:bg-white/90 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu group md:hover:scale-[1.02] md:active:scale-[0.98]"
         >
           Ücretsiz Başla <ArrowRight size={14} className="transition-transform duration-300 md:group-hover:translate-x-1" />
         </Link>

@@ -23,7 +23,7 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-3">
-          <Loader2 className="h-10 w-10 animate-spin text-[#ff7759] mx-auto" />
+          <Loader2 className="h-10 w-10 animate-spin text-coral mx-auto" />
           <p className="text-muted-foreground text-sm font-medium animate-pulse">Yönetici paneli yükleniyor...</p>
         </div>
       </div>

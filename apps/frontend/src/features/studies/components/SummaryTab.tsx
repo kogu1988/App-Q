@@ -21,7 +21,7 @@ export function SummaryTab({ brief, metadata, plan, study, planType }: SummaryTa
       <div className="lg:col-span-2 space-y-6">
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[#1863dc] dark:text-[#4c6ee6] text-lg">
+            <CardTitle className="flex items-center gap-2 text-action-blue dark:text-focus-blue text-lg">
               <Compass size={20} />
               Araştırma Brief&apos;i ve Bağlam
             </CardTitle>
@@ -29,54 +29,54 @@ export function SummaryTab({ brief, metadata, plan, study, planType }: SummaryTa
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg">
+              <div className="p-3.5 bg-muted-surface border border-border rounded-lg">
                 <span className="text-xs font-semibold text-muted-foreground block uppercase">Marka / Ürün</span>
-                <span className="font-bold text-[#212121] dark:text-[#e5e7eb]">{brief?.title || metadata?.title || "Belirtilmemiş"}</span>
+                <span className="font-bold text-ink dark:text-border-light">{brief?.title || metadata?.title || "Belirtilmemiş"}</span>
               </div>
               {(brief?.category || metadata?.category) && (
-                <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg">
+                <div className="p-3.5 bg-muted-surface border border-border rounded-lg">
                   <span className="text-xs font-semibold text-muted-foreground block uppercase">Kategori</span>
-                  <span className="font-bold text-[#212121] dark:text-[#e5e7eb]">{brief?.category || metadata?.category}</span>
+                  <span className="font-bold text-ink dark:text-border-light">{brief?.category || metadata?.category}</span>
                 </div>
               )}
-              <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg sm:col-span-2">
+              <div className="p-3.5 bg-muted-surface border border-border rounded-lg sm:col-span-2">
                 <span className="text-xs font-semibold text-muted-foreground block uppercase">Fiyat Modeli</span>
-                <span className="font-bold text-[#212121] dark:text-[#e5e7eb] leading-relaxed">{brief?.expected_price || "Belirtilmedi"}</span>
+                <span className="font-bold text-ink dark:text-border-light leading-relaxed">{brief?.expected_price || "Belirtilmedi"}</span>
               </div>
               {brief?.target_users && brief.target_users.length > 0 && (
-                <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg sm:col-span-2">
+                <div className="p-3.5 bg-muted-surface border border-border rounded-lg sm:col-span-2">
                   <span className="text-xs font-semibold text-muted-foreground block uppercase">Hedef Kitle</span>
-                  <span className="font-medium text-[#616161] dark:text-[#e5e7eb] text-sm leading-relaxed">{brief.target_users.join(" · ")}</span>
+                  <span className="font-medium text-body-muted dark:text-border-light text-sm leading-relaxed">{brief.target_users.join(" · ")}</span>
                 </div>
               )}
               {brief?.competitors && brief.competitors.length > 0 && (
-                <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg sm:col-span-2">
+                <div className="p-3.5 bg-muted-surface border border-border rounded-lg sm:col-span-2">
                   <span className="text-xs font-semibold text-muted-foreground block uppercase">Rakipler</span>
-                  <span className="font-medium text-[#616161] dark:text-[#e5e7eb] text-sm leading-relaxed">{brief.competitors.join(" · ")}</span>
+                  <span className="font-medium text-body-muted dark:text-border-light text-sm leading-relaxed">{brief.competitors.join(" · ")}</span>
                 </div>
               )}
               {brief?.success_metric && (
-                <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg">
+                <div className="p-3.5 bg-muted-surface border border-border rounded-lg">
                   <span className="text-xs font-semibold text-muted-foreground block uppercase">Başarı Kriteri</span>
-                  <span className="font-medium text-[#616161] dark:text-[#e5e7eb] text-sm leading-relaxed">{brief.success_metric}</span>
+                  <span className="font-medium text-body-muted dark:text-border-light text-sm leading-relaxed">{brief.success_metric}</span>
                 </div>
               )}
               {brief?.sales_channel && (
-                <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg">
+                <div className="p-3.5 bg-muted-surface border border-border rounded-lg">
                   <span className="text-xs font-semibold text-muted-foreground block uppercase">Satış Kanalı</span>
-                  <span className="font-medium text-[#616161] dark:text-[#e5e7eb] text-sm leading-relaxed">{brief.sales_channel}</span>
+                  <span className="font-medium text-body-muted dark:text-border-light text-sm leading-relaxed">{brief.sales_channel}</span>
                 </div>
               )}
               {(brief?.panel_size || brief?.geography) && (
-                <div className="p-3.5 bg-[#f5f4f1] border border-border rounded-lg sm:col-span-2">
+                <div className="p-3.5 bg-muted-surface border border-border rounded-lg sm:col-span-2">
                   <span className="text-xs font-semibold text-muted-foreground block uppercase">Panel & Coğrafya</span>
-                  <span className="font-medium text-[#616161] dark:text-[#e5e7eb] text-sm leading-relaxed">{[brief?.panel_size, brief?.geography].filter(Boolean).join(" · ")}</span>
+                  <span className="font-medium text-body-muted dark:text-border-light text-sm leading-relaxed">{[brief?.panel_size, brief?.geography].filter(Boolean).join(" · ")}</span>
                 </div>
               )}
             </div>
             <div className="space-y-1.5">
               <span className="text-xs font-semibold text-muted-foreground uppercase block">Araştırma Problemi (Brief Context)</span>
-              <p className="text-[#616161] text-sm leading-relaxed bg-[#f5f4f1]/50 border border-border/60 p-4 rounded-xl">
+              <p className="text-body-muted text-sm leading-relaxed bg-muted-surface/50 border border-border/60 p-4 rounded-xl">
                 {brief?.idea || "Brief bağlamı girilmemiş."}
               </p>
             </div>
@@ -93,7 +93,7 @@ export function SummaryTab({ brief, metadata, plan, study, planType }: SummaryTa
               {plan.objective && (
                 <div className="space-y-1.5">
                   <span className="text-xs font-semibold text-muted-foreground uppercase block">Ana Araştırma Hedefi</span>
-                  <p className="text-[#212121] text-sm font-medium bg-[#f5f4f1] p-4 rounded-xl border border-border">
+                  <p className="text-ink text-sm font-medium bg-muted-surface p-4 rounded-xl border border-border">
                     {plan.objective}
                   </p>
                 </div>
@@ -104,9 +104,9 @@ export function SummaryTab({ brief, metadata, plan, study, planType }: SummaryTa
                   <span className="text-xs font-semibold text-muted-foreground uppercase block">Test Edilen Varsayımlar (Assumptions)</span>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {plan.assumptions.map((ass: string, i: number) => (
-                      <div key={i} className="flex gap-2 p-3 bg-[#f1f5ff]/30 dark:bg-[#071829]/10 border border-[#e5e7eb]/50 dark:border-[rgba(24,99,220,0.1)] rounded-lg text-sm">
-                        <span className="font-bold text-[#1863dc] dark:text-[#4c6ee6]">#{i + 1}</span>
-                        <span className="text-[#616161] ">{ass}</span>
+                      <div key={i} className="flex gap-2 p-3 bg-pale-blue/30 dark:bg-dark-navy/10 border border-border-light/50 dark:border-action-blue/10 rounded-lg text-sm">
+                        <span className="font-bold text-action-blue dark:text-focus-blue">#{i + 1}</span>
+                        <span className="text-body-muted ">{ass}</span>
                       </div>
                     ))}
                   </div>
@@ -127,13 +127,13 @@ export function SummaryTab({ brief, metadata, plan, study, planType }: SummaryTa
             <CardContent className="space-y-4">
               <div className="flex items-baseline gap-2">
                 <span className="text-5xl font-black text-emerald-600 dark:text-emerald-400">{metadata.quality_score}</span>
-                <span className="text-[#93939f] font-semibold text-xl">/100</span>
+                <span className="text-muted-text font-semibold text-xl">/100</span>
                 <Badge className="ml-2 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 hover:bg-emerald-50 border border-emerald-200">
                   Sınıf: {metadata.quality_grade || "A"}
                 </Badge>
               </div>
               {metadata.quality_summary && (
-                <p className="text-[#616161] text-xs leading-relaxed border-t border-border pt-3">
+                <p className="text-body-muted text-xs leading-relaxed border-t border-border pt-3">
                   {metadata.quality_summary}
                 </p>
               )}
@@ -208,12 +208,13 @@ export function SummaryTab({ brief, metadata, plan, study, planType }: SummaryTa
             const flags = rq.flags ?? [];
             const adversarialSummary = rq.interpretation ?? rq.summary ?? "";
 
-            const rfiColor = rfi === null ? "text-[#93939f]" : rfi >= 0.80 ? "text-emerald-600 dark:text-emerald-400" : rfi >= 0.65 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
-            const borderColor = rfi === null ? "border-l-[#d9d9dd]" : rfi >= 0.80 ? "border-l-emerald-500" : rfi >= 0.65 ? "border-l-amber-500" : "border-l-red-500";
+            const rfiColor = rfi === null ? "text-muted-text" : rfi >= 0.80 ? "text-emerald-600 dark:text-emerald-400" : rfi >= 0.65 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400";
+            const borderColor = rfi === null ? "border-l-hairline" : rfi >= 0.80 ? "border-l-emerald-500" : rfi >= 0.65 ? "border-l-amber-500" : "border-l-red-500";
             const COMPONENT_COLORS: Record<string, string> = {
-              PGR: "#6366f1", CNS: "#0ea5e9", AC: "#22c55e",
-              PR: "#f97316", PCal: "#ec4899", CRA: "#f59e0b",
+              PGR: "var(--color-series-1)", CNS: "var(--color-series-3)", AC: "var(--color-series-4)",
+              PR: "var(--color-series-5)", PCal: "var(--color-series-6)", CRA: "var(--color-series-7)",
             };
+            const componentColor = (key: string) => COMPONENT_COLORS[key] ?? "var(--color-series-neutral)";
             const COMPONENT_LABELS: Record<string, string> = {
               PGR: "Kapsam (PGR)", CNS: "Yenilik (CNS)", AC: "Tutarlılık (AC)",
               PR: "Temsil (PR)", PCal: "Kalibrasyon", CRA: "Uyum (CRA)",
@@ -226,7 +227,7 @@ export function SummaryTab({ brief, metadata, plan, study, planType }: SummaryTa
                     Araştırma Bütünlüğü (RFI)
                     <Badge
                       className={validity === null
-                        ? "bg-[#f5f4f1] text-[#616161] border border-[#d9d9dd]"
+                        ? "bg-muted-surface text-body-muted border border-hairline"
                         : validity
                         ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-200"
                         : "bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400 border border-red-200 dark:border-red-900/40"}
@@ -240,7 +241,7 @@ export function SummaryTab({ brief, metadata, plan, study, planType }: SummaryTa
                   {rfi !== null && (
                     <div className="flex items-baseline gap-2">
                       <span className={`text-4xl font-black ${rfiColor}`}>{(rfi * 100).toFixed(1)}</span>
-                      <span className="text-[#93939f] font-semibold">/100</span>
+                      <span className="text-muted-text font-semibold">/100</span>
                       <span className="text-xs text-muted-foreground">eşik ≥65</span>
                     </div>
                   )}
@@ -251,14 +252,14 @@ export function SummaryTab({ brief, metadata, plan, study, planType }: SummaryTa
                       <p className="text-[10px] font-bold text-muted-foreground uppercase">Bileşen Profili</p>
                       {Object.entries(components).map(([key, val]) => (
                         <div key={key} className="flex items-center gap-2">
-                          <span className="text-[10px] font-semibold text-[#616161] w-28 shrink-0">{COMPONENT_LABELS[key] ?? key}</span>
-                          <div className="flex-1 bg-[#eeece7] rounded-full h-2 overflow-hidden">
+                          <span className="text-[10px] font-semibold text-body-muted w-28 shrink-0">{COMPONENT_LABELS[key] ?? key}</span>
+                          <div className="flex-1 bg-soft-stone rounded-full h-2 overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-700"
-                              style={{ width: `${(val as number) * 100}%`, backgroundColor: COMPONENT_COLORS[key] ?? "#94a3b8" }}
+                              style={{ width: `${(val as number) * 100}%`, backgroundColor: componentColor(key) }}
                             />
                           </div>
-                          <span className="text-[10px] font-bold tabular-nums w-8 text-right" style={{ color: COMPONENT_COLORS[key] ?? "#94a3b8" }}>
+                          <span className="text-[10px] font-bold tabular-nums w-8 text-right" style={{ color: componentColor(key) }}>
                             {((val as number) * 100).toFixed(0)}
                           </span>
                         </div>
@@ -298,7 +299,7 @@ export function SummaryTab({ brief, metadata, plan, study, planType }: SummaryTa
                   )}
 
                   {adversarialSummary && (
-                    <p className="text-[10px] text-[#616161] border-t border-border pt-2 leading-relaxed">
+                    <p className="text-[10px] text-body-muted border-t border-border pt-2 leading-relaxed">
                       {adversarialSummary}
                     </p>
                   )}

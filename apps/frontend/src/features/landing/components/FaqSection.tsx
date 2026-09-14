@@ -8,8 +8,8 @@ export function FaqSection() {
   <section id="faq" className="bg-white surface-stone py-20 px-6 scroll-mt-16">
     <div className="max-w-3xl mx-auto">
       <Reveal>
-        <p className="mono-label text-[#93939f] mb-3">Merak edilenler</p>
-        <h2 className="display-section text-[#17171c] mb-10">Sıkça Sorulan Sorular</h2>
+        <p className="mono-label text-muted-text mb-3">Merak edilenler</p>
+        <h2 className="display-section text-primary mb-10">Sıkça Sorulan Sorular</h2>
       </Reveal>
 
       <div className="space-y-0">
@@ -48,12 +48,12 @@ export function FaqSection() {
           },
         ].map(({ q, a }, i) => (
           <Reveal key={i} delay={i * 40}>
-            <details className="group border-b border-[#d9d9dd] py-1">
-              <summary className="flex items-start justify-between py-4 cursor-pointer font-medium text-base text-[#17171c] hover:text-[#212121] list-none gap-4">
+            <details className="group border-b border-hairline py-1">
+              <summary className="flex items-start justify-between py-4 cursor-pointer font-medium text-base text-primary hover:text-ink list-none gap-4">
                 <span>{q}</span>
-                <span className="text-[#93939f] group-open:rotate-45 transition-transform duration-200 text-xl font-light shrink-0 mt-0.5">+</span>
+                <span className="text-muted-text group-open:rotate-45 transition-transform duration-200 text-xl font-light shrink-0 mt-0.5">+</span>
               </summary>
-              <div className="pb-5 text-sm text-[#616161] leading-relaxed max-w-2xl">
+              <div className="pb-5 text-sm text-body-muted leading-relaxed max-w-2xl">
                 {a}
               </div>
             </details>

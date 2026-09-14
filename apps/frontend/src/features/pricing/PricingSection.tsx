@@ -19,9 +19,9 @@ export function PricingSection() {
     <div className="max-w-6xl mx-auto">
     <Reveal>
       <div className="mb-12">
-        <p className="mono-label text-[#93939f] mb-3">Planlar</p>
-        <h2 className="display-section text-[#17171c] mb-2">Fiyatlandırma</h2>
-        <p className="text-[#616161] text-base">İstediğin zaman yükselt veya düşür. Gizli ücret yok.</p>
+        <p className="mono-label text-muted-text mb-3">Planlar</p>
+        <h2 className="display-section text-primary mb-2">Fiyatlandırma</h2>
+        <p className="text-body-muted text-base">İstediğin zaman yükselt veya düşür. Gizli ücret yok.</p>
       </div>
     </Reveal>
 
@@ -49,8 +49,8 @@ export function PricingSection() {
           <Reveal key={plan.name} delay={idx * 60}>
             <div
               className={`relative rounded-[8px] border p-6 flex flex-col gap-4 h-full transition-colors ${plan.highlight
-                  ? "border-[#17171c] bg-[#17171c] text-white shadow-xl md:hover:border-[#ff7759]"
-                  : "border-[#d9d9dd] bg-white md:hover:border-[#ff7759]/50"
+                  ? "border-primary bg-primary text-white shadow-xl md:hover:border-coral"
+                  : "border-hairline bg-white md:hover:border-coral/50"
                 }`}
             >
               {plan.highlight && (
@@ -75,20 +75,20 @@ export function PricingSection() {
 
               <div>
                 <h3 className="text-base font-semibold mb-0.5">{plan.name}</h3>
-                <p className={`text-xs ${plan.highlight ? "text-white/55" : "text-[#93939f]"}`}>{plan.description}</p>
+                <p className={`text-xs ${plan.highlight ? "text-white/55" : "text-muted-text"}`}>{plan.description}</p>
               </div>
 
               {/* Billing toggle */}
               {plan.hasBillingToggle && (
                 <div
-                  className={`flex items-center gap-0.5 p-0.5 self-start rounded-full border ${plan.highlight ? "border-white/20 bg-white/10" : "border-[#d9d9dd] bg-[#f5f4f1]"
+                  className={`flex items-center gap-0.5 p-0.5 self-start rounded-full border ${plan.highlight ? "border-white/20 bg-white/10" : "border-hairline bg-muted-surface"
                     }`}
                 >
                   <button
                     onClick={() => toggleBilling(plan.name)}
                     className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${!isAnnual
-                        ? plan.highlight ? "bg-white text-[#17171c] shadow-sm" : "bg-white text-[#17171c] shadow-sm"
-                        : plan.highlight ? "text-white/50" : "text-[#93939f]"
+                        ? plan.highlight ? "bg-white text-primary shadow-sm" : "bg-white text-primary shadow-sm"
+                        : plan.highlight ? "text-white/50" : "text-muted-text"
                       }`}
                   >
                     Aylık
@@ -96,12 +96,12 @@ export function PricingSection() {
                   <button
                     onClick={() => toggleBilling(plan.name)}
                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${isAnnual
-                        ? plan.highlight ? "bg-white text-[#17171c] shadow-sm" : "bg-white text-[#17171c] shadow-sm"
-                        : plan.highlight ? "text-white/50" : "text-[#93939f]"
+                        ? plan.highlight ? "bg-white text-primary shadow-sm" : "bg-white text-primary shadow-sm"
+                        : plan.highlight ? "text-white/50" : "text-muted-text"
                       }`}
                   >
                     Yıllık
-                    <span className="text-[9px] font-bold bg-[#ff7759] text-white px-1 py-0.5 rounded-full leading-none">
+                    <span className="text-[9px] font-bold bg-coral text-white px-1 py-0.5 rounded-full leading-none">
                       -20%
                     </span>
                   </button>
@@ -111,11 +111,11 @@ export function PricingSection() {
               <div>
                 <div className="flex items-end gap-1">
                   <span className="text-3xl font-bold tracking-tight tracking-tighter">{priceDisplay}</span>
-                  <span className={`text-sm mb-0.5 ${plan.highlight ? "text-white/55" : "text-[#93939f]"}`}>{periodDisplay}</span>
+                  <span className={`text-sm mb-0.5 ${plan.highlight ? "text-white/55" : "text-muted-text"}`}>{periodDisplay}</span>
                 </div>
                 <p
                   className="text-xs mt-1 transition-opacity duration-300 min-h-[16px]"
-                  style={{ color: plan.highlight ? "#edfce9" : "#003c33" }}
+                  style={{ color: plan.highlight ? "var(--color-pale-green)" : "var(--color-deep-green)" }}
                 >
                   {plan.isOneTime
                     ? "Ömür boyu kullanım, taahhüt yok"
@@ -130,19 +130,19 @@ export function PricingSection() {
 
               <ul className="space-y-1.5 flex-1">
                 {plan.limits.map((l) => (
-                  <li key={l} className={`flex items-start gap-2 text-sm ${plan.highlight ? "text-white/80" : "text-[#616161]"}`}>
-                    <Check size={13} color={plan.highlight ? "#edfce9" : "#003c33"} className="shrink-0 mt-1" />
+                  <li key={l} className={`flex items-start gap-2 text-sm ${plan.highlight ? "text-white/80" : "text-body-muted"}`}>
+                    <Check size={13} className={`shrink-0 mt-1 ${plan.highlight ? "text-pale-green" : "text-deep-green"}`} />
                     <span className="leading-tight">{l}</span>
                   </li>
                 ))}
                 {plan.isOneTime && (
-                  <li className={`flex items-center gap-2 text-xs pt-1 border-t mt-1 ${plan.highlight ? "border-white/10 text-white/30" : "border-[#d9d9dd] text-[#93939f]/60"}`}>
-                    <Check size={11} className="shrink-0" color={plan.highlight ? "#edfce9" : "#003c33"} />
+                  <li className={`flex items-center gap-2 text-xs pt-1 border-t mt-1 ${plan.highlight ? "border-white/10 text-white/30" : "border-hairline text-muted-text/60"}`}>
+                    <Check size={11} className={`shrink-0 ${plan.highlight ? "text-pale-green" : "text-deep-green"}`} />
                     Kullanım süresi sınırı yoktur
                   </li>
                 )}
                 {!plan.isOneTime && !isVariable && (
-                  <li className={`flex items-center gap-2 text-xs pt-1 border-t mt-1 ${plan.highlight ? "border-white/10 text-white/30" : "border-[#d9d9dd] text-[#93939f]/60"}`}>
+                  <li className={`flex items-center gap-2 text-xs pt-1 border-t mt-1 ${plan.highlight ? "border-white/10 text-white/30" : "border-hairline text-muted-text/60"}`}>
                     <X size={11} className="shrink-0" />
                     Kullanılmayan haklar devretmez
                   </li>
@@ -152,8 +152,8 @@ export function PricingSection() {
               <Link
                 href={plan.ctaHref}
                 className={`w-full flex items-center justify-center py-2.5 rounded-full text-sm font-semibold transition-colors ${plan.highlight
-                    ? "bg-white text-[#17171c] hover:bg-white/90"
-                    : "bg-[#17171c] text-white hover:opacity-85 btn-pill-primary"
+                    ? "bg-white text-primary hover:bg-white/90"
+                    : "bg-primary text-white hover:opacity-85 btn-pill-primary"
                   }`}
               >
                 {plan.cta}
@@ -168,14 +168,14 @@ export function PricingSection() {
     {PLAN_META.filter(p => p.name === "Enterprise").map((plan, idx) => {
       return (
         <Reveal key={plan.name} delay={idx * 60}>
-          <div className="w-full rounded-[8px] border border-[#d9d9dd] bg-[#f5f4f1] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-12">
+          <div className="w-full rounded-[8px] border border-hairline bg-muted-surface p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-12">
             <div className="flex-1">
               <h3 className="text-base font-semibold mb-0.5">{plan.name}</h3>
-              <p className="text-xs text-[#93939f]">{plan.description}</p>
+              <p className="text-xs text-muted-text">{plan.description}</p>
               <ul className="flex flex-wrap gap-x-5 gap-y-1 mt-3">
                 {plan.limits.map((limit) => (
-                  <li key={limit} className="flex items-center gap-1.5 text-xs text-[#616161]">
-                    <Check size={12} className="text-[#003c33] shrink-0" />
+                  <li key={limit} className="flex items-center gap-1.5 text-xs text-body-muted">
+                    <Check size={12} className="text-deep-green shrink-0" />
                     {limit}
                   </li>
                 ))}
@@ -183,7 +183,7 @@ export function PricingSection() {
             </div>
             <a
               href={plan.ctaHref}
-              className="shrink-0 px-6 py-2.5 rounded-lg text-sm font-semibold bg-[#17171c] text-white hover:bg-[#17171c]/85 transition-colors"
+              className="shrink-0 px-6 py-2.5 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-primary/85 transition-colors"
             >
               {plan.cta}
             </a>
@@ -194,15 +194,15 @@ export function PricingSection() {
 
     {/* Comparison table */}
     <Reveal>
-      <div className="overflow-x-auto rounded-[8px] border border-[#d9d9dd]">
+      <div className="overflow-x-auto rounded-[8px] border border-hairline">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#d9d9dd] bg-[#f5f4f1]">
-              <th className="text-left px-5 py-3.5 font-medium text-[#93939f]">Özellik</th>
+            <tr className="border-b border-hairline bg-muted-surface">
+              <th className="text-left px-5 py-3.5 font-medium text-muted-text">Özellik</th>
               {PLAN_META.map((p) => (
                 <th
                   key={p.name}
-                  className={`text-center px-4 py-3.5 font-semibold ${p.highlight ? "text-[#17171c]" : "text-[#616161]"}`}
+                  className={`text-center px-4 py-3.5 font-semibold ${p.highlight ? "text-primary" : "text-body-muted"}`}
                 >
                   {p.name}
                 </th>
@@ -213,14 +213,14 @@ export function PricingSection() {
             {FEATURES.map((f, i) => (
               <tr
                 key={f.label}
-                className={`border-b border-[#f2f2f2] ${i % 2 === 0 ? "bg-white" : "bg-[#fafafa]"}`}
+                className={`border-b border-card-border ${i % 2 === 0 ? "bg-white" : "bg-gray-surface"}`}
               >
-                <td className="px-5 py-3 font-medium text-[#212121]">{f.label}</td>
+                <td className="px-5 py-3 font-medium text-ink">{f.label}</td>
                 {f.plans.map((has, j) => (
                   <td key={j} className="px-4 py-3 text-center">
                     {has
-                      ? <Check size={14} color="#003c33" className="mx-auto" />
-                      : <X size={14} className="text-[#d9d9dd] mx-auto" />}
+                      ? <Check size={14} className="mx-auto text-deep-green" />
+                      : <X size={14} className="text-hairline mx-auto" />}
                   </td>
                 ))}
               </tr>
@@ -228,7 +228,7 @@ export function PricingSection() {
           </tbody>
         </table>
       </div>
-      <p className="text-center text-xs text-[#93939f] mt-4">
+      <p className="text-center text-xs text-muted-text mt-4">
         Tüm fiyatlar KDV hariçtir. Yıllık faturalamalarda %20 indirim uygulanır.
       </p>
     </Reveal>

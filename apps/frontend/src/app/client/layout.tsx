@@ -36,7 +36,7 @@ function SidebarStudiesWidget() {
 
   return (
     <div className="pt-4 mt-2 border-t border-border/50">
-      <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#93939f] mb-2 px-3">
+      <h4 className="text-[11px] font-mono uppercase tracking-wider text-muted-text mb-2 px-3">
         Son Araştırmalar
       </h4>
       <div className="flex flex-col gap-0.5">
@@ -86,9 +86,9 @@ function SidebarPlanWidget() {
   })();
 
   const PLAN_COLORS: Record<string, { bg: string; text: string }> = {
-    Free: { bg: "bg-[#eeece7]", text: "text-[#17171c]" },
-    Starter: { bg: "bg-[#f1f5ff]", text: "text-[#1863dc]" },
-    Pro: { bg: "bg-[#edfce9]", text: "text-[#003c33]" },
+    Free: { bg: "bg-soft-stone", text: "text-primary" },
+    Starter: { bg: "bg-pale-blue", text: "text-action-blue" },
+    Pro: { bg: "bg-pale-green", text: "text-deep-green" },
     Enterprise: { bg: "bg-amber-100", text: "text-amber-800" },
   };
   const planColor = PLAN_COLORS[plan.plan_type] ?? PLAN_COLORS.Free;
@@ -101,7 +101,7 @@ function SidebarPlanWidget() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <Zap size={12} className={isNearLimit ? "text-amber-500" : "text-muted-foreground"} />
-          <span className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">Plan</span>
+          <span className="text-[11px] font-mono uppercase tracking-wider text-muted-text">Plan</span>
         </div>
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${planColor.bg} ${planColor.text}`}>
           {plan.plan_type}
@@ -115,14 +115,14 @@ function SidebarPlanWidget() {
             <span className="text-[11px] text-muted-foreground">
               Bu dönem kullanım
             </span>
-            <span className={`text-[11px] font-bold tabular-nums ${isNearLimit ? "text-amber-600" : "text-[#212121]"
+            <span className={`text-[11px] font-bold tabular-nums ${isNearLimit ? "text-amber-600" : "text-ink"
               }`}>
               {used} / {max}
             </span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${isNearLimit ? "bg-amber-500" : "bg-[#003c33]"
+              className={`h-full rounded-full transition-all duration-500 ${isNearLimit ? "bg-amber-500" : "bg-deep-green"
                 }`}
               style={{ width: `${pct}%` }}
             />
@@ -134,7 +134,7 @@ function SidebarPlanWidget() {
           </p>
         </div>
       ) : (
-        <p className="text-[11px] text-[#003c33] dark:text-[#edfce9] font-semibold">Sınırsız araştırma</p>
+        <p className="text-[11px] text-deep-green dark:text-pale-green font-semibold">Sınırsız araştırma</p>
       )}
 
       {/* Period reset */}
@@ -148,7 +148,7 @@ function SidebarPlanWidget() {
       {showUpgrade && (
         <Link
           href="/client/upgrade"
-          className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg bg-[#17171c] text-white text-[11px] font-semibold hover:opacity-85 transition-opacity"
+          className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg bg-primary text-white text-[11px] font-semibold hover:opacity-85 transition-opacity"
         >
           <span>Planı Yükselt</span>
           <ArrowUpRight size={12} />
@@ -202,7 +202,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-sidebar">
         <Link href="/" className="flex items-center gap-2">
-          <Logo size={32} strokeColor="#17171c" />
+          <Logo size={32} className="text-primary" />
           <span className="font-semibold tracking-tight text-lg">{brandName}</span>
         </Link>
         <button
@@ -222,7 +222,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         {/* Logo */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
           <Link href="/" className="flex items-center gap-2">
-            <Logo size={32} strokeColor="#17171c" />
+            <Logo size={32} className="text-primary" />
             <span className="font-semibold tracking-tight text-lg">{brandName}</span>
           </Link>
           <button

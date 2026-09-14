@@ -112,7 +112,7 @@ export default function StudyDetailPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Loader2 className="h-10 w-10 animate-spin text-[#1863dc]" />
+        <Loader2 className="h-10 w-10 animate-spin text-action-blue" />
         <p className="text-muted-foreground text-sm font-medium">Veriler yükleniyor, lütfen bekleyin...</p>
       </div>
     );
@@ -165,11 +165,11 @@ export default function StudyDetailPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="bg-[#eeece7] text-[#616161] text-xs font-semibold">
+              <Badge variant="outline" className="bg-soft-stone text-body-muted text-xs font-semibold">
                 {metadata?.category || "Genel"}
               </Badge>
               {isCompleted ? (
-                <Badge className="bg-[#003c33] hover:bg-[#003c33]/85 text-white flex items-center gap-1 text-xs">
+                <Badge className="bg-deep-green hover:bg-deep-green/85 text-white flex items-center gap-1 text-xs">
                   <CheckCircle2 size={12} />
                   Tamamlandı
                 </Badge>
@@ -177,7 +177,7 @@ export default function StudyDetailPage() {
                 <Badge variant="secondary" className="text-xs">Taslak</Badge>
               )}
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-[#17171c] dark:text-white">
+            <h1 className="text-3xl font-extrabold tracking-tight text-primary dark:text-white">
               {metadata?.title || "İsimsiz Simülasyon"}
             </h1>
             <p className="text-muted-foreground text-sm flex items-center gap-1.5">
@@ -205,12 +205,12 @@ export default function StudyDetailPage() {
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/40 shrink-0">
                       <Trash2 size={18} className="text-red-600 dark:text-red-400" />
                     </div>
-                    <DialogTitle className="text-lg font-bold text-[#17171c] dark:text-white">
+                    <DialogTitle className="text-lg font-bold text-primary dark:text-white">
                       Araştırmayı Sil
                     </DialogTitle>
                   </div>
-                  <DialogDescription className="text-sm text-[#616161] dark:text-[#93939f] leading-relaxed pl-[52px]">
-                    <span className="font-semibold text-[#212121] dark:text-[#e5e7eb]">&ldquo;{metadata?.title || "Bu araştırma"}&rdquo;</span>{" "}
+                  <DialogDescription className="text-sm text-body-muted dark:text-muted-text leading-relaxed pl-[52px]">
+                    <span className="font-semibold text-ink dark:text-border-light">&ldquo;{metadata?.title || "Bu araştırma"}&rdquo;</span>{" "}
                     listeden kaldırılacak ve bir daha göremeyeceksiniz.
                   </DialogDescription>
                 </DialogHeader>

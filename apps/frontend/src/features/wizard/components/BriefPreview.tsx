@@ -15,15 +15,15 @@ export function renderBriefValue(value: unknown) {
     return (
       <ul className="space-y-1 mt-0.5">
         {numbered.map((item, i) => (
-          <li key={i} className="flex gap-1.5 text-xs text-[#212121] font-medium leading-relaxed">
-            <span className="text-[#ff7759] shrink-0 mt-px">·</span>
+          <li key={i} className="flex gap-1.5 text-xs text-ink font-medium leading-relaxed">
+            <span className="text-coral shrink-0 mt-px">·</span>
             <span className="break-words">{item}</span>
           </li>
         ))}
       </ul>
     );
   }
-  return <div className="text-xs text-[#212121] font-medium leading-relaxed break-words whitespace-pre-wrap">{strValue}</div>;
+  return <div className="text-xs text-ink font-medium leading-relaxed break-words whitespace-pre-wrap">{strValue}</div>;
 }
 
 export function BriefPreview({ brief, mode, onToggleMobile }: { brief: Brief; mode: "research" | "ab_test"; onToggleMobile?: () => void }) {
@@ -50,38 +50,38 @@ export function BriefPreview({ brief, mode, onToggleMobile }: { brief: Brief; mo
   const pct = Math.round((filled / total) * 100);
 
   return (
-    <Card className="sticky top-6 shadow-sm border-[#d9d9dd] ">
+    <Card className="sticky top-6 shadow-sm border-hairline ">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-bold text-[#003c33] flex items-center gap-2">
+          <CardTitle className="text-sm font-bold text-deep-green flex items-center gap-2">
             <FileText size={14} />
             Canlı Brief Özeti
           </CardTitle>
           {onToggleMobile && (
-            <button onClick={onToggleMobile} className="lg:hidden text-xs text-[#003c33] font-bold flex items-center gap-1 bg-[#edfce9] px-2 py-1 rounded-md">
+            <button onClick={onToggleMobile} className="lg:hidden text-xs text-deep-green font-bold flex items-center gap-1 bg-pale-green px-2 py-1 rounded-md">
               Sohbete Dön
             </button>
           )}
         </div>
         <div className="flex items-center gap-2 mt-1">
-          <div className="flex-1 h-1.5 bg-[#eeece7]  rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-soft-stone  rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#003c33] rounded-full transition-all duration-500"
+              className="h-full bg-deep-green rounded-full transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
-          <span className="text-xs font-bold text-[#ff7759]/80 tabular-nums">{pct}%</span>
+          <span className="text-xs font-bold text-coral/80 tabular-nums">{pct}%</span>
         </div>
       </CardHeader>
       <CardContent className="space-y-2.5">
         {fields.map(({ icon: Icon, label, value }) => (
-          <div key={label} className={`flex gap-2 p-2 rounded-lg transition-colors ${value ? "bg-[#edfce9]/50 " : "bg-transparent grayscale"}`}>
-            <Icon size={13} className={value ? "text-[#ff7759] shrink-0 mt-0.5" : "text-[#93939f] shrink-0 mt-0.5"} />
+          <div key={label} className={`flex gap-2 p-2 rounded-lg transition-colors ${value ? "bg-pale-green/50 " : "bg-transparent grayscale"}`}>
+            <Icon size={13} className={value ? "text-coral shrink-0 mt-0.5" : "text-muted-text shrink-0 mt-0.5"} />
             <div className="min-w-0 flex-1">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{label}</div>
               {value
                 ? renderBriefValue(value)
-                : <div className="text-xs text-[#93939f] italic">Henüz doldurulmadı</div>
+                : <div className="text-xs text-muted-text italic">Henüz doldurulmadı</div>
               }
             </div>
           </div>

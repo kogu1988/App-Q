@@ -28,7 +28,7 @@ export function InterviewsTab({
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div>
-        <h2 className="text-xl font-bold text-[#17171c] dark:text-white">Mülakat Transkriptleri</h2>
+        <h2 className="text-xl font-bold text-primary dark:text-white">Mülakat Transkriptleri</h2>
         <p className="text-muted-foreground text-sm">Yapay zeka moderatörü ve sentetik personalar arasında geçen tüm diyaloglar.</p>
       </div>
 
@@ -39,14 +39,14 @@ export function InterviewsTab({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {interviews.map((item: PersonaInterview, idx: number) => (
-            <Card key={idx} className="shadow-sm border hover:border-[#e5e7eb] dark:hover:border-[rgba(24,99,220,0.35)]/50 hover:shadow-md transition-all duration-300">
+            <Card key={idx} className="shadow-sm border hover:border-border-light dark:hover:border-action-blue/[0.175] hover:shadow-md transition-all duration-300">
               <CardHeader className="p-5 pb-3">
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-base">{item.persona?.name}</CardTitle>
                     <CardDescription className="text-xs">{item.persona?.role_title || "Sentetik Tüketici"} • {item.persona?.age} Yaş</CardDescription>
                   </div>
-                  <Badge variant="outline" className="text-[10px] bg-[#f5f4f1] dark:bg-[#212121]">{item.turns?.length} Soru</Badge>
+                  <Badge variant="outline" className="text-[10px] bg-muted-surface dark:bg-ink">{item.turns?.length} Soru</Badge>
                 </div>
               </CardHeader>
               <CardContent className="p-5 pt-0 space-y-4">

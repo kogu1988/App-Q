@@ -78,18 +78,18 @@ export function SchemasTab({
 
   {schemas?.brief_schema && (
     <>
-      <Card className="border-[#d9d9dd] bg-[#edfce9]/20">
+      <Card className="border-hairline bg-pale-green/20">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-bold text-[#003c33]">Veri Akış Şeması</CardTitle>
+          <CardTitle className="text-sm font-bold text-deep-green">Veri Akış Şeması</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-2 text-sm font-mono">
             {[
-              { label: "Brief (Defne)", color: "bg-[#edfce9] text-[#003c33]" },
+              { label: "Brief (Defne)", color: "bg-pale-green text-deep-green" },
               { label: "→", color: "text-muted-foreground" },
-              { label: "ResearchPlan", color: "bg-[#f1f5ff] text-[#1863dc]" },
+              { label: "ResearchPlan", color: "bg-pale-blue text-action-blue" },
               { label: "→", color: "text-muted-foreground" },
-              { label: "Persona[]", color: "bg-[#edfce9] text-[#003c33]" },
+              { label: "Persona[]", color: "bg-pale-green text-deep-green" },
               { label: "→", color: "text-muted-foreground" },
               { label: "Interview[]", color: "bg-amber-100 text-amber-800" },
               { label: "→", color: "text-muted-foreground" },
@@ -109,7 +109,7 @@ export function SchemasTab({
             title: "Brief Şeması",
             desc: schemas.brief_schema?.description ?? "",
             badge: "Defne → intake.py",
-            badgeColor: "border-[#d9d9dd] text-[#003c33]",
+            badgeColor: "border-hairline text-deep-green",
             rows: (schemas.brief_schema?.fields ?? []).map(f => [
               f.key,
               f.type,
@@ -122,7 +122,7 @@ export function SchemasTab({
             title: "Persona Şeması",
             desc: schemas.persona_schema?.description ?? "",
             badge: "workflow.py → LLM",
-            badgeColor: "border-[#003c33]/30 text-[#003c33] dark:border-emerald-800",
+            badgeColor: "border-deep-green/30 text-deep-green dark:border-emerald-800",
             rows: (schemas.persona_schema?.fields ?? []).map(f => [f.key, f.type, "", f.desc]),
             headers: ["Alan", "Tip", "", "Açıklama"],
           },
@@ -161,7 +161,7 @@ export function SchemasTab({
                       {card.headers.filter(Boolean).map(h => (
                         <th
                           key={h}
-                          className="text-left py-1.5 px-3 font-mono text-[#93939f] uppercase tracking-wider text-[10px]"
+                          className="text-left py-1.5 px-3 font-mono text-muted-text uppercase tracking-wider text-[10px]"
                         >
                           {h}
                         </th>
@@ -180,7 +180,7 @@ export function SchemasTab({
                             <td
                               key={ci}
                               className={`py-1.5 px-3 ${
-                                ci === 0 ? "font-mono font-bold text-[#003c33]" : "text-muted-foreground"
+                                ci === 0 ? "font-mono font-bold text-deep-green" : "text-muted-foreground"
                               } ${
                                 ci === 2 && cell === "Zorunlu"
                                   ? "text-red-600 dark:text-red-400 font-semibold"
@@ -208,7 +208,7 @@ export function SchemasTab({
         <CardContent>
           <div className="flex flex-wrap gap-1.5">
             {(schemas.interview_schema?.prompt_variables ?? []).map(v => (
-              <Badge key={v} variant="outline" className="text-[10px] font-mono bg-[#f5f4f1]">
+              <Badge key={v} variant="outline" className="text-[10px] font-mono bg-muted-surface">
                 {v}
               </Badge>
             ))}
@@ -244,7 +244,7 @@ export function SchemasTab({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 shrink-0 text-[#212121]"
+                    className="h-8 shrink-0 text-ink"
                     disabled={savingDefaults}
                     onClick={async () => {
                       const el = document.getElementById(`brief-default-${key}`) as HTMLInputElement;
@@ -285,7 +285,7 @@ export function SchemasTab({
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5 h-8 text-[#212121]"
+              className="gap-1.5 h-8 text-ink"
               onClick={() => {
                 onEditingDefaultQChange(!editingDefaultQ);
                 if (!editingDefaultQ) onDraftQuestionsChange([...schemas.default_interview_questions]);
@@ -328,14 +328,14 @@ export function SchemasTab({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="gap-1.5 text-[#212121]"
+                  className="gap-1.5 text-ink"
                   onClick={() => onDraftQuestionsChange(prev => [...prev, ""])}
                 >
                   <Plus size={12} /> Soru Ekle
                 </Button>
                 <Button
                   size="sm"
-                  className="gap-1.5 bg-[#17171c] text-white hover:opacity-85"
+                  className="gap-1.5 bg-primary text-white hover:opacity-85"
                   disabled={savingDefaults}
                   onClick={async () => {
                     onSavingDefaultsChange(true);
@@ -367,7 +367,7 @@ export function SchemasTab({
               {schemas.default_interview_questions.map((q, qi) => (
                 <li key={qi} className="flex gap-2 text-xs">
                   <span className="font-mono text-muted-foreground shrink-0">{qi + 1}.</span>
-                  <span className="text-[#212121]">{q}</span>
+                  <span className="text-ink">{q}</span>
                 </li>
               ))}
             </ol>
@@ -403,20 +403,20 @@ export function SchemasTab({
               {expandedPool === name && (
                 <div className="px-4 pb-4 space-y-3 border-t border-border bg-muted/20">
                   <div className="mt-3">
-                    <div className="text-[10px] font-mono text-[#93939f] uppercase tracking-wider mb-1">
+                    <div className="text-[10px] font-mono text-muted-text uppercase tracking-wider mb-1">
                       Odak Alanları
                     </div>
-                    <p className="text-xs text-[#616161] leading-relaxed">{pool.focus_areas}</p>
+                    <p className="text-xs text-body-muted leading-relaxed">{pool.focus_areas}</p>
                   </div>
                   <div>
-                    <div className="text-[10px] font-mono text-[#93939f] uppercase tracking-wider mb-1.5">
+                    <div className="text-[10px] font-mono text-muted-text uppercase tracking-wider mb-1.5">
                       Soru Havuzu ({pool.questions.length})
                     </div>
                     <ol className="space-y-1">
                       {pool.questions.map((q, qi) => (
                         <li key={qi} className="flex gap-2 text-xs">
                           <span className="font-mono text-muted-foreground shrink-0">{qi + 1}.</span>
-                          <span className="text-[#212121]">{q}</span>
+                          <span className="text-ink">{q}</span>
                         </li>
                       ))}
                     </ol>

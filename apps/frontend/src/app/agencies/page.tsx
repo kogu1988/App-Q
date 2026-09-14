@@ -10,19 +10,19 @@ export const metadata: Metadata = {
 
 export default function AgenciesPage() {
   return (
-    <div className="min-h-screen bg-[#ffffff] text-[#17171c] selection:bg-[#ff7759]/20 font-sans antialiased">
+    <div className="min-h-screen bg-canvas text-primary selection:bg-coral/20 font-sans antialiased">
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-[#ffffff]/90 backdrop-blur-md border-b border-[#d9d9dd] px-6 h-16 flex items-center justify-between">
+      <nav className="sticky top-0 z-50 bg-canvas/90 backdrop-blur-md border-b border-hairline px-6 h-16 flex items-center justify-between">
         <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-85 transition-opacity" id="nav-logo-link">
-            <Logo size={24} strokeColor="#17171c" />
-            <span className="font-semibold text-[#17171c] tracking-tight text-lg">Clarere</span>
+            <Logo size={24} className="text-primary" />
+            <span className="font-semibold text-primary tracking-tight text-lg">Clarere</span>
           </Link>
           <div className="flex items-center gap-6">
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-[2px] bg-[#edfce9] text-[#003c33] border border-[#003c33]/10 font-mono tracking-wider">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-[2px] bg-pale-green text-deep-green border border-deep-green/10 font-mono tracking-wider">
               AJANSLAR İÇİN
             </span>
-            <Link href="/" className="flex items-center gap-1 text-sm font-medium text-[#616161] hover:text-[#17171c] transition-colors" id="nav-back-link">
+            <Link href="/" className="flex items-center gap-1 text-sm font-medium text-body-muted hover:text-primary transition-colors" id="nav-back-link">
               <ArrowLeft size={14} />
               <span className="hidden sm:inline">Geri Dön</span>
             </Link>
@@ -31,14 +31,14 @@ export default function AgenciesPage() {
       </nav>
 
       {/* Hero Section */}
-      <header className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center border-b border-[#d9d9dd]">
-        <span className="mono-label text-[#ff7759] uppercase tracking-wider text-xs font-semibold font-mono block mb-4" id="hero-tag">
+      <header className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center border-b border-hairline">
+        <span className="mono-label text-coral uppercase tracking-wider text-xs font-semibold font-mono block mb-4" id="hero-tag">
           PITCH SÜREÇLERİNDE FARK YARATIN
         </span>
-        <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-[#17171c] max-w-4xl mx-auto leading-[1.05] mb-8" id="hero-title" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+        <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-primary max-w-4xl mx-auto leading-[1.05] mb-8" id="hero-title" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
           ChatGPT&apos;nin müşterinizin hedef kitlesi hakkında ne düşündüğünü sunmayı bırakın.
         </h1>
-        <p className="text-lg sm:text-xl text-[#616161] max-w-2xl mx-auto leading-relaxed mb-10">
+        <p className="text-lg sm:text-xl text-body-muted max-w-2xl mx-auto leading-relaxed mb-10">
           2 dakikada yapılandırılmış bir kitle çalışması yapın ve her sunuma (pitch) gerçek kitle içgörülerinden elde edilen kanıtlarla girin.
         </p>
 
@@ -46,14 +46,14 @@ export default function AgenciesPage() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
           <Link
             href="/client"
-            className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#17171c] text-[#ffffff] font-medium text-sm hover:opacity-90 transition-all text-center flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-primary text-canvas font-medium text-sm hover:opacity-90 transition-all text-center flex items-center justify-center gap-2"
             id="hero-cta-trial"
           >
             Hemen Başla <ArrowRight size={14} />
           </Link>
           <a
             href="mailto:hiclarere@clarere.com?subject=Ajans Talebi"
-            className="w-full sm:w-auto px-6 py-3.5 rounded-full border border-[#d9d9dd] hover:border-[#17171c] text-[#17171c] font-medium text-sm transition-all text-center"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-full border border-hairline hover:border-primary text-primary font-medium text-sm transition-all text-center"
             id="hero-cta-mail"
           >
             Özel Teklif Alın
@@ -61,16 +61,16 @@ export default function AgenciesPage() {
         </div>
 
         {/* Problem/Solution Card */}
-        <div className="mt-16 p-6 sm:p-8 rounded-[8px] border border-[#d9d9dd] bg-[#eeece7]/30 text-left max-w-4xl mx-auto flex flex-col md:flex-row gap-6 items-start">
+        <div className="mt-16 p-6 sm:p-8 rounded-[8px] border border-hairline bg-soft-stone/30 text-left max-w-4xl mx-auto flex flex-col md:flex-row gap-6 items-start">
           <div className="md:w-1/3">
-            <span className="mono-label text-[#ff7759] text-[10px] uppercase font-mono tracking-wider block mb-2">Karşılaşılan Zorluk</span>
-            <h2 className="text-lg font-bold text-[#17171c]">Brief elinize dün ulaştı ve sadece 10 gününüz mü var?</h2>
+            <span className="mono-label text-coral text-[10px] uppercase font-mono tracking-wider block mb-2">Karşılaşılan Zorluk</span>
+            <h2 className="text-lg font-bold text-primary">Brief elinize dün ulaştı ve sadece 10 gününüz mü var?</h2>
           </div>
-          <div className="md:w-2/3 text-sm text-[#616161] leading-relaxed space-y-3">
+          <div className="md:w-2/3 text-sm text-body-muted leading-relaxed space-y-3">
             <p>
               Geleneksel pazar araştırmaları haftalar sürer ve binlerce liralık bütçe gerektirir. Bütçenin olmadığı veya zamanın kısıtlı olduğu durumlarda ajanslar genellikle jenerik ChatGPT çıktılarından devşirme yüzeysel stratejiler sunmak zorunda kalır.
             </p>
-            <p className="text-[#17171c] font-semibold">
+            <p className="text-primary font-semibold">
               Clarere, bu kısır döngüyü kırarak 2 dakika içinde bilimsel altyapıya dayanan, alıntılanabilir sentetik mülakatlar ve A/B test raporları üretir.
             </p>
           </div>
@@ -78,41 +78,41 @@ export default function AgenciesPage() {
       </header>
 
       {/* Features Grid */}
-      <section className="max-w-5xl mx-auto px-6 py-20 border-b border-[#d9d9dd]">
+      <section className="max-w-5xl mx-auto px-6 py-20 border-b border-hairline">
         <div className="mb-12">
-          <span className="mono-label text-[#ff7759] uppercase tracking-wider text-xs font-semibold font-mono block mb-2">AJANSLAR İÇİN ÖNE ÇIKANLAR</span>
-          <h2 className="text-3xl font-bold tracking-tight text-[#17171c]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+          <span className="mono-label text-coral uppercase tracking-wider text-xs font-semibold font-mono block mb-2">AJANSLAR İÇİN ÖNE ÇIKANLAR</span>
+          <h2 className="text-3xl font-bold tracking-tight text-primary" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
             Stratejinizi kanıtlarla destekleyin
           </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-[8px] border border-[#d9d9dd] hover:border-[#ff7759]/40 transition-all flex flex-col">
-            <div className="w-10 h-10 rounded-[4px] bg-[#ff7759] flex items-center justify-center mb-6 shrink-0 text-[#ffffff]">
+          <div className="p-6 rounded-[8px] border border-hairline hover:border-coral/40 transition-all flex flex-col">
+            <div className="w-10 h-10 rounded-[4px] bg-coral flex items-center justify-center mb-6 shrink-0 text-canvas">
               <Target size={20} />
             </div>
-            <h3 className="text-lg font-bold text-[#17171c] mb-3">Sektör Zekası (Domain Intelligence)</h3>
-            <p className="text-sm text-[#616161] leading-relaxed flex-1">
+            <h3 className="text-lg font-bold text-primary mb-3">Sektör Zekası (Domain Intelligence)</h3>
+            <p className="text-sm text-body-muted leading-relaxed flex-1">
               Brief elinize dün geçmiş olsa bile, o pazarda yıllardır faaliyet gösteriyormuşçasına bilgi sahibi olun. 12 farklı demografik ve davranışsal sentetik persona ile derinlemesine kitle reflekslerini saniyeler içinde analiz edin.
             </p>
           </div>
 
-          <div className="p-6 rounded-[8px] border border-[#d9d9dd] hover:border-[#ff7759]/40 transition-all flex flex-col">
-            <div className="w-10 h-10 rounded-[4px] bg-[#ff7759] flex items-center justify-center mb-6 shrink-0 text-[#ffffff]">
+          <div className="p-6 rounded-[8px] border border-hairline hover:border-coral/40 transition-all flex flex-col">
+            <div className="w-10 h-10 rounded-[4px] bg-coral flex items-center justify-center mb-6 shrink-0 text-canvas">
               <ShieldCheck size={20} />
             </div>
-            <h3 className="text-lg font-bold text-[#17171c] mb-3">White-Label Raporlar</h3>
-            <p className="text-sm text-[#616161] leading-relaxed flex-1">
+            <h3 className="text-lg font-bold text-primary mb-3">White-Label Raporlar</h3>
+            <p className="text-sm text-body-muted leading-relaxed flex-1">
               Müşterilerinizin doğruluğunu asla sorgulayamayacağı, tamamen kaynaklandırılmış ve sunuma hazır zengin PDF raporlar. Çıktılarınızı kendi ajans logonuz ve renklerinizle kişiselleştirerek doğrudan müşterinize sunun.
             </p>
           </div>
 
-          <div className="p-6 rounded-[8px] border border-[#d9d9dd] hover:border-[#ff7759]/40 transition-all flex flex-col">
-            <div className="w-10 h-10 rounded-[4px] bg-[#ff7759] flex items-center justify-center mb-6 shrink-0 text-[#ffffff]">
+          <div className="p-6 rounded-[8px] border border-hairline hover:border-coral/40 transition-all flex flex-col">
+            <div className="w-10 h-10 rounded-[4px] bg-coral flex items-center justify-center mb-6 shrink-0 text-canvas">
               <Clock size={20} />
             </div>
-            <h3 className="text-lg font-bold text-[#17171c] mb-3">2 Dakikalık Sprintler</h3>
-            <p className="text-sm text-[#616161] leading-relaxed flex-1">
+            <h3 className="text-lg font-bold text-primary mb-3">2 Dakikalık Sprintler</h3>
+            <p className="text-sm text-body-muted leading-relaxed flex-1">
               Pazartesi sabahı gelen ani bir brief için salı sabahına kadar kanıta dayalı, gerçek alıntılarla süslenmiş bir strateji belgesi oluşturun. Hızınızla rakiplerinizin günlerce süren araştırmalarını ekarte edin.
             </p>
           </div>
@@ -120,54 +120,54 @@ export default function AgenciesPage() {
       </section>
 
       {/* 72-Hour Sprint (Vertical Timeline) */}
-      <section className="max-w-5xl mx-auto px-6 py-20 border-b border-[#d9d9dd]">
+      <section className="max-w-5xl mx-auto px-6 py-20 border-b border-hairline">
         <div className="max-w-3xl mb-12">
-          <span className="mono-label text-[#ff7759] uppercase tracking-wider text-xs font-semibold font-mono block mb-2">İŞ AKIŞI ÖRNEĞİ</span>
-          <h2 className="text-3xl font-bold tracking-tight text-[#17171c]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+          <span className="mono-label text-coral uppercase tracking-wider text-xs font-semibold font-mono block mb-2">İŞ AKIŞI ÖRNEĞİ</span>
+          <h2 className="text-3xl font-bold tracking-tight text-primary" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
             72 Saatlik Pitch Sprinti
           </h2>
-          <p className="text-[#616161] text-sm mt-2">
+          <p className="text-body-muted text-sm mt-2">
             Clarere ile geleneksel bir ajansın haftalar süren pazar araştırması döngüsünü 3 güne sığdırabilirsiniz.
           </p>
         </div>
 
         {/* Timeline Layout */}
-        <div className="relative pl-6 sm:pl-8 border-l border-[#d9d9dd] space-y-12 max-w-3xl">
+        <div className="relative pl-6 sm:pl-8 border-l border-hairline space-y-12 max-w-3xl">
           {/* Item 1 */}
           <div className="relative">
-            <div className="absolute -left-[31px] sm:-left-[39px] top-1.5 w-4 h-4 rounded-full bg-[#ff7759] border-4 border-[#ffffff]" />
+            <div className="absolute -left-[31px] sm:-left-[39px] top-1.5 w-4 h-4 rounded-full bg-coral border-4 border-canvas" />
             <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 mb-2">
-              <span className="font-mono text-sm font-bold text-[#ff7759]">PAZARTESİ 09:00</span>
-              <span className="text-xs text-[#93939f] hidden sm:inline">·</span>
-              <h3 className="text-base font-bold text-[#17171c]">Yeni Brief ve Bilinmeyen Sektör</h3>
+              <span className="font-mono text-sm font-bold text-coral">PAZARTESİ 09:00</span>
+              <span className="text-xs text-muted-text hidden sm:inline">·</span>
+              <h3 className="text-base font-bold text-primary">Yeni Brief ve Bilinmeyen Sektör</h3>
             </div>
-            <p className="text-sm text-[#616161] leading-relaxed">
+            <p className="text-sm text-body-muted leading-relaxed">
               Ajansınıza daha önce hiç çalışmadığınız bir sektörden (örneğin: biyoteknoloji tabanlı bir fitness girişimi) acil bir konkur/pitch brief&apos;i gelir. Hedef kitleyi ve onların dilini çözmek için strateji ekibinin elinde hiçbir veri yoktur.
             </p>
           </div>
 
           {/* Item 2 */}
           <div className="relative">
-            <div className="absolute -left-[31px] sm:-left-[39px] top-1.5 w-4 h-4 rounded-full bg-[#ff7759] border-4 border-[#ffffff]" />
+            <div className="absolute -left-[31px] sm:-left-[39px] top-1.5 w-4 h-4 rounded-full bg-coral border-4 border-canvas" />
             <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 mb-2">
-              <span className="font-mono text-sm font-bold text-[#ff7759]">PAZARTESİ 10:15</span>
-              <span className="text-xs text-[#93939f] hidden sm:inline">·</span>
-              <h3 className="text-base font-bold text-[#17171c]">Clarere Raporu ve Kritik İçgörüler</h3>
+              <span className="font-mono text-sm font-bold text-coral">PAZARTESİ 10:15</span>
+              <span className="text-xs text-muted-text hidden sm:inline">·</span>
+              <h3 className="text-base font-bold text-primary">Clarere Raporu ve Kritik İçgörüler</h3>
             </div>
-            <p className="text-sm text-[#616161] leading-relaxed">
-              Clarere üzerinde 12 sentetik personadan oluşan pazar panelini kurarsınız. 2 dakika sonra rapor teslim edilir. Personaların cevaplarından kritik bir bulgu ortaya çıkar: <em className="text-[#17171c] font-semibold not-italic">&quot;Kullanıcılar için fitness özellik listelerinden ziyade, veri güvenliği sinyalleri satın almada 1. sıradadır.&quot;</em>
+            <p className="text-sm text-body-muted leading-relaxed">
+              Clarere üzerinde 12 sentetik personadan oluşan pazar panelini kurarsınız. 2 dakika sonra rapor teslim edilir. Personaların cevaplarından kritik bir bulgu ortaya çıkar: <em className="text-primary font-semibold not-italic">&quot;Kullanıcılar için fitness özellik listelerinden ziyade, veri güvenliği sinyalleri satın almada 1. sıradadır.&quot;</em>
             </p>
           </div>
 
           {/* Item 3 */}
           <div className="relative">
-            <div className="absolute -left-[31px] sm:-left-[39px] top-1.5 w-4 h-4 rounded-full bg-[#ff7759] border-4 border-[#ffffff]" />
+            <div className="absolute -left-[31px] sm:-left-[39px] top-1.5 w-4 h-4 rounded-full bg-coral border-4 border-canvas" />
             <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 mb-2">
-              <span className="font-mono text-sm font-bold text-[#ff7759]">SALI SABAHI</span>
-              <span className="text-xs text-[#93939f] hidden sm:inline">·</span>
-              <h3 className="text-base font-bold text-[#17171c]">Kanıta Dayalı Sunum ve Onay</h3>
+              <span className="font-mono text-sm font-bold text-coral">SALI SABAHI</span>
+              <span className="text-xs text-muted-text hidden sm:inline">·</span>
+              <h3 className="text-base font-bold text-primary">Kanıta Dayalı Sunum ve Onay</h3>
             </div>
-            <p className="text-sm text-[#616161] leading-relaxed">
+            <p className="text-sm text-body-muted leading-relaxed">
               Müşteriye rakiplerinizin aksine Google aramalarından derlenmiş klişeler yerine, Clarere panelindeki gerçekçi alıntılarla desteklenmiş veri odaklı bir strateji sunarsınız. Güven odaklı bu nokta atışı yaklaşım sayesinde ajans konkurdan galibiyetle ayrılır.
             </p>
           </div>
@@ -175,49 +175,49 @@ export default function AgenciesPage() {
       </section>
 
       {/* Revenue & Gelir Modeli */}
-      <section className="max-w-5xl mx-auto px-6 py-20 border-b border-[#d9d9dd]">
+      <section className="max-w-5xl mx-auto px-6 py-20 border-b border-hairline">
         <div className="mb-12 max-w-3xl">
-          <span className="mono-label text-[#ff7759] uppercase tracking-wider text-xs font-semibold font-mono block mb-2">İŞ MODELİ VE GELİR</span>
-          <h2 className="text-3xl font-bold tracking-tight text-[#17171c]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+          <span className="mono-label text-coral uppercase tracking-wider text-xs font-semibold font-mono block mb-2">İŞ MODELİ VE GELİR</span>
+          <h2 className="text-3xl font-bold tracking-tight text-primary" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
             Araştırmayı lüks olmaktan çıkarın, gelire dönüştürün
           </h2>
-          <p className="text-sm text-[#616161] mt-2">
+          <p className="text-sm text-body-muted mt-2">
             Clarere sadece konkur kazanmanızı sağlamaz, aynı zamanda ajansınız için yeni bir faturalandırılabilir gelir kalemi oluşturur.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
           {/* Card 1: Maliyet Boyutu */}
-          <div className="p-8 rounded-[8px] border border-[#d9d9dd] bg-[#eeece7]/20 flex flex-col justify-between">
+          <div className="p-8 rounded-[8px] border border-hairline bg-soft-stone/20 flex flex-col justify-between">
             <div className="space-y-4">
-              <div className="w-9 h-9 rounded-[4px] bg-[#003c33] flex items-center justify-center text-[#ffffff]">
+              <div className="w-9 h-9 rounded-[4px] bg-deep-green flex items-center justify-center text-canvas">
                 <Coins size={18} />
               </div>
-              <h3 className="text-xl font-bold text-[#17171c]">100 Kat Daha Düşük Maliyet</h3>
-              <p className="text-sm text-[#616161] leading-relaxed">
+              <h3 className="text-xl font-bold text-primary">100 Kat Daha Düşük Maliyet</h3>
+              <p className="text-sm text-body-muted leading-relaxed">
                 Geleneksel panellerde ve fokus gruplarında araştırma başına 5.000$ - 15.000$ arasında maliyetler oluşurken, Clarere bu gücü aylık abonelik paketleri sayesinde son derece makul bir seviyeye indirir. Strateji maliyetlerinizi minimuma çekerek kârlılığınızı artırın.
               </p>
             </div>
-            <div className="pt-6 border-t border-[#d9d9dd] mt-6 flex items-center justify-between text-sm">
-              <span className="text-[#616161]">Geleneksel Panel</span>
-              <span className="font-mono font-bold text-[#b30000]">5.000$ - 15.000$</span>
+            <div className="pt-6 border-t border-hairline mt-6 flex items-center justify-between text-sm">
+              <span className="text-body-muted">Geleneksel Panel</span>
+              <span className="font-mono font-bold text-error">5.000$ - 15.000$</span>
             </div>
           </div>
 
           {/* Card 2: Gelir Boyutu */}
-          <div className="p-8 rounded-[8px] border border-[#d9d9dd] bg-[#17171c] text-[#ffffff] flex flex-col justify-between">
+          <div className="p-8 rounded-[8px] border border-hairline bg-primary text-canvas flex flex-col justify-between">
             <div className="space-y-4">
-              <div className="w-9 h-9 rounded-[4px] bg-[#ff7759] flex items-center justify-center text-[#ffffff]">
+              <div className="w-9 h-9 rounded-[4px] bg-coral flex items-center justify-center text-canvas">
                 <Zap size={18} />
               </div>
-              <h3 className="text-xl font-bold text-[#ffffff]">Yeni Bir Gelir Kalemi</h3>
+              <h3 className="text-xl font-bold text-canvas">Yeni Bir Gelir Kalemi</h3>
               <p className="text-sm text-white/70 leading-relaxed">
                 Araştırma raporlarını müşterilerinize katma değerli birer strateji paketi olarak faturalandırın. Platform maliyeti 8$ - 20$ bandında olan bir sentetik çalışmayı müşteriye markalı bir çıktı olarak satarak, ayda sadece 2 çalışma ile tüm platform abonelik maliyetinizi amorti edip kâra geçebilirsiniz.
               </p>
             </div>
             <div className="pt-6 border-t border-white/10 mt-6 flex items-center justify-between text-sm">
               <span className="text-white/60">Rapor Başına Gelir Fırsatı</span>
-              <span className="font-mono font-bold text-[#ff7759]">₺5.000 - ₺15.000</span>
+              <span className="font-mono font-bold text-coral">₺5.000 - ₺15.000</span>
             </div>
           </div>
         </div>
@@ -226,8 +226,8 @@ export default function AgenciesPage() {
       {/* SSS Modülü */}
       <section className="max-w-3xl mx-auto px-6 py-20">
         <div className="mb-12 text-center">
-          <span className="mono-label text-[#ff7759] uppercase tracking-wider text-xs font-semibold font-mono block mb-2">MERAK EDİLENLER</span>
-          <h2 className="text-3xl font-bold tracking-tight text-[#17171c]" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+          <span className="mono-label text-coral uppercase tracking-wider text-xs font-semibold font-mono block mb-2">MERAK EDİLENLER</span>
+          <h2 className="text-3xl font-bold tracking-tight text-primary" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
             Ajanslar İçin Sıkça Sorulan Sorular
           </h2>
         </div>
@@ -251,12 +251,12 @@ export default function AgenciesPage() {
               a: "Evet. Konseptlerinizi, reklam mesajlarınızı, açılış sayfası metin taslaklarınızı ve konumlandırma alternatiflerinizi hedef sentetik kitleye doğrudan sunarak, hangisinin itirazları en aza indirdiğini ve en yüksek satın alma motivasyonunu tetiklediğini test edebilirsiniz.",
             },
           ].map(({ q, a }, idx) => (
-            <details key={idx} className="group border-b border-[#d9d9dd] py-1" id={`faq-details-${idx}`}>
-              <summary className="flex items-start justify-between py-4 cursor-pointer font-medium text-base text-[#17171c] hover:text-[#ff7759] list-none gap-4">
+            <details key={idx} className="group border-b border-hairline py-1" id={`faq-details-${idx}`}>
+              <summary className="flex items-start justify-between py-4 cursor-pointer font-medium text-base text-primary hover:text-coral list-none gap-4">
                 <span>{q}</span>
-                <span className="text-[#93939f] group-open:rotate-45 transition-transform duration-200 text-xl font-light shrink-0 mt-0.5">+</span>
+                <span className="text-muted-text group-open:rotate-45 transition-transform duration-200 text-xl font-light shrink-0 mt-0.5">+</span>
               </summary>
-              <div className="pb-5 text-sm text-[#616161] leading-relaxed max-w-2xl">
+              <div className="pb-5 text-sm text-body-muted leading-relaxed max-w-2xl">
                 {a}
               </div>
             </details>
@@ -265,12 +265,12 @@ export default function AgenciesPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-[#17171c] text-[#ffffff] px-6 py-20 border-t border-[#d9d9dd] text-center">
+      <section className="bg-primary text-canvas px-6 py-20 border-t border-hairline text-center">
         <div className="max-w-3xl mx-auto">
-          <span className="mono-label text-[#ff7759] uppercase tracking-wider text-xs font-semibold font-mono block mb-4" id="cta-label">
+          <span className="mono-label text-coral uppercase tracking-wider text-xs font-semibold font-mono block mb-4" id="cta-label">
             AJANSINIZI BİR ADIM ÖNE TAŞIYIN
           </span>
-          <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#ffffff] leading-[1.1] mb-6" id="cta-title" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
+          <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-canvas leading-[1.1] mb-6" id="cta-title" style={{ fontFamily: "var(--font-heading, 'Space Grotesk', sans-serif)" }}>
             Bir sonraki sunumunuza<br />veri odaklı kanıtlarla girin
           </h2>
           <p className="text-base text-white/60 mb-10 max-w-md mx-auto">
@@ -280,7 +280,7 @@ export default function AgenciesPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-sm mx-auto">
             <Link
               href="/client"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#ffffff] text-[#17171c] font-medium text-sm hover:opacity-90 transition-all text-center"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-canvas text-primary font-medium text-sm hover:opacity-90 transition-all text-center"
               id="cta-trial-btn"
             >
               Ücretsiz Başlat
@@ -297,17 +297,17 @@ export default function AgenciesPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[#d9d9dd] bg-[#ffffff] py-8 px-6">
+      <footer className="border-t border-hairline bg-canvas py-8 px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Logo size={24} strokeColor="#93939f" />
-            <span className="text-sm text-[#93939f]">Clarere © 2026</span>
+            <Logo size={24} className="text-muted-text" />
+            <span className="text-sm text-muted-text">Clarere © 2026</span>
           </div>
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-[#93939f]">
-            <Link href="/guide" className="hover:text-[#17171c] transition-colors">Kullanım Kılavuzu</Link>
-            <Link href="/#faq" className="hover:text-[#17171c] transition-colors">SSS</Link>
-            <Link href="/privacy" className="hover:text-[#17171c] transition-colors">Gizlilik</Link>
-            <Link href="/terms" className="hover:text-[#17171c] transition-colors">Kullanım Koşulları</Link>
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-text">
+            <Link href="/guide" className="hover:text-primary transition-colors">Kullanım Kılavuzu</Link>
+            <Link href="/#faq" className="hover:text-primary transition-colors">SSS</Link>
+            <Link href="/privacy" className="hover:text-primary transition-colors">Gizlilik</Link>
+            <Link href="/terms" className="hover:text-primary transition-colors">Kullanım Koşulları</Link>
           </div>
         </div>
       </footer>

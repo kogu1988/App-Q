@@ -21,7 +21,7 @@ export function SiteNav({ scrolled, navigateTo }: SiteNavProps) {
   >
     <div className="max-w-6xl mx-auto h-16 flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <Logo size={32} strokeColor={scrolled ? "#17171c" : "#ffffff"} />
+        <Logo size={32} className={scrolled ? "text-primary" : "text-canvas"} />
         <span
           className={`font-semibold text-base tracking-tight transition-colors duration-300 ${scrolled ? "text-primary" : "text-white"}`}
         >

@@ -50,17 +50,17 @@ export function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendo
   );
 
   const LINES = [
-    { pts: toPolyline(cdfTooCheap, true),     color: "#f59e0b", label: "Çok Ucuz",  dash: "4 2" },
-    { pts: toPolyline(cdfCheap),               color: "#22c55e", label: "Makul",     dash: "" },
-    { pts: toPolyline(cdfExpensive),            color: "#f97316", label: "Pahalı",   dash: "" },
-    { pts: toPolyline(cdfTooExpensive, true),  color: "#ef4444", label: "Çok Pahalı", dash: "4 2" },
+    { pts: toPolyline(cdfTooCheap, true),     cls: "stroke-price-too-cheap",     label: "Çok Ucuz",  dash: "4 2" },
+    { pts: toPolyline(cdfCheap),               cls: "stroke-price-fair",          label: "Makul",     dash: "" },
+    { pts: toPolyline(cdfExpensive),            cls: "stroke-price-expensive",     label: "Pahalı",   dash: "" },
+    { pts: toPolyline(cdfTooExpensive, true),  cls: "stroke-price-too-expensive", label: "Çok Pahalı", dash: "4 2" },
   ];
 
   const markers = [
-    { x: data.pmc, label: "PMC", color: "#6366f1" },
-    { x: data.opp, label: "OPP", color: "#0d9488" },
-    { x: data.ipp, label: "IPP", color: "#0ea5e9" },
-    { x: data.pme, label: "PME", color: "#ec4899" },
+    { x: data.pmc, label: "PMC", strokeCls: "stroke-psm-pmc", fillCls: "fill-psm-pmc" },
+    { x: data.opp, label: "OPP", strokeCls: "stroke-psm-opp", fillCls: "fill-psm-opp" },
+    { x: data.ipp, label: "IPP", strokeCls: "stroke-psm-ipp", fillCls: "fill-psm-ipp" },
+    { x: data.pme, label: "PME", strokeCls: "stroke-psm-pme", fillCls: "fill-psm-pme" },
   ];
 
   return (
@@ -72,10 +72,11 @@ export function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendo
             <line
               x1={PAD.left} y1={PAD.top + innerH * (1 - t / 100)}
               x2={PAD.left + innerW} y2={PAD.top + innerH * (1 - t / 100)}
-              stroke="#e2e8f0" strokeWidth="1"
+              strokeWidth="1"
+              className="stroke-chart-grid"
             />
             <text x={PAD.left - 6} y={PAD.top + innerH * (1 - t / 100) + 4} textAnchor="end"
-              className="fill-[#93939f]" fontSize="10">{t}%</text>
+              className="fill-muted-text" fontSize="10">{t}%</text>
           </g>
         ))}
 
@@ -83,9 +84,9 @@ export function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendo
         {priceTicks.map(v => (
           <g key={v}>
             <line x1={xScale(v)} y1={PAD.top + innerH} x2={xScale(v)} y2={PAD.top + innerH + 4}
-              stroke="#cbd5e1" strokeWidth="1" />
+              strokeWidth="1" className="stroke-chart-axis" />
             <text x={xScale(v)} y={PAD.top + innerH + 16} textAnchor="middle"
-              className="fill-[#93939f]" fontSize="10">{v.toLocaleString("tr-TR")} ₺</text>
+              className="fill-muted-text" fontSize="10">{v.toLocaleString("tr-TR")} ₺</text>
           </g>
         ))}
 
@@ -94,34 +95,35 @@ export function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendo
           x={xScale(data.pmc)} y={PAD.top}
           width={xScale(data.pme) - xScale(data.pmc)}
           height={innerH}
-          fill="#6366f1" fillOpacity="0.06"
+          fillOpacity="0.06"
+          className="fill-psm-pmc"
         />
 
         {/* PSM Curves */}
         {LINES.map(l => (
           <polyline key={l.label} points={l.pts}
-            fill="none" stroke={l.color} strokeWidth="2"
+            fill="none" strokeWidth="2"
             strokeDasharray={l.dash || undefined}
-            strokeLinecap="round" strokeLinejoin="round" />
+            strokeLinecap="round" strokeLinejoin="round" className={l.cls} />
         ))}
 
         {/* Vertical markers */}
         {markers.map(m => (
           <g key={m.label}>
             <line x1={xScale(m.x)} y1={PAD.top} x2={xScale(m.x)} y2={PAD.top + innerH}
-              stroke={m.color} strokeWidth="1.5" strokeDasharray="3 3" />
+              strokeWidth="1.5" strokeDasharray="3 3" className={m.strokeCls} />
             <rect x={xScale(m.x) - 14} y={PAD.top} width={28} height={16} rx="3"
-              fill={m.color} fillOpacity="0.9" />
+              fillOpacity="0.9" className={m.fillCls} />
             <text x={xScale(m.x)} y={PAD.top + 11} textAnchor="middle"
-              fill="white" fontSize="9" fontWeight="bold">{m.label}</text>
+              fontSize="9" fontWeight="bold" className="fill-canvas">{m.label}</text>
           </g>
         ))}
 
         {/* Axes */}
         <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + innerH}
-          stroke="#94a3b8" strokeWidth="1" />
+          strokeWidth="1" className="stroke-chart-axis-strong" />
         <line x1={PAD.left} y1={PAD.top + innerH} x2={PAD.left + innerW} y2={PAD.top + innerH}
-          stroke="#94a3b8" strokeWidth="1" />
+          strokeWidth="1" className="stroke-chart-axis-strong" />
       </svg>
 
       {/* Legend */}
@@ -129,10 +131,10 @@ export function PSMChart({ data }: { data: NonNullable<StudyDetail["van_westendo
         {LINES.map(l => (
           <div key={l.label} className="flex items-center gap-1.5">
             <svg width="24" height="10">
-              <line x1="0" y1="5" x2="24" y2="5" stroke={l.color} strokeWidth="2"
-                strokeDasharray={l.dash || undefined} />
+              <line x1="0" y1="5" x2="24" y2="5" strokeWidth="2"
+                strokeDasharray={l.dash || undefined} className={l.cls} />
             </svg>
-            <span className="text-[#616161] ">{l.label}</span>
+            <span className="text-body-muted ">{l.label}</span>
           </div>
         ))}
       </div>

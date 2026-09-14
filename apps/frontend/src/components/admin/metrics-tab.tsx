@@ -27,7 +27,7 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
     <>
   <div className="mb-6 flex items-center justify-between">
     <div>
-      <p className="text-sm text-[#616161] dark:text-[#93939f]">
+      <p className="text-sm text-body-muted dark:text-muted-text">
         Sistem metrikleri, aktif projeler ve kullanıcı istatistikleri.
       </p>
     </div>
@@ -35,7 +35,7 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
 
   {metricsLoading && (
     <div className="flex items-center gap-3 py-16 justify-center text-muted-foreground">
-      <Loader2 size={22} className="animate-spin text-[#ff7759]" />
+      <Loader2 size={22} className="animate-spin text-coral" />
       Metrikler yükleniyor...
     </div>
   )}
@@ -47,9 +47,9 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
           {
             label: "Toplam Danışan",
             value: metrics.totals.clients,
-            icon: <Users size={18} className="text-[#003c33]" />,
-            bg: "bg-[#edfce9]/60",
-            border: "border-[#003c33]/20",
+            icon: <Users size={18} className="text-deep-green" />,
+            bg: "bg-pale-green/60",
+            border: "border-deep-green/20",
           },
           {
             label: "Toplam Simülasyon",
@@ -61,36 +61,36 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
           {
             label: "Toplam Araştırma",
             value: metrics.study_stats.total,
-            icon: <Database size={18} className="text-[#1863dc]" />,
-            bg: "bg-[#f1f5ff]/60",
-            border: "border-[#1863dc]/20",
+            icon: <Database size={18} className="text-action-blue" />,
+            bg: "bg-pale-blue/60",
+            border: "border-action-blue/20",
           },
           {
             label: "Ort. Kalite Skoru",
             value: metrics.study_stats.avg_quality > 0 ? `${metrics.study_stats.avg_quality}/100` : "—",
-            icon: <BarChart3 size={18} className="text-[#ff7759]" />,
+            icon: <BarChart3 size={18} className="text-coral" />,
             bg: "bg-orange-50/60",
-            border: "border-[#ff7759]/20",
+            border: "border-coral/20",
           },
         ].map(kpi => (
           <Card key={kpi.label} className={`${kpi.bg} border ${kpi.border}`}>
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-mono text-[#93939f] uppercase tracking-wider">
+                <span className="text-xs font-mono text-muted-text uppercase tracking-wider">
                   {kpi.label}
                 </span>
                 {kpi.icon}
               </div>
-              <div className="text-3xl font-bold text-[#17171c]">{kpi.value}</div>
+              <div className="text-3xl font-bold text-primary">{kpi.value}</div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card className="border-[#d9d9dd]">
+      <Card className="border-hairline">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <Cpu size={16} className="text-[#ff7759]" />
+            <Cpu size={16} className="text-coral" />
             Aktif LLM Modelleri
           </CardTitle>
         </CardHeader>
@@ -100,14 +100,14 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
               {
                 label: "Flash (DeepSeek V4)",
                 value: metrics.models.orchestrator,
-                color: "text-[#ff7759]",
+                color: "text-coral",
                 bg: "bg-orange-50",
               },
-              { label: "Flash (B2C)", value: metrics.models.b2c, color: "text-[#003c33]", bg: "bg-[#edfce9]" },
-              { label: "Pro (B2B)", value: metrics.models.b2b, color: "text-[#1863dc]", bg: "bg-[#f1f5ff]" },
+              { label: "Flash (B2C)", value: metrics.models.b2c, color: "text-deep-green", bg: "bg-pale-green" },
+              { label: "Pro (B2B)", value: metrics.models.b2b, color: "text-action-blue", bg: "bg-pale-blue" },
             ].map(m => (
               <div key={m.label} className={`rounded-lg px-4 py-3 ${m.bg}`}>
-                <div className="text-[10px] font-mono uppercase tracking-wider text-[#93939f] mb-0.5">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-muted-text mb-0.5">
                   {m.label}
                 </div>
                 <div className={`font-mono text-sm font-semibold ${m.color}`}>{m.value}</div>
@@ -127,7 +127,7 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
             const pct = cli.max_tokens > 0 ? Math.min(100, (cli.tokens_used / cli.max_tokens) * 100) : 0;
             const isWarning = pct >= 70 && pct < 90;
             const isDanger = pct >= 90;
-            const barColor = isDanger ? "bg-red-500" : isWarning ? "bg-amber-400" : "bg-[#003c33]";
+            const barColor = isDanger ? "bg-red-500" : isWarning ? "bg-amber-400" : "bg-deep-green";
             const fmtToken = (n: number) =>
               n >= 1_000_000
                 ? `${(n / 1_000_000).toFixed(1)}M`
@@ -139,7 +139,7 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
               <div key={cli.username} className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-[#17171c]">{cli.username}</span>
+                    <span className="font-medium text-primary">{cli.username}</span>
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                       {cli.plan_type}
                     </Badge>
@@ -158,7 +158,7 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
                     {fmtToken(cli.tokens_used)} / {fmtToken(cli.max_tokens)} ({pct.toFixed(1)}%)
                   </span>
                 </div>
-                <div className="h-2 rounded-full bg-[#eeece7] overflow-hidden">
+                <div className="h-2 rounded-full bg-soft-stone overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${barColor}`}
                     style={{ width: `${pct}%` }}
@@ -186,7 +186,7 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
                   {["Plan", "Danışan", "Token (toplam)", "Simülasyon"].map(h => (
                     <th
                       key={h}
-                      className="text-left py-2 px-4 text-[10px] font-mono uppercase tracking-wider text-[#93939f]"
+                      className="text-left py-2 px-4 text-[10px] font-mono uppercase tracking-wider text-muted-text"
                     >
                       {h}
                     </th>
@@ -199,7 +199,7 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
                     key={row.plan_type}
                     className="border-b border-border/50 hover:bg-muted/30 transition-colors"
                   >
-                    <td className="py-2 px-4 font-semibold text-[#17171c]">{row.plan_type}</td>
+                    <td className="py-2 px-4 font-semibold text-primary">{row.plan_type}</td>
                     <td className="py-2 px-4 text-muted-foreground">{row.count}</td>
                     <td className="py-2 px-4 text-muted-foreground tabular-nums">
                       {row.total_tokens >= 1_000_000
@@ -245,7 +245,7 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
                 <span className="text-sm text-muted-foreground">{item.label}</span>
                 <span
                   className={`font-semibold text-sm ${
-                    item.label === "Denetim Hataları" && Number(item.value) > 0 ? "text-red-600" : "text-[#17171c]"
+                    item.label === "Denetim Hataları" && Number(item.value) > 0 ? "text-red-600" : "text-primary"
                   }`}
                 >
                   {item.value}
@@ -272,9 +272,9 @@ export function MetricsTab({ metrics, metricsLoading }: MetricsTabProps) {
                     <span className="text-sm text-muted-foreground w-40 shrink-0 truncate">
                       {cat.category}
                     </span>
-                    <div className="flex-1 h-2 rounded-full bg-[#eeece7] overflow-hidden">
+                    <div className="flex-1 h-2 rounded-full bg-soft-stone overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-[#1863dc]/70 transition-all duration-500"
+                        className="h-full rounded-full bg-action-blue/70 transition-all duration-500"
                         style={{ width: `${(cat.count / maxCount) * 100}%` }}
                       />
                     </div>

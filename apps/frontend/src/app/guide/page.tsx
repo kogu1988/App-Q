@@ -15,7 +15,7 @@ export default function GuidePage() {
       <nav className="sticky top-0 z-50 bg-canvas/90 backdrop-blur-md border-b border-hairline px-6 h-16 flex items-center justify-between">
         <div className="max-w-4xl mx-auto w-full flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 hover:opacity-85 transition-opacity">
-            <Logo size={24} strokeColor="#17171c" />
+            <Logo size={24} className="text-primary" />
             <span className="font-semibold text-primary tracking-tight text-lg">Clarere</span>
           </Link>
           <Link href="/" className="flex items-center gap-1.5 text-sm font-medium text-body-muted hover:text-primary transition-colors">
@@ -155,7 +155,7 @@ export default function GuidePage() {
                     <CheckCircle2 size={16} className="text-deep-green shrink-0 mt-1" />
                     <div className="text-sm text-body-muted">
                       <strong className="text-primary block mb-0.5">Varsayımları Zorlayan Cevaplar</strong>
-                      Skeptikler ve muhaliflerden gelen gerçekçi itirazlar (Örn: <em className="font-mono text-xs text-[#616161]">&quot;Fiyatlandırma çok karmaşık&quot;</em>, <em className="font-mono text-xs text-[#616161]">&quot;KVKK ve SSO entegrasyonu yoksa bakmam bile&quot;</em>).
+                      Skeptikler ve muhaliflerden gelen gerçekçi itirazlar (Örn: <em className="font-mono text-xs text-body-muted">&quot;Fiyatlandırma çok karmaşık&quot;</em>, <em className="font-mono text-xs text-body-muted">&quot;KVKK ve SSO entegrasyonu yoksa bakmam bile&quot;</em>).
                     </div>
                   </div>
                   <div className="flex items-start gap-3 border-b border-hairline pb-4">
@@ -376,7 +376,7 @@ export default function GuidePage() {
                   {/* Agent Turn */}
                   <div className="flex gap-3">
                     <span className="mono-label text-[10px] text-emerald-400 shrink-0 w-16 mt-1">DEFNE</span>
-                    <div className="bg-[#003c33]/40 border border-deep-green rounded-sm p-3 text-white/95">
+                    <div className="bg-deep-green/40 border border-deep-green rounded-sm p-3 text-white/95">
                       &quot;Peki potansiyel kullanıcılar şu an bu ihtiyacı nasıl karşılıyor? Sizin farkınız ne olacak?&quot;
                     </div>
                   </div>

@@ -52,7 +52,7 @@ export default function NewResearchWizard() {
           <Lock size={32} className="text-amber-800" />
         </div>
         <div className="space-y-3">
-          <h1 className="text-2xl font-black tracking-tight text-[#17171c]">Trial Expired (Deneme Süreniz Doldu)</h1>
+          <h1 className="text-2xl font-black tracking-tight text-primary">Trial Expired (Deneme Süreniz Doldu)</h1>
           <p className="text-xs text-muted-foreground leading-relaxed">
             Every plan comes with a 1-month free trial and 2 free researches — no credit card required. You get access to the platform so you can run real research and see the output before committing.
           </p>
@@ -61,7 +61,7 @@ export default function NewResearchWizard() {
           </p>
         </div>
         <Link href="/client/upgrade" className="w-full">
-          <Button className="w-full bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl h-12 text-sm">
+          <Button className="w-full bg-primary hover:opacity-85 text-white font-semibold rounded-xl h-12 text-sm">
             Upgrade Now / Plan Seçin →
           </Button>
         </Link>
@@ -233,7 +233,7 @@ export default function NewResearchWizard() {
         <div className={`flex-1 flex-col min-h-0 ${showMobileBrief ? 'hidden lg:flex' : 'flex'}`}>
           <div className="mb-4 shrink-0">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs gap-1 border-[#d9d9dd] ">
+              <Badge variant="outline" className="text-xs gap-1 border-hairline ">
                 {researchMode === "ab_test" ? <FlaskConical size={11} /> : <BarChart2 size={11} />}
                 {researchMode === "ab_test" ? "A/B Test Modu" : "Pazar Araştırması"}
               </Badge>
@@ -243,7 +243,7 @@ export default function NewResearchWizard() {
               <div className="flex-1" />
               <button 
                 onClick={() => setShowMobileBrief(!showMobileBrief)} 
-                className="lg:hidden text-xs text-[#003c33] font-bold flex items-center gap-1 bg-[#edfce9] px-2 py-1 rounded-md"
+                className="lg:hidden text-xs text-deep-green font-bold flex items-center gap-1 bg-pale-green px-2 py-1 rounded-md"
               >
                 <FileText size={12} />
                 {showMobileBrief ? "Sohbete Dön" : "Briefi Gör"}
@@ -255,23 +255,23 @@ export default function NewResearchWizard() {
 
           {/* Chat bubbles */}
           <Card className="flex flex-col flex-1 min-h-0 shadow-sm overflow-hidden">
-            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4 bg-[#f5f4f1]/30 ">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4 bg-muted-surface/30 ">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
                   {msg.role === "assistant" && (
-                    <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-[#d9d9dd] ring-[#003c33]/40 shadow-sm mt-0.5">
+                    <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-hairline ring-deep-green/40 shadow-sm mt-0.5">
                       <Image src="/agent.svg" alt="Defne" width={36} height={36} className="object-cover w-full h-full" />
                     </div>
                   )}
                   <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
                     msg.role === "assistant"
-                      ? "bg-white  border border-[#d9d9dd]/60  text-[#212121]  rounded-tl-none"
-                      : "bg-[#17171c] text-white rounded-tr-none"
+                      ? "bg-white  border border-hairline/60  text-ink  rounded-tl-none"
+                      : "bg-primary text-white rounded-tr-none"
                   }`}>
                     {msg.content}
                   </div>
                   {msg.role === "user" && (
-                    <div className="h-8 w-8 rounded-full bg-[#d9d9dd]  text-[#616161] flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="h-8 w-8 rounded-full bg-hairline  text-body-muted flex items-center justify-center shrink-0 mt-0.5">
                       <User size={15} />
                     </div>
                   )}
@@ -279,11 +279,11 @@ export default function NewResearchWizard() {
               ))}
               {loading && (
                 <div className="flex gap-3 justify-start animate-in fade-in duration-200">
-                  <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-[#d9d9dd] ring-[#003c33]/40 shadow-sm">
+                  <div className="h-9 w-9 rounded-full overflow-hidden shrink-0 ring-2 ring-hairline ring-deep-green/40 shadow-sm">
                     <Image src="/agent.svg" alt="Defne" width={36} height={36} className="object-cover w-full h-full" />
                   </div>
-                  <div className="px-4 py-3 bg-white  border border-[#d9d9dd]/60  rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
-                    <Loader2 size={14} className="animate-spin text-[#ff7759]" />
+                  <div className="px-4 py-3 bg-white  border border-hairline/60  rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
+                    <Loader2 size={14} className="animate-spin text-coral" />
                     <span className="text-xs italic bg-[linear-gradient(110deg,var(--color-muted-foreground)_40%,var(--color-foreground)_50%,var(--color-muted-foreground)_60%)] bg-[length:200%_100%] bg-clip-text text-transparent animate-[shimmer_2s_linear_infinite]">Defne düşünüyor...</span>
                   </div>
                 </div>
@@ -294,15 +294,15 @@ export default function NewResearchWizard() {
             {/* Input area */}
             <div className="shrink-0 p-4 border-t border-border bg-white/90  backdrop-blur-sm">
               {isReady && (
-                <div className="mb-3 p-3 bg-[#edfce9] border border-[#003c33]/30 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-[#003c33] text-sm font-semibold">
+                <div className="mb-3 p-3 bg-pale-green border border-deep-green/30 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-deep-green text-sm font-semibold">
                     <CheckCircle2 size={16} />
                     Brief hazır! Sonraki adıma geçebilirsiniz.
                   </div>
                   <Button
                     size="sm"
                     onClick={handleStartResearch}
-                    className="bg-[#003c33] hover:bg-[#003c33]/85 text-white gap-2 font-semibold"
+                    className="bg-deep-green hover:bg-deep-green/85 text-white gap-2 font-semibold"
                   >
                     Araştırmayı Başlat
                     <ChevronRight size={14} />
@@ -311,7 +311,7 @@ export default function NewResearchWizard() {
               )}
               <div className="flex gap-2">
                 <textarea
-                  className="flex-1 resize-none rounded-xl border border-border bg-[#f5f4f1] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#17171c]/30 transition-shadow min-h-[44px] max-h-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 resize-none rounded-xl border border-border bg-muted-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow min-h-[44px] max-h-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder={loading ? "Defne yazıyor, lütfen bekleyin..." : "Yanıtınızı yazın... (Enter ile gönder, Shift+Enter ile yeni satır)"}
                   value={input}
                   onChange={e => setInput(e.target.value)}
@@ -323,7 +323,7 @@ export default function NewResearchWizard() {
                   onClick={sendMessage}
                   disabled={loading || !input.trim()}
                   size="sm"
-                  className="h-auto px-4 bg-[#17171c] hover:bg-[#17171c] text-white gap-1.5 self-end py-2.5 rounded-xl"
+                  className="h-auto px-4 bg-primary hover:bg-primary text-white gap-1.5 self-end py-2.5 rounded-xl"
                 >
                   {loading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                 </Button>

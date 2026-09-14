@@ -5,10 +5,9 @@ import { useEffect, useState } from "react";
 interface LogoProps {
   className?: string;
   size?: number;
-  strokeColor?: string;
 }
 
-export default function Logo({ className = "", size = 32, strokeColor = "currentColor" }: LogoProps) {
+export default function Logo({ className = "", size = 32 }: LogoProps) {
   const [active, setActive] = useState(false);
 
   useEffect(() => {
@@ -31,7 +30,7 @@ export default function Logo({ className = "", size = 32, strokeColor = "current
           className="svg-elem-1"
           d="M500 50c100 0 300 50 400 100s100 250 0 300-300 100-400 100-300-50-400-100-100-250 0-300S400 50 500 50Z"
           fill="none"
-          stroke={strokeColor}
+          stroke="currentColor"
           strokeWidth="4"
         />
       </defs>
@@ -54,8 +53,8 @@ export default function Logo({ className = "", size = 32, strokeColor = "current
         <use href="#logo-path-a" transform="rotate(150 290.192 83.013)" />
         <use href="#logo-path-a" transform="rotate(160 276.449 105.918)" />
         <use href="#logo-path-a" transform="rotate(170 263.123 128.128)" />
-        <circle className="svg-elem-2" r="120" fill="none" stroke={strokeColor} strokeWidth="4" />
-        <circle className="svg-elem-3" r="80" fill="none" stroke={strokeColor} strokeWidth="4" />
+        <circle className="svg-elem-2" r="120" fill="none" stroke="currentColor" strokeWidth="4" />
+        <circle className="svg-elem-3" r="80" fill="none" stroke="currentColor" strokeWidth="4" />
       </g>
     </svg>
   );

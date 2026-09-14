@@ -35,19 +35,19 @@ export function ModeSelection({
         onClick={() => onModeChange("research")}
         className={`flex flex-col gap-3 p-6 rounded-2xl border-2 transition-all text-left ${
           researchMode === "research"
-            ? "border-[#17171c] bg-[#edfce9]/60  shadow-md"
-            : "border-border hover:border-[#17171c] dark:hover:border-[#17171c] hover:shadow-sm"
+            ? "border-primary bg-pale-green/60  shadow-md"
+            : "border-border hover:border-primary dark:hover:border-primary hover:shadow-sm"
         }`}
       >
-        <div className={`p-2.5 rounded-xl w-fit ${researchMode === "research" ? "bg-[#edfce9] " : "bg-[#eeece7] "}`}>
-          <BarChart2 size={22} className={researchMode === "research" ? "text-[#ff7759]" : "text-muted-foreground"} />
+        <div className={`p-2.5 rounded-xl w-fit ${researchMode === "research" ? "bg-pale-green " : "bg-soft-stone "}`}>
+          <BarChart2 size={22} className={researchMode === "research" ? "text-coral" : "text-muted-foreground"} />
         </div>
         <div>
           <div className="font-bold text-base">Pazar Araştırması</div>
           <div className="text-sm text-muted-foreground mt-0.5">Ürün/hizmet fikri doğrulama, hedef kitle ve fiyat araştırması</div>
         </div>
         {researchMode === "research" && (
-                        <Badge className="w-fit bg-[#17171c] hover:bg-[#17171c] text-white text-xs">Seçildi</Badge>
+                        <Badge className="w-fit bg-primary hover:bg-primary text-white text-xs">Seçildi</Badge>
         )}
       </button>
 
@@ -67,8 +67,8 @@ export function ModeSelection({
           abTestLocked
             ? "border-border opacity-60 cursor-not-allowed"
             : researchMode === "ab_test"
-            ? "border-[#17171c] bg-[#edfce9]/60  shadow-md"
-            : "border-border hover:border-[#17171c] dark:hover:border-[#17171c] hover:shadow-sm"
+            ? "border-primary bg-pale-green/60  shadow-md"
+            : "border-border hover:border-primary dark:hover:border-primary hover:shadow-sm"
         }`}
       >
         {abTestLocked && (
@@ -76,15 +76,15 @@ export function ModeSelection({
             <Lock size={9} /> Flex
           </span>
         )}
-        <div className={`p-2.5 rounded-xl w-fit ${researchMode === "ab_test" && !abTestLocked ? "bg-[#edfce9] " : "bg-[#eeece7] "}`}>
-          <FlaskConical size={22} className={researchMode === "ab_test" && !abTestLocked ? "text-[#ff7759]" : "text-muted-foreground"} />
+        <div className={`p-2.5 rounded-xl w-fit ${researchMode === "ab_test" && !abTestLocked ? "bg-pale-green " : "bg-soft-stone "}`}>
+          <FlaskConical size={22} className={researchMode === "ab_test" && !abTestLocked ? "text-coral" : "text-muted-foreground"} />
         </div>
         <div>
           <div className="font-bold text-base">A/B Test Simülasyonu</div>
           <div className="text-sm text-muted-foreground mt-0.5">İki farklı mesaj, fiyat veya özellik varyantını karşılaştır</div>
         </div>
         {researchMode === "ab_test" && !abTestLocked && (
-                        <Badge className="w-fit bg-[#17171c] hover:bg-[#17171c] text-white text-xs">Seçildi</Badge>
+                        <Badge className="w-fit bg-primary hover:bg-primary text-white text-xs">Seçildi</Badge>
         )}
       </button>
     </div>
@@ -93,7 +93,7 @@ export function ModeSelection({
       size="lg"
       disabled={researchMode === "ab_test" && abTestLocked}
       onClick={onStart}
-      className="w-full gap-2 bg-[#17171c] hover:opacity-85 text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+      className="w-full gap-2 bg-primary hover:opacity-85 text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
     >
       Defne ile Başla
       <ChevronRight size={18} />

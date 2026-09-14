@@ -16,11 +16,11 @@ export function BigFiveRadar({ bigFive }: { bigFive: Record<string, number> }) {
 
   const rings = [0.34, 0.67, 1].map((f, ri) => {
     const pts = Array.from({ length: N }, (_, i) => pt(i, R * f).map(n => n.toFixed(1)).join(",")).join(" ");
-    return <polygon key={ri} points={pts} fill="none" stroke="#d9d9dd" strokeWidth="1" />;
+    return <polygon key={ri} points={pts} fill="none" strokeWidth="1" className="stroke-hairline" />;
   });
   const spokes = Array.from({ length: N }, (_, i) => {
     const [x, y] = pt(i, R);
-    return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#d9d9dd" strokeWidth="1" />;
+    return <line key={i} x1={cx} y1={cy} x2={x} y2={y} strokeWidth="1" className="stroke-hairline" />;
   });
   const valuePts = Array.from(
     { length: N },
@@ -29,7 +29,7 @@ export function BigFiveRadar({ bigFive }: { bigFive: Record<string, number> }) {
   const labels = Array.from({ length: N }, (_, i) => {
     const [x, y] = pt(i, R + 20);
     return (
-      <text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="9" fill="#616161">
+      <text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="9" className="fill-body-muted">
         {axes[i].label}
       </text>
     );
@@ -38,7 +38,7 @@ export function BigFiveRadar({ bigFive }: { bigFive: Record<string, number> }) {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-[220px] mx-auto" role="img" aria-label="Büyük Beşli kişilik radarı">
       {rings}{spokes}
-      <polygon points={valuePts} fill="#003c33" fillOpacity="0.22" stroke="#003c33" strokeWidth="2" />
+      <polygon points={valuePts} fillOpacity="0.22" strokeWidth="2" className="fill-deep-green stroke-deep-green" />
       {labels}
     </svg>
   );

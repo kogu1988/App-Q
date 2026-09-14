@@ -27,11 +27,11 @@ interface SubscriptionInfo {
 }
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  active: { label: "Aktif", className: "bg-[#003c33] text-white" },
-  trialing: { label: "Deneme", className: "bg-[#1d4ed8] text-white" },
+  active: { label: "Aktif", className: "bg-deep-green text-white" },
+  trialing: { label: "Deneme", className: "bg-info-blue text-white" },
   past_due: { label: "Ödeme Gecikti", className: "bg-amber-500 text-white" },
-  paused: { label: "Duraklatıldı", className: "bg-[#616161] text-white" },
-  canceled: { label: "İptal Edildi", className: "bg-[#8b1e1e] text-white" },
+  paused: { label: "Duraklatıldı", className: "bg-body-muted text-white" },
+  canceled: { label: "İptal Edildi", className: "bg-error-dark text-white" },
   none: { label: "Abonelik Yok", className: "bg-muted text-muted-foreground" },
 };
 
@@ -116,7 +116,7 @@ function SubscriptionCard() {
             </Button>
           ) : null}
           <Link href="/client/upgrade">
-            <Button size="sm" className="bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl gap-2">
+            <Button size="sm" className="bg-primary hover:opacity-85 text-white font-semibold rounded-xl gap-2">
               {sub?.plan && sub.plan !== "Free" ? "Planı Değiştir" : "Plan Seç"}
             </Button>
           </Link>
@@ -164,7 +164,7 @@ export default function ClientDashboard() {
           </p>
           <div className="pt-1">
             <Link href="/client/upgrade">
-              <Button size="sm" className="bg-[#17171c] hover:opacity-85 text-white font-semibold rounded-xl text-xs px-4">
+              <Button size="sm" className="bg-primary hover:opacity-85 text-white font-semibold rounded-xl text-xs px-4">
                 Plan Seç →
               </Button>
             </Link>
@@ -173,16 +173,16 @@ export default function ClientDashboard() {
       )}
 
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight text-[#17171c] dark:text-white">Kontrol Paneli</h1>
-        <p className="text-[#616161] dark:text-[#93939f] text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-primary dark:text-white">Kontrol Paneli</h1>
+        <p className="text-body-muted dark:text-muted-text text-sm sm:text-base">Geçmiş araştırma projeleriniz ve sonuçları.</p>
       </div>
 
       <SubscriptionCard />
 
       {/* ── PRESET SHARP CARBON GLOW CARD ────────────────────────────────────── */}
-      <div className="bg-[#17171c] text-white p-6 sm:p-8 rounded-[2px] border border-white/10 relative overflow-hidden shadow-lg">
+      <div className="bg-primary text-white p-6 sm:p-8 rounded-[2px] border border-white/10 relative overflow-hidden shadow-lg">
         {/* Decorative subtle ambient orange glow */}
-        <div className="absolute right-0 top-0 w-64 h-64 bg-[#ff7759]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-0 top-0 w-64 h-64 bg-coral/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-2">
@@ -194,7 +194,7 @@ export default function ClientDashboard() {
             </p>
           </div>
           <Link href="/client/new" className="shrink-0">
-            <Button className="bg-[#ff7759] hover:bg-[#ff7759]/90 text-[#17171c] font-semibold rounded-[2px] px-6 py-5 text-sm transition-all duration-300 transform hover:scale-[1.02]">
+            <Button className="bg-coral hover:bg-coral/90 text-primary font-semibold rounded-[2px] px-6 py-5 text-sm transition-all duration-300 transform hover:scale-[1.02]">
               Yeni Araştırma Başlat
             </Button>
           </Link>
@@ -208,9 +208,9 @@ export default function ClientDashboard() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8 text-[#616161] dark:text-[#93939f] text-sm">Yükleniyor...</div>
+            <div className="text-center py-8 text-body-muted dark:text-muted-text text-sm">Yükleniyor...</div>
           ) : studies.length === 0 ? (
-            <div className="text-center py-12 text-[#616161] dark:text-[#93939f] border border-dashed border-border rounded-lg">
+            <div className="text-center py-12 text-body-muted dark:text-muted-text border border-dashed border-border rounded-lg">
               Henüz bir araştırma bulunmuyor. Yeni bir araştırma başlatın.
             </div>
           ) : (
@@ -230,12 +230,12 @@ export default function ClientDashboard() {
                     <TableRow key={study.id}>
                       <TableCell className="font-medium">{study.title || "İsimsiz Proje"}</TableCell>
                       <TableCell>{study.category || "-"}</TableCell>
-                      <TableCell className="text-[#616161] dark:text-[#93939f]">
+                      <TableCell className="text-body-muted dark:text-muted-text">
                         {new Date(study.updated_at).toLocaleDateString("tr-TR")}
                       </TableCell>
                       <TableCell>
                         {study.has_report ? (
-                          <Badge variant="default" className="bg-[#003c33] text-white dark:bg-[#edfce9] dark:text-[#003c33]">Tamamlandı</Badge>
+                          <Badge variant="default" className="bg-deep-green text-white dark:bg-pale-green dark:text-deep-green">Tamamlandı</Badge>
                         ) : (
                           <Badge variant="secondary">Taslak</Badge>
                         )}

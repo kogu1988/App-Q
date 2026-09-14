@@ -16,8 +16,8 @@ export function AdminHeader({ adminKey, onAdminKeyChange }: AdminHeaderProps) {
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
       <div className="flex items-center gap-4">
         <Link href="/" className="flex items-center gap-2">
-          <Logo size={36} strokeColor="#17171c" />
-          <span className="font-semibold text-base text-[#17171c]">Clarere</span>
+          <Logo size={36} className="text-primary" />
+          <span className="font-semibold text-base text-primary">Clarere</span>
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-primary">Clarere Yönetici Paneli</h1>

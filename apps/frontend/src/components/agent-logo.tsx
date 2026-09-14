@@ -5,18 +5,12 @@ import { useEffect, useState } from "react";
 interface AgentLogoProps {
   className?: string;
   size?: number;
-  strokeColor?: string;
-  innerStrokeColor?: string;
-  dotColor?: string;
   animate?: boolean;
 }
 
 export default function AgentLogo({
   className = "",
   size = 48,
-  strokeColor = "#003c33",
-  innerStrokeColor = "#ff7759",
-  dotColor = "#003c33",
   animate = false,
 }: AgentLogoProps) {
   const [active, setActive] = useState(false);
@@ -57,8 +51,8 @@ export default function AgentLogo({
               50% { stroke-dashoffset: 0; }
             }
             @keyframes think-glow {
-              0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 119, 89, 0.2)); opacity: 0.85; }
-              50% { filter: drop-shadow(0 0 12px rgba(255, 119, 89, 0.65)); opacity: 1; }
+              0%, 100% { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--color-coral) 20%, transparent)); opacity: 0.85; }
+              50% { filter: drop-shadow(0 0 12px color-mix(in srgb, var(--color-coral) 65%, transparent)); opacity: 1; }
             }
 
             .agent-thinking-active {
@@ -87,13 +81,12 @@ export default function AgentLogo({
       <circle
         r="75"
         fill="none"
-        stroke={strokeColor}
         strokeWidth="5"
-        className="svg-elem-2"
+        className="svg-elem-2 stroke-deep-green"
       />
       <g fill="none" strokeLinecap="round" strokeLinejoin="round">
         {/* Outer leaf ring */}
-        <g stroke="#1863dc" strokeWidth="5" opacity=".4">
+        <g className="stroke-action-blue" strokeWidth="5" opacity=".4">
           <use href="#agent-leaf" transform="matrix(.8 0 0 .8 0 -24)" />
           <use href="#agent-leaf" transform="rotate(45 28.97 12)scale(.8)" />
           <use href="#agent-leaf" transform="matrix(0 .8 -.8 0 24 0)" />
@@ -104,7 +97,7 @@ export default function AgentLogo({
           <use href="#agent-leaf" transform="rotate(-45 -28.97 12)scale(.8)" />
         </g>
         {/* Inner leaf ring */}
-        <g stroke={innerStrokeColor} strokeWidth="1.5" opacity=".9">
+        <g className="stroke-coral" strokeWidth="1.5" opacity=".9">
           <use href="#agent-leaf" transform="rotate(22.5 30.164 6)scale(.55)" />
           <use href="#agent-leaf" transform="rotate(67.5 8.98 6)scale(.55)" />
           <use href="#agent-leaf" transform="rotate(112.5 4.01 6)scale(.55)" />
@@ -114,8 +107,8 @@ export default function AgentLogo({
           <use href="#agent-leaf" transform="rotate(-67.5 -8.98 6)scale(.55)" />
           <use href="#agent-leaf" transform="rotate(-22.5 -30.164 6)scale(.55)" />
         </g>
-        <circle r="14" stroke={strokeColor} strokeWidth="3" className="svg-elem-3" />
-        <circle r="4" fill={dotColor} className="svg-elem-4" />
+        <circle r="14" strokeWidth="3" className="svg-elem-3 stroke-deep-green" />
+        <circle r="4" className="svg-elem-4 fill-deep-green" />
       </g>
     </svg>
   );

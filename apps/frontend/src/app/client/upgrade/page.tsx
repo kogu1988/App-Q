@@ -24,7 +24,7 @@ const PLANS = [
     monthlyPrice: 0,
     annualPrice: 0,
     description: "Sistem özelliklerini denemek için",
-    color: "border-[#d9d9dd]",
+    color: "border-hairline",
     badge: null,
     features: [
       "1 aylık ücretsiz deneme veya 2 araştırma (hangisi önce biterse)",
@@ -46,7 +46,7 @@ const PLANS = [
     monthlyPrice: 49,
     annualPrice: 49,
     description: "Taahhüt vermeden tek seferlik paket arayanlar için",
-    color: "border-[#b8b7b3]",
+    color: "border-stone-deep",
     badge: "Tek Seferlik",
     features: [
       "Süre sınırı yoktur (Ömür boyu kullanım)",
@@ -66,7 +66,7 @@ const PLANS = [
     monthlyPrice: 69,
     annualPrice: 55, // ~20% discount
     description: "Büyüyen ekipler ve danışmanlar için ideal",
-    color: "border-[#003c33]",
+    color: "border-deep-green",
     badge: "En Popüler",
     features: [
       "Ayda 10 araştırma hakkı",
@@ -91,7 +91,7 @@ const PLANS = [
     monthlyPrice: 169,
     annualPrice: 135, // ~20% discount
     description: "Ajanslar ve profesyonel araştırmacılar için",
-    color: "border-[#ff7759]",
+    color: "border-coral",
     badge: "Önerilen",
     features: [
       "Sınırsız araştırma sayısı",
@@ -216,10 +216,10 @@ export default function UpgradePage() {
   if (step === "payment") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center animate-in fade-in duration-500">
-        <div className="h-16 w-16 rounded-full bg-[#fff5e6] flex items-center justify-center mb-6 shadow-sm">
-          <CreditCard size={30} className="text-[#c2410c]" />
+        <div className="h-16 w-16 rounded-full bg-warm-surface flex items-center justify-center mb-6 shadow-sm">
+          <CreditCard size={30} className="text-warning" />
         </div>
-        <h2 className="text-2xl font-extrabold tracking-tight text-[#17171c] mb-2">
+        <h2 className="text-2xl font-extrabold tracking-tight text-primary mb-2">
           Ödeme penceresi açıldı
         </h2>
         <p className="text-muted-foreground mb-2">
@@ -242,14 +242,14 @@ export default function UpgradePage() {
   if (step === "done") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center animate-in fade-in duration-500">
-        <div className="h-16 w-16 rounded-full bg-[#edfce9] flex items-center justify-center mb-6 shadow-sm">
-          <Check size={32} className="text-[#003c33]" />
+        <div className="h-16 w-16 rounded-full bg-pale-green flex items-center justify-center mb-6 shadow-sm">
+          <Check size={32} className="text-deep-green" />
         </div>
-        <h2 className="text-2xl font-extrabold tracking-tight text-[#17171c] mb-2">
+        <h2 className="text-2xl font-extrabold tracking-tight text-primary mb-2">
           Plan Güncellendi!
         </h2>
         <p className="text-muted-foreground mb-2">
-          <span className="font-semibold text-[#003c33]">{selected}</span> planına geçildi.
+          <span className="font-semibold text-deep-green">{selected}</span> planına geçildi.
         </p>
         <p className="text-sm text-muted-foreground">Dashboard&apos;a yönlendiriliyorsunuz...</p>
       </div>
@@ -275,15 +275,15 @@ export default function UpgradePage() {
 
         <h2 className="text-2xl font-extrabold tracking-tight mb-1">Planı Onayla</h2>
         <p className="text-muted-foreground text-sm mb-8">
-          {currentPlan} → <span className="font-semibold text-[#003c33]">{selectedPlan.name}</span>
+          {currentPlan} → <span className="font-semibold text-deep-green">{selectedPlan.name}</span>
         </p>
 
         {/* Order Summary */}
-        <div className="rounded-2xl border border-[#d9d9dd] p-5 space-y-4 mb-6 bg-[#f5f4f1]/30">
+        <div className="rounded-2xl border border-hairline p-5 space-y-4 mb-6 bg-muted-surface/30">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold">{selectedPlan.name} Plan</span>
             {selectedPlan.badge && (
-              <Badge className="bg-[#003c33] text-white text-[10px]">{selectedPlan.badge}</Badge>
+              <Badge className="bg-deep-green text-white text-[10px]">{selectedPlan.badge}</Badge>
             )}
           </div>
 
@@ -296,27 +296,27 @@ export default function UpgradePage() {
                   onClick={() => setBilling(cycle)}
                   className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all ${
                     billing === cycle
-                      ? "border-[#17171c] bg-[#17171c] text-white"
-                      : "border-[#d9d9dd] text-muted-foreground hover:border-[#17171c]"
+                      ? "border-primary bg-primary text-white"
+                      : "border-hairline text-muted-foreground hover:border-primary"
                   }`}
                 >
                   {cycle === "monthly" ? "Aylık" : "Yıllık"}
                   {cycle === "annual" && saving > 0 && (
-                    <span className="ml-1 text-[10px] text-[#ff7759] font-bold">-%{saving}</span>
+                    <span className="ml-1 text-[10px] text-coral font-bold">-%{saving}</span>
                   )}
                 </button>
               ))}
             </div>
           ) : (
-            <div className="py-2.5 px-4 rounded-xl text-xs font-semibold border border-[#b8b7b3] bg-[#b8b7b3]/10 text-amber-800 text-center">
+            <div className="py-2.5 px-4 rounded-xl text-xs font-semibold border border-stone-deep bg-stone-deep/10 text-amber-800 text-center">
               ⚠️ Bu paket tek seferliktir, abonelik taahhüdü veya yenileme içermez.
             </div>
           )}
 
-          <div className="flex items-end justify-between pt-2 border-t border-[#d9d9dd]">
+          <div className="flex items-end justify-between pt-2 border-t border-hairline">
             <span className="text-muted-foreground text-sm">Tutar</span>
             <div className="text-right">
-              <span className="text-2xl font-extrabold text-[#17171c]">
+              <span className="text-2xl font-extrabold text-primary">
                 {price === 0 ? "Ücretsiz" : `$${price.toLocaleString("en-US")}`}
               </span>
               {price > 0 && !isFlex && (
@@ -337,7 +337,7 @@ export default function UpgradePage() {
         <div className="space-y-2 mb-8">
           {selectedPlan.features.map(f => (
             <div key={f} className="flex items-center gap-2 text-sm">
-              <Check size={14} className="text-[#003c33] shrink-0" />
+              <Check size={14} className="text-deep-green shrink-0" />
               <span>{f}</span>
             </div>
           ))}
@@ -353,7 +353,7 @@ export default function UpgradePage() {
         <Button
           onClick={handleUpgrade}
           disabled={upgrading}
-          className="w-full bg-[#17171c] hover:opacity-85 text-white font-semibold gap-2 h-12 text-base rounded-xl"
+          className="w-full bg-primary hover:opacity-85 text-white font-semibold gap-2 h-12 text-base rounded-xl"
         >
           {upgrading ? (
             <>İşleniyor...</>
@@ -382,30 +382,30 @@ export default function UpgradePage() {
 
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
-            <Zap size={18} className="text-[#ff7759]" />
+            <Zap size={18} className="text-coral" />
             <h1 className="text-2xl font-extrabold tracking-tight">Planını Yükselt</h1>
           </div>
           <p className="text-muted-foreground text-sm">
-            Şu anki planın: <span className="font-semibold text-[#17171c]">{loading ? "..." : currentPlan}</span>
+            Şu anki planın: <span className="font-semibold text-primary">{loading ? "..." : currentPlan}</span>
           </p>
         </div>
 
         {/* Billing Toggle */}
         <div className="flex flex-wrap items-center gap-3 mb-8 w-full">
-          <div className="flex items-center gap-2 bg-[#f5f4f1]/80 p-1 rounded-full border border-[#d9d9dd]">
+          <div className="flex items-center gap-2 bg-muted-surface/80 p-1 rounded-full border border-hairline">
             {(["monthly", "annual"] as const).map(cycle => (
               <button
                 key={cycle}
                 onClick={() => setBilling(cycle)}
                 className={`px-5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                   billing === cycle
-                    ? "bg-[#17171c] text-white shadow-sm"
+                    ? "bg-primary text-white shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {cycle === "monthly" ? "Aylık" : "Yıllık"}
                 {cycle === "annual" && (
-                  <span className="ml-1.5 text-[9px] font-bold text-[#ff7759] bg-[#ff7759]/10 px-1.5 py-0.5 rounded-full">%20 indirim</span>
+                  <span className="ml-1.5 text-[9px] font-bold text-coral bg-coral/10 px-1.5 py-0.5 rounded-full">%20 indirim</span>
                 )}
               </button>
             ))}
@@ -432,9 +432,9 @@ export default function UpgradePage() {
                 onClick={() => handleSelect(p.key)}
                 className={`relative flex flex-col text-left p-5 rounded-2xl border-2 transition-all duration-200 ${
                   isCurrent
-                    ? "border-[#003c33] bg-[#edfce9]/40 cursor-default"
+                    ? "border-deep-green bg-pale-green/40 cursor-default"
                     : isDowngrade
-                    ? "border-[#d9d9dd] opacity-40 cursor-not-allowed"
+                    ? "border-hairline opacity-40 cursor-not-allowed"
                     : selected === p.key
                     ? `${p.color} shadow-lg scale-[1.02]`
                     : `${p.color} hover:shadow-md hover:scale-[1.01]`
@@ -442,24 +442,24 @@ export default function UpgradePage() {
               >
                 {/* Badge */}
                 {p.badge && (
-                  <span className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#ff7759] text-white">
+                  <span className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-coral text-white">
                     {p.badge}
                   </span>
                 )}
                 {isCurrent && (
-                  <span className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#edfce9] text-[#003c33] border border-[#003c33]/30">
+                  <span className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-pale-green text-deep-green border border-deep-green/30">
                     Mevcut Plan
                   </span>
                 )}
 
                 {/* Icon */}
                 <div className={`h-8 w-8 rounded-lg flex items-center justify-center mb-3 ${
-                  p.key === "Pro" ? "bg-[#fff3f0]" :
-                  p.key === "Starter" ? "bg-[#edfce9]" : "bg-[#eeece7]"
+                  p.key === "Pro" ? "bg-error-soft" :
+                  p.key === "Starter" ? "bg-pale-green" : "bg-soft-stone"
                 }`}>
-                  {p.key === "Pro" ? <Sparkles size={16} className="text-[#ff7759]" /> :
-                   p.key === "Starter" ? <Zap size={16} className="text-[#003c33]" /> :
-                   <Building2 size={16} className="text-[#616161]" />}
+                  {p.key === "Pro" ? <Sparkles size={16} className="text-coral" /> :
+                   p.key === "Starter" ? <Zap size={16} className="text-deep-green" /> :
+                   <Building2 size={16} className="text-body-muted" />}
                 </div>
 
                 <div className="font-bold text-base mb-0.5">{p.name}</div>
@@ -483,7 +483,7 @@ export default function UpgradePage() {
                 <ul className="space-y-1.5 flex-1 mb-4">
                   {p.features.map(f => (
                     <li key={f} className="flex items-start gap-1.5 text-[11px] leading-snug">
-                      <Check size={12} className="text-[#003c33] shrink-0 mt-0.5" />
+                      <Check size={12} className="text-deep-green shrink-0 mt-0.5" />
                       <span>{f}</span>
                     </li>
                   ))}
@@ -499,8 +499,8 @@ export default function UpgradePage() {
                 {!disabled && (
                   <div className={`mt-auto w-full py-2 rounded-xl text-xs font-semibold text-center transition-all ${
                     p.key === "Pro"
-                      ? "bg-[#ff7759] text-white"
-                      : "bg-[#17171c] text-white"
+                      ? "bg-coral text-white"
+                      : "bg-primary text-white"
                   }`}>
                     {p.name} Seç
                   </div>
@@ -511,11 +511,11 @@ export default function UpgradePage() {
         </div>
 
         {/* Enterprise CTA */}
-        <div className="rounded-2xl border-2 border-[#17171c] p-6 flex flex-col md:flex-row items-start md:items-center justify-between bg-[#f5f4f1]/50 gap-4">
+        <div className="rounded-2xl border-2 border-primary p-6 flex flex-col md:flex-row items-start md:items-center justify-between bg-muted-surface/50 gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge className="bg-[#17171c] text-white text-[10px] font-bold">ENTERPRISE</Badge>
-              <span className="font-extrabold text-base text-[#17171c]">Kurumsal Çözüm</span>
+              <Badge className="bg-primary text-white text-[10px] font-bold">ENTERPRISE</Badge>
+              <span className="font-extrabold text-base text-primary">Kurumsal Çözüm</span>
             </div>
             <p className="text-xs text-muted-foreground leading-tight max-w-xl">
               Sınırsız kullanım, özel metodoloji ve entegrasyonlar, atanmış destek ekibi ve kurumsal veri işleme seçenekleri ile organizasyonunuzu ölçeklendirin.
@@ -523,7 +523,7 @@ export default function UpgradePage() {
           </div>
           <a
             href="mailto:hiclarere@clarere.com?subject=Enterprise Plan Talebi"
-            className="px-5 py-2.5 rounded-xl bg-[#17171c] text-white text-xs font-semibold hover:opacity-85 transition-opacity shrink-0 w-full md:w-auto text-center"
+            className="px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold hover:opacity-85 transition-opacity shrink-0 w-full md:w-auto text-center"
           >
             İletişime Geç
           </a>

@@ -162,14 +162,14 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
     <>
     <div className="mt-6 flex-1 outline-none">
       <div className="mb-6">
-        <p className="text-sm text-[#616161] dark:text-[#93939f]">
+        <p className="text-sm text-body-muted dark:text-muted-text">
           Sisteme kayıtlı kurumsal müşteriler ve simülasyon limitleri.
         </p>
       </div>
       <div className="flex justify-between items-center mb-2">
         <Button
           onClick={() => setShowClientForm(!showClientForm)}
-          className="gap-2 bg-[#17171c] text-white hover:opacity-85 h-9"
+          className="gap-2 bg-primary text-white hover:opacity-85 h-9"
         >
           <Plus size={16} />
           Yeni Danışan
@@ -178,13 +178,13 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
 
       {/* Add Client Form */}
       {showClientForm && (
-        <Card className="border-[#d9d9dd] bg-[#edfce9]/30 animate-in fade-in slide-in-from-top-2 duration-200 mb-6">
+        <Card className="border-hairline bg-pale-green/30 animate-in fade-in slide-in-from-top-2 duration-200 mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base text-[#003c33]">Yeni Danışan Ekle</CardTitle>
+            <CardTitle className="text-base text-deep-green">Yeni Danışan Ekle</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="mb-4 p-3 bg-white border border-border rounded-lg space-y-2">
-              <Label className="text-[11px] font-mono uppercase tracking-wider text-[#93939f]">
+              <Label className="text-[11px] font-mono uppercase tracking-wider text-muted-text">
                 Plan Şablonu Seç (Limitler Otomatik Dolar)
               </Label>
               <div className="flex flex-wrap gap-2">
@@ -195,11 +195,11 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
                     onClick={() => applyTemplate(name)}
                     className={`flex flex-col items-start px-3 py-2 rounded-lg border-2 transition-all text-left ${
                       clientForm.plan_type === name
-                        ? "border-[#17171c] bg-[#edfce9]"
-                        : "border-border hover:border-[#17171c]"
+                        ? "border-primary bg-pale-green"
+                        : "border-border hover:border-primary"
                     }`}
                   >
-                    <span className={`font-bold text-sm ${clientForm.plan_type === name ? "text-[#003c33]" : ""}`}>
+                    <span className={`font-bold text-sm ${clientForm.plan_type === name ? "text-deep-green" : ""}`}>
                       {name}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
@@ -263,7 +263,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
               <Button
                 onClick={createClient}
                 disabled={savingClient || !clientForm.username}
-                className="gap-2 bg-[#17171c] text-white hover:opacity-85"
+                className="gap-2 bg-primary text-white hover:opacity-85"
               >
                 {savingClient && <Loader2 size={14} className="animate-spin" />}
                 Kaydet
@@ -363,7 +363,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
                     </TableCell>
                     <TableCell>
                       {cli.status === "Aktif" ? (
-                        <Badge className="bg-[#003c33] hover:bg-[#003c33]/85 text-white text-xs">Aktif</Badge>
+                        <Badge className="bg-deep-green hover:bg-deep-green/85 text-white text-xs">Aktif</Badge>
                       ) : (
                         <Badge variant="secondary" className="text-xs">
                           {cli.status}
@@ -377,7 +377,7 @@ export function ClientsTab({ clients, onRefresh }: { clients: ClientInfo[]; onRe
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-7 w-7 p-0 text-emerald-600 hover:text-[#003c33]"
+                              className="h-7 w-7 p-0 text-emerald-600 hover:text-deep-green"
                               onClick={() => updateClient(cli.username)}
                             >
                               <Check size={14} />

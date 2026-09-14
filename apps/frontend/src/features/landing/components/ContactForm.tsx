@@ -35,41 +35,41 @@ export function ContactForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-[8px] border border-[#d9d9dd] p-6 sm:p-8 space-y-5">
+    <form onSubmit={handleSubmit} className="bg-white rounded-[8px] border border-hairline p-6 sm:p-8 space-y-5">
       <div>
-        <label className="block text-sm font-medium text-[#212121] mb-1.5">Adınız</label>
+        <label className="block text-sm font-medium text-ink mb-1.5">Adınız</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Adınız Soyadınız"
-          className="w-full px-4 py-2.5 rounded-[8px] border border-[#d9d9dd] text-sm focus:outline-none focus:ring-2 focus:ring-[#17171c]/20 focus:border-[#17171c] transition-colors"
+          className="w-full px-4 py-2.5 rounded-[8px] border border-hairline text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-[#212121] mb-1.5">E-posta</label>
+        <label className="block text-sm font-medium text-ink mb-1.5">E-posta</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="ornek@email.com"
-          className="w-full px-4 py-2.5 rounded-[8px] border border-[#d9d9dd] text-sm focus:outline-none focus:ring-2 focus:ring-[#17171c]/20 focus:border-[#17171c] transition-colors"
+          className="w-full px-4 py-2.5 rounded-[8px] border border-hairline text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-[#212121] mb-1.5">Mesajınız</label>
+        <label className="block text-sm font-medium text-ink mb-1.5">Mesajınız</label>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Bize iletmek istediğiniz mesaj..."
           rows={4}
-          className="w-full px-4 py-2.5 rounded-[8px] border border-[#d9d9dd] text-sm focus:outline-none focus:ring-2 focus:ring-[#17171c]/20 focus:border-[#17171c] transition-colors resize-none"
+          className="w-full px-4 py-2.5 rounded-[8px] border border-hairline text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-none"
         />
       </div>
       <button
         type="submit"
         disabled={sending}
-        className="w-full py-3 rounded-full bg-[#17171c] text-white text-sm font-semibold hover:bg-[#17171c]/85 transition-colors disabled:opacity-50"
+        className="w-full py-3 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 transition-colors disabled:opacity-50"
       >
         {sending ? "Gönderiliyor..." : "Gönder"}
       </button>

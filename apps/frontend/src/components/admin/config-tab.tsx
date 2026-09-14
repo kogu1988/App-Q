@@ -76,8 +76,8 @@ export function ConfigTab({
                 <Badge
                   className={
                     config.pii_active === "true"
-                      ? "bg-[#003c33] hover:bg-[#003c33]/85 text-white"
-                      : "bg-[#eeece7] text-[#212121]"
+                      ? "bg-deep-green hover:bg-deep-green/85 text-white"
+                      : "bg-soft-stone text-ink"
                   }
                 >
                   {config.pii_active === "true" ? "Aktif" : "Pasif"}
@@ -114,7 +114,7 @@ export function ConfigTab({
                 id={`prompt-${key}`}
                 defaultValue={config[key] || ""}
                 rows={8}
-                className="text-sm font-mono bg-[#f5f4f1] text-[#212121] flex-1 resize-none"
+                className="text-sm font-mono bg-muted-surface text-ink flex-1 resize-none"
               />
               <div className="flex justify-end pt-2">
                 <Button
@@ -124,7 +124,7 @@ export function ConfigTab({
                     const el = document.getElementById(`prompt-${key}`) as HTMLTextAreaElement;
                     if (el) saveConfig(key, el.value);
                   }}
-                  className="gap-2 bg-[#ff7759] text-white hover:opacity-85 w-full"
+                  className="gap-2 bg-coral text-white hover:opacity-85 w-full"
                 >
                   {savingConfig === key ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                   Promptu Kaydet

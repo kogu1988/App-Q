@@ -16,7 +16,7 @@ export function EvidenceTab({ study }: EvidenceTabProps) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div>
-        <h2 className="text-xl font-bold text-[#17171c] dark:text-white">Kanıt Zinciri ve Karar Katmanı</h2>
+        <h2 className="text-xl font-bold text-primary dark:text-white">Kanıt Zinciri ve Karar Katmanı</h2>
         <p className="text-muted-foreground text-sm">Mülakatlardan çıkarılan bulgular, kanıt alıntıları ve karar sinyalleri.</p>
       </div>
 
@@ -29,7 +29,7 @@ export function EvidenceTab({ study }: EvidenceTabProps) {
         <div className="space-y-6">
           {/* Decision Items Summary */}
           {study?.decision_items && study.decision_items.length > 0 && (
-            <Card className="shadow-sm border-[#003c33]/20">
+            <Card className="shadow-sm border-deep-green/20">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Zap size={18} className="text-amber-500" />
@@ -46,7 +46,7 @@ export function EvidenceTab({ study }: EvidenceTabProps) {
                       <DcIcon size={16} className={`shrink-0 mt-0.5 ${dc.color}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-sm text-[#212121]">{di.title}</span>
+                          <span className="font-semibold text-sm text-ink">{di.title}</span>
                           <Badge className={`text-[10px] ${dc.bg} ${dc.color}`}>{dc.label}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">{di.recommended_action}</p>

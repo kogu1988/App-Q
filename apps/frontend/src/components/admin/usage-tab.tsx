@@ -21,14 +21,14 @@ export function UsageTab({ usage, usageLoading }: UsageTabProps) {
   return (
     <>
   <div className="mb-6">
-    <p className="text-sm text-[#616161] dark:text-[#93939f]">
+    <p className="text-sm text-body-muted dark:text-muted-text">
       Kullanıcı bazlı token tüketimi ve tahmini DeepSeek maliyeti (USD).
     </p>
   </div>
 
   {usageLoading && (
     <div className="flex items-center gap-3 py-16 justify-center text-muted-foreground">
-      <Loader2 size={22} className="animate-spin text-[#ff7759]" />
+      <Loader2 size={22} className="animate-spin text-coral" />
       Maliyet verisi yükleniyor...
     </div>
   )}

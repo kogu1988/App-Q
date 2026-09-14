@@ -98,7 +98,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
       <div className="w-full max-w-sm mx-4 rounded-2xl border border-border bg-card shadow-2xl p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <Logo size={36} strokeColor="#17171c" />
+          <Logo size={36} className="text-primary" />
           <span className="font-bold text-lg tracking-tight">Clarere</span>
         </div>
 
@@ -168,7 +168,7 @@ export function UsernameModal({ onComplete }: UsernameModalProps) {
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-full py-2.5 rounded-xl bg-[#17171c] text-white font-semibold text-sm hover:opacity-85 transition-opacity"
+            className="w-full py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:opacity-85 transition-opacity"
           >
             {loading ? "Yükleniyor…" : "Başla →"}
           </button>
