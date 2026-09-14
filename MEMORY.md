@@ -570,3 +570,15 @@ python -m pytest packages/research_engine/tests/ -q
 - 🐛 **İki test kaynak-yolu güncellemesi:** `test_probe_engine.py::test_6_8` artık `workflow/` paketinin tamamını tarıyor.
 - Doğrulama: `python scripts/run_tests.py` → **411 passed**; Playwright `01-ui` + `03-study-actions` → **5/5**; container logu temiz; API smoke 200.
 - **Sıradaki:** R3 — `admin/page.tsx` (1470) → bileşenler.
+
+### Refaktör R3 — Admin panel ayrımı (2026-09-13)
+
+- ✅ **`admin/page.tsx` 1470 → 115 satır** (kabul: < 300).
+- ✅ **Veri katmanı ayrıldı:** `features/admin/hooks/use-admin.ts` (189) — durum, `fetchAll`, tembel yükleme (`loadSchemas/loadMetrics/loadUsage`) ve mutasyon handler'ları; `features/admin/types.ts` (132) — tüm arayüzler.
+- ✅ **Yeni bileşenler (`components/admin/`):** `admin-header` (48), `admin-tab-nav` (64), `questions-tab` (144), `feedback-tab` (113), `logs-tab` (71), `schemas-tab` (434), `metrics-tab` (328), `usage-tab` (89), `delete-question-modal` (57).
+- ✅ **BİREBİRLİK DOĞRULAMASI:** 6 sekme gövdesi, refactor öncesi dosyadaki karşılıklarıyla **birebir aynı** (boşluk-duyarsız karşılaştırma; 2.950–10.437 karakter arası bloklar). Yalnızca prop adı yeniden adlandırmaları yapıldı (`setX` → `onXChange`).
+- ✅ **E2E güçlendirildi:** `01-ui.spec.ts`'e "admin sekmeleri geçiş yapar" testi eklendi — 9 sekmenin tamamı tıklanır ve ilgili içerik görünürlüğü doğrulanır.
+- Not: `clients/config/personas/feedback` sekmeleri daha önce ayrılmıştı (mevcut düzen korundu).
+- ⏸️ **R3-7 ertelendi:** `EventsTab` (ürün event/funnel özeti) **yeni bir sekme/özellik** demektir; davranış dondurma kuralı gereği refaktör kapsamına alınmadı. API (`GET /api/admin/product-events/summary`) hazır, UI eklenmesi ayrı bir özellik işi.
+- Doğrulama: `npx tsc --noEmit` + `npx eslint` **0 error / 0 warning**; Docker frontend rebuild; Playwright `01-ui` (5) + `03-study-actions` (1) → **6/6 passed**.
+- **Sıradaki:** R4 — `page.tsx` + `client/new/page.tsx` + tasarım tokenları.

@@ -59,7 +59,7 @@ Clarere/
 │       └── src/app/
 │           ├── page.tsx      Landing page
 │           ├── client/       Müşteri dashboard & araştırma akışı
-│           └── admin/        Operatör paneli
+│           └── admin/        Operatör paneli (ince sayfa + use-admin hook)
 │
 ├── packages/
 │   └── research_engine/      Domain mantığı (Python)

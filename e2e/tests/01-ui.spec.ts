@@ -40,4 +40,26 @@ test.describe.serial('UI akışları', () => {
     });
     await shot(page, '05-admin');
   });
+
+  test('admin sekmeleri geçiş yapar (R3 refaktörü)', async ({ page }) => {
+    await page.goto('/admin');
+    await expect(page.getByText(/Yönetici Paneli/i).first()).toBeVisible({ timeout: 30_000 });
+
+    const tabs: Array<[string, RegExp]> = [
+      ['Danışanlar', /Danışan|Kullanıcı|plan/i],
+      ['Yapılandırma', /Model|Yapılandırma|Kaydet/i],
+      ['Personalar', /Persona|havuz/i],
+      ['Soru Koleksiyonu', /soru/i],
+      ['Geri Bildirimler', /geri bildirim|Beğeni|Kayıt/i],
+      ['Denetim Kayıtları', /Denetim|kayıt/i],
+      ['Ajan Şablonları', /şablon|Soru|brief/i],
+      ['Metrikler', /Metrik|Toplam|Panel/i],
+      ['Maliyet', /Maliyet|token|USD|\$/i],
+    ];
+
+    for (const [tab, expected] of tabs) {
+      await page.getByRole('tab', { name: new RegExp(tab) }).click();
+      await expect(page.getByText(expected).first()).toBeVisible({ timeout: 30_000 });
+    }
+  });
 });
